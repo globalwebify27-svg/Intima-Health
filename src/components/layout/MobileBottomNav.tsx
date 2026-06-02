@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Activity, Users, User } from "lucide-react";
+import { Home, Activity, Users, User, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -17,9 +17,9 @@ const navItems = [
     icon: Activity,
   },
   {
-    label: "Specialists",
-    href: "/specialists",
-    icon: Users,
+    label: "Services",
+    href: "/services",
+    icon: Stethoscope,
   },
   {
     label: "Log in",

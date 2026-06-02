@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 import React from "react";
+import { useRouter } from "next/navigation";
 
 const ListItem = React.forwardRef<
   React.ElementRef<typeof Link>,
@@ -40,6 +41,8 @@ const ListItem = React.forwardRef<
 ListItem.displayName = "ListItem";
 
 export function Header() {
+  const router = useRouter();
+  
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40">
       <div className="container mx-auto flex h-20 items-center justify-between px-6 lg:px-12">
@@ -62,7 +65,10 @@ export function Header() {
 
               {/* Our Services */}
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors">
+                <NavigationMenuTrigger 
+                  onClick={() => router.push('/services')}
+                  className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors cursor-pointer"
+                >
                   Our Services
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
@@ -79,6 +85,11 @@ export function Header() {
                     <ListItem href="/therapy" title="Sex Therapy">
                       Behavioral and psychological counseling.
                     </ListItem>
+                    <div className="md:col-span-2 pt-3 mt-1 border-t border-border/50 text-center">
+                      <Link href="/services" className="inline-flex items-center text-sm font-semibold text-primary hover:underline transition-all">
+                        View All Services <span className="ml-1">&rarr;</span>
+                      </Link>
+                    </div>
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
