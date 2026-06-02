@@ -73,6 +73,9 @@ export function SelfAssessmentCTA() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="relative z-20 shrink-0 w-full lg:w-auto flex flex-col items-center"
             >
+              {/* Glowing Orbs (Static for performance) */}
+              <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] -z-10 pointer-events-none" />
+              <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-secondary/20 rounded-full blur-[80px] -z-10 pointer-events-none" />
               {/* Premium Button */}
               <button className="group relative w-full sm:w-auto inline-flex items-center justify-center px-10 py-6 text-lg font-bold text-white transition-all duration-300 ease-in-out bg-primary rounded-[2rem] hover:bg-primary/90 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgb(122,46,122,0.3)] overflow-hidden">
                 <span className="relative z-10 flex items-center">
