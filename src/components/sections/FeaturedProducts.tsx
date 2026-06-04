@@ -4,6 +4,8 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { motion, Variants } from "framer-motion";
+import { useCart } from "@/store/useCart";
+import Link from "next/link";
 
 const products = [
   {
@@ -11,33 +13,39 @@ const products = [
     title: "Intima Full Spectrum Screen",
     subtitle: "Complete clinical workup",
     description: "Our flagship diagnostic suite. Covers the 10 most common markers for total reproductive and sexual wellness.",
+    slug: "sti-screen",
     price: 3999,
     originalPrice: 5500,
     discount: "Save ₹1500",
     features: ["At-home sample collection", "NABL-certified lab analysis", "Follow-up physician review"],
-    image: "/images/product_kit_1.png"
+    image: "/images/product_kit_1.png",
+    type: "diagnostic" as const
   },
   {
     id: "vitality-check",
     title: "Vitality & Hormone Assay",
     subtitle: "Endocrine deep dive",
     description: "Map your metabolic and hormonal baselines to uncover the root causes of fatigue or low drive.",
+    slug: "hormone-panel",
     price: 2899,
     originalPrice: 3899,
     discount: "Save ₹1000",
     features: ["Testosterone & Thyroid markers", "Digital interactive report", "Actionable wellness plan"],
-    image: "/images/product_kit_2.png"
+    image: "/images/product_kit_2.png",
+    type: "diagnostic" as const
   },
   {
     id: "performance-protocol",
     title: "Performance Protocol Kit",
     subtitle: "Physician-guided",
     description: "A tailored regimen combining diagnostics with behavioral health strategies for optimal intimacy.",
+    slug: "daily-tadalafil",
     price: 4499,
     originalPrice: 5499,
     discount: "Save ₹1000",
     features: ["Clinical evaluation included", "Premium therapeutic tools", "Ongoing therapy access"],
-    image: "/images/product_kit_3.png"
+    image: "/images/product_kit_3.png",
+    type: "diagnostic" as const
   }
 ];
 
@@ -59,6 +67,8 @@ const cardVariants: Variants = {
 };
 
 export function FeaturedProducts() {
+  const { addItem } = useCart();
+
   return (
     <section className="py-32 bg-background relative overflow-hidden">
       
@@ -86,9 +96,11 @@ export function FeaturedProducts() {
               Take control of your health with clinical-grade testing you can do from the absolute privacy of your home. Everything you need, shipped overnight.
             </p>
           </div>
-          <Button variant="outline" className="hidden md:inline-flex rounded-full px-8 py-6 font-bold shadow-sm hover:shadow-md hover:text-primary transition-all group border-border/60">
-            Explore Diagnostics <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
-          </Button>
+          <Link href="/products">
+            <Button variant="outline" className="hidden md:inline-flex rounded-full px-8 py-6 font-bold shadow-sm hover:shadow-md hover:text-primary transition-all group border-border/60">
+              Explore Shop <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
         </motion.div>
 
         <motion.div 
@@ -106,7 +118,7 @@ export function FeaturedProducts() {
             >
               
               {/* Product Image Header */}
-              <div className="relative w-full h-[320px] bg-muted/20 overflow-hidden shrink-0">
+              <Link href={`/products/${product.slug}`} className="relative w-full h-[320px] bg-muted/20 overflow-hidden shrink-0 block">
                 <Image 
                   src={product.image}
                   alt={product.title}
@@ -122,13 +134,15 @@ export function FeaturedProducts() {
                     {product.discount}
                   </span>
                 </div>
-              </div>
+              </Link>
 
               {/* Card Body */}
               <div className="p-8 md:p-10 flex flex-col flex-grow relative bg-white z-10">
                 <div className="mb-6">
                   <p className="text-primary font-bold text-xs mb-3 uppercase tracking-[0.15em]">{product.subtitle}</p>
-                  <h3 className="text-2xl lg:text-3xl font-bold text-foreground mb-4 leading-tight group-hover:text-primary transition-colors">{product.title}</h3>
+                  <Link href={`/products/${product.slug}`}>
+                    <h3 className="text-2xl lg:text-3xl font-bold text-foreground mb-4 leading-tight group-hover:text-primary transition-colors">{product.title}</h3>
+                  </Link>
                   <p className="text-muted-foreground font-medium leading-relaxed">
                     {product.description}
                   </p>
@@ -148,7 +162,16 @@ export function FeaturedProducts() {
                     <span className="text-4xl font-bold text-foreground tracking-tight">₹{product.price}</span>
                     <span className="text-lg text-muted-foreground line-through font-medium">₹{product.originalPrice}</span>
                   </div>
-                  <Button className="w-full rounded-2xl py-7 text-lg font-bold shadow-sm hover:shadow-xl transition-all group-hover:bg-primary/95 group-hover:-translate-y-1">
+                  <Button 
+                    onClick={() => addItem({
+                      id: product.id,
+                      name: product.title,
+                      price: product.price,
+                      image: product.image,
+                      type: product.type
+                    })}
+                    className="w-full rounded-2xl py-7 text-lg font-bold shadow-sm hover:shadow-xl transition-all group-hover:bg-primary/95 group-hover:-translate-y-1"
+                  >
                     Add to Cart
                   </Button>
                 </div>
@@ -158,9 +181,11 @@ export function FeaturedProducts() {
         </motion.div>
         
         <div className="mt-12 text-center md:hidden">
-          <Button variant="outline" className="rounded-full px-8 py-6 w-full font-bold shadow-sm group">
-            Explore Diagnostics <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
-          </Button>
+          <Link href="/products">
+            <Button variant="outline" className="rounded-full px-8 py-6 w-full font-bold shadow-sm group">
+              Explore Shop <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

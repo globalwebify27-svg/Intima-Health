@@ -95,7 +95,7 @@ export default function ServicesPage() {
     <div className="min-h-screen bg-background text-foreground">
       
       {/* Services Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden bg-muted/30">
+      <section className="relative pt-12 pb-20 lg:pt-16 lg:pb-32 overflow-hidden bg-muted/30">
         <div className="absolute inset-0 bg-[url('/images/cta_bg.png')] opacity-5 mix-blend-multiply pointer-events-none" />
         
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">

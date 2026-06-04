@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Activity, Users, User, Stethoscope } from "lucide-react";
+import { Home, Activity, CalendarDays, User, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -15,6 +15,11 @@ const navItems = [
     label: "Conditions",
     href: "/conditions",
     icon: Activity,
+  },
+  {
+    label: "Book",
+    href: "/booking",
+    icon: CalendarDays,
   },
   {
     label: "Services",
@@ -38,12 +43,29 @@ export function MobileBottomNav() {
           const isActive = pathname === item.href;
           const Icon = item.icon;
           
+          if (item.label === "Book") {
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="relative -top-5 flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-full transition-all duration-200"
+              >
+                <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transform hover:scale-105 active:scale-95 transition-all duration-300">
+                  <Icon className="w-6 h-6" strokeWidth={2.5} />
+                </div>
+                <span className="text-[10px] font-bold text-primary tracking-wide absolute -bottom-5 whitespace-nowrap">
+                  Book Now
+                </span>
+              </Link>
+            );
+          }
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-xl transition-all duration-200",
+                "flex flex-col items-center justify-center gap-1 w-14 h-14 rounded-xl transition-all duration-200",
                 isActive 
                   ? "text-primary" 
                   : "text-muted-foreground hover:text-foreground"
