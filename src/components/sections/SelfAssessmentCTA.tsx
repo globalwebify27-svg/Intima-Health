@@ -23,7 +23,7 @@ export function SelfAssessmentCTA() {
               alt="Premium Clinic Interior" 
               fill 
               className="object-cover transform group-hover:scale-105 transition-transform duration-[1.5s] ease-out"
-            />
+             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
           </div>
 
           {/* Frosted Glass Overlay */}

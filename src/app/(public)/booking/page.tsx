@@ -170,7 +170,7 @@ export default function BookingPage() {
                       }`}
                     >
                       <div className="w-20 h-20 rounded-full overflow-hidden mb-4 relative border-2 border-background shadow-sm">
-                        <Image src={doc.image} alt={doc.name} fill className="object-cover" />
+                        <Image src={doc.image} alt={doc.name} fill className="object-cover"  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                       </div>
                       <h3 className="text-lg font-semibold mb-1">{doc.name}</h3>
                       <p className="text-sm text-muted-foreground">{doc.title}</p>

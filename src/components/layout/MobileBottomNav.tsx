@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Activity, CalendarDays, User, Stethoscope } from "lucide-react";
+import { Home, Activity, CalendarDays, User, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -22,9 +22,9 @@ const navItems = [
     icon: CalendarDays,
   },
   {
-    label: "Services",
-    href: "/services",
-    icon: Stethoscope,
+    label: "Pharmacy",
+    href: "/products",
+    icon: ShoppingBag,
   },
   {
     label: "Log in",
@@ -48,12 +48,12 @@ export function MobileBottomNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="relative -top-5 flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-full transition-all duration-200"
+                className="relative flex flex-col items-center justify-end pb-1 w-16 h-14 transition-all duration-200"
               >
-                <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transform hover:scale-105 active:scale-95 transition-all duration-300">
+                <div className="absolute -top-6 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transform hover:scale-105 active:scale-95 transition-all duration-300">
                   <Icon className="w-6 h-6" strokeWidth={2.5} />
                 </div>
-                <span className="text-[10px] font-bold text-primary tracking-wide absolute -bottom-5 whitespace-nowrap">
+                <span className="text-[10px] font-bold text-primary tracking-wide whitespace-nowrap">
                   Book Now
                 </span>
               </Link>

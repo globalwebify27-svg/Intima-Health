@@ -204,7 +204,7 @@ export default function CheckoutPage() {
                       <span className="absolute -top-2 -right-2 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center rounded-full z-10">
                         {item.quantity}
                       </span>
-                      <Image src={item.image} alt={item.name} fill className="object-cover rounded-xl" />
+                      <Image src={item.image} alt={item.name} fill className="object-cover rounded-xl"  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                     </div>
                     <div className="flex-1">
                       <h4 className="text-sm font-semibold line-clamp-1">{item.name}</h4>

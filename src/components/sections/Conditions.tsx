@@ -139,7 +139,7 @@ export function Conditions() {
                     alt="Clinical Abstract" 
                     fill 
                     className="object-cover transform group-hover:scale-110 transition-transform duration-700 ease-out"
-                  />
+                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                 </div>
 
                 <div className="p-8 flex flex-col flex-1 relative z-10 bg-white">

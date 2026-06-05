@@ -441,6 +441,20 @@ api/
 
 ---
 
+# PHARMACY ROUTES
+
+/pharmacy/dashboard
+
+/pharmacy/orders
+
+/pharmacy/prescriptions
+
+/pharmacy/inventory
+
+/pharmacy/settings
+
+---
+
 # MODULE ARCHITECTURE
 
 Every module MUST follow this structure.
@@ -578,6 +592,10 @@ PATIENT
 DOCTOR
 
 CLINIC_ADMIN
+
+PHARMACY_ADMIN
+
+PHARMACY_VENDOR
 
 SUPPORT_AGENT
 

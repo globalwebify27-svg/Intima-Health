@@ -106,6 +106,7 @@ export default function PharmacyPage() {
                   alt="Discreet Medication Packaging"
                   width={600}
                   height={600}
+                  priority
                   className="object-contain relative z-10"
                 />
               </div>

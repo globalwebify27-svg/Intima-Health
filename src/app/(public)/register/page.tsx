@@ -1,13 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Mail, Lock, User, ShieldCheck } from "lucide-react";
+import { ArrowRight, Mail, Lock, User, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 
 export default function RegisterPage() {
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <div className="min-h-screen bg-background flex flex-row-reverse">
       {/* Left side (Visuals) - Hidden on mobile */}
@@ -119,11 +121,18 @@ export default function RegisterPage() {
                 <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                 <Input 
                   id="password" 
-                  type="password" 
+                  type={showPassword ? "text" : "password"}
                   placeholder="At least 8 characters"
-                  className="pl-10 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
+                  className="pl-10 pr-10 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
                   required 
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
             </div>
 

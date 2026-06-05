@@ -65,7 +65,10 @@ export function Header() {
               
               {/* Conditions We Treat (Problem First) */}
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors">
+                <NavigationMenuTrigger 
+                  onClick={() => router.push('/conditions')}
+                  className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors cursor-pointer"
+                >
                   Conditions We Treat
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
@@ -82,6 +85,11 @@ export function Header() {
                     <ListItem href="/conditions/sti" title="STI Management">
                       Fast, private testing and treatment.
                     </ListItem>
+                    <div className="md:col-span-2 pt-3 mt-1 border-t border-border/50 text-center">
+                      <Link href="/conditions" className="inline-flex items-center text-sm font-semibold text-primary hover:underline transition-all">
+                        View All Conditions <span className="ml-1">&rarr;</span>
+                      </Link>
+                    </div>
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
@@ -120,11 +128,12 @@ export function Header() {
               {/* Shop (Products) */}
               <NavigationMenuItem>
                 <Link href="/products" className={cn(navigationMenuTriggerStyle(), "bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors")}>
-                  Shop
+                  Pharmacy
                 </Link>
               </NavigationMenuItem>
 
-              {/* Clinics (Physical Trust) */}
+              {/* Clinics (Physical Trust) - Hidden for now */}
+              {/* 
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors">
                   Clinics
@@ -143,6 +152,7 @@ export function Header() {
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
+              */}
 
               {/* About Us (Brand Trust) */}
               <NavigationMenuItem>
@@ -184,6 +194,11 @@ export function Header() {
                     <ListItem href="/faq" title="FAQ & Support">
                       Answers to common questions.
                     </ListItem>
+                    <div className="pt-3 mt-1 border-t border-border/50">
+                      <ListItem href="/staff-login" title="Provider Login" className="bg-muted/30">
+                        Secure access for IntimaHealth staff.
+                      </ListItem>
+                    </div>
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
@@ -261,6 +276,7 @@ export function Header() {
                   <Link href="/conditions/pe" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Premature Ejaculation</Link>
                   <Link href="/conditions/testosterone" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Low Testosterone</Link>
                   <Link href="/conditions/sti" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">STI Management</Link>
+                  <Link href="/conditions" onClick={() => setIsMobileMenuOpen(false)} className="py-2 font-semibold text-primary hover:underline transition-colors mt-2 border-t border-border/30 pt-2">View All Conditions &rarr;</Link>
                 </MobileNavGroup>
                 
                 <MobileNavGroup title="Our Services">
@@ -271,14 +287,16 @@ export function Header() {
                 </MobileNavGroup>
 
                 <div className="border-b border-border/50">
-                  <Link href="/products" onClick={() => setIsMobileMenuOpen(false)} className="flex py-4 text-lg font-medium hover:text-primary transition-colors">Shop</Link>
+                  <Link href="/products" onClick={() => setIsMobileMenuOpen(false)} className="flex py-4 text-lg font-medium hover:text-primary transition-colors">Pharmacy</Link>
                 </div>
 
+                {/* Clinics - Hidden for now
                 <MobileNavGroup title="Clinics">
                   <Link href="/clinics/delhi" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">New Delhi</Link>
                   <Link href="/clinics/mumbai" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Mumbai</Link>
                   <Link href="/clinics/bangalore" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Bangalore</Link>
                 </MobileNavGroup>
+                */}
 
                 <div className="border-b border-border/50">
                   <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="flex py-4 text-lg font-medium hover:text-primary transition-colors">About Us</Link>
@@ -293,6 +311,7 @@ export function Header() {
                   <Link href="/blog" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Clinical Journal</Link>
                   <Link href="/research" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Research Library</Link>
                   <Link href="/faq" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">FAQ & Support</Link>
+                  <Link href="/staff-login" onClick={() => setIsMobileMenuOpen(false)} className="py-2 font-semibold text-muted-foreground hover:text-primary transition-colors mt-2 border-t border-border/30 pt-2">Provider Login &rarr;</Link>
                 </MobileNavGroup>
               </nav>
             </div>

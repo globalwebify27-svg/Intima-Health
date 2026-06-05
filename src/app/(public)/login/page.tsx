@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Mail, Lock } from "lucide-react";
+import { ArrowRight, MessageSquare } from "lucide-react";
 import Image from "next/image";
 
 export default function LoginPage() {
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left side - Image/Branding (hidden on mobile) */}
@@ -37,7 +40,7 @@ export default function LoginPage() {
           <div className="flex items-center gap-4">
             <div className="flex -space-x-4">
               <div className="w-10 h-10 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-bold overflow-hidden relative">
-                <Image src="/images/doctor_2.png" alt="Doctor" fill className="object-cover" />
+                <Image src="/images/doctor_2.png" alt="Doctor" fill className="object-cover"  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
               </div>
               <div className="w-10 h-10 rounded-full bg-primary border-2 border-background flex items-center justify-center text-white text-xs font-bold">
                 +10k
@@ -63,76 +66,65 @@ export default function LoginPage() {
           <div className="space-y-3">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back</h1>
             <p className="text-muted-foreground">
-              Enter your details to access your secure patient portal.
+              Enter your WhatsApp number to securely access your patient portal.
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                  <Input 
-                    id="email" 
-                    placeholder="name@example.com" 
-                    type="email" 
-                    className="pl-10 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
-                    required 
-                  />
+          <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setStep('otp'); }}>
+            {step === 'phone' ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">WhatsApp Number</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-3.5 text-sm font-medium text-muted-foreground">+91</span>
+                    <Input 
+                      id="phone" 
+                      placeholder="98765 43210" 
+                      type="tel" 
+                      className="pl-12 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
+                      required 
+                    />
+                  </div>
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link href="#" className="text-sm font-semibold text-primary hover:underline">
-                    Forgot password?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    className="pl-10 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
-                    required 
-                  />
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="otp">Enter Verification Code</Label>
+                    <button type="button" onClick={() => setStep('phone')} className="text-xs text-primary hover:underline font-medium">Change Number</button>
+                  </div>
+                  <div className="relative">
+                    <MessageSquare className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                    <Input 
+                      id="otp" 
+                      placeholder="6-digit code" 
+                      type="text" 
+                      maxLength={6}
+                      className="pl-10 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20 tracking-widest"
+                      required 
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Code sent to your WhatsApp.</p>
                 </div>
               </div>
-            </div>
+            )}
 
-            <Button className="w-full h-12 text-base font-bold rounded-xl shadow-sm hover:shadow-md transition-all group">
-              Sign In
+            <Button type="submit" className="w-full h-12 text-base font-bold rounded-xl shadow-sm hover:shadow-md transition-all group">
+              {step === 'phone' ? 'Send OTP via WhatsApp' : 'Verify & Secure Login'}
               <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
             </Button>
           </form>
 
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-4 text-muted-foreground font-semibold">
-                Or continue with
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" className="h-12 border-border/60 hover:bg-muted/50 font-semibold">
-              Google
-            </Button>
-            <Button variant="outline" className="h-12 border-border/60 hover:bg-muted/50 font-semibold">
-              Apple
-            </Button>
-          </div>
-
           <p className="text-center text-sm text-muted-foreground mt-10">
-            Don't have an account?{" "}
-            <Link href="/register" className="font-bold text-primary hover:underline">
-              Create an account
-            </Link>
+            By logging in, you agree to our{" "}
+            <Link href="/terms" className="font-bold text-primary hover:underline">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy-policy" className="font-bold text-primary hover:underline">
+              Privacy Policy
+            </Link>.
           </p>
         </div>
       </div>

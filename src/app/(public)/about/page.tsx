@@ -107,7 +107,7 @@ export default function AboutPage() {
                 alt="Intima Health Clinical Research"
                 fill
                 className="object-cover"
-              />
+               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
             </motion.div>
             <motion.div 
               initial="hidden"
@@ -240,7 +240,7 @@ export default function AboutPage() {
                     alt={doc.name}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                  />
+                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                   {/* Subtle overlay gradient */}
                   <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>
@@ -287,7 +287,7 @@ export default function AboutPage() {
                 alt="Confident lifestyle"
                 fill
                 className="object-cover"
-              />
+               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
             </motion.div>
           </div>
         </div>
@@ -301,7 +301,7 @@ export default function AboutPage() {
             alt="Background pattern"
             fill
             className="object-cover opacity-10"
-          />
+           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
         </div>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div 

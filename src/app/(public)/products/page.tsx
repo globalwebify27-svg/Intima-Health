@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
-import { ShoppingBag, ArrowRight, Filter, Activity, ShieldCheck, HeartPulse } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShoppingBag, ArrowRight, Filter, Activity, ShieldCheck, HeartPulse, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useCart } from "@/store/useCart";
@@ -91,6 +92,7 @@ export const products = [
 
 export default function ProductsPage() {
   const { addItem } = useCart();
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -120,8 +122,17 @@ export default function ProductsPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row gap-12">
             
-            {/* Sidebar / Filters (Mock) */}
-            <div className="w-full md:w-64 shrink-0 space-y-8">
+            {/* Mobile Filter Sticky Header */}
+            <div className="md:hidden sticky top-[80px] z-40 bg-background/95 backdrop-blur py-4 border-b border-border flex items-center justify-between mb-8 -mx-4 px-4 shadow-sm">
+              <span className="font-semibold text-lg">Filters</span>
+              <Button variant="outline" size="sm" onClick={() => setIsMobileFiltersOpen(true)} className="gap-2 rounded-full">
+                <Filter className="w-4 h-4" />
+                Categories
+              </Button>
+            </div>
+
+            {/* Sidebar / Filters (Desktop) */}
+            <div className="hidden md:block w-64 shrink-0 space-y-8">
               <div>
                 <div className="flex items-center gap-2 font-semibold mb-4 text-lg">
                   <Filter className="w-5 h-5" />
@@ -140,16 +151,84 @@ export default function ProductsPage() {
                 <div className="font-semibold mb-4 text-lg">Treatment Type</div>
                 <ul className="space-y-3 text-muted-foreground">
                   <li className="flex items-center gap-2">
-                    <input type="checkbox" id="rx" className="rounded border-border text-primary focus:ring-primary" />
-                    <label htmlFor="rx">Prescription Required</label>
+                    <input type="checkbox" id="rx-desk" className="rounded border-border text-primary focus:ring-primary" />
+                    <label htmlFor="rx-desk">Prescription Required</label>
                   </li>
                   <li className="flex items-center gap-2">
-                    <input type="checkbox" id="otc" className="rounded border-border text-primary focus:ring-primary" />
-                    <label htmlFor="otc">Over-the-Counter</label>
+                    <input type="checkbox" id="otc-desk" className="rounded border-border text-primary focus:ring-primary" />
+                    <label htmlFor="otc-desk">Over-the-Counter</label>
                   </li>
                 </ul>
               </div>
             </div>
+
+            {/* Mobile Filters Modal */}
+            <AnimatePresence>
+              {isMobileFiltersOpen && (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setIsMobileFiltersOpen(false)}
+                    className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm md:hidden"
+                  />
+                  <motion.div
+                    initial={{ x: "-100%" }}
+                    animate={{ x: 0 }}
+                    exit={{ x: "-100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="fixed inset-y-0 left-0 z-[101] w-[85%] max-w-sm bg-background border-r border-border shadow-2xl flex flex-col md:hidden"
+                  >
+                    <div className="flex items-center justify-between p-6 border-b border-border">
+                      <span className="font-semibold text-xl flex items-center gap-2">
+                        <Filter className="w-5 h-5" />
+                        Filters
+                      </span>
+                      <button
+                        onClick={() => setIsMobileFiltersOpen(false)}
+                        className="p-2 rounded-full hover:bg-muted transition-colors"
+                      >
+                        <X className="w-5 h-5 text-muted-foreground" />
+                      </button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                      <div>
+                        <div className="font-semibold mb-4 text-lg">Categories</div>
+                        <ul className="space-y-4 text-muted-foreground text-base">
+                          <li><button className="text-primary font-medium w-full text-left" onClick={() => setIsMobileFiltersOpen(false)}>All Products</button></li>
+                          <li><button className="hover:text-foreground transition-colors w-full text-left" onClick={() => setIsMobileFiltersOpen(false)}>Sexual Health</button></li>
+                          <li><button className="hover:text-foreground transition-colors w-full text-left" onClick={() => setIsMobileFiltersOpen(false)}>Diagnostics</button></li>
+                          <li><button className="hover:text-foreground transition-colors w-full text-left" onClick={() => setIsMobileFiltersOpen(false)}>Wellness Supplements</button></li>
+                          <li><button className="hover:text-foreground transition-colors w-full text-left" onClick={() => setIsMobileFiltersOpen(false)}>Hair Health</button></li>
+                        </ul>
+                      </div>
+
+                      <div className="pt-6 border-t border-border">
+                        <div className="font-semibold mb-4 text-lg">Treatment Type</div>
+                        <ul className="space-y-4 text-muted-foreground text-base">
+                          <li className="flex items-center gap-3">
+                            <input type="checkbox" id="rx-mob" className="w-5 h-5 rounded border-border text-primary focus:ring-primary" />
+                            <label htmlFor="rx-mob">Prescription Required</label>
+                          </li>
+                          <li className="flex items-center gap-3">
+                            <input type="checkbox" id="otc-mob" className="w-5 h-5 rounded border-border text-primary focus:ring-primary" />
+                            <label htmlFor="otc-mob">Over-the-Counter</label>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    
+                    <div className="p-6 border-t border-border bg-muted/30">
+                      <Button className="w-full rounded-full py-6 text-base" onClick={() => setIsMobileFiltersOpen(false)}>
+                        Apply Filters
+                      </Button>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
 
             {/* Product Grid */}
             <div className="flex-1">
@@ -168,7 +247,7 @@ export default function ProductsPage() {
                 variants={staggerContainer}
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
               >
-                {products.map((product) => (
+                {products.map((product, index) => (
                   <motion.div 
                     key={product.id}
                     variants={fadeIn}
@@ -187,6 +266,7 @@ export default function ProductsPage() {
                         alt={product.name}
                         width={300}
                         height={300}
+                        priority={index < 4}
                         className="object-contain group-hover:scale-105 transition-transform duration-500"
                       />
                     </Link>
