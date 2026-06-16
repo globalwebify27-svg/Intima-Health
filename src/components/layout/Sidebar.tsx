@@ -77,7 +77,14 @@ export function Sidebar({ links, roleName, basePath }: SidebarProps) {
             Settings
           </Link>
           <button
-            onClick={() => console.log("Logout")}
+            onClick={async () => {
+              try {
+                await fetch("/api/auth/logout", { method: "POST" });
+                window.location.href = "/staff-login";
+              } catch (err) {
+                console.error("Logout failed", err);
+              }
+            }}
             className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors w-full text-left"
           >
             <LogOut className="h-5 w-5" />

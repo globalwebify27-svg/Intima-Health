@@ -1,37 +1,98 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Users, Calendar, Video, ArrowUpRight, Clock, FileSignature } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
-const stats = [
-  {
-    title: "Patients Seen (Month)",
-    value: "142",
-    change: "+12%",
-    icon: Users,
-  },
-  {
-    title: "Today's Appointments",
-    value: "8",
-    change: "3 pending",
-    icon: Calendar,
-  },
-  {
-    title: "Total Consult Hours",
-    value: "45h",
-    change: "+5h",
-    icon: Video,
-  },
-];
+interface DoctorData {
+  _id: string;
+  name: string;
+  specialization: string;
+  experience: number;
+  slotDuration?: number;
+}
 
 export default function DoctorDashboard() {
+  const [doctor, setDoctor] = useState<DoctorData | null>(null);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const meRes = await fetch("/api/auth/me");
+        const meJson = await meRes.json();
+        if (!meJson.success || meJson.user.role !== "DOCTOR") {
+          window.location.href = "/staff-login";
+          return;
+        }
+
+        const dId = meJson.user.doctorId;
+        if (dId) {
+          // Fetch specific doctor profile
+          const docRes = await fetch(`/api/doctors/${dId}`);
+          const docJson = await docRes.json();
+          if (docJson.success) {
+            setDoctor(docJson.data);
+          }
+
+          // Fetch appointments for this doctor
+          const aptsRes = await fetch(`/api/appointments?doctorId=${dId}`);
+          const aptsJson = await aptsRes.json();
+          if (aptsJson.success) {
+            setAppointments(aptsJson.data);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading doctor dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, []);
+
+  const todayStr = typeof window !== "undefined" ? new Date().toLocaleDateString("en-CA") : "";
+  const todayApts = appointments.filter((a) => a.date === todayStr);
+  const completedApts = appointments.filter((a) => a.status === "Completed");
+  const pendingToday = todayApts.filter((a) => a.status === "Scheduled").length;
+
+  const uniquePatientsCount = new Set(
+    appointments.map((a) => (a.patientId?._id || a.patientId || "").toString())
+  ).size;
+
+  const totalHours = (completedApts.length * (doctor?.slotDuration || 30)) / 60;
+
+  const stats = [
+    {
+      title: "Patients Seen (Month)",
+      value: String(uniquePatientsCount),
+      change: "+10%",
+      icon: Users,
+    },
+    {
+      title: "Today's Appointments",
+      value: String(todayApts.length),
+      change: `${pendingToday} pending`,
+      icon: Calendar,
+    },
+    {
+      title: "Total Consult Hours",
+      value: `${totalHours}h`,
+      change: `+${totalHours}h`,
+      icon: Video,
+    },
+  ];
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Welcome, Dr. Smith</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Welcome, {loading ? "Loading..." : doctor ? doctor.name : "Dr. Smith"}
+        </h1>
         <p className="text-muted-foreground mt-2">
-          Here is your clinical schedule and overview for today.
+          {doctor ? `${doctor.specialization} Specialist • ${doctor.experience} years experience` : "Here is your clinical schedule and overview for today."}
         </p>
       </div>
 
@@ -71,22 +132,33 @@ export default function DoctorDashboard() {
             <h3 className="text-lg font-bold">Today's Schedule</h3>
             <Button variant="outline" size="sm">View Calendar</Button>
           </div>
-          
           <div className="space-y-4">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary font-bold">
-                    {9 + item}:00
+            {todayApts.length > 0 ? (
+              todayApts.map((apt) => (
+                <div key={apt._id} className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-center justify-center px-3 h-12 rounded-xl bg-primary/10 text-primary font-bold text-sm">
+                      {apt.time}
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">{apt.patientId?.name || "Patient"}</h4>
+                      <p className="text-sm text-muted-foreground">{apt.type} Consult • {apt.notes || "Routine checkup"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-semibold">John Doe</h4>
-                    <p className="text-sm text-muted-foreground">Follow-up • Erectile Dysfunction</p>
-                  </div>
+                  <Button 
+                    size="sm"
+                    onClick={() => window.location.href = `/doctor/consultations?appointmentId=${apt._id}`}
+                  >
+                    Start Session
+                  </Button>
                 </div>
-                <Button>Start Call</Button>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+                <Calendar className="w-10 h-10 mb-2 text-muted-foreground/50" />
+                <p className="font-medium text-sm">No appointments scheduled for today.</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 

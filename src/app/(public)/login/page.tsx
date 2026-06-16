@@ -5,12 +5,64 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, MessageSquare } from "lucide-react";
+import { ArrowRight, MessageSquare, AlertCircle } from "lucide-react";
 import Image from "next/image";
 
 export default function LoginPage() {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStep('otp');
+      } else {
+        throw new Error(data.message || "Failed to send OTP.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, otp }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.href = "/patient/dashboard";
+      } else {
+        throw new Error(data.message || "Invalid OTP code.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to verify OTP.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left side - Image/Branding (hidden on mobile) */}
@@ -40,7 +92,7 @@ export default function LoginPage() {
           <div className="flex items-center gap-4">
             <div className="flex -space-x-4">
               <div className="w-10 h-10 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-bold overflow-hidden relative">
-                <Image src="/images/doctor_2.png" alt="Doctor" fill className="object-cover"  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
+                <Image src="/images/doctor_2.png" alt="Doctor" fill className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
               </div>
               <div className="w-10 h-10 rounded-full bg-primary border-2 border-background flex items-center justify-center text-white text-xs font-bold">
                 +10k
@@ -70,7 +122,14 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setStep('otp'); }}>
+          {error && (
+            <div className="p-3.5 bg-destructive/10 text-destructive text-xs font-bold rounded-xl border border-destructive/20 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form className="space-y-6" onSubmit={step === 'phone' ? handleSendOtp : handleVerifyOtp}>
             {step === 'phone' ? (
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -81,8 +140,11 @@ export default function LoginPage() {
                       id="phone" 
                       placeholder="98765 43210" 
                       type="tel" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
                       className="pl-12 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
                       required 
+                      disabled={loading}
                     />
                   </div>
                 </div>
@@ -92,7 +154,7 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <Label htmlFor="otp">Enter Verification Code</Label>
-                    <button type="button" onClick={() => setStep('phone')} className="text-xs text-primary hover:underline font-medium">Change Number</button>
+                    <button type="button" onClick={() => setStep('phone')} className="text-xs text-primary hover:underline font-medium" disabled={loading}>Change Number</button>
                   </div>
                   <div className="relative">
                     <MessageSquare className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
@@ -101,18 +163,21 @@ export default function LoginPage() {
                       placeholder="6-digit code" 
                       type="text" 
                       maxLength={6}
-                      className="pl-10 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20 tracking-widest"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      className="pl-10 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20 tracking-widest text-center"
                       required 
+                      disabled={loading}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">Code sent to your WhatsApp.</p>
+                  <p className="text-xs text-muted-foreground mt-2">Code sent to your WhatsApp number +91 {phone.replace(/\D/g, "").slice(-10)}.</p>
                 </div>
               </div>
             )}
 
-            <Button type="submit" className="w-full h-12 text-base font-bold rounded-xl shadow-sm hover:shadow-md transition-all group">
-              {step === 'phone' ? 'Send OTP via WhatsApp' : 'Verify & Secure Login'}
-              <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
+            <Button type="submit" disabled={loading} className="w-full h-12 text-base font-bold rounded-xl shadow-sm hover:shadow-md transition-all group">
+              {loading ? 'Processing...' : step === 'phone' ? 'Send OTP via WhatsApp' : 'Verify & Secure Login'}
+              {!loading && <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />}
             </Button>
           </form>
 

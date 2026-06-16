@@ -1,16 +1,23 @@
 "use client";
 
-import { mockOrders, Order } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal } from "lucide-react";
+
+interface Order {
+  _id: string;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
+}
 
 const columns: ColumnDef<Order>[] = [
   {
-    accessorKey: "id",
+    id: "id",
     header: "Order ID",
+    accessorFn: (row) => row._id ? `#${row._id.substring(18)}` : "N/A",
     cell: ({ row }) => <span className="font-mono text-muted-foreground">{row.getValue("id")}</span>,
   },
   {
@@ -22,8 +29,10 @@ const columns: ColumnDef<Order>[] = [
     }
   },
   {
-    accessorKey: "date",
+    id: "date",
     header: "Date",
+    accessorFn: (row) => row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "N/A",
+    cell: ({ row }) => <span>{row.getValue("date")}</span>,
   },
   {
     accessorKey: "status",
@@ -51,6 +60,38 @@ const columns: ColumnDef<Order>[] = [
 ];
 
 export default function PatientOrdersPage() {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const meRes = await fetch("/api/auth/me");
+        const meJson = await meRes.json();
+        if (meJson.success && meJson.user && meJson.user.patientId) {
+          const res = await fetch(`/api/pharmacy/orders?patientId=${meJson.user.patientId}`);
+          const json = await res.json();
+          if (json.success) {
+            setOrders(json.data || []);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">
+        Loading pharmacy orders...
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -61,7 +102,7 @@ export default function PatientOrdersPage() {
           </p>
         </div>
       </div>
-      <DataTable columns={columns} data={mockOrders} />
+      <DataTable columns={columns} data={orders} />
     </div>
   );
 }

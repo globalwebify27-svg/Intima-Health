@@ -1,16 +1,29 @@
 "use client";
 
-import { mockAppointments, Appointment } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Video, MapPin, ExternalLink } from "lucide-react";
 
+interface Appointment {
+  _id: string;
+  doctorId?: {
+    name: string;
+    specialization: string;
+  };
+  date: string;
+  time: string;
+  type: string;
+  status: string;
+}
+
 const columns: ColumnDef<Appointment>[] = [
   {
-    accessorKey: "doctorName",
+    id: "doctorName",
     header: "Doctor",
+    accessorFn: (row) => row.doctorId?.name ? `Dr. ${row.doctorId.name}` : "N/A",
     cell: ({ row }) => <span className="font-bold">{row.getValue("doctorName")}</span>,
   },
   {
@@ -53,7 +66,11 @@ const columns: ColumnDef<Appointment>[] = [
       
       if (type === "Video" && status === "Scheduled") {
         return (
-          <Button size="sm" className="rounded-lg">
+          <Button 
+            size="sm" 
+            className="rounded-lg"
+            onClick={() => window.location.href = "/patient/consultations"}
+          >
             Join Call <ExternalLink className="w-3 h-3 ml-2" />
           </Button>
         );
@@ -64,6 +81,38 @@ const columns: ColumnDef<Appointment>[] = [
 ];
 
 export default function PatientAppointmentsPage() {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const meRes = await fetch("/api/auth/me");
+        const meJson = await meRes.json();
+        if (meJson.success && meJson.user && meJson.user.patientId) {
+          const res = await fetch(`/api/appointments?patientId=${meJson.user.patientId}`);
+          const json = await res.json();
+          if (json.success) {
+            setAppointments(json.data || []);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching appointments:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAppointments();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">
+        Loading appointments...
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -73,9 +122,9 @@ export default function PatientAppointmentsPage() {
             View your scheduled consultations and past visits.
           </p>
         </div>
-        <Button className="rounded-xl">Book New</Button>
+        <Button className="rounded-xl" onClick={() => window.location.href = "/booking"}>Book New</Button>
       </div>
-      <DataTable columns={columns} data={mockAppointments} />
+      <DataTable columns={columns} data={appointments} />
     </div>
   );
 }

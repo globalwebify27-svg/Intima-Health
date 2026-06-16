@@ -1,14 +1,12 @@
 "use client";
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { LayoutDashboard, Users, UserPlus, Calendar, ShoppingBag, Settings, FileText, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Users, Building2, Calendar, ShoppingBag, Settings, FileText, BarChart3 } from "lucide-react";
 
 const adminLinks = [
   { title: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
-  { title: "Doctors", href: "/admin/doctors", icon: UserPlus },
-  { title: "Patients", href: "/admin/patients", icon: Users },
-  { title: "Appointments", href: "/admin/appointments", icon: Calendar },
-  { title: "Pharmacy Orders", href: "/admin/orders", icon: ShoppingBag },
+  { title: "Clinics", href: "/admin/clinics", icon: Building2 },
+  { title: "Staff Directory", href: "/admin/staff", icon: Users },
   { title: "Content", href: "/admin/content", icon: FileText },
   { title: "Reports", href: "/admin/reports", icon: BarChart3 },
 ];

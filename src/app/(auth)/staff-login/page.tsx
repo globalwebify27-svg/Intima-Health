@@ -16,20 +16,38 @@ export default function StaffLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Simulate RBAC logic based on email
-    const lowerEmail = email.toLowerCase();
-    if (lowerEmail.includes("admin")) {
-      router.push("/admin/dashboard");
-    } else if (lowerEmail.includes("doctor")) {
-      router.push("/doctor/dashboard");
-    } else if (lowerEmail.includes("pharmacy") || lowerEmail.includes("vendor")) {
-      router.push("/pharmacy/dashboard");
-    } else {
-      setError("Invalid staff credentials or unauthorized access.");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Invalid credentials.");
+      }
+
+      const role = data.user.role;
+      if (role === "SUPER_ADMIN" || role === "CLINIC_ADMIN") {
+        router.push("/admin/dashboard");
+      } else if (role === "DOCTOR") {
+        router.push("/doctor/dashboard");
+      } else if (role === "PHARMACY_ADMIN" || role === "PHARMACY_VENDOR" || role === "PHARMACY_STAFF") {
+        router.push("/pharmacy/dashboard");
+      } else if (role === "CLINIC_MANAGER") {
+        router.push("/clinic-manager/dashboard");
+      } else {
+        router.push("/");
+      }
+    } catch (err: any) {
+      setError(err.message || "Invalid staff credentials or unauthorized access.");
     }
   };
 

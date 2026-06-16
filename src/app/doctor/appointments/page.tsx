@@ -1,16 +1,17 @@
 "use client";
 
-import { mockAppointments, Appointment } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Video, MapPin, ExternalLink } from "lucide-react";
+import { Video, MapPin, ExternalLink, Calendar } from "lucide-react";
 
-const columns: ColumnDef<Appointment>[] = [
+const columns: ColumnDef<any>[] = [
   {
-    accessorKey: "patientName",
+    id: "patientName",
     header: "Patient",
+    accessorFn: (row) => row.patientId?.name || "N/A",
     cell: ({ row }) => <span className="font-bold">{row.getValue("patientName")}</span>,
   },
   {
@@ -48,13 +49,17 @@ const columns: ColumnDef<Appointment>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
-      const type = row.getValue("type") as string;
       const status = row.getValue("status") as string;
+      const id = row.original._id;
       
-      if (type === "Video" && status === "Scheduled") {
+      if (status === "Scheduled") {
         return (
-          <Button size="sm" className="rounded-lg">
-            Start Call <ExternalLink className="w-3 h-3 ml-2" />
+          <Button 
+            size="sm" 
+            className="rounded-lg"
+            onClick={() => window.location.href = `/doctor/consultations?appointmentId=${id}`}
+          >
+            Start Session <ExternalLink className="w-3 h-3 ml-2" />
           </Button>
         );
       }
@@ -64,6 +69,44 @@ const columns: ColumnDef<Appointment>[] = [
 ];
 
 export default function DoctorAppointmentsPage() {
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const meRes = await fetch("/api/auth/me");
+        const meJson = await meRes.json();
+        if (!meJson.success || meJson.user.role !== "DOCTOR") {
+          window.location.href = "/staff-login";
+          return;
+        }
+
+        const dId = meJson.user.doctorId;
+        if (dId) {
+          const aptsRes = await fetch(`/api/appointments?doctorId=${dId}`);
+          const aptsJson = await aptsRes.json();
+          if (aptsJson.success) {
+            setAppointments(aptsJson.data || []);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching appointments:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAppointments();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">
+        Loading schedule...
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -73,9 +116,10 @@ export default function DoctorAppointmentsPage() {
             Manage your upcoming video consultations and in-person visits.
           </p>
         </div>
-        <Button className="rounded-xl">Manage Availability</Button>
+        <Button className="rounded-xl" onClick={() => window.location.href = "/doctor/availability"}>Manage Availability</Button>
       </div>
-      <DataTable columns={columns} data={mockAppointments} />
+      <DataTable columns={columns} data={appointments} />
     </div>
   );
 }
+
