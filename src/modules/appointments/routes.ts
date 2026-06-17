@@ -47,8 +47,15 @@ export async function handleGetAppointments(req: Request) {
     const date = searchParams.get("date") || undefined;
     const status = searchParams.get("status") || undefined;
     const clinicId = searchParams.get("clinicId") || undefined;
+    const paymentStatus = searchParams.get("paymentStatus") || undefined;
 
-    const list = await AppointmentService.getAppointments({ doctorId, patientId, date, status, clinicId });
+    // When fetching for a doctor's schedule, only show paid/confirmed appointments
+    const effectivePaymentStatus = doctorId && !paymentStatus ? "Paid" : paymentStatus;
+
+    const list = await AppointmentService.getAppointments({
+      doctorId, patientId, date, status, clinicId,
+      paymentStatus: effectivePaymentStatus,
+    });
     return NextResponse.json({
       success: true,
       message: "Appointments retrieved successfully.",

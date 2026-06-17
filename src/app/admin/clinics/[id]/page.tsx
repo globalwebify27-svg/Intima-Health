@@ -420,7 +420,16 @@ export default function ClinicDashboardPage({ params }: { params: Promise<{ id: 
                     <h3 className="font-semibold text-sm hover:text-primary transition-colors">{doc.name}</h3>
                     <p className="text-xs text-muted-foreground">{doc.specialization}</p>
                   </div>
-                  <Badge variant={doc.status === "Active" ? "default" : "secondary"}>
+                  <Badge
+                    className={
+                      doc.status === "Active"
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 border"
+                        : doc.status === "Pending"
+                        ? "bg-amber-500/10 text-amber-600 border-amber-500/20 border"
+                        : "bg-red-500/10 text-red-600 border-red-500/20 border"
+                    }
+                    variant="outline"
+                  >
                     {doc.status}
                   </Badge>
                 </div>

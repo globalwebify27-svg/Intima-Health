@@ -54,12 +54,18 @@ export default function DoctorDashboard() {
   }, []);
 
   const todayStr = typeof window !== "undefined" ? new Date().toLocaleDateString("en-CA") : "";
-  const todayApts = appointments.filter((a) => a.date === todayStr);
-  const completedApts = appointments.filter((a) => a.status === "Completed");
+  const currentMonth = todayStr.substring(0, 7); // e.g. "2026-06"
+  // Only show today's appointments where patient has paid
+  const todayApts = appointments.filter(
+    (a) => a.date === todayStr && a.paymentStatus === "Paid"
+  );
+  const completedApts = appointments.filter((a) => a.status === "Completed" && a.paymentStatus === "Paid");
   const pendingToday = todayApts.filter((a) => a.status === "Scheduled").length;
 
+  // Only count unique patients from completed appointments in the current month
+  const thisMonthCompleted = completedApts.filter((a) => a.date && a.date.startsWith(currentMonth));
   const uniquePatientsCount = new Set(
-    appointments.map((a) => (a.patientId?._id || a.patientId || "").toString())
+    thisMonthCompleted.map((a) => (a.patientId?._id || a.patientId || "").toString())
   ).size;
 
   const totalHours = (completedApts.length * (doctor?.slotDuration || 30)) / 60;
@@ -145,12 +151,22 @@ export default function DoctorDashboard() {
                       <p className="text-sm text-muted-foreground">{apt.type} Consult • {apt.notes || "Routine checkup"}</p>
                     </div>
                   </div>
-                  <Button 
-                    size="sm"
-                    onClick={() => window.location.href = `/doctor/consultations?appointmentId=${apt._id}`}
-                  >
-                    Start Session
-                  </Button>
+                  {apt.status === "Completed" ? (
+                    <span className="text-xs font-bold text-emerald-600 bg-emerald-500/10 px-3.5 py-1.5 rounded-xl border border-emerald-500/20">
+                      Completed
+                    </span>
+                  ) : apt.status === "Cancelled" ? (
+                    <span className="text-xs font-bold text-red-600 bg-red-500/10 px-3.5 py-1.5 rounded-xl border border-red-500/20">
+                      Cancelled
+                    </span>
+                  ) : (
+                    <Button 
+                      size="sm"
+                      onClick={() => window.location.href = `/doctor/consultations?appointmentId=${apt._id}`}
+                    >
+                      Start Session
+                    </Button>
+                  )}
                 </div>
               ))
             ) : (

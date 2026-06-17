@@ -1,0 +1,98 @@
+import { NextResponse } from "next/server";
+import { connectDB } from "@/db/connect";
+import { UserModel, hashPassword } from "@/modules/auth/schema";
+import { PatientModel } from "@/modules/patients/schema";
+import { signJwt } from "@/lib/jwt";
+import { sendWelcomeMessage } from "@/lib/whatsapp";
+
+export async function POST(req: Request) {
+  try {
+    await connectDB();
+    const { name, email, phone } = await req.json();
+
+    if (!name || !email || !phone) {
+      return NextResponse.json(
+        { success: false, message: "Name, email, and phone number are required." },
+        { status: 400 }
+      );
+    }
+
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email }).exec();
+    if (existingUser) {
+      return NextResponse.json(
+        { success: false, message: "A user with this email already exists." },
+        { status: 400 }
+      );
+    }
+
+    // Check if patient already exists by phone
+    const last10 = phone.replace(/\D/g, "").slice(-10);
+    const existingPatient = await PatientModel.findOne({ phone: new RegExp(last10 + '$') }).exec();
+    if (existingPatient) {
+      return NextResponse.json(
+        { success: false, message: "A patient with this phone number already exists." },
+        { status: 400 }
+      );
+    }
+
+    // 1. Create Patient Model
+    const patient = await PatientModel.create({
+      name,
+      email,
+      phone,
+      gender: "Male", // default
+      status: "Active"
+    });
+
+    // 2. Create User Credentials
+    const user = await UserModel.create({
+      name,
+      email,
+      passwordHash: hashPassword(Math.random().toString(36).substring(7)),
+      role: "PATIENT",
+      status: "Active",
+      patientId: patient._id
+    });
+
+    // 3. Send welcome WhatsApp message
+    await sendWelcomeMessage(patient._id.toString());
+
+    // 4. Generate JWT & sign in automatically
+    const token = signJwt({
+      userId: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      patientId: patient._id,
+    });
+
+    const response = NextResponse.json({
+      success: true,
+      message: "Registration successful.",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        patientId: patient._id,
+      },
+    });
+
+    // Set cookie
+    response.cookies.set("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 86400, // 1 day
+    });
+
+    return response;
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, message: error.message || "Registration failed." },
+      { status: 500 }
+    );
+  }
+}

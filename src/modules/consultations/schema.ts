@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 
 export interface IConsultation {
-  appointmentId: Schema.Types.ObjectId;
+  appointmentId?: Schema.Types.ObjectId;
   patientId: Schema.Types.ObjectId;
   doctorId: Schema.Types.ObjectId;
   videoChannelName?: string;
@@ -16,7 +16,7 @@ export interface IConsultation {
 }
 
 const ConsultationSchema = new Schema<IConsultation>({
-  appointmentId: { type: Schema.Types.ObjectId, ref: "Appointment", required: true },
+  appointmentId: { type: Schema.Types.ObjectId, ref: "Appointment", required: false },
   patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
   doctorId: { type: Schema.Types.ObjectId, ref: "Doctor", required: true },
   videoChannelName: { type: String },

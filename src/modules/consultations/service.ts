@@ -3,6 +3,7 @@ import { IConsultation } from "./schema";
 import { DoctorModel } from "@/modules/doctors/schema";
 import { TherapySessionModel } from "@/modules/pharmacy/schema";
 import { AppointmentModel } from "@/modules/appointments/schema";
+import { sendPrescriptionMessage } from "@/lib/whatsapp";
 
 export class ConsultationService {
   static async createConsultation(data: Partial<IConsultation>, createdBy?: string) {
@@ -48,7 +49,7 @@ export class ConsultationService {
                   name: therapy.name,
                   price: Number(therapy.price),
                   status: "Unpaid",
-                  consultationId: updated._id,
+                  consultationId: (updated as any)._id,
                 });
                 await session.save();
               }
@@ -57,6 +58,11 @@ export class ConsultationService {
             console.error("Failed to seed prescribed therapies:", e);
           }
         }
+      }
+
+      // Send digital prescription WhatsApp notification to the patient
+      if (updated.prescriptionSummary) {
+        await sendPrescriptionMessage((updated as any)._id.toString());
       }
     }
 

@@ -29,15 +29,17 @@ export class ConsultationRepository {
 
   static async list(filters: { doctorId?: string; patientId?: string; status?: string; clinicId?: string }) {
     // 1. Auto-create consultations for any scheduled appointments that don't have one
+    // Note: AppointmentModel pre("find") hook already filters deletedAt: null
     try {
-      const aptQuery: any = { status: "Scheduled", deletedAt: null };
+      // Only auto-create consultations for paid appointments
+      const aptQuery: any = { status: "Scheduled", paymentStatus: "Paid" };
       if (filters.doctorId) aptQuery.doctorId = filters.doctorId;
       if (filters.patientId) aptQuery.patientId = filters.patientId;
       if (filters.clinicId) aptQuery.clinicId = filters.clinicId;
 
       const matchingAppointments = await AppointmentModel.find(aptQuery).exec();
       for (const apt of matchingAppointments) {
-        const existing = await ConsultationModel.findOne({ appointmentId: apt._id, deletedAt: null }).exec();
+        const existing = await ConsultationModel.findOne({ appointmentId: apt._id }).exec();
         if (!existing) {
           const newConsultation = new ConsultationModel({
             appointmentId: apt._id,
@@ -54,15 +56,21 @@ export class ConsultationRepository {
       console.error("Failed to auto-create consultations for scheduled appointments:", err);
     }
 
-    const query: any = { deletedAt: null };
+    const query: any = {};
     if (filters.doctorId) query.doctorId = filters.doctorId;
     if (filters.patientId) query.patientId = filters.patientId;
     if (filters.status) query.status = filters.status;
 
     if (filters.clinicId) {
-      const appointments = await AppointmentModel.find({ clinicId: filters.clinicId }).select("_id").exec();
+      // Only include appointments where payment has been made
+      const appointments = await AppointmentModel.find({ clinicId: filters.clinicId, paymentStatus: "Paid" }).select("_id").exec();
       const appointmentIds = appointments.map(a => a._id);
       query.appointmentId = { $in: appointmentIds };
+    } else if (filters.doctorId) {
+      // For doctor-specific queries, restrict to paid appointments only
+      const paidApts = await AppointmentModel.find({ doctorId: filters.doctorId, paymentStatus: "Paid" }).select("_id").exec();
+      const paidAptIds = paidApts.map(a => a._id);
+      query.appointmentId = { $in: paidAptIds };
     }
 
     const consultations = await ConsultationModel.find(query)

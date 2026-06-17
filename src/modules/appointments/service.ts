@@ -3,6 +3,7 @@ import { DoctorRepository } from "@/modules/doctors/repository";
 import { IAppointment } from "./schema";
 import { ISlot, IBookAppointmentInput, IRescheduleInput } from "./types";
 import { BookAppointmentSchema, RescheduleAppointmentSchema } from "./validators";
+import { sendAppointmentBookingMessage } from "@/lib/whatsapp";
 
 export class AppointmentService {
   // Helper to split availability blocks into custom-min slots
@@ -121,7 +122,7 @@ export class AppointmentService {
       throw new Error("The selected time slot is already booked.");
     }
 
-    return await AppointmentRepository.create({
+    const created = await AppointmentRepository.create({
       patientId: validated.patientId as any,
       doctorId: validated.doctorId as any,
       clinicId: doctor.clinicId as any,
@@ -132,6 +133,11 @@ export class AppointmentService {
       status: "Scheduled",
       createdBy,
     });
+
+    // Send WhatsApp notification (contains appointment details and payment link)
+    await sendAppointmentBookingMessage((created as any)._id.toString());
+
+    return created;
   }
 
   // Reschedule
@@ -185,6 +191,7 @@ export class AppointmentService {
     date?: string;
     status?: string;
     clinicId?: string;
+    paymentStatus?: string;
   }) {
     return await AppointmentRepository.list(filters);
   }

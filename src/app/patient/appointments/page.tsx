@@ -12,11 +12,13 @@ interface Appointment {
   doctorId?: {
     name: string;
     specialization: string;
+    fees?: number;
   };
   date: string;
   time: string;
   type: string;
   status: string;
+  paymentStatus?: string;
 }
 
 const columns: ColumnDef<Appointment>[] = [
@@ -59,21 +61,64 @@ const columns: ColumnDef<Appointment>[] = [
     },
   },
   {
+    accessorKey: "paymentStatus",
+    header: "Payment",
+    cell: ({ row }) => {
+      const pStatus = row.original.paymentStatus || "Pending";
+      const fees = row.original.doctorId?.fees || 500;
+      return (
+        <Badge variant={pStatus === "Paid" ? "secondary" : "destructive"}>
+          {pStatus === "Paid" ? "Paid" : `Pending (₹${fees})`}
+        </Badge>
+      );
+    }
+  },
+  {
     id: "actions",
     cell: ({ row }) => {
       const type = row.getValue("type") as string;
       const status = row.getValue("status") as string;
+      const paymentStatus = row.original.paymentStatus || "Pending";
+      const appointmentId = row.original._id;
       
       if (type === "Video" && status === "Scheduled") {
-        return (
-          <Button 
-            size="sm" 
-            className="rounded-lg"
-            onClick={() => window.location.href = "/patient/consultations"}
-          >
-            Join Call <ExternalLink className="w-3 h-3 ml-2" />
-          </Button>
-        );
+        if (paymentStatus === "Paid") {
+          return (
+            <Button 
+              size="sm" 
+              className="rounded-lg"
+              onClick={() => window.location.href = "/patient/consultations"}
+            >
+              Join Call <ExternalLink className="w-3 h-3 ml-2" />
+            </Button>
+          );
+        } else {
+          return (
+            <Button 
+              size="sm" 
+              className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={async () => {
+                try {
+                  const res = await fetch(`/api/appointments/${appointmentId}/pay`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    alert("Consultation fee paid successfully! You can now join the call.");
+                    window.location.reload();
+                  } else {
+                    alert(data.message || "Payment failed.");
+                  }
+                } catch (e) {
+                  console.error(e);
+                }
+              }}
+            >
+              Pay Now
+            </Button>
+          );
+        }
       }
       return null;
     },

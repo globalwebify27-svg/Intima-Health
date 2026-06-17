@@ -90,6 +90,7 @@ function ConsultationsContent() {
   const [completing, setCompleting] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<"patient" | "notes">("notes");
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
+  const [availableServices, setAvailableServices] = useState<any[]>([]);
 
   const fetchConsultations = () => {
     setLoading(true);
@@ -124,9 +125,19 @@ function ConsultationsContent() {
             }
           })
           .catch((err) => console.error("Error fetching pharmacy products:", err));
+
+        fetch(`/api/clinic-services?clinicId=${cId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              setAvailableServices(data.data || []);
+            }
+          })
+          .catch((err) => console.error("Error fetching clinic services:", err));
       }
     } else {
       setAvailableProducts([]);
+      setAvailableServices([]);
     }
   }, [activeConsultation]);
 
@@ -219,7 +230,14 @@ function ConsultationsContent() {
     setTherapyItems(
       therapyItems.map((item, idx) => {
         if (idx === index) {
-          return { ...item, [field]: field === "price" ? Number(value) : value };
+          const updated = { ...item, [field]: field === "price" ? Number(value) : value };
+          if (field === "name") {
+            const matched = availableServices.find(s => s.name.toLowerCase() === value.toLowerCase());
+            if (matched) {
+              updated.price = matched.price;
+            }
+          }
+          return updated;
         }
         return item;
       })
@@ -643,16 +661,26 @@ function ConsultationsContent() {
                                 onChange={(e) => handleTherapyChange(index, "name", e.target.value)}
                                 className="h-8 text-xs font-semibold rounded-lg bg-background"
                                 placeholder="Couples Therapy Session"
+                                list={`therapy-suggestions-${index}`}
+                                autoComplete="off"
                               />
+                              <datalist id={`therapy-suggestions-${index}`}>
+                                {availableServices
+                                  .filter(s => s.status !== "Inactive")
+                                  .map((service) => (
+                                    <option key={service._id} value={service.name} />
+                                  ))
+                                }
+                              </datalist>
                             </div>
                             <div className="space-y-1">
                               <span className="text-[10px] uppercase font-bold text-muted-foreground">Price (₹)</span>
                               <Input
                                 type="number"
                                 value={item.price || ""}
-                                onChange={(e) => handleTherapyChange(index, "price", e.target.value)}
-                                className="h-8 text-xs rounded-lg bg-background"
-                                placeholder="1500"
+                                readOnly
+                                className="h-8 text-xs rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
+                                placeholder="Price will auto-fill"
                               />
                             </div>
                           </div>

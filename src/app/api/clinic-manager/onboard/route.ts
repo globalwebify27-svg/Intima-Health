@@ -5,6 +5,7 @@ import { verifyJwt } from "@/lib/jwt";
 import { PatientModel } from "@/modules/patients/schema";
 import { UserModel } from "@/modules/auth/schema";
 import { AppointmentService } from "@/modules/appointments/service";
+import { sendWelcomeMessage } from "@/lib/whatsapp";
 
 export async function POST(req: Request) {
   try {
@@ -29,8 +30,10 @@ export async function POST(req: Request) {
     }
 
     // 1. Onboard Patient in PatientModel
+    let isNewPatient = false;
     let patient = await PatientModel.findOne({ email }).exec();
     if (!patient) {
+      isNewPatient = true;
       patient = await PatientModel.create({
         name,
         email,
@@ -54,6 +57,11 @@ export async function POST(req: Request) {
         status: "Active",
         patientId: patient._id
       });
+    }
+
+    // Send welcome message if it is a new patient
+    if (isNewPatient) {
+      await sendWelcomeMessage(patient._id.toString());
     }
 
     // 3. Create Appointment if scheduling details are provided

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   CheckCircle2, 
@@ -14,7 +15,8 @@ import {
   ShieldCheck,
   CreditCard,
   MapPin,
-  Building2
+  Building2,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -46,7 +48,11 @@ const clinics = [
 const timeSlots = ["09:00 AM", "10:30 AM", "01:00 PM", "03:45 PM", "05:00 PM"];
 
 export default function BookingPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [formData, setFormData] = useState({
     service: "",
     city: "",
@@ -81,6 +87,33 @@ export default function BookingPage() {
     if (step === 4) return !!formData.date && !!formData.time;
     if (step === 5) return !!formData.firstName && !!formData.lastName && !!formData.email && !!formData.phone && !!formData.dob;
     return true;
+  };
+
+  const handleConfirmBooking = async () => {
+    setSubmitting(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      const res = await fetch("/api/booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.message || "Failed to submit booking.");
+      }
+
+      setSuccessMsg("Appointment booked successfully! Redirecting to dashboard...");
+      setTimeout(() => {
+        router.push("/patient/dashboard");
+      }, 1500);
+    } catch (err: any) {
+      setErrorMsg(err.message || "An error occurred.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const filteredClinics = clinics.filter(c => c.cityId === formData.city);
@@ -381,6 +414,17 @@ export default function BookingPage() {
                   <p className="text-muted-foreground text-sm mt-2">Almost there. Please review your details before confirming.</p>
                 </div>
                 
+                {successMsg && (
+                  <div className="mb-6 p-3.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 text-xs font-semibold rounded-xl border border-emerald-200/50 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-600" /> {successMsg}
+                  </div>
+                )}
+                {errorMsg && (
+                  <div className="mb-6 p-3.5 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 text-xs font-semibold rounded-xl border border-rose-200/50 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 shrink-0 text-rose-600" /> {errorMsg}
+                  </div>
+                )}
+
                 <div className="bg-muted/30 rounded-2xl p-6 border border-border space-y-4 mb-8">
                   <div className="flex justify-between items-start pb-4 border-b border-border/50">
                     <div>
@@ -419,7 +463,7 @@ export default function BookingPage() {
           {/* Navigation Buttons */}
           <div className="mt-8 pt-6 border-t border-border flex justify-between items-center">
             {step > 1 ? (
-              <Button variant="ghost" onClick={prevStep} className="rounded-full">
+              <Button variant="ghost" disabled={submitting} onClick={prevStep} className="rounded-full">
                 <ChevronLeft className="w-4 h-4 mr-2" /> Back
               </Button>
             ) : (
@@ -435,8 +479,12 @@ export default function BookingPage() {
                 Continue <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
-              <Button className="rounded-full px-8 shadow-xl bg-emerald-600 hover:bg-emerald-700 text-white group">
-                <CreditCard className="w-4 h-4 mr-2" /> Confirm & Pay
+              <Button 
+                onClick={handleConfirmBooking} 
+                disabled={submitting} 
+                className="rounded-full px-8 shadow-xl bg-emerald-600 hover:bg-emerald-700 text-white group"
+              >
+                <CreditCard className="w-4 h-4 mr-2" /> {submitting ? "Booking..." : "Confirm & Pay"}
               </Button>
             )}
           </div>

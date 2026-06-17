@@ -15,6 +15,7 @@ export class DoctorService {
 
     const doctor = await DoctorRepository.create({
       ...validatedData,
+      status: "Active", // Immediately active — credentials are issued at creation time
       createdBy,
     });
 

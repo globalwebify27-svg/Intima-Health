@@ -2,14 +2,59 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Mail, Lock, User, ShieldCheck, Eye, EyeOff } from "lucide-react";
-import Image from "next/image";
+import { ArrowRight, Mail, Lock, User, ShieldCheck, Eye, EyeOff, Phone, AlertCircle } from "lucide-react";
 
 export default function RegisterPage() {
-  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+  
+  // Input fields state
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    const payload = {
+      name: `${firstName} ${lastName}`.trim(),
+      email,
+      phone
+    };
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.message || "Registration failed.");
+      }
+
+      setSuccessMsg("Account created successfully! Logging you in...");
+      setTimeout(() => {
+        router.push("/booking");
+      }, 1500);
+    } catch (err: any) {
+      setErrorMsg(err.message || "An error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-row-reverse">
       {/* Left side (Visuals) - Hidden on mobile */}
@@ -58,7 +103,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Right side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 relative">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 relative overflow-y-auto">
         <div className="w-full max-w-[440px] space-y-8">
           
           <div className="lg:hidden mb-8 flex justify-center">
@@ -71,73 +116,84 @@ export default function RegisterPage() {
 
           <div className="space-y-3">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Create your account</h1>
-            <p className="text-muted-foreground">
-              Join thousands of men optimizing their health. It takes less than 2 minutes.
+            <p className="text-muted-foreground font-medium text-sm">
+              Join thousands of patients optimizing their health. It takes less than 2 minutes.
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {successMsg && (
+              <div className="p-3.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 text-xs font-semibold rounded-xl border border-emerald-200/50 flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-600" /> {successMsg}
+              </div>
+            )}
+            {errorMsg && (
+              <div className="p-3.5 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 text-xs font-semibold rounded-xl border border-rose-200/50 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 shrink-0 text-rose-600" /> {errorMsg}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First name</Label>
+              <div className="space-y-1">
+                <Label htmlFor="firstName" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">First name</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                   <Input 
                     id="firstName" 
                     placeholder="John" 
-                    className="pl-10 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="pl-10 h-11 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
                     required 
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last name</Label>
+              <div className="space-y-1">
+                <Label htmlFor="lastName" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Last name</Label>
                 <Input 
                   id="lastName" 
                   placeholder="Doe" 
-                  className="h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="h-11 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
                   required 
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
+            <div className="space-y-1">
+              <Label htmlFor="email" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Email address</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                 <Input 
                   id="email" 
                   placeholder="name@example.com" 
                   type="email" 
-                  className="pl-10 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 h-11 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
                   required 
                 />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Create password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                <Input 
-                  id="password" 
-                  type={showPassword ? "text" : "password"}
-                  placeholder="At least 8 characters"
-                  className="pl-10 pr-10 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
-                  required 
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
               </div>
             </div>
 
-            <Button className="w-full h-12 text-base font-bold rounded-xl shadow-sm hover:shadow-md transition-all group">
-              Create Account
+            <div className="space-y-1">
+              <Label htmlFor="phone" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">WhatsApp Number</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                <Input 
+                  id="phone" 
+                  placeholder="9876543210" 
+                  type="tel" 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="pl-10 h-11 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
+                  required 
+                />
+              </div>
+            </div>
+            <Button type="submit" disabled={loading} className="w-full h-12 text-base font-bold rounded-xl shadow-sm hover:shadow-md transition-all group mt-2">
+              {loading ? "Registering..." : "Register with WhatsApp OTP"}
               <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
             </Button>
             
@@ -149,27 +205,7 @@ export default function RegisterPage() {
             </p>
           </form>
 
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-4 text-muted-foreground font-semibold">
-                Or continue with
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" className="h-12 border-border/60 hover:bg-muted/50 font-semibold">
-              Google
-            </Button>
-            <Button variant="outline" className="h-12 border-border/60 hover:bg-muted/50 font-semibold">
-              Apple
-            </Button>
-          </div>
-
-          <p className="text-center text-sm text-muted-foreground mt-10">
+          <p className="text-center text-sm text-muted-foreground mt-6">
             Already have an account?{" "}
             <Link href="/login" className="font-bold text-primary hover:underline">
               Sign in

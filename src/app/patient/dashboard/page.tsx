@@ -12,11 +12,13 @@ interface Appointment {
     name: string;
     specialization: string;
     clinicId?: string;
+    fees?: number;
   };
   date: string;
   time: string;
   type: string;
   status: string;
+  paymentStatus?: string;
 }
 
 interface Consultation {
@@ -70,12 +72,13 @@ export default function PatientDashboard() {
 
   const fetchDashboardData = (pId: string) => {
     setLoading(true);
+    const t = Date.now();
     Promise.all([
-      fetch(`/api/appointments?patientId=${pId}`),
-      fetch(`/api/consultations?patientId=${pId}`),
-      fetch(`/api/therapy-sessions?patientId=${pId}`),
-      fetch(`/api/pharmacy/orders?patientId=${pId}`),
-      fetch(`/api/clinics`) // to resolve clinic details if needed
+      fetch(`/api/appointments?patientId=${pId}&_t=${t}`, { cache: "no-store" }),
+      fetch(`/api/consultations?patientId=${pId}&_t=${t}`, { cache: "no-store" }),
+      fetch(`/api/therapy-sessions?patientId=${pId}&_t=${t}`, { cache: "no-store" }),
+      fetch(`/api/pharmacy/orders?patientId=${pId}&_t=${t}`, { cache: "no-store" }),
+      fetch(`/api/clinics?_t=${t}`, { cache: "no-store" }) // to resolve clinic details if needed
     ])
       .then(async ([aptRes, consultRes, therapyRes, ordersRes, clinicsRes]) => {
         const aptData = await aptRes.json();
@@ -113,7 +116,7 @@ export default function PatientDashboard() {
 
   useEffect(() => {
     // Load products first
-    fetch("/api/clinics") // just warm DB
+    fetch(`/api/clinics?_t=${Date.now()}`, { cache: "no-store" }) // just warm DB
     
     fetch("/api/auth/me")
       .then((res) => res.json())
@@ -197,7 +200,25 @@ export default function PatientDashboard() {
       const data = await res.json();
       if (data.success && patientId) {
         alert("Payment processed successfully! Therapy session marked as Paid.");
-        fetchDashboardData(patientId);
+        window.location.reload();
+      } else {
+        alert(data.message || "Payment failed.");
+      }
+    } catch (err) {
+      console.error("Payment error:", err);
+    }
+  };
+
+  const handlePayAppointment = async (appointmentId: string) => {
+    try {
+      const res = await fetch(`/api/appointments/${appointmentId}/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await res.json();
+      if (data.success && patientId) {
+        alert("Consultation fee paid successfully! You can now join the consultation room.");
+        window.location.reload();
       } else {
         alert(data.message || "Payment failed.");
       }
@@ -239,6 +260,11 @@ export default function PatientDashboard() {
                 <h3 className="text-xl font-bold mb-1">{upcomingApt.doctorId?.name || "Clinician Practitioner"}</h3>
                 <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-3">{upcomingApt.doctorId?.specialization || "Wellness Expert"}</p>
                 <p className="text-sm text-muted-foreground font-medium">Video Consultation • {upcomingApt.date} at {upcomingApt.time}</p>
+                {upcomingApt.paymentStatus !== "Paid" && (
+                  <p className="text-xs text-amber-600 font-bold mt-2 flex items-center gap-1">
+                    <ShieldAlert className="w-3.5 h-3.5" /> Please pay the consultation fee to join the room.
+                  </p>
+                )}
               </>
             ) : (
               <>
@@ -248,12 +274,21 @@ export default function PatientDashboard() {
             )}
           </div>
           {upcomingApt ? (
-            <Button 
-              onClick={() => window.location.href = "/patient/consultations"} 
-              className="w-full rounded-xl h-11 font-bold mt-6 shadow-md shadow-primary/10 hover:shadow-primary/20"
-            >
-              Join Consultation Room
-            </Button>
+            upcomingApt.paymentStatus === "Paid" ? (
+              <Button 
+                onClick={() => window.location.href = "/patient/consultations"} 
+                className="w-full rounded-xl h-11 font-bold mt-6 shadow-md shadow-primary/10 hover:shadow-primary/20"
+              >
+                Join Consultation Room
+              </Button>
+            ) : (
+              <Button 
+                onClick={() => handlePayAppointment(upcomingApt._id)} 
+                className="w-full rounded-xl h-11 font-bold mt-6 bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-500/10"
+              >
+                Pay Consultation Fee (₹{upcomingApt.doctorId?.fees || 500})
+              </Button>
+            )
           ) : (
             <Button 
               onClick={() => window.location.href = "/booking"} 

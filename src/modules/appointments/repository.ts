@@ -34,6 +34,7 @@ export class AppointmentRepository {
     date?: string;
     status?: string;
     clinicId?: string;
+    paymentStatus?: string;
   }): Promise<IAppointment[]> {
     const query: Record<string, any> = { deletedAt: null };
 
@@ -42,6 +43,7 @@ export class AppointmentRepository {
     if (filters.date) query.date = filters.date;
     if (filters.status) query.status = filters.status;
     if (filters.clinicId) query.clinicId = filters.clinicId;
+    if (filters.paymentStatus) query.paymentStatus = filters.paymentStatus;
 
     return await AppointmentModel.find(query)
       .populate("patientId doctorId clinicId")

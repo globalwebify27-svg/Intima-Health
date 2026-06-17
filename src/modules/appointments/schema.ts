@@ -8,6 +8,7 @@ export interface IAppointment {
   time: string; // e.g. "10:00 AM"
   type: "Video" | "In-person";
   status: "Scheduled" | "Completed" | "Cancelled";
+  paymentStatus?: "Pending" | "Paid";
   notes?: string;
   createdBy?: string;
   updatedBy?: string;
@@ -22,6 +23,7 @@ const AppointmentSchema = new Schema<IAppointment>({
   time: { type: String, required: true },
   type: { type: String, enum: ["Video", "In-person"], required: true },
   status: { type: String, enum: ["Scheduled", "Completed", "Cancelled"], default: "Scheduled" },
+  paymentStatus: { type: String, enum: ["Pending", "Paid"], default: "Pending" },
   notes: { type: String },
   createdBy: { type: String },
   updatedBy: { type: String },
@@ -37,5 +39,10 @@ AppointmentSchema.pre("find", function() {
 AppointmentSchema.pre("findOne", function() {
   this.where({ deletedAt: null });
 });
+
+// Force Mongoose to recompile the model with the updated schema definition
+if (mongoose.models.Appointment) {
+  delete (mongoose.models as any).Appointment;
+}
 
 export const AppointmentModel = mongoose.models.Appointment || mongoose.model<IAppointment>("Appointment", AppointmentSchema);
