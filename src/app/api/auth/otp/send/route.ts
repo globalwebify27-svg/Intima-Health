@@ -48,7 +48,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "OTP sent successfully via WhatsApp."
+      message: "OTP sent successfully via WhatsApp.",
+      code // Included for developer testing/popup
     });
   } catch (error: any) {
     return NextResponse.json(

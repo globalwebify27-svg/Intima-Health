@@ -29,6 +29,9 @@ export default function LoginPage() {
       const data = await res.json();
       if (data.success) {
         setStep('otp');
+        if (data.code) {
+          alert(`[Test OTP Code]: ${data.code}\n(This popup is for developer/testing convenience)`);
+        }
       } else {
         throw new Error(data.message || "Failed to send OTP.");
       }
