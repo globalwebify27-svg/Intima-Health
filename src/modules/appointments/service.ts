@@ -58,7 +58,23 @@ export class AppointmentService {
 
     // Get active bookings
     const bookings = await AppointmentRepository.findBookedAppointments(doctorId, dateStr);
-    const bookedTimes = new Set(bookings.map(b => b.time));
+    const bookedTimes = new Set(bookings.map(b => {
+      const t = b.time.trim();
+      if (t.includes(" AM") || t.includes(" PM") || t.includes(" am") || t.includes(" pm")) {
+        const [timePart, modifier] = t.split(/\s+/);
+        let [hours, minutes] = timePart.split(":");
+        if (hours === "12") hours = "00";
+        if (modifier.toUpperCase() === "PM") {
+          hours = String(parseInt(hours, 10) + 12);
+        }
+        return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
+      }
+      if (t.includes(":")) {
+        const parts = t.split(":");
+        return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
+      }
+      return t;
+    }));
 
     // Construct slot objects
     let slots = potentialStartTimes.map(time => {

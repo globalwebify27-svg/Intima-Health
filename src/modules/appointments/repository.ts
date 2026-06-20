@@ -20,12 +20,17 @@ export class AppointmentRepository {
   }
 
   static async findBookedAppointments(doctorId: string, date: string): Promise<IAppointment[]> {
-    return await AppointmentModel.find({
+    const allDocAppointments = await AppointmentModel.find({
       doctorId,
-      date,
       status: { $ne: "Cancelled" },
       deletedAt: null,
     }).exec();
+
+    const targetDateNormalized = date.split("T")[0];
+    return allDocAppointments.filter(apt => {
+      const aptDateNormalized = apt.date.split("T")[0];
+      return aptDateNormalized === targetDateNormalized;
+    });
   }
 
   static async list(filters: {
