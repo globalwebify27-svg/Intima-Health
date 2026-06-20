@@ -20,16 +20,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Invalid phone number format." }, { status: 400 });
     }
 
-    // Find patient profile
-    const patient = await PatientModel.findOne({ 
-      phone: new RegExp(last10 + '$') 
+    // Find patient profile — auto-create if new number
+    let patient = await PatientModel.findOne({
+      phone: new RegExp(last10 + '$')
     }).exec();
 
+    let isNewPatient = false;
+
     if (!patient) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "No patient profile found with this WhatsApp number. Please contact clinic support." 
-      }, { status: 404 });
+      // Auto-create a minimal patient profile for self-registration
+      patient = await PatientModel.create({
+        name: `Patient ${last10.slice(-4)}`, // placeholder name, updated later in profile
+        email: `${last10}@intima.app`,       // placeholder email, updated later
+        phone: last10,
+        gender: "Prefer not to say",
+        status: "Active",
+      });
+      isNewPatient = true;
+      console.log(`[Auto-Registration] Created new patient profile for +91 ${last10}`);
     }
 
     // Generate 6-digit OTP
@@ -48,8 +56,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "OTP sent successfully via WhatsApp.",
-      code // Included for developer testing/popup
+      message: isNewPatient
+        ? "New account created. OTP sent via WhatsApp."
+        : "OTP sent successfully via WhatsApp.",
+      code,          // for developer testing
+      isNewPatient,  // Flutter uses this to route to profile completion
     });
   } catch (error: any) {
     return NextResponse.json(

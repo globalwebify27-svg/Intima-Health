@@ -8,24 +8,26 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const clinicId = searchParams.get("clinicId");
 
-    if (!clinicId) {
-      return NextResponse.json({ success: false, message: "clinicId is required" }, { status: 400 });
+    const filter: any = { deletedAt: null };
+    if (clinicId) {
+      filter.clinicId = clinicId;
     }
 
-    let products = await ProductModel.find({ clinicId, deletedAt: null }).exec();
+    let products = await ProductModel.find(filter).exec();
 
-    // Auto-seed if clinic has no products yet
+    // Auto-seed if no products exist
     if (products.length === 0) {
+      const defaultClinicId = clinicId || "default-clinic-id";
       const defaultProducts = [
-        { name: "Paracetamol 500mg", category: "Analgesic", price: 40, stock: 120, status: "In Stock", clinicId },
-        { name: "Amoxicillin 250mg", category: "Antibiotic", price: 150, stock: 45, status: "In Stock", clinicId },
-        { name: "Cetirizine 10mg", category: "Antihistamine", price: 30, stock: 80, status: "In Stock", clinicId },
-        { name: "Ibuprofen 400mg", category: "NSAID", price: 50, stock: 10, status: "Low Stock", clinicId },
-        { name: "Cough Syrup 100ml", category: "Antitussive", price: 90, stock: 0, status: "Out of Stock", clinicId },
-        { name: "Multivitamin Tablets", category: "Supplements", price: 120, stock: 200, status: "In Stock", clinicId },
+        { name: "Paracetamol 500mg", category: "Analgesic", price: 40, stock: 120, status: "In Stock", clinicId: defaultClinicId },
+        { name: "Amoxicillin 250mg", category: "Antibiotic", price: 150, stock: 45, status: "In Stock", clinicId: defaultClinicId },
+        { name: "Cetirizine 10mg", category: "Antihistamine", price: 30, stock: 80, status: "In Stock", clinicId: defaultClinicId },
+        { name: "Ibuprofen 400mg", category: "NSAID", price: 50, stock: 10, status: "Low Stock", clinicId: defaultClinicId },
+        { name: "Cough Syrup 100ml", category: "Antitussive", price: 90, stock: 0, status: "Out of Stock", clinicId: defaultClinicId },
+        { name: "Multivitamin Tablets", category: "Supplements", price: 120, stock: 200, status: "In Stock", clinicId: defaultClinicId },
       ];
       await ProductModel.insertMany(defaultProducts);
-      products = await ProductModel.find({ clinicId, deletedAt: null }).exec();
+      products = await ProductModel.find(filter).exec();
     }
 
     return NextResponse.json({

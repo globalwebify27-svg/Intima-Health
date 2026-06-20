@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { connectDB } from "@/db/connect";
-import { verifyJwt } from "@/lib/jwt";
+import { verifyJwt, getAuthToken } from "@/lib/jwt";
 import { PatientModel } from "@/modules/patients/schema";
 import { DoctorRepository } from "@/modules/doctors/repository";
 import { ConsultationModel } from "@/modules/consultations/schema";
@@ -13,8 +13,7 @@ import { AppointmentModel } from "@/modules/appointments/schema";
 export async function GET(req: Request) {
   try {
     await connectDB();
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
+    const token = await getAuthToken(req);
     if (!token) return NextResponse.json({ success: false, message: "Not authenticated." }, { status: 401 });
 
     const payload = verifyJwt(token);
@@ -79,8 +78,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
+    const token = await getAuthToken(req);
     if (!token) return NextResponse.json({ success: false, message: "Not authenticated." }, { status: 401 });
 
     const payload = verifyJwt(token);

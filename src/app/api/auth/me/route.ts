@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { verifyJwt } from "@/lib/jwt";
+import { verifyJwt, getAuthToken } from "@/lib/jwt";
 import { connectDB } from "@/db/connect";
 import { PatientModel } from "@/modules/patients/schema";
 import { DoctorRepository } from "@/modules/doctors/repository";
 import { UserModel } from "@/modules/auth/schema";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
+    const token = await getAuthToken(req);
 
     if (!token) {
       return NextResponse.json(

@@ -72,3 +72,20 @@ export function verifyJwt(token: string): any | null {
     return null;
   }
 }
+
+import { cookies } from "next/headers";
+
+export async function getAuthToken(req: Request): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    if (token) return token;
+  } catch {}
+
+  const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.substring(7);
+  }
+  return null;
+}
+
