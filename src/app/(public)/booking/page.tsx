@@ -125,7 +125,7 @@ export default function BookingPage() {
     if (step === 3) return !!formData.clinic;
     if (step === 4) return !!formData.doctorId;
     if (step === 5) return !!formData.date && !!formData.time;
-    if (step === 6) return !!formData.firstName && !!formData.lastName && !!formData.email && !!formData.phone && !!formData.dob;
+    if (step === 6) return !!formData.firstName && !!formData.lastName && !!formData.email && !!formData.phone;
     return true;
   };
 
@@ -193,10 +193,8 @@ export default function BookingPage() {
         throw new Error(payData.message || "Failed to process appointment payment.");
       }
 
-      setSuccessMsg("Appointment booked and paid successfully! Redirecting...");
-      setTimeout(() => {
-        router.push("/patient/dashboard");
-      }, 1500);
+      setSuccessMsg("Appointment booked and paid successfully!");
+      setWhatsappMsg(payData.whatsappMessage || "Your appointment has been scheduled and confirmed.");
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred.");
     } finally {
@@ -260,7 +258,7 @@ export default function BookingPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="flex-1"
+                className="flex-1 animate-in fade-in duration-300"
               >
                 <h2 className="text-2xl font-serif mb-6">Select Service Type</h2>
                 <div className="space-y-4">
@@ -297,14 +295,14 @@ export default function BookingPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="flex-1"
+                className="flex-1 animate-in fade-in duration-300"
               >
-                <h2 className="text-2xl font-serif mb-6">Choose a City</h2>
+                <h2 className="text-2xl font-serif mb-6">Choose Your City</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {loadingClinics ? (
-                    <div className="col-span-3 py-8 text-center text-xs text-muted-foreground">Loading cities...</div>
+                    <div className="col-span-3 py-8 text-center text-sm text-muted-foreground">Loading cities...</div>
                   ) : derivedCities.length === 0 ? (
-                    <div className="col-span-3 py-8 text-center text-xs text-muted-foreground">No clinic locations found.</div>
+                    <div className="col-span-3 py-8 text-center text-sm text-muted-foreground">No clinic locations found.</div>
                   ) : (
                     derivedCities.map((city) => (
                       <button
@@ -337,9 +335,9 @@ export default function BookingPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="flex-1"
+                className="flex-1 animate-in fade-in duration-300"
               >
-                <h2 className="text-2xl font-serif mb-6">Select a Clinic in {derivedCities.find(c => c.id === formData.city)?.name || "selected city"}</h2>
+                <h2 className="text-2xl font-serif mb-6">Select Clinic Location</h2>
                 <div className="space-y-4">
                   {filteredClinics.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No clinics registered in this city.</p>
@@ -377,44 +375,34 @@ export default function BookingPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="flex-1"
+                className="flex-1 animate-in fade-in duration-300"
               >
                 <h2 className="text-2xl font-serif mb-6">Choose Your Doctor</h2>
-                {loadingDocs ? (
-                  <div className="py-12 text-center text-muted-foreground">Loading available doctors...</div>
-                ) : displayDoctors.length === 0 ? (
-                  <div className="py-12 text-center text-muted-foreground">No doctors registered in this clinic.</div>
-                ) : (
-                  <div className="space-y-4">
-                    {displayDoctors.map((doc) => (
+                <div className="space-y-4">
+                  {loadingDocs ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">Loading available doctors...</div>
+                  ) : displayDoctors.length === 0 ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">No doctors registered in this clinic.</div>
+                  ) : (
+                    displayDoctors.map((doc) => (
                       <button
                         key={doc._id}
                         onClick={() => updateForm('doctorId', doc._id)}
-                        className={`w-full p-6 rounded-2xl border-2 text-left transition-all flex items-center gap-5 ${
+                        className={`w-full flex items-center p-6 rounded-2xl border-2 text-left transition-all ${
                           formData.doctorId === doc._id 
                             ? "border-primary bg-primary/5 shadow-md" 
                             : "border-border hover:border-primary/40 hover:bg-muted"
                         }`}
                       >
-                        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl shrink-0">
-                          {doc.name.split(' ').pop()?.[0]}
-                        </div>
                         <div className="flex-1">
                           <h3 className="text-lg font-semibold">{doc.name}</h3>
-                          <p className="text-sm text-muted-foreground">{doc.specialization} • {doc.experience} yrs experience</p>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{doc.bio}</p>
+                          <p className="text-muted-foreground text-sm">{doc.specialization} • {doc.experience} yrs exp</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-primary">₹{doc.fees}</p>
-                          <div className="flex items-center gap-1 mt-1 justify-end">
-                            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                            <span className="text-xs font-bold">5.0</span>
-                          </div>
-                        </div>
+                        <div className="font-bold text-lg text-primary">₹{doc.fees}</div>
                       </button>
-                    ))}
-                  </div>
-                )}
+                    ))
+                  )}
+                </div>
               </motion.div>
             )}
 
@@ -425,7 +413,7 @@ export default function BookingPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="flex-1"
+                className="flex-1 animate-in fade-in duration-300"
               >
                 <h2 className="text-2xl font-serif mb-6">Select Date & Time</h2>
                 
@@ -455,7 +443,7 @@ export default function BookingPage() {
                             onClick={() => updateForm('time', time)}
                             className={`py-3 px-4 rounded-xl border transition-all text-sm font-medium ${
                               formData.time === time 
-                                ? "bg-primary text-primary-foreground" 
+                                ? "bg-primary text-primary-foreground border-primary shadow-md" 
                                 : "bg-background border-border hover:border-primary/50 text-foreground"
                             }`}
                           >
@@ -476,68 +464,92 @@ export default function BookingPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="flex-1"
+                className="flex-1 animate-in fade-in duration-300"
               >
-                <h2 className="text-2xl font-serif mb-4">Patient Details & Secure Booking</h2>
-                
-                {successMsg && (
-                  <div className="mb-6 p-4 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 text-sm font-semibold rounded-xl border border-emerald-200/50 flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-600" /> {successMsg}
+                {whatsappMsg ? (
+                  <div className="space-y-6 text-center py-6">
+                    <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-500 mb-2 shadow-inner">
+                      <CheckCircle2 className="w-12 h-12" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-2xl font-bold font-serif text-foreground">Booking Confirmed!</h3>
+                      <p className="text-sm text-muted-foreground">Your appointment has been successfully scheduled and paid.</p>
+                    </div>
+                    <div className="border border-primary/25 bg-gradient-to-br from-primary/5 to-purple-500/5 rounded-[2rem] p-6 space-y-4 max-w-md mx-auto shadow-sm text-left">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <span className="text-xs font-bold uppercase tracking-widest text-primary bg-primary/10 px-3.5 py-1 rounded-full">Patient Account Created</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed text-center">
+                        We've automatically created your patient profile. Your login credentials and receipt have been dispatched to your registered WhatsApp number.
+                      </p>
+                      <div className="h-px bg-border/50 my-2" />
+                      <div className="space-y-2">
+                        <p className="text-xs font-bold text-foreground">📲 Get the Mobile App</p>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          Download our mobile app to track your appointment history, view digital prescriptions, and join your video consultations directly.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                )}
-                {errorMsg && (
-                  <div className="mb-6 p-4 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 text-sm font-semibold rounded-xl border border-rose-200/50 flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5 shrink-0 text-rose-600" /> {errorMsg}
-                  </div>
-                )}
+                ) : (
+                  <>
+                    <h2 className="text-2xl font-serif mb-6">Patient Details</h2>
+                    
+                    {errorMsg && (
+                      <div className="mb-4 p-3 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 text-xs font-semibold rounded-xl border border-rose-200/50 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" /> {errorMsg}
+                      </div>
+                    )}
 
-                <div className="space-y-6">
-                  {/* Patient Info Fields */}
-                  <div className="border border-border rounded-[1.5rem] p-5 bg-muted/20 space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Patient Information</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <input 
-                        type="text" 
-                        value={formData.firstName}
-                        onChange={(e) => updateForm('firstName', e.target.value)}
-                        className="bg-background border border-border rounded-xl px-4 py-2.5 text-sm" 
-                        placeholder="First Name" 
-                      />
-                      <input 
-                        type="text" 
-                        value={formData.lastName}
-                        onChange={(e) => updateForm('lastName', e.target.value)}
-                        className="bg-background border border-border rounded-xl px-4 py-2.5 text-sm" 
-                        placeholder="Last Name" 
-                      />
+                    <div className="space-y-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">First Name</label>
+                          <input 
+                            type="text" 
+                            value={formData.firstName}
+                            onChange={(e) => updateForm('firstName', e.target.value)}
+                            className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm" 
+                            placeholder="John" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Last Name</label>
+                          <input 
+                            type="text" 
+                            value={formData.lastName}
+                            onChange={(e) => updateForm('lastName', e.target.value)}
+                            className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm" 
+                            placeholder="Doe" 
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Email Address</label>
+                          <input 
+                            type="email" 
+                            value={formData.email}
+                            onChange={(e) => updateForm('email', e.target.value)}
+                            className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm" 
+                            placeholder="john@example.com" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">WhatsApp Number</label>
+                          <input 
+                            type="tel" 
+                            value={formData.phone}
+                            onChange={(e) => updateForm('phone', e.target.value)}
+                            className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm" 
+                            placeholder="WhatsApp Number" 
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <input 
-                        type="email" 
-                        value={formData.email}
-                        onChange={(e) => updateForm('email', e.target.value)}
-                        className="bg-background border border-border rounded-xl px-4 py-2.5 text-sm" 
-                        placeholder="Email Address" 
-                      />
-                      <input 
-                        type="tel" 
-                        value={formData.phone}
-                        onChange={(e) => updateForm('phone', e.target.value)}
-                        className="bg-background border border-border rounded-xl px-4 py-2.5 text-sm" 
-                        placeholder="WhatsApp Number" 
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Date of Birth</label>
-                      <input 
-                        type="date" 
-                        value={formData.dob}
-                        onChange={(e) => updateForm('dob', e.target.value)}
-                        className="bg-background border border-border rounded-xl px-4 py-2.5 text-sm w-full" 
-                      />
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </motion.div>
             )}
             
