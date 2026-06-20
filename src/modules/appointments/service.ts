@@ -135,7 +135,9 @@ export class AppointmentService {
     });
 
     // Send WhatsApp notification (contains appointment details and payment link)
-    await sendAppointmentBookingMessage((created as any)._id.toString());
+    if (!input.skipNotification) {
+      await sendAppointmentBookingMessage((created as any)._id.toString());
+    }
 
     return created;
   }

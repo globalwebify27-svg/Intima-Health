@@ -50,7 +50,7 @@ export async function sendWelcomeMessage(patientId: string) {
     const patient = await PatientModel.findById(patientId).exec();
     if (!patient || !patient.phone) return;
 
-    const welcomeMsg = `Welcome to Intima Health, ${patient.name}! 🌟 Your patient profile has been created successfully. You can log in to your patient portal using your WhatsApp number at http://localhost:3000/login`;
+    const welcomeMsg = `Welcome to Intima Health, ${patient.name}! 🌟 Your patient profile has been created successfully. You can log in to your patient portal using your WhatsApp number at http://localhost:3000/login or download and log in to our Mobile App using your phone number to access all your details. App Link: https://intima.health/download-app`;
     
     await sendWhatsAppMessage({
       recipientId: patient._id.toString(),
@@ -63,7 +63,7 @@ export async function sendWelcomeMessage(patientId: string) {
   }
 }
 
-export async function sendAppointmentBookingMessage(appointmentId: string) {
+export async function sendAppointmentBookingMessage(appointmentId: string, isPaid = false) {
   try {
     // We fetch patient, doctor, and clinic details to construct a customized message
     const patientModel = await PatientModel.db.model("Appointment"); // Ensure Appointment schema is loaded
@@ -89,12 +89,23 @@ export async function sendAppointmentBookingMessage(appointmentId: string) {
     const docFees = doctor?.fees || 500;
     const paymentLink = `http://localhost:3000/checkout?appointmentId=${appointmentId}`;
     
-    const message = `Hello ${patient.name}, your appointment with Dr. ${doctor?.name || "our specialist"} is confirmed! 🗓️\n\n` +
-      `Date: ${appointment.date}\n` +
-      `Time: ${appointment.time}\n` +
-      `Type: ${appointment.type}\n` +
-      `Clinic: ${clinicName}\n\n` +
-      `Please complete your consultation fee payment of ₹${docFees} using this secure link: ${paymentLink} or pay via your dashboard: http://localhost:3000/patient/dashboard`;
+    let message = "";
+    if (isPaid) {
+      message = `Hello ${patient.name}, your appointment with Dr. ${doctor?.name || "our specialist"} is confirmed! 🗓️\n\n` +
+        `Date: ${appointment.date}\n` +
+        `Time: ${appointment.time}\n` +
+        `Type: ${appointment.type}\n` +
+        `Clinic: ${clinicName}\n\n` +
+        `Your consultation fee of ₹${docFees} has been paid successfully. ✅\n\n` +
+        `To access all your details, prescriptions, and join video consultations, download our Mobile App: https://intima.health/download-app or visit http://localhost:3000/patient/dashboard`;
+    } else {
+      message = `Hello ${patient.name}, your appointment with Dr. ${doctor?.name || "our specialist"} is confirmed! 🗓️\n\n` +
+        `Date: ${appointment.date}\n` +
+        `Time: ${appointment.time}\n` +
+        `Type: ${appointment.type}\n` +
+        `Clinic: ${clinicName}\n\n` +
+        `Please complete your consultation fee payment of ₹${docFees} using this secure link: ${paymentLink} or pay via your dashboard: http://localhost:3000/patient/dashboard`;
+    }
 
     await sendWhatsAppMessage({
       recipientId: patient._id.toString(),

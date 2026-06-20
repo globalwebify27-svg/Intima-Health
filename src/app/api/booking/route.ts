@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     await connectDB();
     const body = await req.json();
     const { 
-      service, city, clinic, date, time, 
+      service, city, clinic, doctorId, date, time, 
       firstName, lastName, email, phone, dob 
     } = body;
 
@@ -53,7 +53,13 @@ export async function POST(req: Request) {
     }
 
     // 3. Find doctor for the clinic/service
-    let doctor = await DoctorModel.findOne({ clinicId: clinic, status: "Active" }).exec();
+    let doctor = null;
+    if (doctorId) {
+      doctor = await DoctorModel.findById(doctorId).exec();
+    }
+    if (!doctor) {
+      doctor = await DoctorModel.findOne({ clinicId: clinic, status: "Active" }).exec();
+    }
     if (!doctor) {
       doctor = await DoctorModel.findOne({ status: "Active" }).exec();
     }
@@ -82,7 +88,8 @@ export async function POST(req: Request) {
       date,
       time: formattedTime,
       type: service === "consultation" ? "Video" : "In-person",
-      notes: "Booked directly through public website booking form."
+      notes: "Booked directly through public website booking form.",
+      skipNotification: true
     }, email);
 
     // 5. Generate JWT & sign in automatically

@@ -35,6 +35,7 @@ interface StaffData {
     slots: Array<{ start: string; end: string }>;
   }>;
   qualifications?: string[];
+  conditions?: string[];
 }
 
 export default function StaffDirectoryPage() {
@@ -62,6 +63,7 @@ export default function StaffDirectoryPage() {
   const [fees, setFees] = useState("");
   const [bio, setBio] = useState("");
   const [qualificationsText, setQualificationsText] = useState("");
+  const [conditionsText, setConditionsText] = useState("");
   const [availability, setAvailability] = useState<Array<{ day: string; slots: Array<{ start: string; end: string }> }>>([]);
 
   // Time Slot Builder Form state
@@ -133,6 +135,7 @@ export default function StaffDirectoryPage() {
     setFees("");
     setBio("");
     setQualificationsText("");
+    setConditionsText("");
     setAvailability([]);
     setSubmitError("");
     setSuccessMsg("");
@@ -167,6 +170,7 @@ export default function StaffDirectoryPage() {
         bio: bio || undefined,
         fees: fees ? Number(fees) : undefined,
         qualifications: qualificationsText ? qualificationsText.split(",").map(q => q.trim()).filter(Boolean) : ["MD"],
+        conditions: conditionsText ? conditionsText.split(",").map(c => c.trim().toLowerCase()).filter(Boolean) : [],
         availability,
       };
     }
@@ -215,6 +219,7 @@ export default function StaffDirectoryPage() {
       setFees(String(member.fees || ""));
       setBio(member.bio || "");
       setQualificationsText(member.qualifications?.join(", ") || "");
+      setConditionsText(member.conditions?.join(", ") || "");
       setAvailability(member.availability || []);
     }
 
@@ -551,6 +556,18 @@ export default function StaffDirectoryPage() {
                           value={qualificationsText}
                           onChange={(e) => setQualificationsText(e.target.value)}
                           placeholder="MD - Sexual Medicine, Fellowship in Sexual Health"
+                          className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="space-y-1 sm:col-span-2">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Conditions Treated (Comma-separated, e.g. ed, pe, low-libido, sti, fertility, couples) *</label>
+                        <input
+                          type="text"
+                          required
+                          value={conditionsText}
+                          onChange={(e) => setConditionsText(e.target.value)}
+                          placeholder="ed, pe, low-libido, sti, fertility, couples"
                           className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                         />
                       </div>

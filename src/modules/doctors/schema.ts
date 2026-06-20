@@ -26,6 +26,7 @@ const DoctorSchema = new Schema<IDoctor>({
   qualifications: [{ type: String }],
   availability: [DayAvailabilitySchema],
   slotDuration: { type: Number, default: 30 },
+  conditions: [{ type: String }],
   status: { type: String, enum: ["Active", "Inactive", "Pending"], default: "Pending" },
   createdBy: { type: String },
   updatedBy: { type: String },

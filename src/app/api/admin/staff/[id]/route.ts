@@ -74,6 +74,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
           if (doctorDetails.fees !== undefined) doctor.fees = Number(doctorDetails.fees);
           if (doctorDetails.qualifications) doctor.qualifications = doctorDetails.qualifications;
           if (doctorDetails.availability) doctor.availability = doctorDetails.availability;
+          if (doctorDetails.conditions) doctor.conditions = doctorDetails.conditions;
         }
         await doctor.save();
       }

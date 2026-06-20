@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/store/useCart";
 import { ShoppingBag, Menu, X, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useBookingModal } from "@/store/useBookingModal";
 
 const ListItem = React.forwardRef<
   React.ElementRef<typeof Link>,
@@ -46,6 +47,7 @@ ListItem.displayName = "ListItem";
 export function Header() {
   const router = useRouter();
   const { openCart, items } = useCart();
+  const { openBooking } = useBookingModal();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const cartItemCount = items.reduce((total, item) => total + item.quantity, 0);
   
@@ -171,7 +173,14 @@ export function Header() {
                     <ListItem href="/doctors" title="Meet the Team">
                       View our board-certified experts.
                     </ListItem>
-                    <ListItem href="/booking" title="Book Appointment">
+                    <ListItem 
+                      href="#" 
+                      title="Book Appointment"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openBooking();
+                      }}
+                    >
                       Schedule a secure video consultation.
                     </ListItem>
                   </ul>
@@ -231,9 +240,12 @@ export function Header() {
             <Link href="/login" className="text-sm font-semibold text-foreground/80 hover:text-primary transition-colors">
               Log in
             </Link>
-            <Link href="/booking" className={cn(buttonVariants({ size: "lg" }), "rounded-full px-6 py-5 text-sm font-semibold shadow-sm hover:shadow-md transition-all")}>
+            <button 
+              onClick={openBooking}
+              className={cn(buttonVariants({ size: "lg" }), "rounded-full px-6 py-3 text-sm font-semibold shadow-sm hover:shadow-md transition-all")}
+            >
               Get Started
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -304,7 +316,15 @@ export function Header() {
 
                 <MobileNavGroup title="Our Experts">
                   <Link href="/doctors" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Meet the Team</Link>
-                  <Link href="/booking" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Book Appointment</Link>
+                  <button 
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      openBooking();
+                    }} 
+                    className="py-2 hover:text-primary text-left transition-colors"
+                  >
+                    Book Appointment
+                  </button>
                 </MobileNavGroup>
 
                 <MobileNavGroup title="Resources">
@@ -322,11 +342,15 @@ export function Header() {
                   Log In
                 </Button>
               </Link>
-              <Link href="/booking" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button className="w-full rounded-full py-6 text-base">
-                  Get Started
-                </Button>
-              </Link>
+              <button 
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  openBooking();
+                }}
+                className={cn(buttonVariants(), "w-full rounded-full py-6 text-base font-semibold shadow-sm hover:shadow-md transition-all")}
+              >
+                Get Started
+              </button>
             </div>
           </motion.div>
         </>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -16,36 +16,30 @@ import {
   CreditCard,
   MapPin,
   Building2,
-  AlertCircle
+  AlertCircle,
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Mock Data
+// Data
 const services = [
   { id: "consultation", title: "Online Consultation", icon: Video, description: "15-min video call with a specialist", price: "₹999" },
   { id: "therapy", title: "Sex Therapy", icon: HeartHandshake, description: "50-min psychological counseling", price: "₹2,499" },
-  { id: "diagnostics", title: "At-Home Diagnostics", icon: FlaskConical, description: "Order a clinical lab testing kit", price: "Varies" }
-];
-
-const cities = [
-  { id: "pune", name: "Pune", description: "Maharashtra's premium wellness hub" },
-  { id: "mumbai", name: "Mumbai", description: "Bandra and Andheri luxury centers" },
-  { id: "delhi", name: "New Delhi", description: "Vasant Vihar clinical flagship" }
-];
-
-const clinics = [
-  // Pune
-  { id: "pune-kalyani", name: "Kalyani Nagar Care Center", cityId: "pune", address: "102 Kalyani Nagar, Pune" },
-  { id: "pune-main", name: "Pune Intimacy Clinic", cityId: "pune", address: "Sector 4, Koregaon Park, Pune" },
-  // Mumbai
-  { id: "mumbai-bandra", name: "Bandra Premium Clinic", cityId: "mumbai", address: "Linking Road, Bandra West, Mumbai" },
-  { id: "mumbai-andheri", name: "Andheri Health Center", cityId: "mumbai", address: "Lokhandwala, Andheri West, Mumbai" },
-  // Delhi
-  { id: "delhi-vasant", name: "Vasant Vihar Premium Clinic", cityId: "delhi", address: "Vasant Vihar, New Delhi" },
-  { id: "delhi-cp", name: "Connaught Place Clinic", cityId: "delhi", address: "Radial Road, Connaught Place, New Delhi" }
+  { id: "walk_in", title: "Walk-in Consultation", icon: Building2, description: "In-person visit to our premium clinic", price: "₹1,499" }
 ];
 
 const timeSlots = ["09:00 AM", "10:30 AM", "01:00 PM", "03:45 PM", "05:00 PM"];
+
+interface Doctor {
+  _id: string;
+  name: string;
+  specialization: string;
+  experience: number;
+  fees: number;
+  bio: string;
+  rating?: number;
+  conditions?: string[];
+}
 
 export default function BookingPage() {
   const router = useRouter();
@@ -53,18 +47,60 @@ export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  
+  const [doctorsList, setDoctorsList] = useState<Doctor[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [clinicsList, setClinicsList] = useState<any[]>([]);
+  const [loadingClinics, setLoadingClinics] = useState(false);
+
   const [formData, setFormData] = useState({
     service: "",
     city: "",
     clinic: "",
+    doctorId: "",
     date: "",
     time: "",
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
-    dob: ""
+    dob: "",
+    // payment card mock fields
+    cardName: "",
+    cardNumber: "",
+    cardExpiry: "",
+    cardCvv: ""
   });
+
+  // Fetch clinics list on mount
+  useEffect(() => {
+    setLoadingClinics(true);
+    fetch("/api/clinics")
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && json.data) {
+          setClinicsList(json.data);
+        }
+      })
+      .catch(err => console.error("Error loading clinics:", err))
+      .finally(() => setLoadingClinics(false));
+  }, []);
+
+  // Fetch doctors list when clinic is selected
+  useEffect(() => {
+    if (formData.clinic) {
+      setLoadingDocs(true);
+      fetch(`/api/doctors?clinicId=${formData.clinic}`)
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && json.data) {
+            setDoctorsList(json.data);
+          }
+        })
+        .catch(err => console.error("Error loading doctors:", err))
+        .finally(() => setLoadingDocs(false));
+    }
+  }, [formData.clinic]);
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 6));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -72,9 +108,12 @@ export default function BookingPage() {
   const updateForm = (key: string, value: string) => {
     setFormData(prev => {
       const updated = { ...prev, [key]: value };
-      // Reset dependent fields if city changes
       if (key === "city") {
         updated.clinic = "";
+        updated.doctorId = "";
+      }
+      if (key === "clinic") {
+        updated.doctorId = "";
       }
       return updated;
     });
@@ -84,10 +123,47 @@ export default function BookingPage() {
     if (step === 1) return !!formData.service;
     if (step === 2) return !!formData.city;
     if (step === 3) return !!formData.clinic;
-    if (step === 4) return !!formData.date && !!formData.time;
-    if (step === 5) return !!formData.firstName && !!formData.lastName && !!formData.email && !!formData.phone && !!formData.dob;
+    if (step === 4) return !!formData.doctorId;
+    if (step === 5) return !!formData.date && !!formData.time;
+    if (step === 6) return !!formData.firstName && !!formData.lastName && !!formData.email && !!formData.phone && !!formData.dob;
     return true;
   };
+
+  const getAvailableTimeSlots = () => {
+    if (!formData.date) return timeSlots;
+    const todayStr = new Date().toLocaleDateString('en-CA');
+    if (formData.date !== todayStr) {
+      return timeSlots;
+    }
+    const now = new Date();
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+    return timeSlots.filter(slot => {
+      const [timePart, modifier] = slot.split(" ");
+      let [hoursStr, minutesStr] = timePart.split(":");
+      let hours = parseInt(hoursStr, 10);
+      const minutes = parseInt(minutesStr, 10);
+      if (hours === 12) {
+        hours = 0;
+      }
+      if (modifier === "PM") {
+        hours += 12;
+      }
+      if (hours > currentHours) return true;
+      if (hours === currentHours && minutes > currentMinutes) return true;
+      return false;
+    });
+  };
+
+  // Derive cities list from real clinics
+  const derivedCities = Array.from(new Set(clinicsList.map(c => c.city).filter(Boolean))).map(cityName => ({
+    id: cityName.toLowerCase(),
+    name: cityName,
+    description: `Wellness hubs in ${cityName}`
+  }));
+
+  const filteredClinics = clinicsList.filter(c => c.city && c.city.toLowerCase() === formData.city);
+  const displayDoctors = doctorsList;
 
   const handleConfirmBooking = async () => {
     setSubmitting(true);
@@ -95,6 +171,7 @@ export default function BookingPage() {
     setSuccessMsg("");
 
     try {
+      // 1. Create booking
       const res = await fetch("/api/booking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -105,7 +182,18 @@ export default function BookingPage() {
         throw new Error(data.message || "Failed to submit booking.");
       }
 
-      setSuccessMsg("Appointment booked successfully! Redirecting to dashboard...");
+      const appointmentId = data.data._id;
+
+      // 2. Mock payment confirmation
+      const payRes = await fetch(`/api/appointments/${appointmentId}/pay`, {
+        method: "POST"
+      });
+      const payData = await payRes.json();
+      if (!payData.success) {
+        throw new Error(payData.message || "Failed to process appointment payment.");
+      }
+
+      setSuccessMsg("Appointment booked and paid successfully! Redirecting...");
       setTimeout(() => {
         router.push("/patient/dashboard");
       }, 1500);
@@ -115,8 +203,6 @@ export default function BookingPage() {
       setSubmitting(false);
     }
   };
-
-  const filteredClinics = clinics.filter(c => c.cityId === formData.city);
 
   return (
     <div className="min-h-screen bg-muted/20 text-foreground pt-24 pb-20">
@@ -153,12 +239,12 @@ export default function BookingPage() {
             ))}
           </div>
           <div className="flex justify-between mt-4 text-xs font-medium text-muted-foreground hidden sm:flex">
-            <span>Service</span>
+            <span>Services</span>
             <span>City</span>
-            <span>Clinic</span>
-            <span>Date & Time</span>
-            <span>Details</span>
-            <span>Confirm</span>
+            <span>Clinics</span>
+            <span>Doctor</span>
+            <span>Schedule</span>
+            <span>Payment</span>
           </div>
         </div>
 
@@ -167,7 +253,7 @@ export default function BookingPage() {
           
           <AnimatePresence mode="wait">
             
-            {/* Step 1: Service */}
+            {/* Step 1: Services */}
             {step === 1 && (
               <motion.div 
                 key="step1"
@@ -176,7 +262,7 @@ export default function BookingPage() {
                 exit={{ opacity: 0, x: -20 }}
                 className="flex-1"
               >
-                <h2 className="text-2xl font-serif mb-6">What can we help you with?</h2>
+                <h2 className="text-2xl font-serif mb-6">Select Service Type</h2>
                 <div className="space-y-4">
                   {services.map((service) => (
                     <button
@@ -215,25 +301,31 @@ export default function BookingPage() {
               >
                 <h2 className="text-2xl font-serif mb-6">Choose a City</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {cities.map((city) => (
-                    <button
-                      key={city.id}
-                      onClick={() => updateForm('city', city.id)}
-                      className={`flex flex-col items-center text-center p-6 rounded-2xl border-2 transition-all ${
-                        formData.city === city.id 
-                          ? "border-primary bg-primary/5 shadow-md" 
-                          : "border-border hover:border-primary/40 hover:bg-muted"
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 mb-4 ${
-                        formData.city === city.id ? "bg-primary text-primary-foreground" : "bg-muted text-primary"
-                      }`}>
-                        <MapPin className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-lg font-semibold mb-1">{city.name}</h3>
-                      <p className="text-xs text-muted-foreground">{city.description}</p>
-                    </button>
-                  ))}
+                  {loadingClinics ? (
+                    <div className="col-span-3 py-8 text-center text-xs text-muted-foreground">Loading cities...</div>
+                  ) : derivedCities.length === 0 ? (
+                    <div className="col-span-3 py-8 text-center text-xs text-muted-foreground">No clinic locations found.</div>
+                  ) : (
+                    derivedCities.map((city) => (
+                      <button
+                        key={city.id}
+                        onClick={() => updateForm('city', city.id)}
+                        className={`flex flex-col items-center text-center p-6 rounded-2xl border-2 transition-all ${
+                          formData.city === city.id 
+                            ? "border-primary bg-primary/5 shadow-md" 
+                            : "border-border hover:border-primary/40 hover:bg-muted"
+                        }`}
+                      >
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 mb-4 ${
+                          formData.city === city.id ? "bg-primary text-primary-foreground" : "bg-muted text-primary"
+                        }`}>
+                          <MapPin className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-lg font-semibold mb-1">{city.name}</h3>
+                        <p className="text-xs text-muted-foreground">{city.description}</p>
+                      </button>
+                    ))
+                  )}
                 </div>
               </motion.div>
             )}
@@ -247,37 +339,89 @@ export default function BookingPage() {
                 exit={{ opacity: 0, x: -20 }}
                 className="flex-1"
               >
-                <h2 className="text-2xl font-serif mb-6">Select a Clinic in {cities.find(c => c.id === formData.city)?.name}</h2>
+                <h2 className="text-2xl font-serif mb-6">Select a Clinic in {derivedCities.find(c => c.id === formData.city)?.name || "selected city"}</h2>
                 <div className="space-y-4">
-                  {filteredClinics.map((clinic) => (
-                    <button
-                      key={clinic.id}
-                      onClick={() => updateForm('clinic', clinic.id)}
-                      className={`w-full flex items-center p-6 rounded-2xl border-2 text-left transition-all ${
-                        formData.clinic === clinic.id 
-                          ? "border-primary bg-primary/5 shadow-md" 
-                          : "border-border hover:border-primary/40 hover:bg-muted"
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 mr-5 ${
-                        formData.clinic === clinic.id ? "bg-primary text-primary-foreground" : "bg-muted text-primary"
-                      }`}>
-                        <Building2 className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold">{clinic.name}</h3>
-                        <p className="text-muted-foreground text-sm">{clinic.address}</p>
-                      </div>
-                    </button>
-                  ))}
+                  {filteredClinics.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No clinics registered in this city.</p>
+                  ) : (
+                    filteredClinics.map((clinic) => (
+                      <button
+                        key={clinic._id}
+                        onClick={() => updateForm('clinic', clinic._id)}
+                        className={`w-full flex items-center p-6 rounded-2xl border-2 text-left transition-all ${
+                          formData.clinic === clinic._id 
+                            ? "border-primary bg-primary/5 shadow-md" 
+                            : "border-border hover:border-primary/40 hover:bg-muted"
+                        }`}
+                      >
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 mr-5 ${
+                          formData.clinic === clinic._id ? "bg-primary text-primary-foreground" : "bg-muted text-primary"
+                        }`}>
+                          <Building2 className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold">{clinic.name}</h3>
+                          <p className="text-muted-foreground text-sm">{clinic.address}</p>
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               </motion.div>
             )}
 
-            {/* Step 4: Date & Time */}
+            {/* Step 4: Doctor List */}
             {step === 4 && (
               <motion.div 
                 key="step4"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="flex-1"
+              >
+                <h2 className="text-2xl font-serif mb-6">Choose Your Doctor</h2>
+                {loadingDocs ? (
+                  <div className="py-12 text-center text-muted-foreground">Loading available doctors...</div>
+                ) : displayDoctors.length === 0 ? (
+                  <div className="py-12 text-center text-muted-foreground">No doctors registered in this clinic.</div>
+                ) : (
+                  <div className="space-y-4">
+                    {displayDoctors.map((doc) => (
+                      <button
+                        key={doc._id}
+                        onClick={() => updateForm('doctorId', doc._id)}
+                        className={`w-full p-6 rounded-2xl border-2 text-left transition-all flex items-center gap-5 ${
+                          formData.doctorId === doc._id 
+                            ? "border-primary bg-primary/5 shadow-md" 
+                            : "border-border hover:border-primary/40 hover:bg-muted"
+                        }`}
+                      >
+                        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl shrink-0">
+                          {doc.name.split(' ').pop()?.[0]}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold">{doc.name}</h3>
+                          <p className="text-sm text-muted-foreground">{doc.specialization} • {doc.experience} yrs experience</p>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{doc.bio}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-primary">₹{doc.fees}</p>
+                          <div className="flex items-center gap-1 mt-1 justify-end">
+                            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                            <span className="text-xs font-bold">5.0</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Step 5: Date & Time */}
+            {step === 5 && (
+              <motion.div 
+                key="step5"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
@@ -305,13 +449,13 @@ export default function BookingPage() {
                         <Clock className="w-4 h-4 text-primary" /> Available Slots
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {timeSlots.map((time) => (
+                        {getAvailableTimeSlots().map((time) => (
                           <button
                             key={time}
                             onClick={() => updateForm('time', time)}
                             className={`py-3 px-4 rounded-xl border transition-all text-sm font-medium ${
                               formData.time === time 
-                                ? "bg-primary text-primary-foreground border-primary shadow-md" 
+                                ? "bg-primary text-primary-foreground" 
                                 : "bg-background border-border hover:border-primary/50 text-foreground"
                             }`}
                           >
@@ -325,79 +469,7 @@ export default function BookingPage() {
               </motion.div>
             )}
 
-            {/* Step 5: Details */}
-            {step === 5 && (
-              <motion.div 
-                key="step5"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="flex-1"
-              >
-                <h2 className="text-2xl font-serif mb-6">Patient Details</h2>
-                
-                <div className="space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">First Name</label>
-                      <input 
-                        type="text" 
-                        value={formData.firstName}
-                        onChange={(e) => updateForm('firstName', e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50" 
-                        placeholder="John" 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Last Name</label>
-                      <input 
-                        type="text" 
-                        value={formData.lastName}
-                        onChange={(e) => updateForm('lastName', e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50" 
-                        placeholder="Doe" 
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Email Address</label>
-                      <input 
-                        type="email" 
-                        value={formData.email}
-                        onChange={(e) => updateForm('email', e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50" 
-                        placeholder="john@example.com" 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Phone Number</label>
-                      <input 
-                        type="tel" 
-                        value={formData.phone}
-                        onChange={(e) => updateForm('phone', e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50" 
-                        placeholder="(555) 123-4567" 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Date of Birth</label>
-                    <input 
-                      type="date" 
-                      value={formData.dob}
-                      onChange={(e) => updateForm('dob', e.target.value)}
-                      className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50" 
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">You must be 18 or older to use this service.</p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 6: Review & Confirm */}
+            {/* Step 6: Patient Details & Payment Checkout */}
             {step === 6 && (
               <motion.div 
                 key="step6"
@@ -406,55 +478,66 @@ export default function BookingPage() {
                 exit={{ opacity: 0, x: -20 }}
                 className="flex-1"
               >
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <ShieldCheck className="w-8 h-8 text-emerald-700" />
-                  </div>
-                  <h2 className="text-2xl font-serif">Review Your Appointment</h2>
-                  <p className="text-muted-foreground text-sm mt-2">Almost there. Please review your details before confirming.</p>
-                </div>
+                <h2 className="text-2xl font-serif mb-4">Patient Details & Secure Booking</h2>
                 
                 {successMsg && (
-                  <div className="mb-6 p-3.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 text-xs font-semibold rounded-xl border border-emerald-200/50 flex items-center gap-2">
+                  <div className="mb-6 p-4 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 text-sm font-semibold rounded-xl border border-emerald-200/50 flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-600" /> {successMsg}
                   </div>
                 )}
                 {errorMsg && (
-                  <div className="mb-6 p-3.5 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 text-xs font-semibold rounded-xl border border-rose-200/50 flex items-center gap-2">
+                  <div className="mb-6 p-4 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 text-sm font-semibold rounded-xl border border-rose-200/50 flex items-center gap-2">
                     <AlertCircle className="w-5 h-5 shrink-0 text-rose-600" /> {errorMsg}
                   </div>
                 )}
 
-                <div className="bg-muted/30 rounded-2xl p-6 border border-border space-y-4 mb-8">
-                  <div className="flex justify-between items-start pb-4 border-b border-border/50">
+                <div className="space-y-6">
+                  {/* Patient Info Fields */}
+                  <div className="border border-border rounded-[1.5rem] p-5 bg-muted/20 space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Patient Information</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <input 
+                        type="text" 
+                        value={formData.firstName}
+                        onChange={(e) => updateForm('firstName', e.target.value)}
+                        className="bg-background border border-border rounded-xl px-4 py-2.5 text-sm" 
+                        placeholder="First Name" 
+                      />
+                      <input 
+                        type="text" 
+                        value={formData.lastName}
+                        onChange={(e) => updateForm('lastName', e.target.value)}
+                        className="bg-background border border-border rounded-xl px-4 py-2.5 text-sm" 
+                        placeholder="Last Name" 
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <input 
+                        type="email" 
+                        value={formData.email}
+                        onChange={(e) => updateForm('email', e.target.value)}
+                        className="bg-background border border-border rounded-xl px-4 py-2.5 text-sm" 
+                        placeholder="Email Address" 
+                      />
+                      <input 
+                        type="tel" 
+                        value={formData.phone}
+                        onChange={(e) => updateForm('phone', e.target.value)}
+                        className="bg-background border border-border rounded-xl px-4 py-2.5 text-sm" 
+                        placeholder="WhatsApp Number" 
+                      />
+                    </div>
                     <div>
-                      <p className="text-sm text-muted-foreground font-medium mb-1">Service</p>
-                      <p className="font-semibold text-lg">{services.find(s => s.id === formData.service)?.title}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground font-medium mb-1">Total</p>
-                      <p className="font-bold text-xl text-primary">{services.find(s => s.id === formData.service)?.price}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-y-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground font-medium">Location</p>
-                      <p className="font-semibold">{clinics.find(c => c.id === formData.clinic)?.name}</p>
-                      <p className="text-xs text-muted-foreground">{cities.find(c => c.id === formData.city)?.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground font-medium">Date & Time</p>
-                      <p className="font-semibold">{formData.date} at {formData.time}</p>
-                    </div>
-                    <div className="col-span-2 pt-2">
-                      <p className="text-sm text-muted-foreground font-medium">Patient</p>
-                      <p className="font-semibold">{formData.firstName} {formData.lastName}</p>
-                      <p className="text-sm text-muted-foreground">{formData.email} • {formData.phone}</p>
+                      <label className="text-xs text-muted-foreground block mb-1">Date of Birth</label>
+                      <input 
+                        type="date" 
+                        value={formData.dob}
+                        onChange={(e) => updateForm('dob', e.target.value)}
+                        className="bg-background border border-border rounded-xl px-4 py-2.5 text-sm w-full" 
+                      />
                     </div>
                   </div>
                 </div>
-
               </motion.div>
             )}
             
@@ -467,7 +550,7 @@ export default function BookingPage() {
                 <ChevronLeft className="w-4 h-4 mr-2" /> Back
               </Button>
             ) : (
-              <div /> // Placeholder for flex alignment
+              <div /> 
             )}
             
             {step < 6 ? (
@@ -481,10 +564,10 @@ export default function BookingPage() {
             ) : (
               <Button 
                 onClick={handleConfirmBooking} 
-                disabled={submitting} 
-                className="rounded-full px-8 shadow-xl bg-emerald-600 hover:bg-emerald-700 text-white group"
+                disabled={submitting || !isStepValid()} 
+                className="rounded-full px-8 shadow-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
               >
-                <CreditCard className="w-4 h-4 mr-2" /> {submitting ? "Booking..." : "Confirm & Pay"}
+                {submitting ? "Processing..." : "Pay & Book Appointment"}
               </Button>
             )}
           </div>

@@ -22,6 +22,7 @@ export const CreateDoctorSchema = z.object({
   qualifications: z.array(z.string()).min(1, "At least one qualification is required"),
   availability: z.array(DayAvailabilitySchema).optional().default([]),
   slotDuration: z.number().int().positive().optional().default(30),
+  conditions: z.array(z.string()).optional(),
   status: z.enum(["Active", "Inactive", "Pending"]).optional().default("Pending"),
 });
 

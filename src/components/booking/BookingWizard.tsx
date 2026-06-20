@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 const services = [
   { id: "consultation", title: "Online Consultation", icon: Video, description: "15-min video call with a specialist", price: "₹999" },
   { id: "therapy", title: "Sex Therapy", icon: HeartHandshake, description: "50-min psychological counseling", price: "₹2,499" },
-  { id: "diagnostics", title: "At-Home Diagnostics", icon: FlaskConical, description: "Order a clinical lab testing kit", price: "Varies" }
+  { id: "walk_in", title: "Walk-in Consultation", icon: Building2, description: "In-person visit to our premium clinic", price: "₹1,499" }
 ];
 
 const cities = [

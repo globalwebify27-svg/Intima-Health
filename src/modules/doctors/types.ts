@@ -24,6 +24,7 @@ export interface IDoctor {
   qualifications: string[];
   availability: DayAvailability[];
   slotDuration?: number; // duration of patient checking slot in minutes
+  conditions?: string[];
   status: "Active" | "Inactive" | "Pending";
   createdAt?: Date;
   updatedAt?: Date;

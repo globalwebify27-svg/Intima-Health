@@ -49,6 +49,7 @@ export async function GET() {
         bio: docProfile ? docProfile.bio : undefined,
         availability: docProfile ? docProfile.availability : undefined,
         qualifications: docProfile ? docProfile.qualifications : undefined,
+        conditions: docProfile ? docProfile.conditions : undefined,
       };
     });
 
@@ -118,6 +119,7 @@ export async function POST(req: Request) {
         fees: Number(doctorDetails.fees) || 500,
         qualifications: doctorDetails.qualifications || ["MD"],
         availability: doctorDetails.availability || [],
+        conditions: doctorDetails.conditions || [],
         status: status || "Active"
       });
 
