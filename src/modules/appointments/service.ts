@@ -147,6 +147,8 @@ export class AppointmentService {
       type: validated.type,
       notes: validated.notes,
       status: "Scheduled",
+      paymentMethod: validated.paymentMethod || "Online",
+      paymentStatus: validated.paymentStatus || "Pending",
       createdBy,
     });
 

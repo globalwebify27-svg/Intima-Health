@@ -13,14 +13,15 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { 
       service, city, clinic, doctorId, date, time, 
-      firstName, lastName, email, phone, dob 
+      firstName, lastName, email, phone, dob,
+      paymentMethod
     } = body;
 
     if (!firstName || !lastName || !email || !phone) {
       return NextResponse.json({ success: false, message: "Patient details are required." }, { status: 400 });
     }
 
-    // 1. Find or create patient
+    // 2. Find or create patient
     let patient = await PatientModel.findOne({ email }).exec();
     let isNewPatient = false;
     if (!patient) {
@@ -89,8 +90,15 @@ export async function POST(req: Request) {
       time: formattedTime,
       type: service === "consultation" ? "Video" : "In-person",
       notes: "Booked directly through public website booking form.",
-      skipNotification: true
+      skipNotification: true,
+      paymentMethod: paymentMethod || "Online",
+      paymentStatus: "Pending"
     }, email);
+
+    if (paymentMethod === "Cash") {
+      const { sendAppointmentBookingMessage } = await import("@/lib/whatsapp");
+      await sendAppointmentBookingMessage((appointment as any)._id.toString(), false);
+    }
 
     // 5. Generate JWT & sign in automatically
     const token = signJwt({

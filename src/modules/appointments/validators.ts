@@ -11,6 +11,8 @@ export const BookAppointmentSchema = z.object({
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:MM format"),
   type: z.enum(["Video", "In-person"]).default("Video"),
   notes: z.string().optional(),
+  paymentMethod: z.enum(["Online", "Cash"]).optional(),
+  paymentStatus: z.enum(["Pending", "Paid"]).optional(),
 });
 
 export const RescheduleAppointmentSchema = z.object({

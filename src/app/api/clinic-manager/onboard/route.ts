@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, email, phone, gender, dob, allergies, medicalHistory, doctorId, date, time, type } = body;
+    const { name, email, phone, gender, dob, allergies, medicalHistory, doctorId, date, time, type, paymentMethod, paymentStatus } = body;
 
     if (!name || !email || !phone) {
       return NextResponse.json({ success: false, message: "Name, email, and phone number are required." }, { status: 400 });
@@ -73,7 +73,9 @@ export async function POST(req: Request) {
         date,
         time,
         type: type || "In-person",
-        notes: "Scheduled by clinic manager as walk-in."
+        notes: "Scheduled by clinic manager as walk-in.",
+        paymentMethod: paymentMethod || "Cash",
+        paymentStatus: paymentStatus || "Paid"
       }, payload.email);
     }
 

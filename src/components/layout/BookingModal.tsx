@@ -98,6 +98,7 @@ export function BookingModal() {
     email: "",
     phone: "",
     dob: "",
+    paymentMethod: "Online",
     // payment card mock fields
     cardName: "",
     cardNumber: "",
@@ -126,6 +127,7 @@ export function BookingModal() {
         email: "",
         phone: "",
         dob: "",
+        paymentMethod: "Online",
         cardName: "",
         cardNumber: "",
         cardExpiry: "",
@@ -260,17 +262,22 @@ export function BookingModal() {
 
       const appointmentId = data.data._id;
 
-      // 2. Mock payment confirmation
-      const payRes = await fetch(`/api/appointments/${appointmentId}/pay`, {
-        method: "POST"
-      });
-      const payData = await payRes.json();
-      if (!payData.success) {
-        throw new Error(payData.message || "Failed to process appointment payment.");
-      }
+      if (formData.paymentMethod === "Cash") {
+        setSuccessMsg("Appointment booked provisionally! Cash payment at clinic.");
+        setWhatsappMsg("Your appointment has been scheduled provisionally. Please complete the cash payment at the clinic 15 minutes before your time slot.");
+      } else {
+        // 2. Mock payment confirmation
+        const payRes = await fetch(`/api/appointments/${appointmentId}/pay`, {
+          method: "POST"
+        });
+        const payData = await payRes.json();
+        if (!payData.success) {
+          throw new Error(payData.message || "Failed to process appointment payment.");
+        }
 
-      setSuccessMsg("Appointment booked and paid successfully!");
-      setWhatsappMsg(payData.whatsappMessage || "Your appointment has been scheduled and confirmed.");
+        setSuccessMsg("Appointment booked and paid successfully!");
+        setWhatsappMsg(payData.whatsappMessage || "Your appointment has been scheduled and confirmed.");
+      }
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred.");
     } finally {
@@ -635,6 +642,46 @@ export function BookingModal() {
                               />
                             </div>
                           </div>
+
+                          {/* Payment method selector only for Walk-in Consultation */}
+                          {formData.service === "walk_in" && (
+                            <div className="border border-border/80 rounded-2xl p-4 bg-muted/20 space-y-3">
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Payment Method</h4>
+                              <div className="flex gap-4">
+                                <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                                  <input 
+                                    type="radio" 
+                                    name="paymentMethodModal" 
+                                    value="Online" 
+                                    checked={formData.paymentMethod === "Online"}
+                                    onChange={(e) => updateForm('paymentMethod', e.target.value)}
+                                    className="accent-primary"
+                                  />
+                                  Pay Online (UPI/Card)
+                                </label>
+                                <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                                  <input 
+                                    type="radio" 
+                                    name="paymentMethodModal" 
+                                    value="Cash" 
+                                    checked={formData.paymentMethod === "Cash"}
+                                    onChange={(e) => updateForm('paymentMethod', e.target.value)}
+                                    className="accent-primary"
+                                  />
+                                  Pay in Cash (At Clinic)
+                                </label>
+                              </div>
+                              
+                              {formData.paymentMethod === "Cash" && (
+                                <div className="p-3 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs font-medium rounded-xl border border-amber-500/25 flex gap-2 items-start mt-2">
+                                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                                  <div>
+                                    <span className="font-bold">Provisional Booking:</span> Your appointment is held provisionally. Please arrive at the clinic at least 15 minutes prior to your time slot to complete the cash payment at the reception desk. Failure to do so may result in automatic cancellation of your slot.
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </>
                     )}
@@ -677,9 +724,11 @@ export function BookingModal() {
                 <Button 
                   onClick={handleConfirmBooking} 
                   disabled={submitting || !isStepValid()} 
-                  className="rounded-full px-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+                  className={`rounded-full px-8 shadow-xl text-white text-xs font-bold ${
+                    formData.paymentMethod === "Cash" ? "bg-amber-600 hover:bg-amber-700" : "bg-emerald-600 hover:bg-emerald-700"
+                  }`}
                 >
-                  {submitting ? "Processing..." : "Pay & Book Appointment"}
+                  {submitting ? "Processing..." : formData.paymentMethod === "Cash" ? "Confirm Provisional Booking" : "Pay & Book Appointment"}
                 </Button>
               )}
             </div>

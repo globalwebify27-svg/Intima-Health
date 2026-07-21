@@ -103,6 +103,8 @@ export default function ClinicManagerDashboardPage() {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [appointmentType, setAppointmentType] = useState("In-person");
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [paymentStatus, setPaymentStatus] = useState("Paid");
   const [slots, setSlots] = useState<Slot[]>([]);
 
   // Action status/errors
@@ -123,6 +125,8 @@ export default function ClinicManagerDashboardPage() {
     setSelectedDate("");
     setSelectedTime("");
     setAppointmentType("In-person");
+    setPaymentMethod("Cash");
+    setPaymentStatus("Paid");
     setSlots([]);
     setSuccessMsg("");
     setErrorMsg("");
@@ -315,7 +319,9 @@ export default function ClinicManagerDashboardPage() {
       doctorId: selectedDoctor,
       date: selectedDate,
       time: selectedTime,
-      type: appointmentType
+      type: appointmentType,
+      paymentMethod,
+      paymentStatus
     };
 
     try {
@@ -952,6 +958,31 @@ export default function ClinicManagerDashboardPage() {
                     placeholder="Sugar, Thyroid, BP, etc."
                     className="w-full h-9 px-2.5 rounded-lg border border-border bg-transparent text-xs"
                   />
+                </div>
+              </div>
+
+              <div className="grid gap-2 grid-cols-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Payment Method</label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-full h-9 px-2 rounded-lg border border-border bg-background text-xs"
+                  >
+                    <option value="Cash">Cash (At Clinic)</option>
+                    <option value="Online">Online</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Payment Status</label>
+                  <select
+                    value={paymentStatus}
+                    onChange={(e) => setPaymentStatus(e.target.value)}
+                    className="w-full h-9 px-2 rounded-lg border border-border bg-background text-xs"
+                  >
+                    <option value="Paid">Paid</option>
+                    <option value="Pending">Pending</option>
+                  </select>
                 </div>
               </div>
 
