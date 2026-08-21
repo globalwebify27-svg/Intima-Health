@@ -133,23 +133,25 @@ export function Hero() {
                   Book Appointment <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="rounded-2xl px-8 py-7 text-base font-bold w-full sm:w-auto shadow-sm border-border/60 hover:bg-muted/50 bg-white">
-                  Take Self Assessment
-                </Button>
-              </motion.div>
             </motion.div>
             
             <motion.div variants={itemVariants} className="mt-12 flex items-center gap-4">
               <div className="flex -space-x-3">
-                {[1, 2, 3, 4].map((i) => (
+                {[
+                  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
+                  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
+                  "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100&h=100&fit=crop",
+                  "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop"
+                ].map((src, i) => (
                   <motion.div 
                     key={i}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.8 + (i * 0.1) }}
                     className="inline-block h-12 w-12 rounded-full border-2 border-background bg-muted overflow-hidden shadow-sm" 
-                  />
+                  >
+                    <img src={src} alt="Happy patient" className="w-full h-full object-cover" />
+                  </motion.div>
                 ))}
               </div>
               <motion.div 
