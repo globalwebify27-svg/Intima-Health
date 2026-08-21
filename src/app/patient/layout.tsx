@@ -1,6 +1,7 @@
 "use client";
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { BookingModal } from "@/components/layout/BookingModal";
 import { LayoutDashboard, Calendar, FileText, Pill, ShoppingBag, Settings, UserCircle } from "lucide-react";
 
 const patientLinks = [
@@ -16,6 +17,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   return (
     <DashboardLayout links={patientLinks} roleName="Patient" basePath="/patient">
       {children}
+        <BookingModal />
     </DashboardLayout>
   );
 }

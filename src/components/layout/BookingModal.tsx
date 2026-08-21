@@ -215,7 +215,7 @@ export function BookingModal() {
     if (step === 3) return !!formData.clinic;
     if (step === 4) return !!formData.doctorId;
     if (step === 5) return !!formData.date && !!formData.time;
-    if (step === 6) return !!formData.firstName && !!formData.lastName && !!formData.email && !!formData.phone;
+    if (step === 6) return !!formData.firstName && !!formData.lastName && !!formData.phone;
     return true;
   };
 
@@ -244,6 +244,27 @@ export function BookingModal() {
   const displayDoctors = doctorsList;
 
   const handleConfirmBooking = async () => {
+    const nameRegex = /^[A-Za-z\s]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\d{10}$/;
+
+    if (!formData.firstName || formData.firstName.trim().length < 2 || !nameRegex.test(formData.firstName)) {
+      setErrorMsg("Please enter a valid first name (letters only, min 2 characters).");
+      return;
+    }
+    if (!formData.lastName || formData.lastName.trim().length < 2 || !nameRegex.test(formData.lastName)) {
+      setErrorMsg("Please enter a valid last name (letters only, min 2 characters).");
+      return;
+    }
+    if (formData.email && formData.email.trim() !== "" && !emailRegex.test(formData.email)) {
+      setErrorMsg("Please enter a valid email address.");
+      return;
+    }
+    if (!formData.phone || !phoneRegex.test(formData.phone)) {
+      setErrorMsg("Please enter a valid WhatsApp number (exactly 10 digits).");
+      return;
+    }
+
     setSubmitting(true);
     setErrorMsg("");
     setSuccessMsg("");
@@ -304,24 +325,24 @@ export function BookingModal() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 350 }}
-            className="relative z-10 w-full max-w-2xl bg-card border border-border shadow-2xl rounded-[2.5rem] flex flex-col max-h-[85vh] overflow-hidden"
+            className="relative z-10 w-full max-w-2xl bg-card border border-border shadow-2xl rounded-3xl md:rounded-[2.5rem] flex flex-col max-h-[90vh] md:max-h-[85vh] overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border">
+            <div className="flex items-center justify-between p-5 md:p-6 border-b border-border">
               <div>
-                <h2 className="text-xl font-bold font-serif text-foreground">Book Appointment</h2>
-                <p className="text-xs text-muted-foreground mt-1">Multi-step clinic checkout wizard</p>
+                <h2 className="text-xl md:text-2xl font-bold font-serif text-foreground">Book Appointment</h2>
+                <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Multi-step clinic checkout wizard</p>
               </div>
               <button 
                 onClick={closeBooking}
-                className="p-2.5 rounded-full bg-muted/60 text-muted-foreground hover:bg-muted transition-colors"
+                className="p-2 md:p-2.5 rounded-full bg-muted/60 text-muted-foreground hover:bg-muted transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 md:w-5 md:h-5" />
               </button>
             </div>
 
-            {/* Progress indicators */}
-            <div className="px-6 pt-4 pb-2 flex gap-1 items-center justify-between overflow-x-auto text-[10px] font-semibold text-muted-foreground border-b border-border/50">
+            {/* Progress indicators - Desktop */}
+            <div className="hidden md:flex px-6 pt-4 pb-2 gap-1 items-center justify-between text-[10px] font-semibold text-muted-foreground border-b border-border/50">
               {["Services", "City", "Clinics", "Doctor", "Schedule", "Payment"].map((name, index) => {
                 const isActive = step >= index + 1;
                 return (
@@ -336,6 +357,18 @@ export function BookingModal() {
                   </div>
                 );
               })}
+            </div>
+
+            {/* Progress indicators - Mobile */}
+            <div className="md:hidden px-5 py-3 flex items-center justify-between border-b border-border/50 bg-muted/20">
+               <div className="text-xs font-bold text-foreground">
+                 Step {step} of 6: <span className="text-primary">{["Services", "City", "Clinics", "Doctor", "Schedule", "Payment"][step - 1]}</span>
+               </div>
+               <div className="flex gap-1">
+                 {[1,2,3,4,5,6].map(i => (
+                   <div key={i} className={`h-1.5 w-1.5 rounded-full ${step >= i ? "bg-primary" : "bg-muted-foreground/30"}`} />
+                 ))}
+               </div>
             </div>
 
             {/* Content area */}
@@ -386,25 +419,25 @@ export function BookingModal() {
                     className="space-y-4"
                   >
                     <h3 className="text-lg font-bold font-serif mb-4">Choose Your City</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {loadingClinics ? (
-                        <div className="col-span-3 py-8 text-center text-xs text-muted-foreground">Loading cities...</div>
+                        <div className="col-span-2 sm:col-span-3 py-8 text-center text-xs text-muted-foreground">Loading cities...</div>
                       ) : derivedCities.length === 0 ? (
-                        <div className="col-span-3 py-8 text-center text-xs text-muted-foreground">No clinic locations found.</div>
+                        <div className="col-span-2 sm:col-span-3 py-8 text-center text-xs text-muted-foreground">No clinic locations found.</div>
                       ) : (
                         derivedCities.map((city) => (
                           <button
                             key={city.id}
                             onClick={() => updateForm('city', city.id)}
-                            className={`flex flex-col items-center text-center p-5 rounded-2xl border transition-all ${
+                            className={`flex flex-col items-center text-center p-3 sm:p-5 rounded-2xl border transition-all ${
                               formData.city === city.id 
                                 ? "border-primary bg-primary/5 shadow-sm" 
                                 : "border-border hover:border-primary/40 hover:bg-muted"
                             }`}
                           >
-                            <MapPin className={`w-6 h-6 mb-3 ${formData.city === city.id ? "text-primary" : "text-muted-foreground"}`} />
+                            <MapPin className={`w-5 h-5 sm:w-6 sm:h-6 mb-2 sm:mb-3 ${formData.city === city.id ? "text-primary" : "text-muted-foreground"}`} />
                             <h4 className="text-sm font-bold mb-1">{city.name}</h4>
-                            <p className="text-[10px] text-muted-foreground leading-relaxed">{city.description}</p>
+                            <p className="text-[9px] sm:text-[10px] text-muted-foreground leading-relaxed">{city.description}</p>
                           </button>
                         ))
                       )}
@@ -480,7 +513,6 @@ export function BookingModal() {
                             <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{doc.bio}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs font-bold text-primary">₹{doc.fees}</p>
                             <div className="flex items-center gap-0.5 mt-0.5">
                                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                                 <span className="text-[10px] font-bold">5.0</span>
@@ -613,14 +645,20 @@ export function BookingModal() {
                               <input 
                                 type="text" 
                                 value={formData.firstName}
-                                onChange={(e) => updateForm('firstName', e.target.value)}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                                  updateForm('firstName', val);
+                                }}
                                 className="bg-background border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary" 
                                 placeholder="First Name" 
                               />
                               <input 
                                 type="text" 
                                 value={formData.lastName}
-                                onChange={(e) => updateForm('lastName', e.target.value)}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                                  updateForm('lastName', val);
+                                }}
                                 className="bg-background border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary" 
                                 placeholder="Last Name" 
                               />
@@ -631,12 +669,16 @@ export function BookingModal() {
                                 value={formData.email}
                                 onChange={(e) => updateForm('email', e.target.value)}
                                 className="bg-background border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary" 
-                                placeholder="Email" 
+                                placeholder="Email (Optional)" 
                               />
                               <input 
                                 type="tel" 
                                 value={formData.phone}
-                                onChange={(e) => updateForm('phone', e.target.value)}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/\D/g, '');
+                                  updateForm('phone', val);
+                                }}
+                                maxLength={10}
                                 className="bg-background border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary" 
                                 placeholder="WhatsApp Number" 
                               />

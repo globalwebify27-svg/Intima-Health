@@ -23,52 +23,44 @@ const staggerContainer = {
 
 const conditions = [
   {
-    icon: Zap,
-    title: "Erectile Dysfunction (ED)",
-    description: "Difficulty achieving or maintaining an erection. We offer personalized, clinically proven treatment plans to help you regain confidence and intimacy.",
-    treatments: ["PDE5 Inhibitors (Sildenafil, Tadalafil)", "Hormone Therapy", "Lifestyle & Dietary Protocols"],
-    color: "bg-blue-50 text-blue-600",
-    slug: "/conditions/ed"
+    icon: HeartPulse,
+    title: "Sex For Happiness",
+    description: "Holistic psychosexual wellness and counseling to enhance intimacy, emotional connection, and personal fulfillment.",
+    treatments: ["Intimacy Counseling", "Relationship Guidance", "Mind-Body Integration"],
+    color: "bg-rose-50 text-rose-600",
+    slug: "/conditions/sex-for-happiness"
   },
   {
     icon: Activity,
-    title: "Premature Ejaculation (PE)",
-    description: "Ejaculation that happens sooner than desired. Our specialists provide comprehensive behavioral and medical solutions to improve stamina.",
-    treatments: ["Topical Anesthetics", "SSRIs", "Behavioral Therapy"],
+    title: "Premature Ejaculation",
+    description: "Clinical and psychological treatment protocols to improve endurance, control, and sexual confidence.",
+    treatments: ["Medical Therapy", "Behavioral Exercises", "Sensitivity Control"],
     color: "bg-indigo-50 text-indigo-600",
-    slug: "/conditions/pe"
+    slug: "/conditions/premature-ejaculation"
   },
   {
-    icon: HeartPulse,
-    title: "Low Libido",
-    description: "A persistent decrease in sexual desire. We take a holistic approach, analyzing hormonal, psychological, and lifestyle factors to reignite your drive.",
-    treatments: ["Testosterone Replacement Therapy (TRT)", "Counseling", "Peptide Therapy"],
-    color: "bg-rose-50 text-rose-600",
-    slug: "/conditions/testosterone"
+    icon: Zap,
+    title: "Erectile Dysfunction",
+    description: "Advanced medical evaluation and effective treatment plans tailored by senior specialist Dr. Deepak Kelkar.",
+    treatments: ["Pharmacotherapy", "Vascular Assessment", "Psychological Counseling"],
+    color: "bg-blue-50 text-blue-600",
+    slug: "/conditions/erectile-dysfunction"
   },
   {
     icon: ShieldCheck,
-    title: "STI Testing & Management",
-    description: "Discreet, accurate, and fast testing for sexually transmitted infections from the comfort of your home, followed by expert medical guidance.",
-    treatments: ["At-Home Test Kits", "Antibiotic Prescriptions", "Partner Notification Support"],
+    title: "Masturbation Counseling",
+    description: "Confidential behavioral guidance, myth-busting, and psychological counseling for compulsion or anxiety.",
+    treatments: ["Behavioral Therapy", "Psychoeducation", "Anxiety Reduction"],
     color: "bg-emerald-50 text-emerald-600",
-    slug: "/conditions/sti"
-  },
-  {
-    icon: Beaker,
-    title: "Fertility Support",
-    description: "Navigating fertility challenges can be overwhelming. We provide advanced diagnostics and expert consultations to optimize your reproductive health.",
-    treatments: ["Semen Analysis", "Hormonal Panels", "Nutritional Supplementation"],
-    color: "bg-amber-50 text-amber-600",
-    slug: "/conditions/fertility"
+    slug: "/conditions/masturbation-counseling"
   },
   {
     icon: ShieldAlert,
-    title: "Hormone Imbalance",
-    description: "Fluctuating hormones can impact mood, energy, and sexual function. Our comprehensive blood panels identify deficiencies for targeted optimization.",
-    treatments: ["Bioidentical Hormones", "Thyroid Management", "Adrenal Support"],
+    title: "Homosexual Anxiety",
+    description: "Private, judgment-free psychological support and counseling for identity, relationship, or performance anxiety.",
+    treatments: ["Affirmative Therapy", "Stress Management", "Individual Counseling"],
     color: "bg-purple-50 text-purple-600",
-    slug: "/conditions/hormone-imbalance"
+    slug: "/conditions/homosexual-anxiety"
   }
 ];
 

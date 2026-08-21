@@ -12,9 +12,12 @@ import {
   CheckCircle2,
   Stethoscope,
   Clock,
-  ShieldCheck
+  ShieldCheck,
+  Activity
 } from "lucide-react";
 import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -33,39 +36,76 @@ const staggerContainer = {
 
 const services = [
   {
-    icon: Video,
-    title: "Online Video Consultations",
-    description: "Speak directly with board-certified urologists, gynecologists, and sexologists from the privacy of your home. No awkward waiting rooms.",
-    features: ["15-minute express booking", "100% confidential", "Available 7 days a week"],
-    color: "bg-chart-1"
+    icon: HeartHandshake,
+    title: "Treatment of Depression",
+    description: "Clinical diagnostic care, psychotherapy, and individual medication management to restore emotional balance.",
+    features: ["Clinical Assessment", "Individualized Treatment", "Mind Gym Integration"],
+    color: "bg-chart-1",
+    slug: "treatment-of-depression"
+  },
+  {
+    icon: ShieldCheck,
+    title: "Treatment of Anxiety",
+    description: "Evidence-based therapy and care plans for generalized anxiety, panic disorders, and social anxiety.",
+    features: ["Cognitive Restructuring", "Stress Management", "Pharmacotherapy"],
+    color: "bg-chart-2",
+    slug: "treatment-of-anxiety"
   },
   {
     icon: ClipboardList,
-    title: "Personalized Treatment Plans",
-    description: "Receive a tailored protocol addressing ED, PE, low libido, or other intimate health concerns, designed specifically for your biology and lifestyle.",
-    features: ["Physician-guided", "Holistic approach", "Ongoing progress tracking"],
-    color: "bg-chart-2"
+    title: "Treatment of OCD",
+    description: "Specialized ERP (Exposure & Response Prevention) therapy and clinical care for Obsessive-Compulsive Disorder.",
+    features: ["Behavioral Therapy", "ERP Protocols", "Long-term Maintenance"],
+    color: "bg-chart-4",
+    slug: "ocd-treatment"
+  },
+  {
+    icon: Activity,
+    title: "Alcohol De-Addiction",
+    description: "Inpatient and outpatient detoxification, counseling, and relapse prevention at Ashakiran Rehab.",
+    features: ["Medical Detoxification", "Relapse Prevention", "Family Counseling"],
+    color: "bg-primary",
+    slug: "alcohol-de-addiction"
+  },
+  {
+    icon: Stethoscope,
+    title: "Nicotine De-Addiction",
+    description: "Structured cessation programs, nicotine replacement guidance, and psychological support.",
+    features: ["Cessation Protocols", "Craving Control", "Behavioral Support"],
+    color: "bg-secondary",
+    slug: "nicotine-de-addiction"
   },
   {
     icon: Pill,
-    title: "Discreet Doorstep Pharmacy",
-    description: "Get your prescribed medications, premium supplements, and wellness kits delivered directly to your door in unbranded, discreet packaging.",
-    features: ["Free standard shipping", "Auto-refill available", "FDA-approved medications"],
-    color: "bg-chart-4"
+    title: "Brown Sugar De-Addiction",
+    description: "Specialized clinical rehabilitation and medical recovery protocols for heavy substance dependence.",
+    features: ["Medical Supervision", "24/7 Rehabilitation Support", "Aftercare Planning"],
+    color: "bg-chart-3",
+    slug: "brown-sugar-de-addiction"
+  },
+  {
+    icon: Clock,
+    title: "Child & Adolescent Psychiatry",
+    description: "Specialized care for pediatric mental health, ADHD, autism spectrum, and behavioral concerns led by Dr. Radhika Kelkar.",
+    features: ["Developmental Evaluation", "Parent Guidance", "School Readiness"],
+    color: "bg-chart-5",
+    slug: "child-and-adolescent-psychiatry"
   },
   {
     icon: HeartHandshake,
-    title: "Couples Therapy & Counseling",
-    description: "Navigate intimacy challenges together. Our specialized therapists provide a safe, judgment-free space to rebuild connection and communication.",
-    features: ["Joint or individual sessions", "Trauma-informed care", "Actionable exercises"],
-    color: "bg-primary"
+    title: "Geriatric Psychiatry",
+    description: "Compassionate mental healthcare tailored for seniors, addressing dementia, memory loss, and mood changes.",
+    features: ["Memory Assessments", "Dementia Care Support", "Senior Counseling"],
+    color: "bg-chart-1",
+    slug: "geriatric-psychiatry"
   },
   {
     icon: FlaskConical,
-    title: "At-Home Diagnostic Testing",
-    description: "Understand your body better with our comprehensive hormone and wellness test kits. Collect your sample at home and mail it to our certified labs.",
-    features: ["Testosterone & hormone panels", "STI screening", "Detailed clinical reports"],
-    color: "bg-secondary"
+    title: "Cognitive Behavioural Therapy (CBT)",
+    description: "Goal-oriented psychotherapy that breaks negative thought patterns and builds positive mental habits.",
+    features: ["Structured Sessions", "Actionable Exercises", "Evidence-based Results"],
+    color: "bg-chart-2",
+    slug: "cognitive-behavioural-therapy"
   }
 ];
 
@@ -134,34 +174,40 @@ export default function ServicesPage() {
           >
             {services.map((service, idx) => (
               <motion.div 
-                key={idx}
+                key={service.title}
                 variants={fadeIn}
-                className={`relative bg-card rounded-3xl p-8 border border-border shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden ${idx === 0 || idx === 3 ? 'md:col-span-2 lg:col-span-2' : ''}`}
+                className="bg-card rounded-3xl p-8 border border-border shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
               >
-                {/* Decorative background glow */}
-                <div className={`absolute -right-20 -top-20 w-64 h-64 ${service.color} opacity-5 rounded-full blur-[60px] group-hover:opacity-10 transition-opacity duration-500`} />
-                
-                <div className="relative z-10">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 text-white shadow-lg ${service.color}`}>
-                    <service.icon className="w-7 h-7" />
+                <div>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className={`w-12 h-12 rounded-2xl ${service.color} flex items-center justify-center text-white font-bold`}>
+                      <service.icon className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-xl font-serif font-medium">{service.title}</h3>
                   </div>
                   
-                  <h3 className="text-2xl font-serif font-medium text-foreground mb-4 group-hover:text-primary transition-colors">
-                    {service.title}
-                  </h3>
-                  
-                  <p className="text-muted-foreground leading-relaxed mb-8">
+                  <p className="text-muted-foreground mb-6 leading-relaxed">
                     {service.description}
                   </p>
                   
-                  <ul className="space-y-3">
+                  <div className="space-y-3 mb-8">
                     {service.features.map((feature, fIdx) => (
-                      <li key={fIdx} className="flex items-start text-sm text-foreground/80 font-medium">
-                        <CheckCircle2 className="w-5 h-5 text-primary/70 mr-3 flex-shrink-0" />
-                        {feature}
-                      </li>
+                      <div key={fIdx} className="flex items-center gap-2 text-sm text-foreground font-medium">
+                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                        <span>{feature}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
+                </div>
+
+                <div>
+                  <Link 
+                    href={`/services/${service.slug}`}
+                    className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full rounded-full group font-semibold")}
+                  >
+                    Learn More
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Link>
                 </div>
               </motion.div>
             ))}

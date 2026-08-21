@@ -13,9 +13,24 @@ export async function POST(request: Request, { params }: RouteParams) {
     await connectDB();
     const { id } = await params;
 
+    let amount = undefined;
+    try {
+      const body = await request.json();
+      if (body && body.amount !== undefined) {
+        amount = body.amount;
+      }
+    } catch (e) {
+      // Body might be empty, ignore
+    }
+
+    const updateData: any = { paymentStatus: "Paid" };
+    if (amount !== undefined) {
+      updateData.feeAmount = amount;
+    }
+
     const updated = await AppointmentModel.findByIdAndUpdate(
       id,
-      { $set: { paymentStatus: "Paid" } },
+      { $set: updateData },
       { new: true }
     ).exec();
 

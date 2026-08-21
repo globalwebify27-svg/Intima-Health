@@ -19,26 +19,63 @@ export async function sendWhatsAppMessage({
   try {
     const digits = phone.replace(/\D/g, "");
     const last10 = digits.slice(-10);
+    const destination = last10.length === 10 ? `+91${last10}` : phone;
     const formattedPhone = last10.length === 10 ? `+91 ${last10}` : phone;
 
     // Log to console for server terminal/logs visibility
     console.log(`
 ======================================================================
-[WhatsApp Notification]
+[WhatsApp Notification via AiSensy]
 To: ${formattedPhone} (${recipientType})
 Title: ${title}
 Message: ${message}
 ======================================================================
 `);
 
+    // Call AiSensy API if API key is configured
+    const apiKey = process.env.AISENSY_API_KEY;
+    const campaignName = process.env.AISENSY_CAMPAIGN_NAME || "generic_notification";
+    const apiUrl = process.env.AISENSY_API_URL || "https://backend.aisensy.com/campaign/t1/api/v2";
+
+    let apiStatus = "Sent";
+    if (apiKey) {
+      try {
+        const payload = {
+          apiKey,
+          campaignName,
+          destination,
+          userName: recipientId,
+          templateParams: [title, message],
+          source: "IntimaHealthPlatform",
+        };
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const resData = await response.json();
+        console.log("[AiSensy API Response]:", resData);
+        if (!response.ok) {
+          apiStatus = "Failed";
+        }
+      } catch (apiErr) {
+        console.error("AiSensy API dispatch error:", apiErr);
+        apiStatus = "Failed";
+      }
+    }
+
     // Save to the database for notification audit log
     await NotificationModel.create({
       recipientId,
       recipientType,
-      channel: "WhatsApp",
+      channel: "WhatsApp (AiSensy)",
       title,
       message,
-      status: "Sent",
+      status: apiStatus,
     });
   } catch (error) {
     console.error("Failed to send/save WhatsApp notification:", error);
@@ -86,7 +123,7 @@ export async function sendAppointmentBookingMessage(appointmentId: string, isPai
       }
     }
 
-    const docFees = doctor?.fees || 500;
+    const docFees = appointment.feeAmount !== undefined ? appointment.feeAmount : (appointment.type === "In-person" ? "1,499" : "999");
     const paymentLink = `http://localhost:3000/checkout?appointmentId=${appointmentId}`;
     
     let message = "";

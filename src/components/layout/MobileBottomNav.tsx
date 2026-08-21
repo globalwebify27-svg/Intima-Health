@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Activity, CalendarDays, User, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useBookingModal } from "@/store/useBookingModal";
 
 const navItems = [
   {
@@ -35,6 +36,7 @@ const navItems = [
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const { openBooking } = useBookingModal();
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-border/50 pb-safe pt-2 px-4 shadow-[0_-10px_40px_rgba(0,0,0,0.03)]">
@@ -45,10 +47,10 @@ export function MobileBottomNav() {
           
           if (item.label === "Book") {
             return (
-              <Link
+              <button
                 key={item.href}
-                href={item.href}
-                className="relative flex flex-col items-center justify-end pb-1 w-16 h-14 transition-all duration-200"
+                onClick={() => openBooking()}
+                className="relative flex flex-col items-center justify-end pb-1 w-16 h-14 transition-all duration-200 border-none bg-transparent outline-none cursor-pointer"
               >
                 <div className="absolute -top-6 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transform hover:scale-105 active:scale-95 transition-all duration-300">
                   <Icon className="w-6 h-6" strokeWidth={2.5} />
@@ -56,7 +58,7 @@ export function MobileBottomNav() {
                 <span className="text-[10px] font-bold text-primary tracking-wide whitespace-nowrap">
                   Book Now
                 </span>
-              </Link>
+              </button>
             );
           }
 

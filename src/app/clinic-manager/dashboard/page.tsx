@@ -41,6 +41,8 @@ interface AppointmentData {
   time: string;
   type: string;
   status: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
   patientId?: PatientData;
   doctorId?: {
     name: string;
@@ -223,6 +225,34 @@ export default function ClinicManagerDashboardPage() {
   }, [selectedDoctor, selectedDate]);
 
   // Submit handlers
+  const handleCollectCash = async (appointmentId: string) => {
+    const amountStr = window.prompt("Enter the amount collected (₹):", "1499");
+    if (amountStr === null) return; // User cancelled
+
+    const amount = Number(amountStr);
+    if (isNaN(amount) || amount < 0) {
+      alert("Please enter a valid amount.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/appointments/${appointmentId}/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAppointments(prev => prev.map(a => a._id === appointmentId ? { ...a, paymentStatus: "Paid" } : a));
+      } else {
+        alert("Failed to collect cash: " + data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error collecting cash payment.");
+    }
+  };
+
   const handleRegisterPatient = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -408,8 +438,11 @@ export default function ClinicManagerDashboardPage() {
 
       {/* Stats Cards Section */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-card border border-border p-6 rounded-3xl shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+        <div 
+          onClick={() => router.push("/clinic-manager/appointments")}
+          className="bg-card border border-border p-6 rounded-3xl shadow-sm flex items-center gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition">
             <Calendar className="w-6 h-6" />
           </div>
           <div>
@@ -418,8 +451,11 @@ export default function ClinicManagerDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-card border border-border p-6 rounded-3xl shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+        <div 
+          onClick={() => router.push("/clinic-manager/patients")}
+          className="bg-card border border-border p-6 rounded-3xl shadow-sm flex items-center gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition">
             <Users className="w-6 h-6" />
           </div>
           <div>
@@ -441,8 +477,11 @@ export default function ClinicManagerDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-card border border-border p-6 rounded-3xl shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+        <div 
+          onClick={() => router.push("/clinic-manager/payments")}
+          className="bg-card border border-border p-6 rounded-3xl shadow-sm flex items-center gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition">
             <CreditCard className="w-6 h-6" />
           </div>
           <div>
@@ -457,32 +496,53 @@ export default function ClinicManagerDashboardPage() {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-foreground">Recent Clinic Patients</h2>
-              <Button variant="ghost" size="sm" onClick={() => router.push("/clinic-manager/patients")} className="text-xs text-primary font-bold hover:underline px-0">
-                View Patients Directory
+              <h2 className="text-xl font-bold text-foreground">Today's Upcoming Appointments</h2>
+              <Button variant="ghost" size="sm" onClick={() => router.push("/clinic-manager/appointments")} className="text-xs text-primary font-bold hover:underline px-0">
+                View All ({scheduledToday.length})
               </Button>
             </div>
 
-            {patients.length === 0 ? (
+            {scheduledToday.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground text-sm">
-                No patients registered yet.
+                No upcoming appointments today.
               </div>
             ) : (
               <div className="divide-y divide-border overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-border bg-muted/20 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      <th className="p-3">Name</th>
-                      <th className="p-3">WhatsApp Number</th>
-                      <th className="p-3">Email Address</th>
+                      <th className="p-3">Patient</th>
+                      <th className="p-3">Time & Type</th>
+                      <th className="p-3">Status</th>
+                      <th className="p-3 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border text-xs">
-                    {patients.slice(0, 5).map((p) => (
-                      <tr key={p._id} className="hover:bg-muted/10 transition">
-                        <td className="p-3 font-bold text-foreground">{p.name}</td>
-                        <td className="p-3 text-muted-foreground">{p.phone}</td>
-                        <td className="p-3 text-muted-foreground">{p.email}</td>
+                    {scheduledToday.map((apt) => (
+                      <tr key={apt._id} className="hover:bg-muted/10 transition">
+                        <td className="p-3">
+                          <div className="font-bold text-foreground">{apt.patientId?.name || "Patient"}</div>
+                          <div className="text-muted-foreground flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" /> {apt.patientId?.phone || "No phone"}</div>
+                        </td>
+                        <td className="p-3">
+                          <div className="font-medium text-foreground flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-muted-foreground" /> {apt.time}</div>
+                          <div className="text-muted-foreground flex items-center gap-1 mt-0.5">
+                            {apt.type === "Video" ? <Video className="w-3 h-3 text-blue-500" /> : <MapPin className="w-3 h-3 text-green-500" />} {apt.type}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <Badge className="text-[10px]">{apt.status}</Badge>
+                        </td>
+                        <td className="p-3 text-right">
+                          {apt.paymentMethod === "Cash" && apt.paymentStatus !== "Paid" && (
+                            <Button onClick={() => handleCollectCash(apt._id)} size="sm" className="h-7 text-[10px] px-3 bg-amber-600 hover:bg-amber-700 text-white shadow-sm shadow-amber-500/10">
+                              Payment Confirm
+                            </Button>
+                          )}
+                          {apt.paymentStatus === "Paid" && (
+                             <span className="text-[10px] font-bold text-emerald-600 inline-flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5"/> Paid</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -521,43 +581,36 @@ export default function ClinicManagerDashboardPage() {
           </div>
         </div>
 
-        {/* Right Column (Upcoming Logs list) */}
+        {/* Right Column (Recent Patients list) */}
         <div className="p-6 bg-card border border-border rounded-3xl shadow-sm space-y-4 max-h-[500px] flex flex-col">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-bold">Today's Agenda</h2>
+              <Users className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-bold">Recent Patients</h2>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => router.push("/clinic-manager/appointments")} className="text-xs text-primary font-bold hover:underline px-0">
-              View All ({totalUpcomingCount})
+            <Button variant="ghost" size="sm" onClick={() => router.push("/clinic-manager/patients")} className="text-xs text-primary font-bold hover:underline px-0">
+              View Directory
             </Button>
           </div>
 
-          {scheduledToday.length === 0 ? (
+          {patients.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground text-sm flex-1 flex items-center justify-center">
-              No appointments scheduled for today.
+              No patients registered yet.
             </div>
           ) : (
             <div className="divide-y divide-border overflow-y-auto pr-1 flex-1 space-y-1">
-              {scheduledToday.map((apt) => (
-                <div key={apt._id} className="py-3 first:pt-0 last:pb-0 space-y-1.5">
+              {patients.slice(0, 10).map((p) => (
+                <div key={p._id} className="py-3 first:pt-0 last:pb-0 space-y-1.5">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-bold text-sm text-foreground">{apt.patientId?.name || "Patient"}</h4>
+                      <h4 className="font-bold text-sm text-foreground">{p.name}</h4>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0" /> {apt.patientId?.phone || "No phone"}
+                        <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0" /> {p.phone}
                       </p>
                     </div>
-                    <Badge className="text-[10px]">
-                      {apt.status}
-                    </Badge>
                   </div>
                   <div className="flex justify-between items-center text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg border border-border/40">
-                    <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {apt.time}</span>
-                    <span className="flex items-center gap-1">
-                      {apt.type === "Video" ? <Video className="w-3.5 h-3.5 text-blue-500" /> : <MapPin className="w-3.5 h-3.5 text-green-500" />}
-                      {apt.type}
-                    </span>
+                    <span className="truncate max-w-[180px]">{p.email || "No email"}</span>
                   </div>
                 </div>
               ))}

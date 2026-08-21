@@ -8,26 +8,26 @@ import { motion, Variants } from "framer-motion";
 const experts = [
   {
     id: "expert-1",
-    name: "Dr. Siddharth Verma",
-    specialty: "Lead Urologist & Men's Health",
-    credentials: "M.Ch Urology, Gold Medalist",
-    experience: "14+ Years Practice",
+    name: "Dr. Deepak Kelkar",
+    specialty: "Senior Psychiatrist & Founder",
+    credentials: "MD Psychiatry, Mind Gym Pioneer",
+    experience: "35+ Years Practice",
     image: "/images/doctor_1.png"
   },
   {
     id: "expert-2",
-    name: "Dr. Kavya Menon",
-    specialty: "Reproductive Endocrinologist",
-    credentials: "MD, Fellowship in Reproductive Medicine",
-    experience: "11+ Years Practice",
+    name: "Dr. Amol Kelkar",
+    specialty: "Consultant Psychiatrist",
+    credentials: "MD Psychiatry, De-Addiction Specialist",
+    experience: "12+ Years Practice",
     image: "/images/doctor_2.png"
   },
   {
     id: "expert-3",
-    name: "Dr. Vikram Ahuja",
-    specialty: "Clinical Psychologist (Intimacy)",
-    credentials: "Psy.D. in Behavioral Therapy",
-    experience: "9+ Years Practice",
+    name: "Dr. Radhika Kelkar",
+    specialty: "Child & Adolescent Psychiatrist",
+    credentials: "DPM, Fellowship in Child Psychiatry",
+    experience: "10+ Years Practice",
     image: "/images/doctor_3.png"
   }
 ];

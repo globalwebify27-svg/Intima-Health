@@ -6,6 +6,7 @@ import { Zap, Activity, BrainCircuit, ShieldCheck, HeartPulse, Pill, ArrowRight,
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { BookNowButton } from "@/components/ui/book-now-button";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -88,10 +89,10 @@ export default function EDPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/booking" className={cn(buttonVariants({ size: "lg" }), "rounded-full px-8 text-base font-semibold shadow-xl group")}>
+                <BookNowButton className={cn(buttonVariants({ size: "lg" }), "rounded-full px-8 text-base font-semibold shadow-xl group")}>
                   Book an ED Consultation
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Link>
+                </BookNowButton>
               </div>
             </motion.div>
 
@@ -216,9 +217,9 @@ export default function EDPage() {
             <p className="text-xl text-primary-foreground/80 mb-10">
               Speak with a licensed specialist today and get your treatment delivered discreetly.
             </p>
-            <Link href="/booking" className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "rounded-full px-10 py-6 text-lg font-bold shadow-2xl hover:scale-105 transition-transform")}>
+            <BookNowButton className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "rounded-full px-10 py-6 text-lg font-bold shadow-2xl hover:scale-105 transition-transform")}>
               Get Started Now
-            </Link>
+            </BookNowButton>
           </motion.div>
         </div>
       </section>

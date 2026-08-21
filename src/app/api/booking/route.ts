@@ -11,14 +11,18 @@ export async function POST(req: Request) {
   try {
     await connectDB();
     const body = await req.json();
-    const { 
+    let { 
       service, city, clinic, doctorId, date, time, 
       firstName, lastName, email, phone, dob,
       paymentMethod
     } = body;
 
-    if (!firstName || !lastName || !email || !phone) {
-      return NextResponse.json({ success: false, message: "Patient details are required." }, { status: 400 });
+    if (!firstName || !lastName || !phone) {
+      return NextResponse.json({ success: false, message: "Patient details (Name and Phone) are required." }, { status: 400 });
+    }
+
+    if (!email || email.trim() === "") {
+      email = `${phone}@noemail-intima.com`;
     }
 
     // 2. Find or create patient

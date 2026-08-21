@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Calendar, Pill, Video, FileText, ArrowRight, Activity, ShieldAlert, CreditCard, Download, Hospital } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useBookingModal } from "@/store/useBookingModal";
 import { Badge } from "@/components/ui/badge";
 
 interface Appointment {
@@ -61,6 +62,7 @@ interface PharmacyOrder {
 }
 
 export default function PatientDashboard() {
+  const { openBooking } = useBookingModal();
   const [patientId, setPatientId] = useState<string | null>(null);
   const [patientName, setPatientName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -259,39 +261,39 @@ export default function PatientDashboard() {
               <>
                 <h3 className="text-xl font-bold mb-1">{upcomingApt.doctorId?.name || "Clinician Practitioner"}</h3>
                 <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-3">{upcomingApt.doctorId?.specialization || "Wellness Expert"}</p>
-                <p className="text-sm text-muted-foreground font-medium">Video Consultation • {upcomingApt.date} at {upcomingApt.time}</p>
+                <p className="text-sm text-muted-foreground font-medium">{upcomingApt.type === "In-person" ? "Walk-in" : "Video"} Consultation • {upcomingApt.date} at {upcomingApt.time}</p>
                 {upcomingApt.paymentStatus !== "Paid" && (
                   <p className="text-xs text-amber-600 font-bold mt-2 flex items-center gap-1">
-                    <ShieldAlert className="w-3.5 h-3.5" /> Please pay the consultation fee to join the room.
+                    <ShieldAlert className="w-3.5 h-3.5" /> Please pay the consultation fee to confirm your booking.
                   </p>
                 )}
               </>
             ) : (
               <>
                 <h3 className="text-lg font-bold mb-2">No Scheduled Sessions</h3>
-                <p className="text-sm text-muted-foreground">Book a virtual call with one of our clinic locations.</p>
+                <p className="text-sm text-muted-foreground">Book a consultation with one of our clinic locations.</p>
               </>
             )}
           </div>
           {upcomingApt ? (
             upcomingApt.paymentStatus === "Paid" ? (
               <Button 
-                onClick={() => window.location.href = "/patient/consultations"} 
+                onClick={() => window.location.href = upcomingApt.type === "In-person" ? "/patient/appointments" : "/patient/consultations"} 
                 className="w-full rounded-xl h-11 font-bold mt-6 shadow-md shadow-primary/10 hover:shadow-primary/20"
               >
-                Join Consultation Room
+                {upcomingApt.type === "In-person" ? "View Appointment Details" : "Join Consultation Room"}
               </Button>
             ) : (
               <Button 
                 onClick={() => handlePayAppointment(upcomingApt._id)} 
                 className="w-full rounded-xl h-11 font-bold mt-6 bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-500/10"
               >
-                Pay Consultation Fee (₹{upcomingApt.doctorId?.fees || 500})
+                Pay Consultation Fee (₹{upcomingApt.type === "In-person" ? "1,499" : "999"})
               </Button>
             )
           ) : (
             <Button 
-              onClick={() => window.location.href = "/booking"} 
+              onClick={() => openBooking()} 
               className="w-full rounded-xl h-11 font-bold mt-6"
             >
               Book New Appointment

@@ -10,6 +10,7 @@ export interface IAppointment {
   status: "Scheduled" | "Completed" | "Cancelled";
   paymentStatus?: "Pending" | "Paid";
   paymentMethod?: "Online" | "Cash";
+  feeAmount?: number;
   notes?: string;
   createdBy?: string;
   updatedBy?: string;
@@ -26,6 +27,7 @@ const AppointmentSchema = new Schema<IAppointment>({
   status: { type: String, enum: ["Scheduled", "Completed", "Cancelled"], default: "Scheduled" },
   paymentStatus: { type: String, enum: ["Pending", "Paid"], default: "Pending" },
   paymentMethod: { type: String, enum: ["Online", "Cash"], default: "Online" },
+  feeAmount: { type: Number },
   notes: { type: String },
   createdBy: { type: String },
   updatedBy: { type: String },

@@ -6,6 +6,7 @@ import { ShieldAlert, FileSearch, Pill, Stethoscope, Lock, ArrowRight, CheckCirc
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { BookNowButton } from "@/components/ui/book-now-button";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -90,9 +91,9 @@ export default function STIPage() {
                   Order an STI Test Kit
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <Link href="/booking" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full px-8 text-base font-semibold bg-transparent")}>
+                <BookNowButton className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full px-8 text-base font-semibold bg-transparent")}>
                   Consult a Specialist
-                </Link>
+                </BookNowButton>
               </div>
             </motion.div>
 

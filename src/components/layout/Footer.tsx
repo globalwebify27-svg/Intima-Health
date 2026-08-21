@@ -45,21 +45,26 @@ export function Footer() {
           <div className="grid grid-cols-2 md:grid-cols-12 gap-12 mb-20">
             
             <div className="col-span-2 md:col-span-4 lg:col-span-5">
-               <span className="text-3xl font-black tracking-tighter text-white mb-6 block">
-                Intima<span className="text-white/50">Health</span>
+               <span className="text-3xl font-black tracking-tighter text-white mb-4 block">
+                Dr. Kelkar<span className="text-white/50"> Hospital</span>
               </span>
-              <p className="text-sm text-white/60 leading-relaxed max-w-xs font-medium mb-8">
-                Premium, private, and trustworthy digital healthcare focused on your sexual and reproductive wellbeing.
+              <p className="text-sm text-white/70 leading-relaxed max-w-xs font-medium mb-4">
+                P294+H8J, Ramdas Peth, Akola, Maharashtra 444001
+              </p>
+              <p className="text-sm text-white/70 font-medium mb-6">
+                Direct Appointment: <a href="tel:9822570101" className="underline hover:text-white">+91 9822570101</a><br />
+                WhatsApp: <a href="https://api.whatsapp.com/send?phone=919049993104" target="_blank" className="underline hover:text-white">+91 9049993104</a><br />
+                Email: kelkarhospitalpvt@gmail.com
               </p>
               
               <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
+                <a href="tel:9822570101" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
                   <Globe className="w-4 h-4" />
                 </a>
-                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
+                <a href="https://api.whatsapp.com/send?phone=919049993104" target="_blank" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
                   <MessageCircle className="w-4 h-4" />
                 </a>
-                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
+                <a href="mailto:kelkarhospitalpvt@gmail.com" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
                   <Mail className="w-4 h-4" />
                 </a>
               </div>

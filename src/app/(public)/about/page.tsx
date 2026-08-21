@@ -48,19 +48,19 @@ export default function AboutPage() {
             >
               <div className="flex items-center gap-4 mb-6">
                 <div className="h-px w-12 bg-primary"></div>
-                <span className="text-sm font-bold tracking-widest text-primary uppercase">About Us</span>
+                <span className="text-sm font-bold tracking-widest text-primary uppercase">About Dr. Kelkar Hospital</span>
               </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-serif font-medium text-foreground leading-[1.1] mb-6">
-                The Science of <br/>
-                <span className="text-primary italic">Intimacy.</span>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium text-foreground leading-[1.1] mb-6">
+                Leading Psychiatric & <br/>
+                <span className="text-primary italic">Mental Health Care.</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed border-l-2 border-primary/20 pl-6 max-w-lg">
-                We blend rigorous clinical research with compassionate care to elevate your most personal health journeys. Welcome to a new era of wellness.
+                Founded by Dr. Deepak Kelkar, Dr. Kelkar Hospital in Akola & Nagpur provides pioneer psychiatric treatment, de-addiction rehabilitation, and the Happiness 20 – Mind Gym program.
               </p>
               
               <div className="flex flex-wrap gap-4">
-                <Link href="/products" className="group inline-flex items-center justify-center px-8 py-4 text-sm font-bold uppercase tracking-wider text-primary-foreground bg-foreground rounded-none hover:bg-primary transition-colors">
-                  Our Solutions
+                <Link href="/services" className="group inline-flex items-center justify-center px-8 py-4 text-sm font-bold uppercase tracking-wider text-primary-foreground bg-foreground rounded-none hover:bg-primary transition-colors">
+                  Explore Services
                   <ArrowRight className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
@@ -75,8 +75,8 @@ export default function AboutPage() {
             >
               <div className="relative w-full aspect-[4/3] sm:aspect-[3/2] lg:aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl border-4 border-background z-10">
                 <Image
-                  src="/images/lifestyle_couple.png"
-                  alt="Intimate Health Lifestyle"
+                  src="/images/doctor_1.png"
+                  alt="Dr. Deepak Kelkar"
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -229,9 +229,9 @@ export default function AboutPage() {
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
             {[
-              { img: "/images/doctor_1.png", name: "Dr. Sarah Jenkins", role: "Chief Medical Officer", spec: "Board-Certified Gynecologist" },
-              { img: "/images/doctor_2.png", name: "Dr. Michael Chen", role: "Head of Research", spec: "Urology Specialist" },
-              { img: "/images/doctor_3.png", name: "Dr. Elena Rodriguez", role: "Lead Formulator", spec: "Dermatological Scientist" }
+              { img: "/images/doctor_1.png", name: "Dr. Deepak Kelkar", role: "Senior Psychiatrist & Founder", spec: "MD Psychiatry, Mind Gym Pioneer" },
+              { img: "/images/doctor_2.png", name: "Dr. Amol Kelkar", role: "Consultant Psychiatrist", spec: "De-Addiction Specialist" },
+              { img: "/images/doctor_3.png", name: "Dr. Radhika Kelkar", role: "Specialist in Child Psychiatry", spec: "DPM, Child Development" }
             ].map((doc, idx) => (
               <motion.div key={idx} variants={fadeIn} className="group cursor-pointer">
                 <div className="relative w-full aspect-[4/5] rounded-[2rem] overflow-hidden mb-6 bg-muted/50 border border-border">

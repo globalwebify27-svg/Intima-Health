@@ -5,6 +5,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useBookingModal } from "@/store/useBookingModal";
 import { Video, MapPin, ExternalLink } from "lucide-react";
 
 interface Appointment {
@@ -126,6 +127,7 @@ const columns: ColumnDef<Appointment>[] = [
 ];
 
 export default function PatientAppointmentsPage() {
+  const { openBooking } = useBookingModal();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -167,7 +169,7 @@ export default function PatientAppointmentsPage() {
             View your scheduled consultations and past visits.
           </p>
         </div>
-        <Button className="rounded-xl" onClick={() => window.location.href = "/booking"}>Book New</Button>
+        <Button className="rounded-xl" onClick={() => openBooking()}>Book New</Button>
       </div>
       <DataTable columns={columns} data={appointments} />
     </div>

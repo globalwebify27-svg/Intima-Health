@@ -6,6 +6,7 @@ import { TimerReset, BrainCircuit, Activity, ShieldCheck, HeartHandshake, Syring
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { BookNowButton } from "@/components/ui/book-now-button";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -89,10 +90,10 @@ export default function PEPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/booking" className={cn(buttonVariants({ size: "lg" }), "rounded-full px-8 text-base font-semibold shadow-xl group")}>
+                <BookNowButton className={cn(buttonVariants({ size: "lg" }), "rounded-full px-8 text-base font-semibold shadow-xl group")}>
                   Speak with a Specialist
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Link>
+                </BookNowButton>
               </div>
             </motion.div>
 
@@ -217,9 +218,9 @@ export default function PEPage() {
             <p className="text-xl text-primary-foreground/80 mb-10">
               Get an accurate diagnosis and a customized treatment plan without leaving your house.
             </p>
-            <Link href="/booking" className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "rounded-full px-10 py-6 text-lg font-bold shadow-2xl hover:scale-105 transition-transform")}>
+            <BookNowButton className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "rounded-full px-10 py-6 text-lg font-bold shadow-2xl hover:scale-105 transition-transform")}>
               Book a Confidential Visit
-            </Link>
+            </BookNowButton>
           </motion.div>
         </div>
       </section>

@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, Mail, Lock, User, ShieldCheck, Eye, EyeOff, Phone, AlertCircle } from "lucide-react";
+import { useBookingModal } from "@/store/useBookingModal";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { openBooking } = useBookingModal();
   
   // Input fields state
   const [firstName, setFirstName] = useState("");
@@ -46,7 +48,8 @@ export default function RegisterPage() {
 
       setSuccessMsg("Account created successfully! Logging you in...");
       setTimeout(() => {
-        router.push("/booking");
+        router.push("/");
+        openBooking();
       }, 1500);
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred.");

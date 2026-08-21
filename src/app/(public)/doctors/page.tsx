@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Star, Award, GraduationCap, Calendar, ArrowRight, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { BookNowButton } from "@/components/ui/book-now-button";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -156,9 +157,9 @@ export default function DoctorsPage() {
                     </div>
                   </div>
                   
-                  <Link href="/booking" className={cn(buttonVariants(), "w-full rounded-full py-6 text-base font-semibold group-hover:bg-primary/90 transition-colors")}>
+                  <BookNowButton className={cn(buttonVariants(), "w-full rounded-full py-6 text-base font-semibold group-hover:bg-primary/90 transition-colors")}>
                     Book Consultation
-                  </Link>
+                  </BookNowButton>
                 </div>
               </motion.div>
             ))}

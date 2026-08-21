@@ -7,25 +7,32 @@ import { motion, Variants } from "framer-motion";
 
 const conditions = [
   {
-    id: "sti",
-    title: "STI Testing & Care",
-    description: "Private at-home testing kits and rapid online treatment.",
-    icon: ShieldAlert,
-    href: "/conditions/sti"
-  },
-  {
-    id: "libido",
-    title: "Low Libido",
-    description: "Personalized care plans for decreased sex drive.",
-    icon: User,
-    href: "/conditions/low-libido"
-  },
-  {
-    id: "fertility",
-    title: "Fertility Support",
-    description: "Comprehensive assessments and reproductive care.",
+    id: "depression",
+    title: "Depression & Mood Disorders",
+    description: "Expert diagnostic care and clinical treatment plans by Dr. Deepak Kelkar.",
     icon: Heart,
-    href: "/conditions/fertility"
+    href: "/conditions/depression"
+  },
+  {
+    id: "anxiety-ocd",
+    title: "Anxiety & OCD Treatment",
+    description: "Comprehensive therapy and evidence-based medical care for anxiety and OCD.",
+    icon: ShieldAlert,
+    href: "/conditions/anxiety"
+  },
+  {
+    id: "deaddiction",
+    title: "Alcohol & Drug De-Addiction",
+    description: "Inpatient rehabilitation at Ashakiran Rehabilitation Centre & Sanmitra Manas.",
+    icon: Activity,
+    href: "/conditions/de-addiction"
+  },
+  {
+    id: "mind-gym",
+    title: "Happiness 20 – Mind Gym",
+    description: "Daily 20-minute guided mental fitness and stress transformation program.",
+    icon: Sparkles,
+    href: "/conditions/mind-gym"
   }
 ];
 

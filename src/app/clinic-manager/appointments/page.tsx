@@ -114,6 +114,24 @@ export default function AppointmentsPage() {
     }
   });
 
+  // Sort by date and time
+  filtered.sort((a, b) => {
+    if (activeTab === "upcoming") {
+      return a.date.localeCompare(b.date) || a.time.localeCompare(b.time);
+    } else {
+      return b.date.localeCompare(a.date) || b.time.localeCompare(a.time);
+    }
+  });
+
+  // Group by date
+  const groupedByDate: Record<string, AppointmentData[]> = {};
+  filtered.forEach((apt) => {
+    if (!groupedByDate[apt.date]) {
+      groupedByDate[apt.date] = [];
+    }
+    groupedByDate[apt.date].push(apt);
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">
@@ -189,60 +207,66 @@ export default function AppointmentsPage() {
           No appointments found matching the filters.
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((apt) => (
-            <div
-              key={apt._id}
-              className="bg-card border border-border rounded-3xl p-6 shadow-sm flex flex-col justify-between gap-4"
-            >
-              <div className="space-y-3">
-                <div className="flex justify-between items-start gap-2">
-                  <div>
-                    <h3 className="font-bold text-lg leading-tight">{apt.patientId?.name || "Patient"}</h3>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1 font-medium">
-                      <Phone className="w-4 h-4" /> {apt.patientId?.phone || "No phone"}
-                    </p>
-                  </div>
-                  <Badge variant={apt.status === "Scheduled" ? "default" : "secondary"}>
-                    {apt.status}
-                  </Badge>
-                </div>
+        <div className="space-y-10">
+          {Object.entries(groupedByDate).map(([date, apts]) => (
+            <div key={date} className="space-y-4">
+              <h3 className="text-xl font-bold flex items-center gap-2 text-foreground">
+                <Calendar className="w-5 h-5 text-primary" />
+                {date === todayStr ? "Today, " + date : date}
+              </h3>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {apts.map((apt) => (
+                  <div
+                    key={apt._id}
+                    className="bg-card border border-border rounded-3xl p-6 shadow-sm flex flex-col justify-between gap-4"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <h3 className="font-bold text-lg leading-tight">{apt.patientId?.name || "Patient"}</h3>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1 font-medium">
+                            <Phone className="w-4 h-4" /> {apt.patientId?.phone || "No phone"}
+                          </p>
+                        </div>
+                        <Badge variant={apt.status === "Scheduled" ? "default" : "secondary"}>
+                          {apt.status}
+                        </Badge>
+                      </div>
 
-                <div className="border-t border-border pt-3 space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    <span>Date: {apt.date}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="w-4 h-4 text-primary" />
-                    <span>Time slot: {apt.time}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {apt.type === "Video" ? (
-                      <Video className="w-4 h-4 text-blue-500" />
-                    ) : (
-                      <MapPin className="w-4 h-4 text-green-500" />
+                      <div className="border-t border-border pt-3 space-y-2">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="w-4 h-4 text-primary" />
+                          <span>Time slot: {apt.time}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          {apt.type === "Video" ? (
+                            <Video className="w-4 h-4 text-blue-500" />
+                          ) : (
+                            <MapPin className="w-4 h-4 text-green-500" />
+                          )}
+                          <span>Type: {apt.type}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1 font-bold">
+                          Doctor: Dr. {apt.doctorId?.name || "Unassigned"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {apt.status === "Scheduled" && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="w-full mt-2 h-10 rounded-xl font-bold flex items-center justify-center gap-2"
+                        disabled={actionLoading === apt._id}
+                        onClick={() => handleCancel(apt._id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        {actionLoading === apt._id ? "Cancelling..." : "Cancel Appointment"}
+                      </Button>
                     )}
-                    <span>Type: {apt.type}</span>
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1 font-bold">
-                    Doctor: Dr. {apt.doctorId?.name || "Unassigned"}
-                  </div>
-                </div>
+                ))}
               </div>
-
-              {apt.status === "Scheduled" && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="w-full mt-2 h-10 rounded-xl font-bold flex items-center justify-center gap-2"
-                  disabled={actionLoading === apt._id}
-                  onClick={() => handleCancel(apt._id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  {actionLoading === apt._id ? "Cancelling..." : "Cancel Appointment"}
-                </Button>
-              )}
             </div>
           ))}
         </div>

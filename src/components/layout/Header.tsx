@@ -65,64 +65,103 @@ export function Header() {
           <NavigationMenu className="hidden xl:flex">
             <NavigationMenuList className="gap-1">
               
-              {/* Conditions We Treat (Problem First) */}
+              {/* Services (From Image) */}
               <NavigationMenuItem>
                 <NavigationMenuTrigger 
-                  onClick={() => router.push('/conditions')}
+                  onClick={() => router.push('/services')}
                   className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors cursor-pointer"
                 >
-                  Conditions We Treat
+                  Services
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
-                    <ListItem href="/conditions/ed" title="Erectile Dysfunction">
-                      Personalized treatment plans for ED.
+                  <ul className="grid w-[450px] gap-2 p-4 md:w-[600px] md:grid-cols-2">
+                    <ListItem href="/services/treatment-of-depression" title="Treatment of Depression">
+                      Comprehensive clinical psychiatric care.
                     </ListItem>
-                    <ListItem href="/conditions/pe" title="Premature Ejaculation">
-                      Build endurance and stamina safely.
+                    <ListItem href="/services/treatment-of-anxiety" title="Treatment of Anxiety">
+                      Therapy & evidence-based medical care.
                     </ListItem>
-                    <ListItem href="/conditions/testosterone" title="Low Testosterone">
-                      TRT and hormone optimization therapies.
+                    <ListItem href="/services/ocd-treatment" title="Treatment of OCD">
+                      Specialized Obsessive-Compulsive Disorder management.
                     </ListItem>
-                    <ListItem href="/conditions/sti" title="STI Management">
-                      Fast, private testing and treatment.
+                    <ListItem href="/services/alcohol-de-addiction" title="Alcohol De-Addiction">
+                      Inpatient rehabilitation & detox programs.
+                    </ListItem>
+                    <ListItem href="/services/nicotine-de-addiction" title="Nicotine De-Addiction">
+                      Cessation protocols & counseling.
+                    </ListItem>
+                    <ListItem href="/services/brown-sugar-de-addiction" title="Brown Sugar De-Addiction">
+                      Specialized opioid recovery programs.
+                    </ListItem>
+                    <ListItem href="/services/child-and-adolescent-psychiatry" title="Child & Adolescent Psychiatry">
+                      Behavioral & developmental mental health care.
+                    </ListItem>
+                    <ListItem href="/services/geriatric-psychiatry" title="Geriatric Psychiatry">
+                      Senior mental wellness & memory care.
+                    </ListItem>
+                    <ListItem href="/services/cognitive-behavioural-therapy" title="Cognitive Behavioural Therapy">
+                      Structured psychological therapy sessions.
                     </ListItem>
                     <div className="md:col-span-2 pt-3 mt-1 border-t border-border/50 text-center">
-                      <Link href="/conditions" className="inline-flex items-center text-sm font-semibold text-primary hover:underline transition-all">
-                        View All Conditions <span className="ml-1">&rarr;</span>
+                      <Link href="/services" className="inline-flex items-center text-sm font-semibold text-primary hover:underline transition-all">
+                        View All Psychiatric & Rehab Services <span className="ml-1">&rarr;</span>
                       </Link>
                     </div>
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
 
-              {/* Our Services (Solutions) */}
+              {/* Psychometric Tests Offered */}
               <NavigationMenuItem>
                 <NavigationMenuTrigger 
-                  onClick={() => router.push('/services')}
+                  onClick={() => router.push('/diagnostics')}
                   className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors cursor-pointer"
                 >
-                  Our Services
+                  Psychometric Tests
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
-                    <ListItem href="/consultations" title="Online Consultations">
-                      15-min discrete video calls with specialists.
+                  <ul className="grid w-[350px] gap-2 p-4">
+                    <ListItem href="/diagnostics" title="IQ & Cognitive Assessments">
+                      Standardized intelligence & memory evaluations.
                     </ListItem>
-                    <ListItem href="/pharmacy" title="Discreet Pharmacy">
-                      Medication delivered in unbranded packaging.
+                    <ListItem href="/diagnostics" title="Personality & Mood Tests">
+                      Clinical profiling for depression & anxiety.
                     </ListItem>
-                    <ListItem href="/diagnostics" title="At-Home Diagnostics">
-                      Lab testing from the comfort of your home.
+                    <ListItem href="/diagnostics" title="ADHD & Autism Evaluation">
+                      Developmental psychometric assessments.
                     </ListItem>
-                    <ListItem href="/therapy" title="Sex Therapy">
-                      Behavioral and psychological counseling.
+                    <ListItem href="/diagnostics" title="De-Addiction Severity Tests">
+                      Substance dependence risk evaluation.
                     </ListItem>
-                    <div className="md:col-span-2 pt-3 mt-1 border-t border-border/50 text-center">
-                      <Link href="/services" className="inline-flex items-center text-sm font-semibold text-primary hover:underline transition-all">
-                        View All Services <span className="ml-1">&rarr;</span>
-                      </Link>
-                    </div>
+                  </ul>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+
+              {/* Sexual Problems (From Client Screenshot) */}
+              <NavigationMenuItem>
+                <NavigationMenuTrigger 
+                  onClick={() => router.push('/conditions')}
+                  className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors cursor-pointer"
+                >
+                  Sexual Problems
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <ul className="grid w-[400px] gap-2 p-4 md:grid-cols-2">
+                    <ListItem href="/conditions/sex-for-happiness" title="Sex For Happiness">
+                      Wellness & fulfillment counseling.
+                    </ListItem>
+                    <ListItem href="/conditions/premature-ejaculation" title="Premature Ejaculation">
+                      Stamina, control & medical therapy.
+                    </ListItem>
+                    <ListItem href="/conditions/erectile-dysfunction" title="Erectile Dysfunction">
+                      Clinical treatment & recovery plans.
+                    </ListItem>
+                    <ListItem href="/conditions/masturbation-counseling" title="Masturbation Counseling">
+                      Myths, guidance & behavioral counseling.
+                    </ListItem>
+                    <ListItem href="/conditions/homosexual-anxiety" title="Homosexual Anxiety">
+                      Confidential care & psychological support.
+                    </ListItem>
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
