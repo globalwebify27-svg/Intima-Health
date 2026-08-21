@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   CheckCircle2, 
@@ -18,12 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Mock Data
-const services = [
-  { id: "consultation", title: "Online Consultation", icon: Video, description: "15-min video call with a specialist", price: "₹999" },
-  { id: "therapy", title: "Sex Therapy", icon: HeartHandshake, description: "50-min psychological counseling", price: "₹2,499" },
-  { id: "walk_in", title: "Walk-in Consultation", icon: Building2, description: "In-person visit to our premium clinic", price: "₹1,499" }
-];
+const IconMap: any = { Video, HeartHandshake, Building2, CalendarIcon, Clock, ShieldCheck, CreditCard, MapPin, FlaskConical, CheckCircle2, ChevronRight, ChevronLeft };
 
 const cities = [
   { id: "pune", name: "Pune", description: "Maharashtra's premium wellness hub" },
@@ -59,6 +54,22 @@ export default function BookingPage() {
     phone: "",
     dob: ""
   });
+  
+  const [services, setServices] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
+  
+  useEffect(() => {
+    setLoadingServices(true);
+    fetch("/api/services")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setServices(data.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoadingServices(false));
+  }, []);
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 6));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -145,28 +156,37 @@ export default function BookingPage() {
               >
                 <h2 className="text-2xl font-serif mb-6">What can we help you with?</h2>
                 <div className="space-y-4">
-                  {services.map((service) => (
-                    <button
-                      key={service.id}
-                      onClick={() => updateForm('service', service.id)}
-                      className={`w-full flex items-center p-6 rounded-2xl border-2 text-left transition-all ${
-                        formData.service === service.id 
-                          ? "border-primary bg-primary/5 shadow-md" 
-                          : "border-border hover:border-primary/40 hover:bg-muted"
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 mr-5 ${
-                        formData.service === service.id ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                      }`}>
-                        <service.icon className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold">{service.title}</h3>
-                        <p className="text-muted-foreground text-sm">{service.description}</p>
-                      </div>
-                      <div className="font-bold text-lg text-primary">{service.price}</div>
-                    </button>
-                  ))}
+                  {loadingServices ? (
+                    <div className="py-8 text-center text-muted-foreground">Loading services...</div>
+                  ) : services.length === 0 ? (
+                    <div className="py-8 text-center text-muted-foreground">No services available.</div>
+                  ) : (
+                    services.map((service) => {
+                      const Icon = IconMap[service.icon] || Video;
+                      return (
+                        <button
+                          key={service._id}
+                          onClick={() => updateForm('service', service._id)}
+                          className={`w-full flex items-center p-6 rounded-2xl border-2 text-left transition-all ${
+                            formData.service === service._id 
+                              ? "border-primary bg-primary/5 shadow-md" 
+                              : "border-border hover:border-primary/40 hover:bg-muted"
+                          }`}
+                        >
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 mr-5 ${
+                            formData.service === service._id ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                          }`}>
+                            <Icon className="w-6 h-6" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold">{service.name}</h3>
+                            <p className="text-muted-foreground text-sm">{service.description}</p>
+                          </div>
+                          <div className="font-bold text-lg text-primary">₹{service.price}</div>
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               </motion.div>
             )}

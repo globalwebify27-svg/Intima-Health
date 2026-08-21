@@ -94,18 +94,20 @@ export class AppointmentService {
       };
     });
 
-    // If selected date is today, filter out past slots based on system's local time
-    const now = new Date();
+    // If selected date is today, filter out past slots based on IST time (Asia/Kolkata)
+    const istTimeStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    const nowIST = new Date(istTimeStr);
+    
     const [qYear, qMonth, qDay] = dateStr.split("-").map(Number);
     const isToday = (
-      now.getFullYear() === qYear &&
-      (now.getMonth() + 1) === qMonth &&
-      now.getDate() === qDay
+      nowIST.getFullYear() === qYear &&
+      (nowIST.getMonth() + 1) === qMonth &&
+      nowIST.getDate() === qDay
     );
 
     if (isToday) {
-      const currentHour = now.getHours();
-      const currentMin = now.getMinutes();
+      const currentHour = nowIST.getHours();
+      const currentMin = nowIST.getMinutes();
       const currentTimeInMinutes = currentHour * 60 + currentMin;
 
       slots = slots.filter(slot => {
