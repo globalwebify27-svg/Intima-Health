@@ -17,6 +17,7 @@ import {
   Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useServices } from "@/store/useServices";
 
 const IconMap: any = { Video, HeartHandshake, Building2, CalendarIcon, Clock, ShieldCheck, CreditCard, MapPin, FlaskConical, CheckCircle2, ChevronRight, ChevronLeft };
 
@@ -55,20 +56,10 @@ export default function BookingPage() {
     dob: ""
   });
   
-  const [services, setServices] = useState<any[]>([]);
-  const [loadingServices, setLoadingServices] = useState(false);
-  
+  const { services, loading: loadingServices, fetchServices } = useServices();
+
   useEffect(() => {
-    setLoadingServices(true);
-    fetch("/api/services")
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setServices(data.data);
-        }
-      })
-      .catch(console.error)
-      .finally(() => setLoadingServices(false));
+    fetchServices();
   }, []);
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 6));

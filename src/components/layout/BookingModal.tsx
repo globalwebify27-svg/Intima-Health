@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBookingModal } from "@/store/useBookingModal";
+import { useServices } from "@/store/useServices";
 
 const IconMap: any = { Video, HeartHandshake, Building2, User, Star, ShieldCheck, MapPin, AlertCircle, CreditCard, X };
 
@@ -76,8 +77,7 @@ export function BookingModal() {
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [clinicsList, setClinicsList] = useState<any[]>([]);
   const [loadingClinics, setLoadingClinics] = useState(false);
-  const [services, setServices] = useState<any[]>([]);
-  const [loadingServices, setLoadingServices] = useState(false);
+  const { services, loading: loadingServices, fetchServices } = useServices();
   const [realSlots, setRealSlots] = useState<any[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [whatsappMsg, setWhatsappMsg] = useState("");
@@ -114,16 +114,7 @@ export function BookingModal() {
       setWhatsappMsg("");
     } else {
       // Fetch services
-      setLoadingServices(true);
-      fetch("/api/services")
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setServices(data.data);
-          }
-        })
-        .catch(console.error)
-        .finally(() => setLoadingServices(false));
+      fetchServices();
     }
   }, [isOpen]);
 
