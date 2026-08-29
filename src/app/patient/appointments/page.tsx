@@ -6,20 +6,22 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useBookingModal } from "@/store/useBookingModal";
-import { Video, MapPin, ExternalLink } from "lucide-react";
+import { Video, MapPin, ExternalLink, Download } from "lucide-react";
+import { printReceipt } from "@/lib/print-receipt";
 
 interface Appointment {
   _id: string;
   doctorId?: {
     name: string;
     specialization: string;
-    fees?: number;
+    salary?: number;
   };
   date: string;
   time: string;
   type: string;
   status: string;
   paymentStatus?: string;
+  serviceName?: string;
 }
 
 const columns: ColumnDef<Appointment>[] = [
@@ -38,16 +40,12 @@ const columns: ColumnDef<Appointment>[] = [
     header: "Time",
   },
   {
-    accessorKey: "type",
-    header: "Type",
+    accessorKey: "serviceName",
+    header: "Service",
     cell: ({ row }) => {
-      const type = row.getValue("type") as string;
-      return (
-        <div className="flex items-center gap-2">
-          {type === "Video" ? <Video className="h-4 w-4 text-blue-500" /> : <MapPin className="h-4 w-4 text-green-500" />}
-          <span>{type}</span>
-        </div>
-      );
+      const type = row.original.type as string;
+      const serviceName = row.getValue("serviceName") as string || type;
+      return <span>{serviceName}</span>;
     }
   },
   {
@@ -66,10 +64,30 @@ const columns: ColumnDef<Appointment>[] = [
     header: "Payment",
     cell: ({ row }) => {
       const pStatus = row.original.paymentStatus || "Pending";
-      const fees = row.original.doctorId?.fees || 500;
+      const price = 500; // Will be dynamically mapped from service later
+      const type = row.original.type as string;
+      const appointmentId = row.original._id;
+
+      const handleDownloadReceipt = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        printReceipt(row.original, "Payment Receipt");
+      };
+
+      if (pStatus === "Paid") {
+        return (
+          <Badge 
+            variant="secondary" 
+            className="cursor-pointer hover:bg-secondary/80 flex w-fit items-center gap-1.5 transition-colors" 
+            onClick={handleDownloadReceipt} 
+            title="Download Receipt"
+          >
+            Paid <Download className="w-3 h-3 opacity-70" />
+          </Badge>
+        );
+      }
       return (
-        <Badge variant={pStatus === "Paid" ? "secondary" : "destructive"}>
-          {pStatus === "Paid" ? "Paid" : `Pending (₹${fees})`}
+        <Badge variant="destructive">
+          Pending (₹{price})
         </Badge>
       );
     }
@@ -77,14 +95,22 @@ const columns: ColumnDef<Appointment>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
-      const type = row.getValue("type") as string;
+      const type = row.original.type as string;
       const status = row.getValue("status") as string;
       const paymentStatus = row.original.paymentStatus || "Pending";
       const appointmentId = row.original._id;
       
+      let actionNode = null;
+
       if (type === "Video" && status === "Scheduled") {
-        if (paymentStatus === "Paid") {
-          return (
+        const appointmentTime = new Date(`${row.original.date}T${row.original.time}`).getTime();
+        const now = new Date().getTime();
+        const isTimeOver = now > appointmentTime + 60 * 60 * 1000; // 1 hour buffer
+
+        if (isTimeOver) {
+          actionNode = <span className="text-muted-foreground text-[10px] font-semibold italic opacity-50">Expired</span>;
+        } else if (paymentStatus === "Paid") {
+          actionNode = (
             <Button 
               size="sm" 
               className="rounded-lg"
@@ -94,7 +120,7 @@ const columns: ColumnDef<Appointment>[] = [
             </Button>
           );
         } else {
-          return (
+          actionNode = (
             <Button 
               size="sm" 
               className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white"
@@ -121,7 +147,12 @@ const columns: ColumnDef<Appointment>[] = [
           );
         }
       }
-      return null;
+
+      return (
+        <div className="flex items-center gap-2">
+          {actionNode}
+        </div>
+      );
     },
   },
 ];
@@ -130,6 +161,7 @@ export default function PatientAppointmentsPage() {
   const { openBooking } = useBookingModal();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("upcoming");
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -140,7 +172,10 @@ export default function PatientAppointmentsPage() {
           const res = await fetch(`/api/appointments?patientId=${meJson.user.patientId}`);
           const json = await res.json();
           if (json.success) {
-            setAppointments(json.data || []);
+            const sortedApts = (json.data || []).sort((a: Appointment, b: Appointment) => {
+              return new Date(`${b.date}T${b.time}`).getTime() - new Date(`${a.date}T${a.time}`).getTime();
+            });
+            setAppointments(sortedApts);
           }
         }
       } catch (err) {
@@ -160,6 +195,30 @@ export default function PatientAppointmentsPage() {
     );
   }
 
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const filteredAppointments = appointments.filter((apt) => {
+    if (activeTab === "cancelled") {
+      return apt.status === "Cancelled";
+    }
+
+    if (activeTab === "upcoming") {
+      return (
+        ["Scheduled", "Checked In", "Engaged", "Rescheduled"].includes(apt.status) &&
+        apt.date >= todayStr
+      );
+    }
+
+    if (activeTab === "past") {
+      return (
+        ["Completed", "Checked Out"].includes(apt.status) ||
+        (["Scheduled", "Checked In", "Engaged", "Rescheduled"].includes(apt.status) && apt.date < todayStr)
+      );
+    }
+    
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -171,7 +230,29 @@ export default function PatientAppointmentsPage() {
         </div>
         <Button className="rounded-xl" onClick={() => openBooking()}>Book New</Button>
       </div>
-      <DataTable columns={columns} data={appointments} />
+
+      <div className="flex items-center gap-6 border-b border-border">
+        <button
+          onClick={() => setActiveTab("upcoming")}
+          className={`pb-3 border-b-2 font-bold text-sm transition-colors ${activeTab === "upcoming" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          Upcoming
+        </button>
+        <button
+          onClick={() => setActiveTab("past")}
+          className={`pb-3 border-b-2 font-bold text-sm transition-colors ${activeTab === "past" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          Past
+        </button>
+        <button
+          onClick={() => setActiveTab("cancelled")}
+          className={`pb-3 border-b-2 font-bold text-sm transition-colors ${activeTab === "cancelled" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          Cancelled
+        </button>
+      </div>
+
+      <DataTable columns={columns} data={filteredAppointments} />
     </div>
   );
 }

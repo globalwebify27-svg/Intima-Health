@@ -11,67 +11,37 @@ import { MessageCircleQuestion, HelpCircle, Mail, MessageSquare } from "lucide-r
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import React from "react";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
 };
 
-const faqs = [
-  {
-    category: "Consultations & Appointments",
-    questions: [
-      {
-        q: "How does a video consultation work?",
-        a: "Once you book an appointment, you'll receive a secure, encrypted link. At your scheduled time, simply click the link from your phone or computer to speak directly with your specialist. The process is completely private and HIPAA-compliant."
-      },
-      {
-        q: "Do I have to show my face on video?",
-        a: "While video is highly recommended for a thorough clinical assessment, we understand that intimacy issues can be sensitive. Audio-only options and secure messaging are available depending on your state's telemedicine regulations."
-      },
-      {
-        q: "How long do appointments usually take?",
-        a: "Initial consultations typically last 15-20 minutes, which provides ample time for the doctor to review your medical history, discuss symptoms, and formulate a customized treatment plan."
-      }
-    ]
-  },
-  {
-    category: "Privacy & Security",
-    questions: [
-      {
-        q: "Is my medical data safe?",
-        a: "Absolutely. Intima Health is fully HIPAA-compliant. We use bank-level encryption (AES-256) to protect your health records, consultation videos, and personal information. Your data is never sold to third parties."
-      },
-      {
-        q: "How will the charge appear on my bank statement?",
-        a: "To protect your privacy, all charges will appear under a discreet, neutral name (e.g., 'IH Medical Services') on your credit card or bank statement."
-      },
-      {
-        q: "Is the medication packaging discreet?",
-        a: "Yes. All treatments and diagnostic kits are shipped in plain, unbranded boxes. There is no external indication of the contents or our medical brand name on the outside."
-      }
-    ]
-  },
-  {
-    category: "Treatments & Pharmacy",
-    questions: [
-      {
-        q: "Are the medications FDA-approved?",
-        a: "Yes. We only prescribe medications that are FDA-approved or compounded in strictly regulated, certified US pharmacies following the highest clinical standards."
-      },
-      {
-        q: "Can I use my insurance?",
-        a: "Intima Health currently operates on a cash-pay basis to keep our services affordable, discreet, and fast. However, we can provide you with an itemized superbill that you can submit to your insurance for potential out-of-network reimbursement."
-      },
-      {
-        q: "How long does shipping take?",
-        a: "Once a doctor approves your prescription, the pharmacy typically processes and ships it within 24 hours. Standard shipping takes 2-3 business days. Expedited shipping is available at checkout."
-      }
-    ]
-  }
-];
+// Hardcoded fallback or removed entirely. We'll fetch from API.
 
 export default function FAQPage() {
+  const [groupedFaqs, setGroupedFaqs] = React.useState<{category: string, questions: {q: string, a: string}[]}[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch("/api/public/content/faqs")
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          const map = new Map<string, {q: string, a: string}[]>();
+          json.data.forEach((faq: any) => {
+            const cat = faq.category || "General";
+            if (!map.has(cat)) map.set(cat, []);
+            map.get(cat)?.push({ q: faq.question, a: faq.answer });
+          });
+          const grouped = Array.from(map.entries()).map(([category, questions]) => ({ category, questions }));
+          setGroupedFaqs(grouped);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       
@@ -103,37 +73,43 @@ export default function FAQPage() {
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto">
-            {faqs.map((category, index) => (
-              <motion.div 
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="mb-12"
-              >
-                <h2 className="text-2xl font-serif font-medium text-foreground mb-6 flex items-center">
-                  {category.category}
-                </h2>
-                
-                <Accordion className="w-full space-y-4">
-                  {category.questions.map((faq, i) => (
-                    <AccordionItem 
-                      key={i} 
-                      value={`item-${index}-${i}`}
-                      className="border border-border bg-card rounded-2xl px-6 data-[state=open]:shadow-md transition-all"
-                    >
-                      <AccordionTrigger className="text-left font-semibold text-lg hover:no-underline py-6">
-                        {faq.q}
-                      </AccordionTrigger>
-                      <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6 pr-8">
-                        {faq.a}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </motion.div>
-            ))}
+            {loading ? (
+              <div className="text-center py-12 text-muted-foreground">Loading FAQs...</div>
+            ) : groupedFaqs.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">No FAQs available yet.</div>
+            ) : (
+              groupedFaqs.map((category, index) => (
+                <motion.div 
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="mb-12"
+                >
+                  <h2 className="text-2xl font-serif font-medium text-foreground mb-6 flex items-center">
+                    {category.category}
+                  </h2>
+                  
+                  <Accordion className="w-full space-y-4">
+                    {category.questions.map((faq, i) => (
+                      <AccordionItem 
+                        key={i} 
+                        value={`item-${index}-${i}`}
+                        className="border border-border bg-card rounded-2xl px-6 data-[state=open]:shadow-md transition-all"
+                      >
+                        <AccordionTrigger className="text-left font-semibold text-lg hover:no-underline py-6">
+                          {faq.q}
+                        </AccordionTrigger>
+                        <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6 pr-8">
+                          {faq.a}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
       </section>

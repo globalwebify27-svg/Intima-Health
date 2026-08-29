@@ -71,7 +71,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
           if (doctorDetails.specialization) doctor.specialization = doctorDetails.specialization;
           if (doctorDetails.experience !== undefined) doctor.experience = Number(doctorDetails.experience);
           if (doctorDetails.bio) doctor.bio = doctorDetails.bio;
-          if (doctorDetails.fees !== undefined) doctor.fees = Number(doctorDetails.fees);
+          if (doctorDetails.salary !== undefined) doctor.salary = Number(doctorDetails.salary);
           if (doctorDetails.qualifications) doctor.qualifications = doctorDetails.qualifications;
           if (doctorDetails.availability) doctor.availability = doctorDetails.availability;
           if (doctorDetails.conditions) doctor.conditions = doctorDetails.conditions;
@@ -85,6 +85,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
       message: "Staff member updated successfully."
     });
   } catch (error: any) {
+    console.error("Error updating staff:", error);
     return NextResponse.json(
       { success: false, message: error.message || "Failed to update staff member." },
       { status: 500 }

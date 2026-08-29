@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, ArrowRight, Filter, Activity, ShieldCheck, HeartPulse, X } from "lucide-react";
@@ -21,78 +21,24 @@ const staggerContainer = {
   }
 };
 
-export const products = [
-  {
-    id: "prod_ed_daily",
-    name: "Daily Tadalafil (Cialis)",
-    slug: "daily-tadalafil",
-    price: 3499,
-    image: "/images/product_kit_1.png",
-    type: "medication" as const,
-    category: "Sexual Health",
-    description: "A daily 5mg pill for spontaneous intimacy. No planning required.",
-    isPrescription: true,
-  },
-  {
-    id: "prod_pe_spray",
-    name: "Endurance Spray",
-    slug: "endurance-spray",
-    price: 1999,
-    image: "/images/product_kit_2.png",
-    type: "medication" as const,
-    category: "Sexual Health",
-    description: "Clinically proven lidocaine spray to help you last longer in bed.",
-    isPrescription: false,
-  },
-  {
-    id: "prod_test_panel",
-    name: "Comprehensive Hormone Panel",
-    slug: "hormone-panel",
-    price: 4999,
-    image: "/images/product_kit_3.png",
-    type: "diagnostic" as const,
-    category: "Diagnostics",
-    description: "At-home blood test measuring Free T, Total T, Estradiol, and SHBG.",
-    isPrescription: false,
-  },
-  {
-    id: "prod_sti_kit",
-    name: "Complete STI Screen",
-    slug: "sti-screen",
-    price: 2999,
-    image: "/images/product_kit_1.png",
-    type: "diagnostic" as const,
-    category: "Diagnostics",
-    description: "Private, at-home testing for Chlamydia, Gonorrhea, Syphilis, and HIV.",
-    isPrescription: false,
-  },
-  {
-    id: "prod_libido_supp",
-    name: "Vitality Complex",
-    slug: "vitality-complex",
-    price: 1499,
-    image: "/images/product_kit_2.png",
-    type: "supplement" as const,
-    category: "Wellness",
-    description: "A blend of Ashwagandha, Maca, and Zinc to naturally support drive and energy.",
-    isPrescription: false,
-  },
-  {
-    id: "prod_hair_loss",
-    name: "Finasteride 1mg",
-    slug: "finasteride",
-    price: 2499,
-    image: "/images/product_kit_3.png",
-    type: "medication" as const,
-    category: "Hair Health",
-    description: "The gold standard oral medication for stopping male pattern baldness.",
-    isPrescription: true,
-  }
-];
-
 export default function ProductsPage() {
   const { addItem } = useCart();
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/public/store/products")
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          // Normalize _id to id for the UI compatibility
+          const mapped = json.data.map((p: any) => ({ ...p, id: p._id }));
+          setProducts(mapped);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -247,7 +193,9 @@ export default function ProductsPage() {
                 variants={staggerContainer}
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
               >
-                {products.map((product, index) => (
+                {loading ? (
+                  <div className="col-span-full py-12 text-center text-muted-foreground">Loading products...</div>
+                ) : products.map((product, index) => (
                   <motion.div 
                     key={product.id}
                     variants={fadeIn}
@@ -262,8 +210,8 @@ export default function ProductsPage() {
                         </div>
                       )}
                       <Image
-                        src={product.image}
-                        alt={product.name}
+                        src={product.image || "/images/product_kit_1.png"}
+                        alt={product.name || "Product"}
                         width={300}
                         height={300}
                         priority={index < 4}

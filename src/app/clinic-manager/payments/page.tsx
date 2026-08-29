@@ -20,6 +20,16 @@ interface PatientData {
   phone: string;
 }
 
+interface AppointmentData {
+  _id: string;
+  patientId?: PatientData;
+  doctorId?: { name: string; salary?: number };
+  date: string;
+  time: string;
+  type: string;
+  paymentStatus: "Pending" | "Paid";
+}
+
 interface TherapySessionData {
   _id: string;
   patientId?: PatientData;
@@ -51,10 +61,11 @@ export default function PaymentsPage() {
   const [clinicId, setClinicId] = useState<string | null>(null);
   
   // Tab control
-  const [activeTab, setActiveTab] = useState<"therapy" | "pharmacy">("therapy");
+  const [activeTab, setActiveTab] = useState<"consultations" | "therapy" | "pharmacy">("consultations");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Data states
+  const [consultations, setConsultations] = useState<AppointmentData[]>([]);
   const [therapySessions, setTherapySessions] = useState<TherapySessionData[]>([]);
   const [pharmacyOrders, setPharmacyOrders] = useState<OrderData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,6 +100,14 @@ export default function PaymentsPage() {
         const pharmacyJson = await pharmacyRes.json();
         if (pharmacyJson.success) {
           setPharmacyOrders(pharmacyJson.data);
+        }
+
+        // Fetch Consultation Appointments (Pending Cash payments)
+        const aptRes = await fetch(`/api/appointments?clinicId=${cId}&paymentStatus=Pending`);
+        const aptJson = await aptRes.json();
+        if (aptJson.success) {
+          // Filter to only In-person/Cash types since Video is online
+          setConsultations(aptJson.data.filter((a: any) => a.type === "In-person"));
         }
       }
     } catch (err) {
@@ -127,6 +146,39 @@ export default function PaymentsPage() {
       setActionLoading(null);
     }
   };
+
+  const handlePayAppointment = async (appointmentId: string) => {
+    if (!confirm("Confirm payment receipt at the counter?")) return;
+    
+    setActionLoading(appointmentId);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch(`/api/appointments/${appointmentId}/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ collectedBy: "Clinic Manager" }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.message || "Failed to process payment.");
+      }
+      setSuccessMsg("Consultation marked as Paid successfully.");
+      await fetchData();
+    } catch (err: any) {
+      setErrorMsg(err.message || "An error occurred.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const filteredConsultations = consultations.filter((apt) => {
+    const patientName = apt.patientId?.name.toLowerCase() || "";
+    const doctorName = apt.doctorId?.name.toLowerCase() || "";
+    const query = searchQuery.toLowerCase();
+    return patientName.includes(query) || doctorName.includes(query);
+  });
 
   const filteredTherapy = therapySessions.filter((ts) => {
     const patientName = ts.patientId?.name.toLowerCase() || "";
@@ -176,6 +228,20 @@ export default function PaymentsPage() {
         <div className="flex gap-2">
           <button
             onClick={() => {
+              setActiveTab("consultations");
+              setSearchQuery("");
+            }}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
+              activeTab === "consultations"
+                ? "bg-primary text-white"
+                : "bg-muted/50 hover:bg-muted text-muted-foreground"
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            Consultations
+          </button>
+          <button
+            onClick={() => {
               setActiveTab("therapy");
               setSearchQuery("");
             }}
@@ -211,6 +277,8 @@ export default function PaymentsPage() {
             placeholder={
               activeTab === "therapy"
                 ? "Search patient or therapy..."
+                : activeTab === "consultations"
+                ? "Search patient or doctor..."
                 : "Search patient..."
             }
             value={searchQuery}
@@ -219,6 +287,67 @@ export default function PaymentsPage() {
           />
         </div>
       </div>
+
+      {/* Consultations Billing */}
+      {activeTab === "consultations" && (
+        <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
+          {filteredConsultations.length === 0 ? (
+            <div className="p-12 text-center text-muted-foreground">
+              No pending cash consultations found.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold">
+                  <tr>
+                    <th className="px-6 py-4">Patient</th>
+                    <th className="px-6 py-4">Doctor & Appt Time</th>
+                    <th className="px-6 py-4">Type</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Amount</th>
+                    <th className="px-6 py-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {filteredConsultations.map((apt) => (
+                    <tr key={apt._id} className="hover:bg-muted/20 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-foreground">{apt.patientId?.name || "Unknown"}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{apt.patientId?.phone || ""}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-foreground">{apt.doctorId?.name || "Doctor"}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{apt.date} at {apt.time}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge variant="outline" className="font-medium bg-background">{apt.type}</Badge>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none shadow-none font-bold">
+                          {apt.paymentStatus}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 font-bold">
+                        ₹1499
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Button
+                          size="sm"
+                          onClick={() => handlePayAppointment(apt._id)}
+                          disabled={actionLoading === apt._id}
+                          className="font-bold shadow-none bg-primary/10 text-primary hover:bg-primary hover:text-white"
+                        >
+                          {actionLoading === apt._id ? "Processing..." : "Collect Payment"}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Therapy Sessions Billing */}
       {activeTab === "therapy" && (

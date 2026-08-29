@@ -14,16 +14,28 @@ export async function POST(request: Request, { params }: RouteParams) {
     const { id } = await params;
 
     let amount = undefined;
+    let transactionId = `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    let paymentMethod = "Online";
+    let collectedBy = "System";
+
     try {
       const body = await request.json();
-      if (body && body.amount !== undefined) {
-        amount = body.amount;
+      if (body) {
+        if (body.amount !== undefined) amount = body.amount;
+        if (body.transactionId) transactionId = body.transactionId;
+        if (body.paymentMethod) paymentMethod = body.paymentMethod;
+        if (body.collectedBy) collectedBy = body.collectedBy;
       }
     } catch (e) {
       // Body might be empty, ignore
     }
 
-    const updateData: any = { paymentStatus: "Paid" };
+    const updateData: any = { 
+      paymentStatus: "Paid",
+      transactionId,
+      paymentMethod,
+      collectedBy
+    };
     if (amount !== undefined) {
       updateData.feeAmount = amount;
     }

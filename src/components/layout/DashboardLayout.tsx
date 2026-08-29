@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Sidebar, SidebarLink } from "./Sidebar";
 import { Bell, User, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useBookingModal } from "@/store/useBookingModal";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -15,14 +16,36 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, links, roleName, basePath }: DashboardLayoutProps) {
   const [clinicName, setClinicName] = useState("");
   const [clinicLocation, setClinicLocation] = useState("");
+  const { openBooking } = useBookingModal();
 
   useEffect(() => {
     const fetchClinic = async () => {
       try {
         const meRes = await fetch("/api/auth/me");
         const meJson = await meRes.json();
+        
+        let clinicIdToFetch = null;
+
         if (meJson.success && meJson.user.clinicId) {
-          const clinicRes = await fetch(`/api/clinics/${meJson.user.clinicId}`);
+          clinicIdToFetch = meJson.user.clinicId;
+        } else if (meJson.success && meJson.user.role === 'PATIENT' && meJson.user.patientId) {
+          // If patient doesn't have a direct clinicId, get it from their latest appointment
+          const aptRes = await fetch(`/api/appointments?patientId=${meJson.user.patientId}`);
+          const aptJson = await aptRes.json();
+          if (aptJson.success && aptJson.data.length > 0) {
+            // Sort to get most recent
+            const sorted = aptJson.data.sort((a: any, b: any) => 
+              new Date(`${b.date}T${b.time}`).getTime() - new Date(`${a.date}T${a.time}`).getTime()
+            );
+            const latestApt = sorted[0];
+            if (latestApt.doctorId && latestApt.doctorId.clinicId) {
+              clinicIdToFetch = latestApt.doctorId.clinicId;
+            }
+          }
+        }
+
+        if (clinicIdToFetch) {
+          const clinicRes = await fetch(`/api/clinics/${clinicIdToFetch}`);
           const clinicJson = await clinicRes.json();
           if (clinicJson.success) {
             setClinicName(clinicJson.data.name);
@@ -38,7 +61,7 @@ export function DashboardLayout({ children, links, roleName, basePath }: Dashboa
 
   return (
     <div className="min-h-screen bg-muted/20">
-      <Sidebar links={links} roleName={roleName} basePath={basePath} />
+      <Sidebar links={links} roleName={roleName} basePath={basePath} clinicName={clinicName} clinicLocation={clinicLocation} />
       
       <div className="flex flex-col lg:pl-72">
         {/* Top Header */}
@@ -46,18 +69,19 @@ export function DashboardLayout({ children, links, roleName, basePath }: Dashboa
           <div className="flex items-center gap-2 text-sm">
             <div className="flex items-center gap-2 text-sm bg-muted/60 border border-border px-3.5 py-1.5 rounded-2xl shadow-sm">
               <Building2 className="w-4 h-4 text-primary shrink-0" />
-              <span className="text-foreground font-bold">{clinicName || "Pune Intimacy Clinic"}</span>
+              <span className="text-foreground font-bold">{clinicName || "Intima Health"}</span>
               <span className="text-xs font-bold text-muted-foreground bg-card border border-border px-2 py-0.5 rounded-full">
-                {clinicLocation || "Pune"}
+                {clinicLocation || "Global"}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="rounded-full relative">
-              <Bell className="h-5 w-5 text-muted-foreground" />
-              <span className="absolute top-1.5 right-2 h-2 w-2 rounded-full bg-primary animate-pulse" />
-            </Button>
+            {roleName === "Patient" && (
+              <Button onClick={openBooking} className="hidden sm:flex rounded-full px-5 font-bold bg-primary hover:bg-primary/90 text-white shadow-sm text-xs">
+                Book Appointment
+              </Button>
+            )}
             <div className="h-8 w-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold">
               <User className="h-4 w-4" />
             </div>

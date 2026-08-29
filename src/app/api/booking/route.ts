@@ -6,6 +6,8 @@ import { AppointmentService } from "@/modules/appointments/service";
 import { signJwt } from "@/lib/jwt";
 import { sendWelcomeMessage } from "@/lib/whatsapp";
 import { DoctorModel } from "@/modules/doctors/schema";
+import { ClinicServiceModel } from "@/modules/clinics/schema";
+import { PlatformServiceModel } from "@/modules/services/schema";
 
 export async function POST(req: Request) {
   try {
@@ -13,48 +15,85 @@ export async function POST(req: Request) {
     const body = await req.json();
     let { 
       service, city, clinic, doctorId, date, time, 
-      firstName, lastName, email, phone, dob,
-      paymentMethod
+      firstName, lastName, email: providedEmail, phone, dob,
+      paymentMethod, isExistingPatient
     } = body;
 
-    if (!firstName || !lastName || !phone) {
-      return NextResponse.json({ success: false, message: "Patient details (Name and Phone) are required." }, { status: 400 });
+    let email = providedEmail;
+
+    if (!phone) {
+      return NextResponse.json({ success: false, message: "Phone number is required." }, { status: 400 });
     }
 
-    if (!email || email.trim() === "") {
-      email = `${phone}@noemail-intima.com`;
-    }
-
-    // 2. Find or create patient
-    let patient = await PatientModel.findOne({ email }).exec();
+    let patient;
+    let user;
     let isNewPatient = false;
-    if (!patient) {
-      isNewPatient = true;
-      patient = await PatientModel.create({
-        name: `${firstName} ${lastName}`.trim(),
-        email,
-        phone,
-        gender: "Male",
-        dob: dob ? new Date(dob) : undefined,
-        status: "Active"
-      });
-    }
 
-    // 2. Find or create user credentials
-    let user = await UserModel.findOne({ email }).exec();
-    if (!user) {
-      user = await UserModel.create({
-        name: `${firstName} ${lastName}`.trim(),
-        email,
-        passwordHash: hashPassword(`PATIENT_BOOKING_${Math.random().toString(36).substring(7)}`),
-        role: "PATIENT",
-        status: "Active",
-        patientId: patient._id
-      });
-    }
+    if (isExistingPatient) {
+      // Look up existing patient by phone
+      patient = await PatientModel.findOne({ phone }).exec();
+      if (!patient) {
+        return NextResponse.json({ success: false, message: "Patient profile not found for this phone number." }, { status: 404 });
+      }
+      if (patient.email) {
+        user = await UserModel.findOne({ $or: [{ patientId: patient._id }, { email: patient.email }] }).exec();
+      } else {
+        user = await UserModel.findOne({ patientId: patient._id }).exec();
+      }
 
-    if (isNewPatient) {
-      await sendWelcomeMessage(patient._id.toString());
+      if (!user) {
+        // Fallback user creation just in case
+        user = await UserModel.create({
+          name: patient.name,
+          email: patient.email || `${phone}@noemail-intima.com`,
+          passwordHash: hashPassword(`PATIENT_BOOKING_${Math.random().toString(36).substring(7)}`),
+          role: "PATIENT",
+          status: "Active",
+          patientId: patient._id
+        });
+      } else if (!user.patientId) {
+        user.patientId = patient._id;
+        await user.save();
+      }
+    } else {
+      if (!firstName || !lastName) {
+        return NextResponse.json({ success: false, message: "Patient details (Name and Phone) are required." }, { status: 400 });
+      }
+
+      if (!email || email.trim() === "") {
+        email = `${phone}@noemail-intima.com`;
+      }
+
+      // Find or create patient
+      patient = await PatientModel.findOne({ email }).exec();
+      if (!patient) {
+        isNewPatient = true;
+        patient = await PatientModel.create({
+          name: `${firstName} ${lastName}`.trim(),
+          email,
+          phone,
+          gender: "Male",
+          dob: dob ? new Date(dob) : undefined,
+          status: "Active"
+        });
+      }
+
+      // Find or create user credentials
+      user = await UserModel.findOne({ email }).exec();
+      if (!user) {
+        user = await UserModel.create({
+          name: `${firstName} ${lastName}`.trim(),
+          email,
+          passwordHash: hashPassword(`PATIENT_BOOKING_${Math.random().toString(36).substring(7)}`),
+          role: "PATIENT",
+          status: "Active",
+          patientId: patient._id
+        });
+      }
+
+      if (isNewPatient) {
+        await sendWelcomeMessage(patient._id.toString());
+      }
     }
 
     // 3. Find doctor for the clinic/service
@@ -86,23 +125,35 @@ export async function POST(req: Request) {
       formattedTime = `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
     }
 
+    // Get service name
+    let serviceNameStr = "Consultation";
+    let isVideo = false;
+    if (service === "consultation") {
+      serviceNameStr = "Initial Consultation";
+      isVideo = true;
+    } else {
+      const svc = await PlatformServiceModel.findById(service).exec();
+      if (svc) {
+        serviceNameStr = svc.name;
+        if (svc.name.toLowerCase().includes('online') || svc.name.toLowerCase().includes('video')) {
+          isVideo = true;
+        }
+      }
+    }
+
     // 4. Book the appointment
     const appointment = await AppointmentService.bookAppointment({
       patientId: patient._id.toString(),
       doctorId: doctor._id.toString(),
       date,
       time: formattedTime,
-      type: service === "consultation" ? "Video" : "In-person",
+      type: isVideo ? "Video" : "In-person",
+      serviceName: serviceNameStr,
       notes: "Booked directly through public website booking form.",
       skipNotification: true,
       paymentMethod: paymentMethod || "Online",
       paymentStatus: "Pending"
     }, email);
-
-    if (paymentMethod === "Cash") {
-      const { sendAppointmentBookingMessage } = await import("@/lib/whatsapp");
-      await sendAppointmentBookingMessage((appointment as any)._id.toString(), false);
-    }
 
     // 5. Generate JWT & sign in automatically
     const token = signJwt({

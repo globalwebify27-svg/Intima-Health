@@ -53,6 +53,20 @@ export default function DoctorDashboard() {
     fetchDashboardData();
   }, []);
 
+  const handleStartSession = async (appointmentId: string) => {
+    try {
+      await fetch(`/api/appointments/${appointmentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Engaged" }),
+      });
+    } catch (err) {
+      console.error("Failed to update status to Engaged", err);
+    } finally {
+      window.location.href = `/doctor/consultations?appointmentId=${appointmentId}`;
+    }
+  };
+
   const todayStr = typeof window !== "undefined" ? new Date().toLocaleDateString("en-CA") : "";
   const currentMonth = todayStr.substring(0, 7); // e.g. "2026-06"
   // Only show today's appointments where patient has paid
@@ -147,7 +161,14 @@ export default function DoctorDashboard() {
                       {apt.time}
                     </div>
                     <div>
-                      <h4 className="font-semibold">{apt.patientId?.name || "Patient"}</h4>
+                      <h4 className="font-semibold flex items-center gap-2">
+                        {apt.patientId?.name || "Patient"}
+                        {apt.status === "Checked In" && (
+                          <span className="text-[10px] font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                            Patient Waiting
+                          </span>
+                        )}
+                      </h4>
                       <p className="text-sm text-muted-foreground">{apt.type} Consult • {apt.notes || "Routine checkup"}</p>
                     </div>
                   </div>
@@ -162,7 +183,7 @@ export default function DoctorDashboard() {
                   ) : (
                     <Button 
                       size="sm"
-                      onClick={() => window.location.href = `/doctor/consultations?appointmentId=${apt._id}`}
+                      onClick={() => handleStartSession(apt._id)}
                     >
                       Start Session
                     </Button>

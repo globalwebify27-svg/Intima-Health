@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, Pill, Video, FileText, ArrowRight, Activity, ShieldAlert, CreditCard, Download, Hospital } from "lucide-react";
+import { Pill, Activity, Hospital, CreditCard } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useBookingModal } from "@/store/useBookingModal";
 import { Badge } from "@/components/ui/badge";
+import { UpcomingAppointmentsSlider } from "@/components/patient/UpcomingAppointmentsSlider";
+import { DigitalPrescriptionsList } from "@/components/patient/DigitalPrescriptionsList";
 
 interface Appointment {
   _id: string;
@@ -20,6 +22,7 @@ interface Appointment {
   type: string;
   status: string;
   paymentStatus?: string;
+  serviceName?: string;
 }
 
 interface Consultation {
@@ -66,7 +69,7 @@ export default function PatientDashboard() {
   const [patientId, setPatientId] = useState<string | null>(null);
   const [patientName, setPatientName] = useState("");
   const [loading, setLoading] = useState(true);
-  const [upcomingApt, setUpcomingApt] = useState<Appointment | null>(null);
+  const [upcomingApts, setUpcomingApts] = useState<Appointment[]>([]);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [therapySessions, setTherapySessions] = useState<TherapySession[]>([]);
   const [pharmacyOrders, setPharmacyOrders] = useState<PharmacyOrder[]>([]);
@@ -91,10 +94,11 @@ export default function PatientDashboard() {
         // Process appointments
         if (aptData.success && aptData.data) {
           const list: Appointment[] = aptData.data;
+          const now = new Date().getTime();
           const upcoming = list
-            .filter((a) => a.status === "Scheduled")
-            .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())[0];
-          setUpcomingApt(upcoming || null);
+            .filter((a) => a.status === "Scheduled" && new Date(`${a.date}T${a.time}`).getTime() >= now)
+            .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
+          setUpcomingApts(upcoming);
         }
 
         // Process consultations
@@ -229,6 +233,14 @@ export default function PatientDashboard() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -241,72 +253,20 @@ export default function PatientDashboard() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
         {/* Next Appointment Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="p-6 bg-primary/5 rounded-3xl border border-primary/20 shadow-sm col-span-full lg:col-span-1 relative overflow-hidden flex flex-col justify-between min-h-[220px]"
-        >
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Video className="w-24 h-24" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
-              <span className="text-xs font-bold text-primary uppercase tracking-wider">Upcoming Session</span>
-            </div>
-            {upcomingApt ? (
-              <>
-                <h3 className="text-xl font-bold mb-1">{upcomingApt.doctorId?.name || "Clinician Practitioner"}</h3>
-                <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-3">{upcomingApt.doctorId?.specialization || "Wellness Expert"}</p>
-                <p className="text-sm text-muted-foreground font-medium">{upcomingApt.type === "In-person" ? "Walk-in" : "Video"} Consultation • {upcomingApt.date} at {upcomingApt.time}</p>
-                {upcomingApt.paymentStatus !== "Paid" && (
-                  <p className="text-xs text-amber-600 font-bold mt-2 flex items-center gap-1">
-                    <ShieldAlert className="w-3.5 h-3.5" /> Please pay the consultation fee to confirm your booking.
-                  </p>
-                )}
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-bold mb-2">No Scheduled Sessions</h3>
-                <p className="text-sm text-muted-foreground">Book a consultation with one of our clinic locations.</p>
-              </>
-            )}
-          </div>
-          {upcomingApt ? (
-            upcomingApt.paymentStatus === "Paid" ? (
-              <Button 
-                onClick={() => window.location.href = upcomingApt.type === "In-person" ? "/patient/appointments" : "/patient/consultations"} 
-                className="w-full rounded-xl h-11 font-bold mt-6 shadow-md shadow-primary/10 hover:shadow-primary/20"
-              >
-                {upcomingApt.type === "In-person" ? "View Appointment Details" : "Join Consultation Room"}
-              </Button>
-            ) : (
-              <Button 
-                onClick={() => handlePayAppointment(upcomingApt._id)} 
-                className="w-full rounded-xl h-11 font-bold mt-6 bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-500/10"
-              >
-                Pay Consultation Fee (₹{upcomingApt.type === "In-person" ? "1,499" : "999"})
-              </Button>
-            )
-          ) : (
-            <Button 
-              onClick={() => openBooking()} 
-              className="w-full rounded-xl h-11 font-bold mt-6"
-            >
-              Book New Appointment
-            </Button>
-          )}
-        </motion.div>
+        <UpcomingAppointmentsSlider 
+          upcomingApts={upcomingApts} 
+          openBooking={openBooking} 
+          handlePayAppointment={handlePayAppointment} 
+        />
 
         {/* Therapy Session Summary */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="p-6 bg-card rounded-3xl border border-border/60 shadow-sm flex flex-col justify-between min-h-[220px]"
+          className="p-6 bg-card rounded-3xl border border-border/60 shadow-sm flex flex-col justify-between min-h-[260px] lg:min-h-[220px]"
         >
           <div>
             <div className="flex items-center gap-3 mb-4">
@@ -332,7 +292,7 @@ export default function PatientDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="p-6 bg-card rounded-3xl border border-border/60 shadow-sm flex flex-col justify-between min-h-[220px]"
+          className="p-6 bg-card rounded-3xl border border-border/60 shadow-sm flex flex-col justify-between min-h-[260px] lg:min-h-[220px]"
         >
           <div>
             <div className="flex items-center gap-3 mb-4">
@@ -357,67 +317,11 @@ export default function PatientDashboard() {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Prescriptions Section */}
-          <div className="p-6 bg-card rounded-3xl border border-border/60 shadow-sm space-y-4">
-            <h3 className="text-lg font-bold flex items-center gap-2 border-b border-border/50 pb-3">
-              <FileText className="w-4 h-4 text-primary" /> My Digital Prescriptions
-            </h3>
-            
-            <div className="space-y-4">
-              {consultations.filter(c => c.status === "Completed" && c.prescriptionSummary).length > 0 ? (
-                consultations
-                  .filter(c => c.status === "Completed" && c.prescriptionSummary)
-                  .map((consult) => {
-                    const meds: Medicine[] = JSON.parse(consult.prescriptionSummary || "[]");
-                    return (
-                      <div key={consult._id} className="p-5 border border-border rounded-2xl space-y-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-bold text-sm">Prescribed by {consult.doctorId?.name}</h4>
-                            <p className="text-xs text-muted-foreground">Date: {new Date(consult.createdAt).toLocaleDateString()}</p>
-                          </div>
-                          <Badge variant="outline" className="text-xs">Rx #{consult._id.substring(18)}</Badge>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          {meds.map((med, idx) => (
-                            <div key={idx} className="flex justify-between text-xs font-semibold p-2 bg-muted/40 rounded-xl">
-                              <div>
-                                <p className="font-bold text-foreground">{med.drug}</p>
-                                <p className="text-[10px] text-muted-foreground">Dosage: {med.dosage} | Frequency: {med.frequency}</p>
-                              </div>
-                              <span className="text-[10px] text-primary">{med.duration}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 pt-2 border-t border-border/40">
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleOrderFromPharmacy(consult)}
-                            className="rounded-xl h-9 text-xs font-bold gap-1.5"
-                          >
-                            <Pill className="w-3.5 h-3.5" /> Order from Clinic Pharmacy
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => handleDownloadPrescription(consult)}
-                            className="rounded-xl h-9 text-xs font-bold gap-1.5"
-                          >
-                            <Download className="w-3.5 h-3.5" /> Download Rx
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground/60">
-                  <FileText className="w-10 h-10 mb-2 stroke-[1.5]" />
-                  <p className="text-sm font-semibold">No digital prescriptions found.</p>
-                </div>
-              )}
-            </div>
-          </div>
+          <DigitalPrescriptionsList 
+            consultations={consultations} 
+            handleOrderFromPharmacy={handleOrderFromPharmacy} 
+            handleDownloadPrescription={handleDownloadPrescription} 
+          />
 
           {/* Therapy Sessions Section */}
           <div className="p-6 bg-card rounded-3xl border border-border/60 shadow-sm space-y-4">

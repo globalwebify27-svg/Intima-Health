@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Menu, LogOut, Settings } from "lucide-react";
+import { useBookingModal } from "@/store/useBookingModal";
 
 export interface SidebarLink {
   title: string;
@@ -18,10 +19,13 @@ interface SidebarProps {
   links: SidebarLink[];
   roleName: string;
   basePath: string;
+  clinicName?: string;
+  clinicLocation?: string;
 }
 
-export function Sidebar({ links, roleName, basePath }: SidebarProps) {
+export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation }: SidebarProps) {
   const pathname = usePathname();
+  const { openBooking } = useBookingModal();
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col bg-card">
@@ -40,10 +44,10 @@ export function Sidebar({ links, roleName, basePath }: SidebarProps) {
           {links.map((link) => {
             const Icon = link.icon;
             // Strict match for dashboard home, startsWith for subpages
-            const isActive = link.href === basePath 
-              ? pathname === link.href 
+            const isActive = link.href === basePath
+              ? pathname === link.href
               : pathname.startsWith(link.href);
-              
+
             return (
               <Link
                 key={link.href}
@@ -64,18 +68,25 @@ export function Sidebar({ links, roleName, basePath }: SidebarProps) {
       </ScrollArea>
       <div className="p-4 mt-auto border-t border-border">
         <div className="flex flex-col gap-2">
-          <Link
-            href={`${basePath}/settings`}
-            className={cn(
-              "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
-              pathname.startsWith(`${basePath}/settings`)
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <Settings className="h-5 w-5" />
-            Settings
-          </Link>
+          {roleName === "Patient" && (
+            <Button onClick={openBooking} className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-sm h-11 mb-2">
+              Book Appointment
+            </Button>
+          )}
+          {roleName !== "Patient" && (
+            <Link
+              href={`${basePath}/settings`}
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
+                pathname.startsWith(`${basePath}/settings`)
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <Settings className="h-5 w-5" />
+              Settings
+            </Link>
+          )}
           <button
             onClick={async () => {
               try {
@@ -103,21 +114,32 @@ export function Sidebar({ links, roleName, basePath }: SidebarProps) {
       </aside>
 
       {/* Mobile Sidebar (Sheet) */}
-      <div className="lg:hidden flex h-16 items-center px-4 border-b border-border bg-card fixed top-0 w-full z-40 shadow-sm">
-        <Sheet>
-          <SheetTrigger render={<Button variant="ghost" size="icon" className="mr-2" />}>
-            <Menu className="h-6 w-6" />
-            <span className="sr-only">Toggle navigation menu</span>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-72 p-0">
-            <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-            <SheetDescription className="sr-only">Access your dashboard links here</SheetDescription>
-            <SidebarContent />
-          </SheetContent>
-        </Sheet>
-        <Link href="/" className="font-serif text-xl font-bold tracking-tight text-foreground ml-2">
-          Intima<span className="font-sans text-primary font-semibold">Health</span>
-        </Link>
+      <div className="lg:hidden flex h-16 items-center px-4 border-b border-border bg-card fixed top-0 w-full z-40 shadow-sm justify-between">
+        <div className="flex items-center">
+          <Sheet>
+            <SheetTrigger render={<Button variant="ghost" size="icon" className="mr-1" />}>
+              <Menu className="h-6 w-6" />
+              <span className="sr-only">Toggle navigation menu</span>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0">
+              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+              <SheetDescription className="sr-only">Access your dashboard links here</SheetDescription>
+              <SidebarContent />
+            </SheetContent>
+          </Sheet>
+          <Link href="/" className="font-serif text-lg font-bold tracking-tight text-foreground ml-1">
+            Intima<span className="font-sans text-primary font-semibold">Health</span>
+          </Link>
+        </div>
+
+        {(clinicName || clinicLocation) && (
+          <div className="flex items-center gap-1.5 text-[10px] bg-muted/60 border border-border px-2 py-1 rounded-xl shadow-sm">
+            <span className="text-foreground font-bold max-w-[80px] sm:max-w-[120px] truncate">{clinicName || "Intima Health"}</span>
+            <span className="text-[9px] font-bold text-muted-foreground bg-card border border-border px-1.5 py-0.5 rounded-full shrink-0">
+              {clinicLocation || "Global"}
+            </span>
+          </div>
+        )}
       </div>
     </>
   );

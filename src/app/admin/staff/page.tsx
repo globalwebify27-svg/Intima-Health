@@ -27,7 +27,7 @@ interface StaffData {
   doctorId?: string;
   specialization?: string;
   phone?: string;
-  fees?: number;
+  salary?: number;
   experience?: number;
   bio?: string;
   availability?: Array<{
@@ -60,7 +60,7 @@ export default function StaffDirectoryPage() {
   const [phone, setPhone] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [experience, setExperience] = useState("");
-  const [fees, setFees] = useState("");
+  const [salary, setSalary] = useState("");
   const [bio, setBio] = useState("");
   const [qualificationsText, setQualificationsText] = useState("");
   const [conditionsText, setConditionsText] = useState("");
@@ -132,7 +132,7 @@ export default function StaffDirectoryPage() {
     setPhone("");
     setSpecialization("");
     setExperience("");
-    setFees("");
+    setSalary("");
     setBio("");
     setQualificationsText("");
     setConditionsText("");
@@ -168,7 +168,7 @@ export default function StaffDirectoryPage() {
         specialization: specialization || undefined,
         experience: experience ? Number(experience) : undefined,
         bio: bio || undefined,
-        fees: fees ? Number(fees) : undefined,
+        salary: salary ? Number(salary) : undefined,
         qualifications: qualificationsText ? qualificationsText.split(",").map(q => q.trim()).filter(Boolean) : ["MD"],
         conditions: conditionsText ? conditionsText.split(",").map(c => c.trim().toLowerCase()).filter(Boolean) : [],
         availability,
@@ -216,7 +216,7 @@ export default function StaffDirectoryPage() {
       setPhone(member.phone || "");
       setSpecialization(member.specialization || "");
       setExperience(String(member.experience || ""));
-      setFees(String(member.fees || ""));
+      setSalary(String(member.salary || ""));
       setBio(member.bio || "");
       setQualificationsText(member.qualifications?.join(", ") || "");
       setConditionsText(member.conditions?.join(", ") || "");
@@ -284,7 +284,7 @@ export default function StaffDirectoryPage() {
         cell: ({ row }: { row: any }) => (
           <div>
             <div className="font-bold text-sm text-foreground">{row.getValue("specialization")}</div>
-            <div className="text-xs text-muted-foreground mt-0.5">Fees: ₹{row.original.fees}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Salary: ₹{row.original.salary}</div>
           </div>
         ),
       },
@@ -536,14 +536,14 @@ export default function StaffDirectoryPage() {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Consultation Fees (INR) *</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Doctor's Salary (₹) *</label>
                         <input
                           type="number"
                           required
                           min={1}
-                          value={fees}
-                          onChange={(e) => setFees(e.target.value)}
-                          placeholder="1000"
+                          value={salary}
+                          onChange={(e) => setSalary(e.target.value)}
+                          placeholder="50000"
                           className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                         />
                       </div>

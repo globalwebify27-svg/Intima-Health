@@ -7,10 +7,13 @@ export interface IAppointment {
   date: string; // e.g. "2026-06-12"
   time: string; // e.g. "10:00 AM"
   type: "Video" | "In-person";
-  status: "Scheduled" | "Completed" | "Cancelled";
+  status: "Scheduled" | "Checked In" | "Engaged" | "Checked Out" | "Completed" | "Cancelled" | "Rescheduled";
   paymentStatus?: "Pending" | "Paid";
   paymentMethod?: "Online" | "Cash";
+  transactionId?: string;
+  collectedBy?: string;
   feeAmount?: number;
+  serviceName?: string;
   notes?: string;
   createdBy?: string;
   updatedBy?: string;
@@ -24,10 +27,13 @@ const AppointmentSchema = new Schema<IAppointment>({
   date: { type: String, required: true },
   time: { type: String, required: true },
   type: { type: String, enum: ["Video", "In-person"], required: true },
-  status: { type: String, enum: ["Scheduled", "Completed", "Cancelled"], default: "Scheduled" },
+  status: { type: String, enum: ["Scheduled", "Checked In", "Engaged", "Checked Out", "Completed", "Cancelled", "Rescheduled"], default: "Scheduled" },
   paymentStatus: { type: String, enum: ["Pending", "Paid"], default: "Pending" },
   paymentMethod: { type: String, enum: ["Online", "Cash"], default: "Online" },
+  transactionId: { type: String },
+  collectedBy: { type: String },
   feeAmount: { type: Number },
+  serviceName: { type: String },
   notes: { type: String },
   createdBy: { type: String },
   updatedBy: { type: String },

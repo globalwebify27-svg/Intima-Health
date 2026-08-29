@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Heart, Shield, Sparkles, Users, ArrowRight, CheckCircle2, Star } from "lucide-react";
 import Link from "next/link";
+import React from "react";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -30,6 +31,18 @@ const floatAnimation = {
 };
 
 export default function AboutPage() {
+  const [aboutContent, setAboutContent] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetch("/api/public/content/pages/about")
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          setAboutContent(json.data.content);
+        }
+      })
+      .catch(err => console.error(err));
+  }, []);
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Redesigned Clean Hero Section */}
@@ -116,28 +129,18 @@ export default function AboutPage() {
               variants={fadeIn}
               className="order-1 lg:order-2"
             >
-              <h2 className="text-sm font-bold tracking-widest text-primary uppercase mb-3">Our Story</h2>
-              <h3 className="text-3xl md:text-4xl font-serif mb-6 text-foreground">Pioneering a New Standard of Care</h3>
-              <div className="space-y-4 text-lg text-muted-foreground">
-                <p>
-                  Founded by a team of visionary gynecologists, urologists, and wellness experts, Intima Health was born out of a simple observation: intimate health is too often ignored, misunderstood, or stigmatized.
-                </p>
-                <p>
-                  We recognized the need for a sanctuary—a place where clinical excellence meets compassionate care. Since our inception, we have been dedicated to researching, developing, and providing solutions that are not only effective but beautifully designed and seamlessly integrated into your daily life.
-                </p>
-                <ul className="mt-8 space-y-3">
-                  {[
-                    "Evidence-based clinical formulations",
-                    "Discreet, personalized care journeys",
-                    "Holistic approach to intimate wellness"
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-center text-foreground font-medium">
-                      <CheckCircle2 className="w-5 h-5 text-primary mr-3 flex-shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {aboutContent ? (
+                <div 
+                  className="space-y-4 text-lg text-muted-foreground prose dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: aboutContent }}
+                />
+              ) : (
+                <div className="space-y-4 text-lg text-muted-foreground animate-pulse">
+                  <div className="h-4 bg-muted rounded w-3/4"></div>
+                  <div className="h-4 bg-muted rounded w-full"></div>
+                  <div className="h-4 bg-muted rounded w-5/6"></div>
+                </div>
+              )}
             </motion.div>
           </div>
         </div>

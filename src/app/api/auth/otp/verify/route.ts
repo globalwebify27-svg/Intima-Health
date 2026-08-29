@@ -40,15 +40,25 @@ export async function POST(req: Request) {
     await OtpModel.deleteOne({ _id: otpRecord._id });
 
     // Find or create User credential record
-    let user = await UserModel.findOne({ email: patient.email }).exec();
+    let user;
+    if (patient.email) {
+      user = await UserModel.findOne({ $or: [{ patientId: patient._id }, { email: patient.email }] }).exec();
+    } else {
+      user = await UserModel.findOne({ patientId: patient._id }).exec();
+    }
+
     if (!user) {
       user = await UserModel.create({
         name: patient.name,
-        email: patient.email,
+        email: patient.email || `${last10}@noemail-intima.com`,
         passwordHash: `OTP_LOGIN_ONLY_${Math.random()}`,
         role: "PATIENT",
-        status: "Active"
+        status: "Active",
+        patientId: patient._id
       });
+    } else if (!user.patientId) {
+      user.patientId = patient._id;
+      await user.save();
     }
 
     // Generate JWT

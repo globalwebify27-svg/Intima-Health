@@ -147,6 +147,7 @@ export class AppointmentService {
       date: validated.date,
       time: validated.time,
       type: validated.type,
+      serviceName: validated.serviceName,
       notes: validated.notes,
       status: "Scheduled",
       paymentMethod: validated.paymentMethod || "Online",
@@ -172,7 +173,8 @@ export class AppointmentService {
     }
 
     // Verify slots availability
-    const slots = await this.calculateAvailableSlots(String(apt.doctorId), validated.date);
+    const doctorIdStr = (apt.doctorId as any)._id ? String((apt.doctorId as any)._id) : String(apt.doctorId);
+    const slots = await this.calculateAvailableSlots(doctorIdStr, validated.date);
     const chosenSlot = slots.find(s => s.start === validated.time);
 
     if (!chosenSlot) {
@@ -185,6 +187,7 @@ export class AppointmentService {
     const updated = await AppointmentRepository.update(id, {
       date: validated.date,
       time: validated.time,
+      status: "Rescheduled",
       updatedBy,
     });
 
@@ -207,6 +210,17 @@ export class AppointmentService {
     return updated;
   }
 
+  static async updateStatus(id: string, status: string, updatedBy?: string): Promise<IAppointment> {
+    const updated = await AppointmentRepository.update(id, {
+      status: status as any,
+      updatedBy,
+    });
+    if (!updated) {
+      throw new Error("Appointment not found.");
+    }
+    return updated;
+  }
+
   static async getAppointments(filters: {
     doctorId?: string;
     patientId?: string;
@@ -215,6 +229,24 @@ export class AppointmentService {
     clinicId?: string;
     paymentStatus?: string;
   }) {
-    return await AppointmentRepository.list(filters);
+    const list = await AppointmentRepository.list(filters);
+
+    // Auto-cancel past Scheduled appointments
+    const todayStr = new Date().toISOString().split("T")[0];
+    const expiredAppointments = list.filter(apt => 
+      apt.status === "Scheduled" && apt.date < todayStr
+    );
+
+    if (expiredAppointments.length > 0) {
+      for (const apt of expiredAppointments) {
+        await AppointmentRepository.update((apt as any)._id as string, {
+          status: "Cancelled",
+          updatedBy: "system"
+        });
+        apt.status = "Cancelled";
+      }
+    }
+
+    return list;
   }
 }

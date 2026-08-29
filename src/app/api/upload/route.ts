@@ -18,8 +18,10 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create public/uploads/avatars directory if not exist
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "avatars");
+    const folder = (formData.get("folder") as string) || "avatars";
+    
+    // Create public/uploads/[folder] directory if not exist
+    const uploadDir = path.join(process.cwd(), "public", "uploads", folder);
     await mkdir(uploadDir, { recursive: true });
 
     // Generate unique file name
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
     await writeFile(filePath, buffer);
 
     // Return relative public path
-    const fileUrl = `/uploads/avatars/${fileName}`;
+    const fileUrl = `/uploads/${folder}/${fileName}`;
 
     return NextResponse.json({
       success: true,

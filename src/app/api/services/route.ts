@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { PlatformServicesService } from "@/modules/services/service";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     await connectDB();

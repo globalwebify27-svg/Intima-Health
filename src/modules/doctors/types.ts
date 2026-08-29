@@ -20,7 +20,7 @@ export interface IDoctor {
   bio: string;
   rating?: number;
   reviewsCount?: number;
-  fees: number;
+  salary: number;
   qualifications: string[];
   availability: DayAvailability[];
   slotDuration?: number; // duration of patient checking slot in minutes

@@ -32,3 +32,19 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   const { id } = await params;
   return await handleCancel(id);
 }
+
+export async function PATCH(request: Request, { params }: RouteParams) {
+  try {
+    await connectDB();
+    const { id } = await params;
+    const body = await request.json();
+    if (!body.status) {
+      return NextResponse.json({ success: false, message: "Status is required." }, { status: 400 });
+    }
+    const { AppointmentService } = await import("@/modules/appointments/service");
+    const updated = await AppointmentService.updateStatus(id, body.status, "system");
+    return NextResponse.json({ success: true, message: "Status updated successfully.", data: updated });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message || "Failed to update status." }, { status: 400 });
+  }
+}

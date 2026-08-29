@@ -1,10 +1,9 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { notFound } from "next/navigation";
-import { products } from "../page";
 import { ShieldCheck, ShoppingBag, ArrowLeft, Info, CheckCircle2, Truck, Plus, Minus, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -17,11 +16,30 @@ const fadeIn = {
 
 export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = use(params);
-  const product = products.find((p) => p.slug === resolvedParams.slug);
+  
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
   const { addItem, openCart } = useCart();
   const [quantity, setQuantity] = useState(1);
 
-  if (!product) {
+  useEffect(() => {
+    fetch(`/api/public/store/products/${resolvedParams.slug}`)
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          setProduct({ ...json.data, id: json.data._id });
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, [resolvedParams.slug]);
+
+  if (loading) {
+    return <div className="min-h-screen flex justify-center items-center">Loading product...</div>;
+  }
+
+  if (!loading && !product) {
     notFound();
   }
 
@@ -79,8 +97,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                 </div>
               )}
               <Image
-                src={product.image}
-                alt={product.name}
+                src={product.image || "/images/product_kit_1.png"}
+                alt={product.name || "Product"}
                 fill
                 className="object-contain p-12 hover:scale-105 transition-transform duration-500"
                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />

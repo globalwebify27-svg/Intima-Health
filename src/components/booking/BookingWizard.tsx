@@ -18,8 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useServices } from "@/store/useServices";
-
-const IconMap: any = { Video, HeartHandshake, Building2, CalendarIcon, Clock, ShieldCheck, CreditCard, MapPin, FlaskConical, CheckCircle2, ChevronRight, ChevronLeft };
+import { getServiceIcon } from "@/lib/service-icons";
 
 const cities = [
   { id: "pune", name: "Pune", description: "Maharashtra's premium wellness hub" },
@@ -153,7 +152,7 @@ export default function BookingPage() {
                     <div className="py-8 text-center text-muted-foreground">No services available.</div>
                   ) : (
                     services.map((service) => {
-                      const Icon = IconMap[service.icon] || Video;
+                      const Icon = getServiceIcon(service.icon);
                       return (
                         <button
                           key={service._id}
@@ -354,9 +353,16 @@ export default function BookingPage() {
                       <input 
                         type="tel" 
                         value={formData.phone}
-                        onChange={(e) => updateForm('phone', e.target.value)}
+                        onChange={(e) => {
+                          let val = e.target.value.replace(/\D/g, '');
+                          if (val.length > 0 && !/^[6-9]/.test(val[0])) {
+                            val = '';
+                          }
+                          updateForm('phone', val);
+                        }}
+                        maxLength={10}
                         className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50" 
-                        placeholder="(555) 123-4567" 
+                        placeholder="9876543210" 
                       />
                     </div>
                   </div>

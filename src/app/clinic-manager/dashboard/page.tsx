@@ -17,7 +17,9 @@ import {
   Plus,
   Zap,
   X,
-  Pill
+  Pill,
+  Download,
+  MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +47,7 @@ interface AppointmentData {
   paymentMethod?: string;
   patientId?: PatientData;
   doctorId?: {
+    _id: string;
     name: string;
   };
 }
@@ -86,7 +89,6 @@ export default function ClinicManagerDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   // Modal visibility states
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showBookModal, setShowBookModal] = useState(false);
   const [showInstantModal, setShowInstantModal] = useState(false);
 
@@ -113,6 +115,15 @@ export default function ClinicManagerDashboardPage() {
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Reschedule state
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [rescheduleApt, setRescheduleApt] = useState<AppointmentData | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("");
+  const [availableSlots, setAvailableSlots] = useState<{ start: string; available: boolean }[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   const resetForms = () => {
     setName("");
@@ -202,6 +213,10 @@ export default function ClinicManagerDashboardPage() {
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(() => {
+      fetchData();
+    }, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   // Fetch slots when doctor or date changes in booking modals
@@ -223,6 +238,54 @@ export default function ClinicManagerDashboardPage() {
     };
     fetchSlots();
   }, [selectedDoctor, selectedDate]);
+
+  // Reschedule slot fetching
+  useEffect(() => {
+    if (rescheduleDate && rescheduleApt && rescheduleApt.doctorId) {
+      const getSlots = async () => {
+        setLoadingSlots(true);
+        try {
+          const res = await fetch(`/api/doctors/${rescheduleApt.doctorId?._id}/slots?date=${rescheduleDate}`);
+          const json = await res.json();
+          if (json.success) {
+            setAvailableSlots(json.data);
+          }
+        } catch (err) {
+          console.error("Failed to fetch slots", err);
+        } finally {
+          setLoadingSlots(false);
+        }
+      };
+      getSlots();
+    }
+  }, [rescheduleDate, rescheduleApt]);
+
+  const handleRescheduleSubmit = async () => {
+    if (!rescheduleApt || !rescheduleDate || !rescheduleTime) return;
+    setActionLoading("reschedule");
+    setErrorMsg("");
+    setSuccessMsg("");
+    
+    try {
+      const res = await fetch(`/api/appointments/${rescheduleApt._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: rescheduleDate, time: rescheduleTime })
+      });
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.message || "Failed to reschedule.");
+      }
+      setSuccessMsg("Appointment rescheduled successfully!");
+      setShowRescheduleModal(false);
+      setRescheduleApt(null);
+      await fetchData(); // Refresh dashboard data
+    } catch (err: any) {
+      setErrorMsg(err.message || "An error occurred.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   // Submit handlers
   const handleCollectCash = async (appointmentId: string) => {
@@ -253,43 +316,24 @@ export default function ClinicManagerDashboardPage() {
     }
   };
 
-  const handleRegisterPatient = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setSuccessMsg("");
-    setErrorMsg("");
-
-    const payload = {
-      name,
-      email,
-      phone,
-      gender,
-      dob: dob || undefined,
-      allergies: allergies || undefined,
-      medicalHistory: medicalHistory || undefined
-    };
-
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+    setActionLoading(id);
     try {
-      const res = await fetch("/api/clinic-manager/onboard", {
-        method: "POST",
+      const res = await fetch(`/api/appointments/${id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ status: newStatus }),
       });
-      const resData = await res.json();
-      if (!resData.success) {
-        throw new Error(resData.message || "Failed to onboard patient.");
+      const json = await res.json();
+      if (!json.success) {
+        alert("Failed to update status.");
+      } else {
+        await fetchData();
       }
-
-      setSuccessMsg("Patient registered successfully!");
-      setTimeout(() => {
-        setShowRegisterModal(false);
-        resetForms();
-        fetchData();
-      }, 1500);
     } catch (err: any) {
-      setErrorMsg(err.message || "An error occurred.");
+      alert("Error updating status");
     } finally {
-      setSubmitting(false);
+      setActionLoading(null);
     }
   };
 
@@ -381,8 +425,8 @@ export default function ClinicManagerDashboardPage() {
   const todayStr = new Date().toISOString().split("T")[0];
   
   // Calculate stats
-  const scheduledToday = appointments.filter(a => a.status === "Scheduled" && a.date === todayStr);
-  const totalUpcomingCount = appointments.filter(a => a.status === "Scheduled").length;
+  const scheduledToday = appointments.filter(a => ["Scheduled", "Checked In", "Engaged", "Rescheduled"].includes(a.status) && a.date === todayStr);
+  const totalUpcomingCount = appointments.filter(a => ["Scheduled", "Rescheduled"].includes(a.status)).length;
   
   // Filter prescriptions (completed consultations with prescriptionSummary)
   const prescriptionLogs = consultations.filter(c => c.status === "Completed" && c.prescriptionSummary);
@@ -418,13 +462,6 @@ export default function ClinicManagerDashboardPage() {
             className="text-white font-bold h-11 px-5 rounded-2xl flex items-center gap-2 shrink-0"
           >
             <Zap className="w-4 h-4" /> Instant Appointment
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => { resetForms(); setShowRegisterModal(true); }}
-            className="font-bold h-11 px-5 rounded-2xl flex items-center gap-2 shrink-0"
-          >
-            <UserPlus className="w-4 h-4" /> Register Walk-in
           </Button>
           <Button
             variant="outline"
@@ -513,8 +550,9 @@ export default function ClinicManagerDashboardPage() {
                     <tr className="border-b border-border bg-muted/20 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       <th className="p-3">Patient</th>
                       <th className="p-3">Time & Type</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3 text-right">Action</th>
+                      <th className="p-3 text-center">Status</th>
+                      <th className="p-3 text-center">Payment Status</th>
+                      <th className="p-3 text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border text-xs">
@@ -530,17 +568,53 @@ export default function ClinicManagerDashboardPage() {
                             {apt.type === "Video" ? <Video className="w-3 h-3 text-blue-500" /> : <MapPin className="w-3 h-3 text-green-500" />} {apt.type}
                           </div>
                         </td>
-                        <td className="p-3">
-                          <Badge className="text-[10px]">{apt.status}</Badge>
+                        <td className="p-3 flex justify-center">
+                          <select
+                            className="h-8 w-28 rounded-lg border border-input bg-transparent px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-medium text-center"
+                            value={apt.status}
+                            disabled={actionLoading === apt._id}
+                            onChange={(e) => {
+                              if (e.target.value === "Rescheduled") {
+                                setRescheduleApt(apt);
+                                setShowRescheduleModal(true);
+                              } else {
+                                handleUpdateStatus(apt._id, e.target.value);
+                              }
+                            }}
+                          >
+                            <option value="Scheduled">Scheduled</option>
+                            <option value="Checked In">Checked In</option>
+                            <option value="Engaged">Engaged</option>
+                            <option value="Checked Out">Checked Out</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                            <option value="Rescheduled">Rescheduled</option>
+                          </select>
                         </td>
-                        <td className="p-3 text-right">
-                          {apt.paymentMethod === "Cash" && apt.paymentStatus !== "Paid" && (
-                            <Button onClick={() => handleCollectCash(apt._id)} size="sm" className="h-7 text-[10px] px-3 bg-amber-600 hover:bg-amber-700 text-white shadow-sm shadow-amber-500/10">
-                              Payment Confirm
-                            </Button>
-                          )}
+                        <td className="p-3 text-center">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            {apt.paymentMethod === "Cash" && apt.paymentStatus !== "Paid" && (
+                              <Button onClick={() => handleCollectCash(apt._id)} size="sm" className="h-7 text-[10px] px-3 bg-amber-600 hover:bg-amber-700 text-white shadow-sm shadow-amber-500/10">
+                                Payment Confirm
+                              </Button>
+                            )}
+                            {apt.paymentStatus === "Paid" && (
+                               <span className="text-[10px] font-bold text-emerald-600 inline-flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5"/> Paid</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3">
                           {apt.paymentStatus === "Paid" && (
-                             <span className="text-[10px] font-bold text-emerald-600 inline-flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5"/> Paid</span>
+                            <div className="flex justify-center items-center gap-2">
+                              <button className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-full hover:bg-muted" onClick={() => alert("Invoice downloaded!")} title="Download PDF Invoice">
+                                <Download className="w-4 h-4"/>
+                              </button>
+                              <button className="text-[#25D366] hover:text-[#20bd5a] transition-colors p-1.5 rounded-full hover:bg-[#25D366]/10" onClick={() => alert("Invoice sent via WhatsApp!")} title="Send Invoice via WhatsApp">
+                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                                </svg>
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -618,120 +692,6 @@ export default function ClinicManagerDashboardPage() {
           )}
         </div>
       </div>
-
-      {/* --- MODAL 1: REGISTER WALKIN PATIENT --- */}
-      {showRegisterModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-card border border-border rounded-3xl w-full max-w-xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4">
-            <button 
-              onClick={() => setShowRegisterModal(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-2 border-b border-border pb-3">
-              <UserPlus className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-bold">Register Walk-in Patient</h3>
-            </div>
-
-            <form onSubmit={handleRegisterPatient} className="space-y-4">
-              {successMsg && (
-                <div className="p-3.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 text-xs font-medium rounded-xl border border-emerald-200/50 flex items-center gap-2">
-                  <CheckCircle2 className="w-4.5 h-4.5 shrink-0" /> {successMsg}
-                </div>
-              )}
-              {errorMsg && (
-                <div className="p-3.5 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 text-xs font-medium rounded-xl border border-rose-200/50 flex items-center gap-2">
-                  <AlertCircle className="w-4.5 h-4.5 shrink-0" /> {errorMsg}
-                </div>
-              )}
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Amit Kumar"
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="amit@gmail.com"
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">WhatsApp Number *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="9876543210"
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Gender</label>
-                  <select
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Date of Birth</label>
-                  <input
-                    type="date"
-                    value={dob}
-                    onChange={(e) => setDob(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Allergies</label>
-                  <input
-                    type="text"
-                    value={allergies}
-                    onChange={(e) => setAllergies(e.target.value)}
-                    placeholder="Penicillin, Peanuts"
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Medical History Notes</label>
-                <textarea
-                  rows={2}
-                  value={medicalHistory}
-                  onChange={(e) => setMedicalHistory(e.target.value)}
-                  placeholder="Chronic diseases, past surgeries, active medications..."
-                  className="w-full p-2.5 rounded-lg border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              <Button type="submit" disabled={submitting} className="w-full h-11 text-white font-bold rounded-xl">
-                {submitting ? "Registering..." : "Onboard Patient Profile"}
-              </Button>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* --- MODAL 2: BOOK EXISTING APPOINTMENT --- */}
       {showBookModal && (
@@ -1043,6 +1003,86 @@ export default function ClinicManagerDashboardPage() {
                 {submitting ? "Processing Walk-in Booking..." : "Register & Book Instant Appointment"}
               </Button>
             </form>
+          </div>
+        </div>
+      )}
+      {/* --- RESCHEDULE MODAL --- */}
+      {showRescheduleModal && rescheduleApt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-card border border-border rounded-2xl md:rounded-3xl w-[95vw] md:max-w-md p-4 md:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button 
+              onClick={() => setShowRescheduleModal(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2 border-b border-border pb-3 mb-4">
+              <Calendar className="w-5 h-5 text-orange-500" />
+              <h3 className="text-lg font-bold">Reschedule Appointment</h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <p><strong>Patient:</strong> {rescheduleApt.patientId?.name}</p>
+                <p><strong>Current:</strong> {rescheduleApt.date} at {rescheduleApt.time}</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Select New Date *</label>
+                <input
+                  type="date"
+                  required
+                  min={new Date().toISOString().split("T")[0]}
+                  value={rescheduleDate}
+                  onChange={(e) => {
+                    setRescheduleDate(e.target.value);
+                    setRescheduleTime("");
+                  }}
+                  className="w-full h-10 px-3 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              {rescheduleDate && (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Select New Time *</label>
+                  {loadingSlots ? (
+                    <div className="text-sm text-muted-foreground text-center py-4">Checking availability...</div>
+                  ) : availableSlots.length === 0 ? (
+                    <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                      No slots available on this date.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
+                      {availableSlots.map((slot) => (
+                        <button
+                          key={slot.start}
+                          disabled={!slot.available}
+                          onClick={() => setRescheduleTime(slot.start)}
+                          className={`h-9 text-xs font-bold rounded-lg transition-all ${
+                            !slot.available
+                              ? "bg-muted/50 text-muted-foreground opacity-50 cursor-not-allowed"
+                              : rescheduleTime === slot.start
+                              ? "bg-primary text-white shadow-md ring-2 ring-primary/20"
+                              : "bg-background border border-border hover:border-primary/50 text-foreground"
+                          }`}
+                        >
+                          {slot.start}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <Button 
+                disabled={actionLoading === "reschedule" || !rescheduleDate || !rescheduleTime} 
+                onClick={handleRescheduleSubmit}
+                className="w-full h-11 text-white font-bold rounded-xl bg-orange-500 hover:bg-orange-600 shadow-sm shadow-orange-500/20 mt-2"
+              >
+                {actionLoading === "reschedule" ? "Rescheduling..." : "Confirm Reschedule"}
+              </Button>
+            </div>
           </div>
         </div>
       )}
