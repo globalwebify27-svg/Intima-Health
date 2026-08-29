@@ -71,6 +71,7 @@ const columns: ColumnDef<any>[] = [
 export default function DoctorAppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"Upcoming" | "Past" | "Cancelled" | "All">("Upcoming");
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -107,6 +108,34 @@ export default function DoctorAppointmentsPage() {
     );
   }
 
+  const now = new Date();
+
+  // Filter appointments
+  const filteredAppointments = appointments.filter((apt) => {
+    if (activeTab === "All") return true;
+    if (activeTab === "Cancelled") return apt.status === "Cancelled";
+    
+    const aptDateTime = new Date(`${apt.date}T${apt.time}:00`);
+    const isPast = aptDateTime < now;
+
+    if (activeTab === "Upcoming") return !isPast && apt.status !== "Cancelled";
+    if (activeTab === "Past") return isPast && apt.status !== "Cancelled";
+    return true;
+  });
+
+  // Sort appointments
+  const sortedAppointments = [...filteredAppointments].sort((a, b) => {
+    const dateA = new Date(`${a.date}T${a.time}:00`);
+    const dateB = new Date(`${b.date}T${b.time}:00`);
+    
+    // For Upcoming, sort closest to now first (Ascending)
+    if (activeTab === "Upcoming") {
+      return dateA.getTime() - dateB.getTime();
+    }
+    // For Past, Cancelled, and All, sort most recent past first (Descending)
+    return dateB.getTime() - dateA.getTime();
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -118,7 +147,25 @@ export default function DoctorAppointmentsPage() {
         </div>
         <Button className="rounded-xl" onClick={() => window.location.href = "/doctor/availability"}>Manage Availability</Button>
       </div>
-      <DataTable columns={columns} data={appointments} />
+
+      {/* Tabs */}
+      <div className="flex border-b border-border gap-4 overflow-x-auto">
+        {(["Upcoming", "Past", "Cancelled", "All"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`pb-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
+              activeTab === tab 
+                ? "border-primary text-primary" 
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tab} Appointments
+          </button>
+        ))}
+      </div>
+
+      <DataTable columns={columns} data={sortedAppointments} />
     </div>
   );
 }

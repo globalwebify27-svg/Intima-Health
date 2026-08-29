@@ -35,7 +35,7 @@ interface Consultation {
   patientId: Patient;
   doctorId?: any;
   videoChannelName: string;
-  status: "Pending" | "Active" | "Completed";
+  status: "Pending" | "Active" | "Completed" | "Expired";
   notes?: string;
   prescriptionSummary?: string;
   createdAt: string;
@@ -73,7 +73,7 @@ function ConsultationsContent() {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"Pending" | "Active" | "Completed" | "All">("Pending");
+  const [activeTab, setActiveTab] = useState<"Pending" | "Active" | "Completed" | "Expired" | "All">("Pending");
 
   // Video Room States
   const [activeConsultation, setActiveConsultation] = useState<Consultation | null>(null);
@@ -277,7 +277,19 @@ function ConsultationsContent() {
     }
   };
 
-  const filteredConsultations = consultations.filter((c) => {
+  const processedConsultations = consultations.map((c) => {
+    if ((c.status === "Pending" || c.status === "Active") && c.appointmentId?.date && c.appointmentId?.time) {
+      const aptDateTime = new Date(`${c.appointmentId.date}T${c.appointmentId.time}:00`);
+      // We can add a small buffer (e.g., 2 hours) so that ongoing consultations don't expire immediately.
+      const expiryTime = new Date(aptDateTime.getTime() + 2 * 60 * 60 * 1000); 
+      if (new Date() > expiryTime) {
+        return { ...c, status: "Expired" as const };
+      }
+    }
+    return c;
+  });
+
+  const filteredConsultations = processedConsultations.filter((c) => {
     if (activeTab === "All") return true;
     return c.status === activeTab;
   });
@@ -304,21 +316,26 @@ function ConsultationsContent() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-border gap-4">
-        {(["Pending", "Active", "Completed", "All"] as const).map((tab) => (
+      <div className="flex border-b border-border gap-4 overflow-x-auto">
+        {(["Pending", "Active", "Completed", "Expired", "All"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-3 text-sm font-bold border-b-2 transition-all relative ${
+            className={`pb-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap relative ${
               activeTab === tab 
                 ? "border-primary text-primary" 
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             {tab} Sessions
-            {tab === "Pending" && consultations.filter((c) => c.status === "Pending").length > 0 && (
+            {tab === "Pending" && processedConsultations.filter((c) => c.status === "Pending").length > 0 && (
               <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-primary text-white rounded-full font-extrabold">
-                {consultations.filter((c) => c.status === "Pending").length}
+                {processedConsultations.filter((c) => c.status === "Pending").length}
+              </span>
+            )}
+            {tab === "Expired" && processedConsultations.filter((c) => c.status === "Expired").length > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-red-500 text-white rounded-full font-extrabold">
+                {processedConsultations.filter((c) => c.status === "Expired").length}
               </span>
             )}
           </button>
@@ -344,7 +361,7 @@ function ConsultationsContent() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-lg">{session.patientId?.name}</h3>
-                    <Badge variant={session.status === "Completed" ? "secondary" : session.status === "Active" ? "default" : "outline"}>
+                    <Badge variant={session.status === "Completed" ? "secondary" : session.status === "Active" ? "default" : session.status === "Expired" ? "destructive" : "outline"}>
                       {session.status}
                     </Badge>
                   </div>
@@ -355,17 +372,21 @@ function ConsultationsContent() {
                 </div>
               </div>
 
-              {session.status !== "Completed" ? (
+              {session.status === "Completed" ? (
+                <div className="text-sm font-semibold text-green-600 flex items-center gap-1 bg-green-500/5 px-3 py-1.5 rounded-xl border border-green-500/10">
+                  <Check className="w-4 h-4" /> Consultation Completed
+                </div>
+              ) : session.status === "Expired" ? (
+                <div className="text-sm font-semibold text-red-600 flex items-center gap-1 bg-red-500/5 px-3 py-1.5 rounded-xl border border-red-500/10">
+                  <X className="w-4 h-4" /> Session Expired
+                </div>
+              ) : (
                 <Button 
                   onClick={() => handleStartConsultation(session)} 
                   className="rounded-xl px-5 h-11 font-bold gap-2 self-stretch md:self-auto"
                 >
                   <Video className="w-4 h-4" /> Start Consultation
                 </Button>
-              ) : (
-                <div className="text-sm font-semibold text-green-600 flex items-center gap-1 bg-green-500/5 px-3 py-1.5 rounded-xl border border-green-500/10">
-                  <Check className="w-4 h-4" /> Consultation Completed
-                </div>
               )}
             </div>
           ))
