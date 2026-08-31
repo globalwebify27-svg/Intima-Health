@@ -89,9 +89,12 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { patientId, drugs, therapies, notes } = body;
 
-    if (!patientId || !Array.isArray(drugs) || drugs.length === 0) {
+    const hasDrugs = Array.isArray(drugs) && drugs.length > 0;
+    const hasTherapies = Array.isArray(therapies) && therapies.length > 0;
+
+    if (!patientId || (!hasDrugs && !hasTherapies)) {
       return NextResponse.json(
-        { success: false, message: "Patient and at least one medication are required." },
+        { success: false, message: "Patient and at least one medication or therapy are required." },
         { status: 400 }
       );
     }
@@ -137,13 +140,13 @@ export async function POST(req: Request) {
         const { TherapySessionModel } = await import("@/modules/pharmacy/schema");
         const therapyList = JSON.parse(prescribedTherapiesJson);
         for (const therapy of therapyList) {
-          if (therapy.name && therapy.price > 0) {
+          if (therapy.name) {
             const session = new TherapySessionModel({
               patientId,
               clinicId: (doctor as any).clinicId,
               name: therapy.name,
-              price: Number(therapy.price),
-              status: "Unpaid",
+              price: Number(therapy.price) || 0,
+              status: "Recommended",
               consultationId: (consultation as any)._id,
             });
             await session.save();

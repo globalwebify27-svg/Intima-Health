@@ -51,6 +51,12 @@ export default function DoctorDashboard() {
       }
     };
     fetchDashboardData();
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") fetchDashboardData();
+    }, 30000);
+    const onFocus = () => fetchDashboardData();
+    window.addEventListener("focus", onFocus);
+    return () => { clearInterval(interval); window.removeEventListener("focus", onFocus); };
   }, []);
 
   const handleStartSession = async (appointmentId: string) => {
@@ -180,13 +186,17 @@ export default function DoctorDashboard() {
                     <span className="text-xs font-bold text-red-600 bg-red-500/10 px-3.5 py-1.5 rounded-xl border border-red-500/20">
                       Cancelled
                     </span>
-                  ) : (
+                  ) : (apt.status === "Checked In" || apt.status === "Engaged") ? (
                     <Button 
                       size="sm"
                       onClick={() => handleStartSession(apt._id)}
                     >
-                      Start Session
+                      {apt.status === "Engaged" ? "Rejoin Session" : "Start Session"}
                     </Button>
+                  ) : (
+                    <span className="text-xs font-bold text-muted-foreground bg-muted px-3.5 py-1.5 rounded-xl border border-border">
+                      {apt.status}
+                    </span>
                   )}
                 </div>
               ))

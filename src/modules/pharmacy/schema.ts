@@ -118,7 +118,9 @@ export interface ITherapySession {
   clinicId: Schema.Types.ObjectId;
   name: string;
   price: number;
-  status: "Unpaid" | "Paid";
+  status: "Recommended" | "Booked" | "Paid";
+  date?: string;
+  time?: string;
   consultationId: Schema.Types.ObjectId;
   deletedAt?: Date | null;
 }
@@ -128,7 +130,9 @@ const TherapySessionSchema = new Schema<ITherapySession>({
   clinicId: { type: Schema.Types.ObjectId, ref: "Clinic", required: true },
   name: { type: String, required: true },
   price: { type: Number, required: true },
-  status: { type: String, enum: ["Unpaid", "Paid"], default: "Unpaid" },
+  status: { type: String, enum: ["Recommended", "Booked", "Paid"], default: "Recommended" },
+  date: { type: String },
+  time: { type: String },
   consultationId: { type: Schema.Types.ObjectId, ref: "Consultation", required: true },
   deletedAt: { type: Date, default: null },
 }, {

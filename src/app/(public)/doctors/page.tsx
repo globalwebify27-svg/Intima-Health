@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { IDoctor } from "@/modules/doctors/types";
 import { Star, Award, GraduationCap, Calendar, ArrowRight, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { BookNowButton } from "@/components/ui/book-now-button";
@@ -23,43 +25,22 @@ const staggerContainer = {
   }
 };
 
-const doctors = [
-  {
-    name: "Dr. Sarah Jenkins",
-    title: "Chief Medical Officer",
-    specialties: ["Sexual Dysfunction", "Hormone Optimization"],
-    bio: "With over 15 years of experience in urology and sexual health, Dr. Jenkins leads our clinical protocols with a focus on holistic, science-backed treatments.",
-    image: "/images/doctor_1.png",
-    education: "MD, Johns Hopkins University",
-    rating: "4.9",
-    reviews: "324",
-    availability: "Next available: Tomorrow"
-  },
-  {
-    name: "Dr. Michael Chen",
-    title: "Lead Urologist",
-    specialties: ["Erectile Dysfunction", "Premature Ejaculation"],
-    bio: "Dr. Chen specializes in advanced treatments for men's intimate health. He is passionate about destigmatizing sexual wellness and providing personalized care.",
-    image: "/images/doctor_2.png",
-    education: "MD, Stanford Medicine",
-    rating: "4.8",
-    reviews: "215",
-    availability: "Next available: Today"
-  },
-  {
-    name: "Dr. Elena Rodriguez",
-    title: "Clinical Sexologist & Therapist",
-    specialties: ["Couples Therapy", "Low Libido", "Psychosexual Counseling"],
-    bio: "Dr. Rodriguez integrates behavioral therapy with clinical interventions to address the psychological components of intimacy and reproductive health.",
-    image: "/images/doctor_3.png",
-    education: "PhD, Columbia University",
-    rating: "5.0",
-    reviews: "189",
-    availability: "Next available: Thursday"
-  }
-];
-
 export default function DoctorsPage() {
+  const [doctors, setDoctors] = useState<IDoctor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/doctors?status=Active")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setDoctors(data.data);
+        }
+      })
+      .catch(err => console.error("Failed to load doctors:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       
@@ -102,28 +83,36 @@ export default function DoctorsPage() {
             variants={staggerContainer}
             className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12"
           >
-            {doctors.map((doctor, idx) => (
+            {loading ? (
+              <div className="col-span-full py-20 flex justify-center text-muted-foreground font-medium">Loading clinical experts...</div>
+            ) : doctors.length === 0 ? (
+              <div className="col-span-full py-20 flex justify-center text-muted-foreground font-medium">No active doctors found.</div>
+            ) : doctors.map((doctor, idx) => (
               <motion.div 
-                key={idx}
+                key={doctor._id || idx}
                 variants={fadeIn}
                 className="group flex flex-col bg-card rounded-[2.5rem] border border-border shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden"
               >
                 {/* Doctor Image */}
-                <div className="relative w-full aspect-[4/5] bg-muted overflow-hidden">
-                  <Image
-                    src={doctor.image}
-                    alt={doctor.name}
-                    fill
-                    className="object-cover object-top group-hover:scale-105 transition-transform duration-700"
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                  />
+                <div className="relative w-full aspect-[4/5] bg-muted overflow-hidden flex items-center justify-center">
+                  {doctor.avatar ? (
+                    <Image
+                      src={doctor.avatar}
+                      alt={doctor.name}
+                      fill
+                      className="object-cover object-top group-hover:scale-105 transition-transform duration-700"
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                    />
+                  ) : (
+                    <div className="text-6xl font-serif text-primary/20">{doctor.name.charAt(0)}</div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80" />
                   
                   {/* Floating Rating Badge */}
                   <div className="absolute bottom-6 left-6 bg-background/90 backdrop-blur-md px-4 py-2 rounded-full border border-border flex items-center gap-2 shadow-lg">
                     <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    <span className="font-bold text-sm">{doctor.rating}</span>
-                    <span className="text-muted-foreground text-xs">({doctor.reviews})</span>
+                    <span className="font-bold text-sm">{doctor.rating || "5.0"}</span>
+                    <span className="text-muted-foreground text-xs">({doctor.reviewsCount || "0"})</span>
                   </div>
                 </div>
                 
@@ -131,29 +120,36 @@ export default function DoctorsPage() {
                 <div className="p-8 flex-1 flex flex-col">
                   <div className="mb-6">
                     <h3 className="text-2xl font-serif font-medium text-foreground mb-1">{doctor.name}</h3>
-                    <p className="text-primary font-semibold text-sm uppercase tracking-wider">{doctor.title}</p>
+                    <p className="text-primary font-semibold text-sm uppercase tracking-wider">{doctor.specialization}</p>
                   </div>
                   
                   <div className="flex flex-wrap gap-2 mb-6">
-                    {doctor.specialties.map((spec, sIdx) => (
+                    {(doctor.qualifications && doctor.qualifications.length > 0 ? doctor.qualifications : ["Medical Expert"]).slice(0, 3).map((spec, sIdx) => (
                       <span key={sIdx} className="px-3 py-1 bg-muted text-muted-foreground text-xs font-medium rounded-full">
                         {spec}
                       </span>
                     ))}
                   </div>
                   
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-8 flex-1">
-                    {doctor.bio}
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-8 flex-1 line-clamp-4">
+                    {doctor.bio || "Dedicated professional committed to providing exceptional care."}
                   </p>
                   
                   <div className="space-y-3 mb-8">
                     <div className="flex items-center text-sm text-foreground/80">
-                      <GraduationCap className="w-4 h-4 mr-3 text-primary/70" />
-                      {doctor.education}
+                      <Award className="w-4 h-4 mr-3 text-primary/70" />
+                      {doctor.experience} Years Experience
                     </div>
-                    <div className="flex items-center text-sm text-foreground/80">
-                      <Calendar className="w-4 h-4 mr-3 text-primary/70" />
-                      <span className="text-emerald-600 font-medium">{doctor.availability}</span>
+                    <div className="flex items-center justify-between text-sm text-foreground/80">
+                      <div className="flex items-center">
+                        <Calendar className="w-4 h-4 mr-3 text-primary/70" />
+                        <span className="text-emerald-600 font-medium">Check Availability</span>
+                      </div>
+                      {doctor.fees ? (
+                        <div className="font-bold text-primary bg-primary/10 px-2 py-1 rounded-md">
+                          ₹{doctor.fees}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                   

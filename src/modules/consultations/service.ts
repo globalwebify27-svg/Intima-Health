@@ -24,40 +24,69 @@ export class ConsultationService {
   }
 
   static async updateConsultation(id: string, data: Partial<IConsultation>, updatedBy?: string) {
+    if (data.status === "Completed") {
+      if (!data.notes || data.notes.trim() === "") {
+        throw new Error("Clinical notes are mandatory to complete a consultation.");
+      }
+    }
+
     const updated = await ConsultationRepository.update(id, {
       ...data,
       updatedBy,
     });
 
-    if (updated && data.status === "Completed") {
+    if (!updated) return updated;
+
+    // --- Sync therapy session records whenever prescribedTherapies is provided ---
+    if (data.prescribedTherapies) {
+      try {
+        // Resolve clinicId from the populated doctor or appointment
+        const doctorDoc = updated.doctorId as any;
+        const clinicId =
+          doctorDoc?.clinicId?._id || doctorDoc?.clinicId ||
+          (updated.appointmentId as any)?.clinicId?._id ||
+          (updated.appointmentId as any)?.clinicId;
+
+        const patientId = (updated.patientId as any)?._id || updated.patientId;
+        const consultationId = (updated as any)._id;
+
+        if (clinicId && patientId) {
+          const therapies = JSON.parse(data.prescribedTherapies);
+          if (Array.isArray(therapies)) {
+            // Remove old "Recommended" sessions for this consultation to avoid duplicates
+            await TherapySessionModel.deleteMany({
+              consultationId,
+              status: "Recommended",
+            });
+
+            // Create fresh therapy session records
+            for (const therapy of therapies) {
+              if (therapy.name && therapy.name.trim() !== "") {
+                await TherapySessionModel.create({
+                  patientId,
+                  clinicId,
+                  name: therapy.name,
+                  price: Number(therapy.price) || 0,
+                  status: "Recommended",
+                  consultationId,
+                });
+              }
+            }
+          }
+        } else {
+          console.error("Could not resolve clinicId for therapy sessions. doctorDoc:", doctorDoc?._id, "clinicId:", clinicId);
+        }
+      } catch (e) {
+        console.error("Failed to sync prescribed therapies:", e);
+      }
+    }
+
+    // --- Completion-specific logic ---
+    if (data.status === "Completed") {
       // Update appointment status to Completed
       const aptId = updated.appointmentId;
       if (aptId) {
         await AppointmentModel.findByIdAndUpdate(aptId, { status: "Completed" }).exec();
-      }
-
-      const doctor = await DoctorModel.findById(updated.doctorId).exec();
-      if (doctor && doctor.clinicId) {
-        if (data.prescribedTherapies) {
-          try {
-            const therapies = JSON.parse(data.prescribedTherapies);
-            if (Array.isArray(therapies)) {
-              for (const therapy of therapies) {
-                const session = new TherapySessionModel({
-                  patientId: updated.patientId,
-                  clinicId: doctor.clinicId,
-                  name: therapy.name,
-                  price: Number(therapy.price),
-                  status: "Unpaid",
-                  consultationId: (updated as any)._id,
-                });
-                await session.save();
-              }
-            }
-          } catch (e) {
-            console.error("Failed to seed prescribed therapies:", e);
-          }
-        }
       }
 
       // Send digital prescription WhatsApp notification to the patient

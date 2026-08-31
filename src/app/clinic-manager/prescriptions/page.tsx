@@ -60,6 +60,12 @@ export default function PrescriptionsPage() {
   const [products, setProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   // Dispensing state
   const [showDispenseModal, setShowDispenseModal] = useState(false);
@@ -197,6 +203,9 @@ export default function PrescriptionsPage() {
     return patientName.includes(query) || doctorName.includes(query) || summaryText.includes(query);
   });
 
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">
@@ -204,6 +213,31 @@ export default function PrescriptionsPage() {
       </div>
     );
   }
+
+  const renderPrescriptionSummary = (summary?: string, isModal = false) => {
+    if (!summary) return "No medications noted";
+    try {
+      const parsed = JSON.parse(summary);
+      if (Array.isArray(parsed)) {
+        if (isModal) {
+          return (
+            <ul className="list-disc pl-5 space-y-1 mt-2 not-italic">
+              {parsed.map((item: any, idx: number) => (
+                <li key={idx} className="text-sm text-muted-foreground">
+                  <strong className="text-foreground">{item.drug}</strong> - Dosage: {item.dosage}, Frequency: {item.frequency}, Duration: {item.duration}
+                </li>
+              ))}
+            </ul>
+          );
+        } else {
+          return parsed.map((item: any) => `${item.drug} (${item.frequency})`).join(", ");
+        }
+      }
+    } catch (e) {
+      // Not JSON, fallback
+    }
+    return summary;
+  };
 
   return (
     <div className="space-y-8">
@@ -253,7 +287,7 @@ export default function PrescriptionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-sm">
-                {filtered.map((c) => (
+                {paginated.map((c) => (
                   <tr 
                     key={c._id} 
                     className="hover:bg-muted/10 transition cursor-pointer"
@@ -275,9 +309,9 @@ export default function PrescriptionsPage() {
                       <div className="flex items-center gap-1 mt-1"><Clock className="w-3.5 h-3.5" /> {c.appointmentId?.time || "N/A"}</div>
                     </td>
                     <td className="p-4">
-                      <p className="max-w-[280px] truncate text-muted-foreground" title={c.prescriptionSummary}>
-                        {c.prescriptionSummary || "No medications noted"}
-                      </p>
+                      <div className="max-w-[280px] truncate text-muted-foreground" title={c.prescriptionSummary}>
+                        {renderPrescriptionSummary(c.prescriptionSummary)}
+                      </div>
                     </td>
                     <td className="p-4 text-right">
                       <Button
@@ -296,6 +330,30 @@ export default function PrescriptionsPage() {
                 ))}
               </tbody>
             </table>
+            
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/10">
+              <div className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filtered.length)} of {filtered.length} entries
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  disabled={currentPage === 1} 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                >
+                  Previous
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  disabled={currentPage === totalPages || totalPages === 0} 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.max(1, totalPages)))}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -324,9 +382,9 @@ export default function PrescriptionsPage() {
 
             <div className="bg-muted/30 border border-border/40 p-4 rounded-xl space-y-2 text-xs">
               <div className="font-bold text-foreground">Doctor's Prescribed Advisory:</div>
-              <p className="text-muted-foreground italic whitespace-pre-wrap">
-                "{dispenseConsultation.prescriptionSummary}"
-              </p>
+              <div className="text-muted-foreground italic">
+                {renderPrescriptionSummary(dispenseConsultation.prescriptionSummary, true)}
+              </div>
               <div className="text-[10px] text-muted-foreground border-t border-border/30 pt-2 mt-2">
                 Patient: <strong className="text-foreground">{dispenseConsultation.patientId?.name}</strong> | Doctor: <strong className="text-foreground">Dr. {dispenseConsultation.doctorId?.name}</strong>
               </div>

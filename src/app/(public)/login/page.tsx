@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,9 +14,25 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
 
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (step === 'otp' && resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [step, resendCooldown]);
+
+  const handleSendOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    // Client-side validation
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone.length < 10) {
+      setError("Please enter a valid 10-digit phone number.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -29,6 +45,7 @@ export default function LoginPage() {
       const data = await res.json();
       if (data.success) {
         setStep('otp');
+        setResendCooldown(30);
         if (data.code) {
           alert(`[Test OTP Code]: ${data.code}\n(This popup is for developer/testing convenience)`);
         }
@@ -44,6 +61,14 @@ export default function LoginPage() {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Client-side validation
+    const cleanOtp = otp.trim();
+    if (cleanOtp.length !== 6 || !/^\d+$/.test(cleanOtp)) {
+      setError("Please enter a valid 6-digit OTP.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -173,7 +198,17 @@ export default function LoginPage() {
                       disabled={loading}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">Code sent to your WhatsApp number +91 {phone.replace(/\D/g, "").slice(-10)}.</p>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-muted-foreground">Code sent to +91 {phone.replace(/\D/g, "").slice(-10)}.</p>
+                    <button 
+                      type="button"
+                      disabled={resendCooldown > 0 || loading}
+                      onClick={() => handleSendOtp()}
+                      className="text-xs font-bold text-primary hover:underline disabled:opacity-50 disabled:no-underline"
+                    >
+                      {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

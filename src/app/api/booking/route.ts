@@ -8,11 +8,38 @@ import { sendWelcomeMessage } from "@/lib/whatsapp";
 import { DoctorModel } from "@/modules/doctors/schema";
 import { ClinicServiceModel } from "@/modules/clinics/schema";
 import { PlatformServiceModel } from "@/modules/services/schema";
+import { z } from "zod";
+
+const bookingSchema = z.object({
+  service: z.string().min(1, "Service is required"),
+  city: z.string().optional(),
+  clinic: z.string().optional(),
+  doctorId: z.string().optional(),
+  date: z.string().min(1, "Date is required"),
+  time: z.string().min(1, "Time is required"),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  phone: z.string().regex(/^[6-9]\d{9}$/, "Must be a valid 10-digit phone number starting with 6-9"),
+  dob: z.string().optional(),
+  paymentMethod: z.string().optional(),
+  isExistingPatient: z.boolean().optional(),
+});
 
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const body = await req.json();
+    const rawBody = await req.json();
+    
+    const parsed = bookingSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, message: parsed.error.issues[0].message },
+        { status: 400 }
+      );
+    }
+    
+    const body = parsed.data;
     let { 
       service, city, clinic, doctorId, date, time, 
       firstName, lastName, email: providedEmail, phone, dob,
@@ -20,10 +47,6 @@ export async function POST(req: Request) {
     } = body;
 
     let email = providedEmail;
-
-    if (!phone) {
-      return NextResponse.json({ success: false, message: "Phone number is required." }, { status: 400 });
-    }
 
     let patient;
     let user;

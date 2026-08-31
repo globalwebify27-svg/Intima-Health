@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pill, Activity, Hospital, CreditCard } from "lucide-react";
+import { Pill, Activity, Hospital, CreditCard, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useBookingModal } from "@/store/useBookingModal";
@@ -51,7 +51,9 @@ interface TherapySession {
   _id: string;
   name: string;
   price: number;
-  status: "Unpaid" | "Paid";
+  status: "Recommended" | "Booked" | "Paid";
+  date?: string;
+  time?: string;
   clinicId?: {
     name: string;
   };
@@ -74,6 +76,12 @@ export default function PatientDashboard() {
   const [therapySessions, setTherapySessions] = useState<TherapySession[]>([]);
   const [pharmacyOrders, setPharmacyOrders] = useState<PharmacyOrder[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+
+  const [therapyToBook, setTherapyToBook] = useState<TherapySession | null>(null);
+  const [therapyDate, setTherapyDate] = useState("");
+  const [therapyTime, setTherapyTime] = useState("");
+  const [bookingTherapy, setBookingTherapy] = useState(false);
+  const [isTherapyListModalOpen, setIsTherapyListModalOpen] = useState(false);
 
   const fetchDashboardData = (pId: string) => {
     setLoading(true);
@@ -123,7 +131,7 @@ export default function PatientDashboard() {
   useEffect(() => {
     // Load products first
     fetch(`/api/clinics?_t=${Date.now()}`, { cache: "no-store" }) // just warm DB
-    
+
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
@@ -143,7 +151,7 @@ export default function PatientDashboard() {
 
   const handleOrderFromPharmacy = async (consultation: Consultation) => {
     if (!consultation.prescriptionSummary || !patientId) return;
-    
+
     try {
       const meds: Medicine[] = JSON.parse(consultation.prescriptionSummary);
       if (meds.length === 0) return;
@@ -233,6 +241,33 @@ export default function PatientDashboard() {
     }
   };
 
+  const handleBookTherapy = async () => {
+    if (!therapyToBook || !therapyDate || !therapyTime) return;
+    setBookingTherapy(true);
+    try {
+      const res = await fetch(`/api/therapy-sessions/${therapyToBook._id}/book`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: therapyDate, time: therapyTime })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Therapy booked successfully!");
+        setTherapyToBook(null);
+        setTherapyDate("");
+        setTherapyTime("");
+        if (patientId) fetchDashboardData(patientId);
+      } else {
+        alert(data.message || "Failed to book therapy");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred");
+    } finally {
+      setBookingTherapy(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
@@ -255,10 +290,10 @@ export default function PatientDashboard() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
         {/* Next Appointment Card */}
-        <UpcomingAppointmentsSlider 
-          upcomingApts={upcomingApts} 
-          openBooking={openBooking} 
-          handlePayAppointment={handlePayAppointment} 
+        <UpcomingAppointmentsSlider
+          upcomingApts={upcomingApts}
+          openBooking={openBooking}
+          handlePayAppointment={handlePayAppointment}
         />
 
         {/* Therapy Session Summary */}
@@ -275,16 +310,17 @@ export default function PatientDashboard() {
               </div>
               <h3 className="font-bold">Therapy Sessions</h3>
             </div>
-            <p className="text-2xl font-black mb-1">
-              {therapySessions.filter(s => s.status === "Unpaid").length} Pending
-            </p>
-            <p className="text-xs text-muted-foreground font-medium">
-              Pay for your prescribed therapy sessions to begin treatment.
+            <div className="text-2xl font-black mt-2 text-foreground flex items-center gap-3">
+              {therapySessions.filter(s => (s.status as string) === "Recommended" || (s.status as string) === "Unpaid").length} Recommended
+              <div className="text-[10px] text-green-600 font-bold bg-green-500/5 px-2 py-0.5 rounded-lg border border-green-500/10 h-fit">
+                {therapySessions.filter(s => s.status === "Booked").length} Upcoming
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground font-medium mt-1">
+              Book your prescribed therapy sessions to begin treatment.
             </p>
           </div>
-          <div className="text-xs text-green-600 font-bold bg-green-500/5 px-2.5 py-1 rounded-xl border border-green-500/10 w-fit">
-            {therapySessions.filter(s => s.status === "Paid").length} Sessions Paid
-          </div>
+
         </motion.div>
 
         {/* Pharmacy Orders Summary */}
@@ -312,55 +348,77 @@ export default function PatientDashboard() {
 
       {/* Main Layout: Left = Prescriptions & Therapies, Right = Orders */}
       <div className="grid gap-6 lg:grid-cols-3">
-        
+
         {/* Left Column: Digital Prescriptions & Prescribed Therapies */}
         <div className="lg:col-span-2 space-y-6">
-          
-          {/* Prescriptions Section */}
-          <DigitalPrescriptionsList 
-            consultations={consultations} 
-            handleOrderFromPharmacy={handleOrderFromPharmacy} 
-            handleDownloadPrescription={handleDownloadPrescription} 
-          />
 
           {/* Therapy Sessions Section */}
-          <div className="p-6 bg-card rounded-3xl border border-border/60 shadow-sm space-y-4">
-            <h3 className="text-lg font-bold flex items-center gap-2 border-b border-border/50 pb-3">
-              <Hospital className="w-4 h-4 text-primary" /> Prescribed Therapy Sessions
-            </h3>
-            
-            <div className="space-y-3">
-              {therapySessions.length > 0 ? (
-                therapySessions.map((session) => (
-                  <div key={session._id} className="flex items-center justify-between p-4 rounded-2xl border border-border bg-muted/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 font-bold">Th</div>
-                      <div>
-                        <h4 className="font-bold text-sm">{session.name}</h4>
-                        <p className="text-[10px] text-muted-foreground">Cost: ₹{session.price}</p>
-                      </div>
+          {therapySessions.length > 0 && (
+            <div className="p-6 bg-card rounded-3xl border border-border/60 shadow-sm space-y-4" id="recommended-therapies">
+              <h3 className="text-lg font-bold flex items-center gap-2 border-b border-border/50 pb-3">
+                <Hospital className="w-4 h-4 text-primary" /> Prescribed Therapy Sessions
+              </h3>
+
+              <div className="space-y-3">
+                {therapySessions.filter(s => (s.status as string) === "Recommended" || (s.status as string) === "Unpaid").length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">Recommended by Doctor</h4>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {therapySessions.filter(s => (s.status as string) === "Recommended" || (s.status as string) === "Unpaid").map((session) => (
+                        <div key={session._id} className="flex items-center justify-between p-4 rounded-2xl border border-amber-200 bg-amber-50/50">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 font-bold">Th</div>
+                            <div>
+                              <h4 className="font-bold text-sm text-amber-900">{session.name}</h4>
+                              <p className="text-[10px] text-amber-700 font-medium">Estimated Cost: ₹{session.price}</p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => setTherapyToBook(session)}
+                            className="rounded-xl h-9 text-xs font-bold gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shadow-none"
+                          >
+                            <Calendar className="w-3.5 h-3.5" /> Book Therapy
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                    {session.status === "Unpaid" ? (
-                      <Button 
-                        size="sm" 
-                        onClick={() => handlePayTherapy(session._id)}
-                        className="rounded-xl h-9 text-xs font-bold gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
-                      >
-                        <CreditCard className="w-3.5 h-3.5" /> Pay Now
-                      </Button>
-                    ) : (
-                      <Badge variant="outline" className="text-xs text-green-700 border-green-200 bg-green-50">Paid</Badge>
-                    )}
                   </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground/60">
-                  <Activity className="w-10 h-10 mb-2 stroke-[1.5]" />
-                  <p className="text-sm font-semibold">No therapy sessions prescribed.</p>
-                </div>
-              )}
+                )}
+
+                {therapySessions.filter(s => s.status === "Booked" || s.status === "Paid").length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">My Booked Therapies</h4>
+                    <div className="space-y-3">
+                      {therapySessions.filter(s => s.status === "Booked" || s.status === "Paid").map((session) => (
+                        <div key={session._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-border bg-muted/20 gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 font-bold">Th</div>
+                            <div>
+                              <h4 className="font-bold text-sm">{session.name}</h4>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{session.date} at {session.time}</p>
+                            </div>
+                          </div>
+                          {session.status === "Booked" ? (
+                            <Badge variant="outline" className="text-xs text-amber-700 border-amber-200 bg-amber-50 self-start sm:self-center shrink-0">Unpaid - Pay at Clinic</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs text-green-700 border-green-200 bg-green-50 self-start sm:self-center shrink-0">Paid</Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Prescriptions Section */}
+          <DigitalPrescriptionsList
+            consultations={consultations}
+            handleOrderFromPharmacy={handleOrderFromPharmacy}
+            handleDownloadPrescription={handleDownloadPrescription}
+          />
 
         </div>
 
@@ -369,7 +427,7 @@ export default function PatientDashboard() {
           <h3 className="text-lg font-bold flex items-center gap-2 border-b border-border/50 pb-3">
             <Pill className="w-4 h-4 text-primary" /> Active Pharmacy Orders
           </h3>
-          
+
           <div className="space-y-4">
             {pharmacyOrders.length > 0 ? (
               pharmacyOrders.map((order) => (
@@ -396,6 +454,104 @@ export default function PatientDashboard() {
         </div>
 
       </div>
+
+      {/* Therapy Selection Modal Overlay */}
+      {isTherapyListModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background rounded-3xl max-w-md w-full p-6 shadow-xl border border-border">
+            <h3 className="text-xl font-bold mb-2">Select Therapy to Book</h3>
+            <p className="text-muted-foreground text-sm mb-6">Choose one of your prescribed therapy sessions to schedule.</p>
+            
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+              {therapySessions.filter(s => (s.status as string) === "Recommended" || (s.status as string) === "Unpaid").map((session) => (
+                <div key={session._id} className="flex items-center justify-between p-4 rounded-2xl border border-border bg-muted/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">Th</div>
+                    <div>
+                      <h4 className="font-bold text-sm">{session.name}</h4>
+                      <p className="text-[10px] text-muted-foreground font-medium">Estimated Cost: ₹{session.price}</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setIsTherapyListModalOpen(false);
+                      setTherapyToBook(session);
+                    }}
+                    className="rounded-xl h-9 text-xs font-bold gap-1.5"
+                  >
+                    <Calendar className="w-3.5 h-3.5" /> Book
+                  </Button>
+                </div>
+              ))}
+              {therapySessions.filter(s => (s.status as string) === "Recommended" || (s.status as string) === "Unpaid").length === 0 && (
+                <div className="py-8 text-center text-sm font-medium text-muted-foreground">
+                  No prescribed therapies available to book.
+                </div>
+              )}
+            </div>
+
+            <div className="pt-4 border-t border-border mt-4">
+              <Button
+                variant="outline"
+                className="w-full rounded-xl"
+                onClick={() => setIsTherapyListModalOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Therapy Booking Date/Time Modal Overlay */}
+      {therapyToBook && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background rounded-3xl max-w-md w-full p-6 shadow-xl border border-border">
+            <h3 className="text-xl font-bold mb-2">Book Therapy Session</h3>
+            <p className="text-muted-foreground text-sm mb-6">Select a date and time for your prescribed {therapyToBook.name}.</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-foreground mb-1">Date</label>
+                <input
+                  type="date"
+                  className="w-full rounded-xl border border-border bg-transparent p-3 text-sm focus:outline-none focus:border-primary font-medium"
+                  value={therapyDate}
+                  onChange={(e) => setTherapyDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-foreground mb-1">Time</label>
+                <input
+                  type="time"
+                  className="w-full rounded-xl border border-border bg-transparent p-3 text-sm focus:outline-none focus:border-primary font-medium"
+                  value={therapyTime}
+                  onChange={(e) => setTherapyTime(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-border mt-4">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl"
+                  onClick={() => { setTherapyToBook(null); setTherapyDate(""); setTherapyTime(""); }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 rounded-xl text-white font-bold"
+                  disabled={!therapyDate || !therapyTime || bookingTherapy}
+                  onClick={handleBookTherapy}
+                >
+                  {bookingTherapy ? "Booking..." : "Confirm Booking"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

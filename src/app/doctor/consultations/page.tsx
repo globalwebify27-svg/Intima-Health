@@ -87,6 +87,7 @@ function ConsultationsContent() {
   const [therapyItems, setTherapyItems] = useState<TherapyItem[]>([
     { name: "", price: 0 }
   ]);
+  const [showExitWarning, setShowExitWarning] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<"patient" | "notes">("notes");
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
@@ -126,14 +127,14 @@ function ConsultationsContent() {
           })
           .catch((err) => console.error("Error fetching pharmacy products:", err));
 
-        fetch(`/api/clinic-services?clinicId=${cId}`)
+        fetch(`/api/services`)
           .then((res) => res.json())
           .then((data) => {
             if (data.success) {
-              setAvailableServices(data.data || []);
+              setAvailableServices(data.data.filter((s: any) => s.type === "Therapy") || []);
             }
           })
-          .catch((err) => console.error("Error fetching clinic services:", err));
+          .catch((err) => console.error("Error fetching global therapies:", err));
       }
     } else {
       setAvailableProducts([]);
@@ -277,6 +278,14 @@ function ConsultationsContent() {
     }
   };
 
+  const handleExitSession = () => {
+    if (!notes || notes.trim() === "") {
+      setShowExitWarning(true);
+      return;
+    }
+    window.location.href = "/doctor/appointments";
+  };
+
   const processedConsultations = consultations.map((c) => {
     if ((c.status === "Pending" || c.status === "Active") && c.appointmentId?.date && c.appointmentId?.time) {
       const aptDateTime = new Date(`${c.appointmentId.date}T${c.appointmentId.time}:00`);
@@ -407,7 +416,7 @@ function ConsultationsContent() {
               <div className="flex-1 flex flex-col items-center justify-center bg-slate-900/40 p-8 h-[55vh] md:h-full relative overflow-y-auto">
                 {/* Exit Button */}
                 <button
-                  onClick={() => window.location.href = "/doctor/appointments"}
+                  onClick={handleExitSession}
                   className="absolute top-6 left-6 flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition bg-muted/30 px-4 py-2 rounded-xl border border-border/40"
                 >
                   <ChevronRight className="w-4 h-4 rotate-180" /> Exit Session
@@ -520,7 +529,7 @@ function ConsultationsContent() {
                     <ScreenShare className="w-5 h-5" />
                   </Button>
                   <Button 
-                    onClick={() => window.location.href = "/doctor/appointments"}
+                    onClick={handleExitSession}
                     className="rounded-full w-12 h-12 bg-red-600 hover:bg-red-500 text-white flex items-center justify-center p-0"
                   >
                     <PhoneOff className="w-5 h-5" />
@@ -773,6 +782,49 @@ function ConsultationsContent() {
                 <p className="text-[10px] text-muted-foreground/60 text-center font-medium">Clinical notes & digital prescription will be signed and saved to patient records.</p>
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Exit Warning Modal */}
+      <AnimatePresence>
+        {showExitWarning && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card text-card-foreground border border-border shadow-2xl rounded-3xl max-w-sm w-full overflow-hidden relative"
+            >
+              <button 
+                onClick={() => setShowExitWarning(false)}
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground bg-muted/50 p-1.5 rounded-full"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="p-8 text-center space-y-4">
+                <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <ShieldAlert className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold">Notes are Mandatory</h3>
+                <p className="text-sm text-muted-foreground">
+                  Clinical diagnosis and notes must be filled out before you can exit or complete this session.
+                </p>
+                <div className="pt-4">
+                  <Button 
+                    onClick={() => setShowExitWarning(false)}
+                    className="w-full font-bold rounded-xl h-11"
+                  >
+                    Return to Session
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

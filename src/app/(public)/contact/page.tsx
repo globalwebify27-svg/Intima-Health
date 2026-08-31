@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Phone, MapPin, Clock, ArrowRight, ShieldCheck, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,55 @@ const clinics = [
 ];
 
 export default function ContactPage() {
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    subject: "",
+    message: ""
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    const nameRegex = /^[A-Za-z\s]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!formData.firstName.trim() || formData.firstName.length < 2 || !nameRegex.test(formData.firstName)) {
+      setError("Please enter a valid first name (letters only, min 2 chars).");
+      return;
+    }
+    if (!formData.lastName.trim() || formData.lastName.length < 2 || !nameRegex.test(formData.lastName)) {
+      setError("Please enter a valid last name (letters only, min 2 chars).");
+      return;
+    }
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (!formData.subject) {
+      setError("Please select a subject.");
+      return;
+    }
+    if (formData.message.trim().length < 10) {
+      setError("Message must be at least 10 characters long.");
+      return;
+    }
+
+    setLoading(true);
+    // Simulate API call for contact form
+    setTimeout(() => {
+      setLoading(false);
+      setSuccess("Your message has been sent successfully. We will get back to you shortly.");
+      setFormData({ firstName: "", lastName: "", email: "", subject: "", message: "" });
+    }, 1000);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       
@@ -137,13 +187,25 @@ export default function ContactPage() {
               
               <h3 className="text-2xl font-serif mb-8 relative z-10">Send a Secure Message</h3>
               
-              <form className="relative z-10 space-y-6" onSubmit={(e) => e.preventDefault()}>
+              <form className="relative z-10 space-y-6" onSubmit={handleSubmit}>
+                {error && (
+                  <div className="p-3.5 bg-rose-50 text-rose-700 text-xs font-semibold rounded-xl border border-rose-200 flex items-center gap-2">
+                    {error}
+                  </div>
+                )}
+                {success && (
+                  <div className="p-3.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-xl border border-emerald-200 flex items-center gap-2">
+                    {success}
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label htmlFor="firstName" className="text-sm font-semibold">First Name</label>
                     <input 
                       type="text" 
                       id="firstName" 
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                       className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                       placeholder="e.g. John"
                     />
@@ -153,6 +215,8 @@ export default function ContactPage() {
                     <input 
                       type="text" 
                       id="lastName" 
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                       className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                       placeholder="e.g. Doe"
                     />
@@ -164,6 +228,8 @@ export default function ContactPage() {
                   <input 
                     type="email" 
                     id="email" 
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
                     className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                     placeholder="you@example.com"
                   />
@@ -173,6 +239,8 @@ export default function ContactPage() {
                   <label htmlFor="subject" className="text-sm font-semibold">Subject</label>
                   <select 
                     id="subject" 
+                    value={formData.subject}
+                    onChange={(e) => setFormData({...formData, subject: e.target.value})}
                     className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none cursor-pointer"
                   >
                     <option value="">Select a topic...</option>
@@ -188,13 +256,15 @@ export default function ContactPage() {
                   <textarea 
                     id="message" 
                     rows={5}
+                    value={formData.message}
+                    onChange={(e) => setFormData({...formData, message: e.target.value})}
                     className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow resize-none"
                     placeholder="How can we help you?"
                   />
                 </div>
                 
-                <Button className="w-full rounded-xl py-6 text-base font-semibold shadow-lg group">
-                  Submit Message
+                <Button type="submit" disabled={loading} className="w-full rounded-xl py-6 text-base font-semibold shadow-lg group">
+                  {loading ? "Sending..." : "Submit Message"}
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </form>

@@ -4,18 +4,28 @@ import { UserModel, hashPassword } from "@/modules/auth/schema";
 import { PatientModel } from "@/modules/patients/schema";
 import { signJwt } from "@/lib/jwt";
 import { sendWelcomeMessage } from "@/lib/whatsapp";
+import { z } from "zod";
+
+const registerSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").regex(/^[A-Za-z\s]+$/, "Name can only contain letters"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().regex(/^[6-9]\d{9}$/, "Must be a valid 10-digit phone number starting with 6-9"),
+});
 
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const { name, email, phone } = await req.json();
-
-    if (!name || !email || !phone) {
+    const body = await req.json();
+    
+    const parsed = registerSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, message: "Name, email, and phone number are required." },
+        { success: false, message: parsed.error.issues[0].message },
         { status: 400 }
       );
     }
+    
+    const { name, email, phone } = parsed.data;
 
     // Check if user already exists
     const existingUser = await UserModel.findOne({ email }).exec();

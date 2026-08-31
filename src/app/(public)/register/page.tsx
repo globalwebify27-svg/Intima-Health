@@ -25,14 +25,33 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Client-side validation
+    if (!firstName.trim() || !lastName.trim()) {
+      setErrorMsg("Please provide both your first and last name.");
+      return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setErrorMsg("Please enter a valid email address.");
+      return;
+    }
+
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone.length < 10) {
+      setErrorMsg("Please enter a valid 10-digit phone number.");
+      return;
+    }
+
     setLoading(true);
     setErrorMsg("");
     setSuccessMsg("");
 
     const payload = {
-      name: `${firstName} ${lastName}`.trim(),
-      email,
-      phone
+      name: `${firstName.trim()} ${lastName.trim()}`,
+      email: email.trim(),
+      phone: cleanPhone
     };
 
     try {

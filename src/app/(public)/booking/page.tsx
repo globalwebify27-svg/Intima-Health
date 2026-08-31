@@ -134,10 +134,21 @@ export default function BookingPage() {
     if (step === 4) return !!formData.doctorId;
     if (step === 5) return !!formData.date && !!formData.time;
     if (step === 6) {
+      const nameRegex = /^[A-Za-z\s]+$/;
+      const phoneRegex = /^[6-9]\d{9}$/;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      
+      const isPhoneValid = !!formData.phone && phoneRegex.test(formData.phone);
+      
       if (formData.isExistingPatient) {
-        return !!formData.phone && otpStep === 'verified';
+        return isPhoneValid && otpStep === 'verified';
       }
-      return !!formData.firstName && !!formData.lastName && !!formData.phone;
+      
+      const isFirstNameValid = !!formData.firstName && formData.firstName.trim().length >= 2 && nameRegex.test(formData.firstName);
+      const isLastNameValid = !!formData.lastName && formData.lastName.trim().length >= 2 && nameRegex.test(formData.lastName);
+      const isEmailValid = !formData.email || formData.email.trim() === "" || emailRegex.test(formData.email);
+      
+      return isFirstNameValid && isLastNameValid && isPhoneValid && isEmailValid;
     }
     return true;
   };

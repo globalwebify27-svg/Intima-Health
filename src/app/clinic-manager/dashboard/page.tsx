@@ -60,7 +60,12 @@ interface Slot {
 
 interface TherapySessionData {
   _id: string;
-  status: "Unpaid" | "Paid";
+  name: string;
+  price: number;
+  status: string;
+  date?: string;
+  time?: string;
+  patientId: PatientData;
 }
 
 interface ConsultationData {
@@ -84,7 +89,8 @@ export default function ClinicManagerDashboardPage() {
   const [doctors, setDoctors] = useState<DoctorData[]>([]);
   const [appointments, setAppointments] = useState<AppointmentData[]>([]);
   const [patients, setPatients] = useState<PatientData[]>([]);
-  const [unpaidCount, setUnpaidCount] = useState(0);
+  const [advisedCount, setAdvisedCount] = useState(0);
+  const [recommendedTherapies, setRecommendedTherapies] = useState<TherapySessionData[]>([]);
   const [consultations, setConsultations] = useState<ConsultationData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -189,12 +195,13 @@ export default function ClinicManagerDashboardPage() {
           setPatients(Array.from(patientMap.values()));
         }
 
-        // Fetch Therapy Sessions to get unpaid count
+        // Fetch Therapy Sessions to get advised count
         const therapyRes = await fetch(`/api/therapy-sessions?clinicId=${cId}`);
         const therapyJson = await therapyRes.json();
         if (therapyJson.success) {
-          const unpaid = therapyJson.data.filter((t: TherapySessionData) => t.status === "Unpaid").length;
-          setUnpaidCount(unpaid);
+          const advised = therapyJson.data.filter((t: TherapySessionData) => t.status === "Recommended" || t.status === "Unpaid");
+          setAdvisedCount(advised.length);
+          setRecommendedTherapies(advised);
         }
 
         // Fetch consultations (prescriptions)
@@ -214,9 +221,11 @@ export default function ClinicManagerDashboardPage() {
   useEffect(() => {
     fetchData();
     const interval = setInterval(() => {
-      fetchData();
-    }, 15000);
-    return () => clearInterval(interval);
+      if (document.visibilityState === "visible") fetchData();
+    }, 30000);
+    const onFocus = () => fetchData();
+    window.addEventListener("focus", onFocus);
+    return () => { clearInterval(interval); window.removeEventListener("focus", onFocus); };
   }, []);
 
   // Fetch slots when doctor or date changes in booking modals
@@ -522,8 +531,8 @@ export default function ClinicManagerDashboardPage() {
             <CreditCard className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Unpaid Therapies</p>
-            <h3 className="text-2xl font-black mt-0.5">{unpaidCount}</h3>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Advised Therapies</p>
+            <h3 className="text-2xl font-black mt-0.5">{advisedCount}</h3>
           </div>
         </div>
       </div>
@@ -647,6 +656,48 @@ export default function ClinicManagerDashboardPage() {
                     <div>
                       <h4 className="font-bold text-sm text-foreground">Dr. {d.name}</h4>
                       <p className="text-xs text-muted-foreground">{d.specialization}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-foreground">Advised Therapies Pending Booking</h2>
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                {recommendedTherapies.length} Pending
+              </Badge>
+            </div>
+
+            {recommendedTherapies.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                No patients currently have pending advised therapies.
+              </div>
+            ) : (
+              <div className="divide-y divide-border text-sm">
+                {recommendedTherapies.map((ts) => (
+                  <div key={ts._id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="font-bold text-foreground">{ts.patientId?.name || "Patient"}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                        <Phone className="w-3 h-3" /> {ts.patientId?.phone || "No phone"}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium">{ts.name}</div>
+                      <div className="text-[10px] text-muted-foreground">Estimated ₹{ts.price}</div>
+                    </div>
+                    <div>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => alert(`Reminder SMS triggered for ${ts.patientId?.name || "Patient"} to book ${ts.name}`)}
+                        className="text-xs border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:text-amber-800"
+                      >
+                        Send Reminder
+                      </Button>
                     </div>
                   </div>
                 ))}

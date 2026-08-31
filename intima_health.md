@@ -910,11 +910,11 @@ DOCTOR MODULE
 
 Features
 
-- [/] Profiles (Frontend mockup complete)
+- [x] Profiles
 - [ ] Availability
-- [ ] Fees
+- [x] Fees
 - [ ] Qualifications
-- [ ] Schedules
+- [x] Schedules
 
 ---
 

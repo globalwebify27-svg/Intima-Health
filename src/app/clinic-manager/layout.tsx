@@ -9,7 +9,6 @@ const clinicManagerLinks = [
   { title: "Patients", href: "/clinic-manager/patients", icon: Users },
   { title: "Prescriptions", href: "/clinic-manager/prescriptions", icon: Pill },
   { title: "Payments", href: "/clinic-manager/payments", icon: CreditCard },
-  { title: "Therapies Offered", href: "/clinic-manager/services", icon: Activity },
 ];
 
 export default function ClinicManagerLayout({ children }: { children: React.ReactNode }) {

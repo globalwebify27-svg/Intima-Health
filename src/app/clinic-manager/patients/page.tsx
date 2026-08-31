@@ -23,6 +23,7 @@ interface PatientData {
   dob?: string;
   allergies?: string;
   medicalHistory?: string;
+  _latestVisit?: Date;
 }
 
 interface AppointmentData {
@@ -35,7 +36,14 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<PatientData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterDate, setFilterDate] = useState("All");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
   const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterDate]);
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -54,14 +62,32 @@ export default function PatientsPage() {
           const res = await fetch(`/api/appointments?clinicId=${cId}`);
           const json = await res.json();
           if (json.success) {
-            // Extract unique patients in-memory
-            const patientMap = new Map<string, PatientData>();
-            json.data.forEach((apt: AppointmentData) => {
+            // Extract unique patients in-memory and track latest visit
+            const patientMap = new Map<string, { patient: PatientData; latestVisit: Date }>();
+            json.data.forEach((apt: any) => {
               if (apt.patientId && apt.patientId._id) {
-                patientMap.set(apt.patientId._id, apt.patientId);
+                // Determine visit timestamp
+                let visitDate = new Date(0); // Epoch as fallback
+                if (apt.date && apt.time) {
+                  visitDate = new Date(`${apt.date}T${apt.time}:00`);
+                }
+                
+                const existing = patientMap.get(apt.patientId._id);
+                if (!existing || existing.latestVisit < visitDate) {
+                  patientMap.set(apt.patientId._id, { 
+                    patient: apt.patientId, 
+                    latestVisit: visitDate 
+                  });
+                }
               }
             });
-            setPatients(Array.from(patientMap.values()));
+            
+            // Sort by latest visit (descending)
+            const sortedPatients = Array.from(patientMap.values())
+              .sort((a, b) => b.latestVisit.getTime() - a.latestVisit.getTime())
+              .map(item => ({ ...item.patient, _latestVisit: item.latestVisit }));
+              
+            setPatients(sortedPatients);
           }
         }
       } catch (err) {
@@ -78,8 +104,26 @@ export default function PatientsPage() {
     const nameMatch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
     const phoneMatch = p.phone.includes(searchQuery);
     const emailMatch = p.email.toLowerCase().includes(searchQuery.toLowerCase());
-    return nameMatch || phoneMatch || emailMatch;
+    const searchMatch = nameMatch || phoneMatch || emailMatch;
+    
+    const dateMatch = (() => {
+      if (filterDate === "All") return true;
+      if (!p._latestVisit) return false;
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - p._latestVisit.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (filterDate === "Today") return diffDays <= 1;
+      if (filterDate === "7Days") return diffDays <= 7;
+      if (filterDate === "30Days") return diffDays <= 30;
+      return true;
+    })();
+    
+    return searchMatch && dateMatch;
   });
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   if (loading) {
     return (
@@ -106,15 +150,27 @@ export default function PatientsPage() {
           <span>Total Records: {patients.length}</span>
         </div>
 
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search name, phone, or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-9 pr-4 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <select 
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="h-10 px-3 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="All">All Time</option>
+            <option value="Today">Visited Today</option>
+            <option value="7Days">Last 7 Days</option>
+            <option value="30Days">Last 30 Days</option>
+          </select>
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search name, phone, or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-10 pl-9 pr-4 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
         </div>
       </div>
 
@@ -138,7 +194,7 @@ export default function PatientsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border text-sm">
-                  {filtered.map((p) => (
+                  {paginated.map((p) => (
                     <tr 
                       key={p._id} 
                       className={`hover:bg-muted/20 transition cursor-pointer ${selectedPatient?._id === p._id ? "bg-muted/40" : ""}`}
@@ -174,13 +230,37 @@ export default function PatientsPage() {
                             setSelectedPatient(p);
                           }}
                         >
-                          View File
+                          View Details
                         </Button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              
+              <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/10">
+                <div className="text-sm text-muted-foreground">
+                  Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filtered.length)} of {filtered.length} entries
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={currentPage === 1} 
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  >
+                    Previous
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={currentPage === totalPages || totalPages === 0} 
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.max(1, totalPages)))}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -2,18 +2,27 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { UserModel, hashPassword, verifyPassword } from "@/modules/auth/schema";
 import { signJwt } from "@/lib/jwt";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
 
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const { email, password } = await req.json();
+    const body = await req.json();
 
-    if (!email || !password) {
+    const parsed = loginSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, message: "Email and password are required." },
+        { success: false, message: parsed.error.issues[0].message },
         { status: 400 }
       );
     }
+
+    const { email, password } = parsed.data;
 
     // Auto-seed default administrator if no users exist
     const userCount = await UserModel.countDocuments();

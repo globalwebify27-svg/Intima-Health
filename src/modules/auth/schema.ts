@@ -12,6 +12,7 @@ const UserSchema = new Schema<IUser>({
     required: true 
   },
   clinicId: { type: Schema.Types.ObjectId, ref: "Clinic", required: false },
+  patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: false },
   status: { type: String, enum: ["Active", "Inactive", "Pending"], default: "Active" },
   deletedAt: { type: Date, default: null },
 }, {

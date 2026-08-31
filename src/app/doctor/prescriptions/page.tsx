@@ -93,11 +93,11 @@ export default function DoctorPrescriptionsPage() {
           const prodJson = await prodRes.json();
           if (prodJson.success) setProducts(prodJson.data);
 
-          // Fetch clinic therapy services
-          const svcRes = await fetch(`/api/clinic-services?clinicId=${meJson.user.clinicId}`);
+          // Fetch global therapy services
+          const svcRes = await fetch(`/api/services`);
           const svcJson = await svcRes.json();
           if (svcJson.success) {
-            setClinicServices(svcJson.data.filter((s: any) => s.status === "Active"));
+            setClinicServices(svcJson.data.filter((s: any) => s.status === "Active" && s.type === "Therapy"));
           }
         }
       }

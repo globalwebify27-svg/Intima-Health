@@ -43,8 +43,19 @@ export async function GET(req: Request) {
         resolvedClinicId = doctorProfile.clinicId;
       }
     } else if (dbUser.role === "PATIENT") {
-      const patientProfile = await PatientModel.findOne({ email: dbUser.email }).exec();
-      profileId = patientProfile ? patientProfile._id : undefined;
+      if (dbUser.patientId) {
+        profileId = dbUser.patientId;
+      } else {
+        // Fallback for older OTP users
+        if (dbUser.email && dbUser.email.includes("@noemail-intima.com")) {
+          const phone = dbUser.email.split("@")[0];
+          const patientProfile = await PatientModel.findOne({ phone: new RegExp(phone + '$') }).exec();
+          profileId = patientProfile ? patientProfile._id : undefined;
+        } else {
+          const patientProfile = await PatientModel.findOne({ email: dbUser.email }).exec();
+          profileId = patientProfile ? patientProfile._id : undefined;
+        }
+      }
     }
 
     return NextResponse.json({

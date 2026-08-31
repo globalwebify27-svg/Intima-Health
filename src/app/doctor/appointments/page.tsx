@@ -52,14 +52,14 @@ const columns: ColumnDef<any>[] = [
       const status = row.getValue("status") as string;
       const id = row.original._id;
       
-      if (status === "Scheduled") {
+      if (status === "Checked In" || status === "Engaged") {
         return (
           <Button 
             size="sm" 
             className="rounded-lg"
             onClick={() => window.location.href = `/doctor/consultations?appointmentId=${id}`}
           >
-            Start Session <ExternalLink className="w-3 h-3 ml-2" />
+            {status === "Engaged" ? "Rejoin Session" : "Start Session"} <ExternalLink className="w-3 h-3 ml-2" />
           </Button>
         );
       }
@@ -98,6 +98,12 @@ export default function DoctorAppointmentsPage() {
       }
     };
     fetchAppointments();
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") fetchAppointments();
+    }, 30000);
+    const onFocus = () => fetchAppointments();
+    window.addEventListener("focus", onFocus);
+    return () => { clearInterval(interval); window.removeEventListener("focus", onFocus); };
   }, []);
 
   if (loading) {

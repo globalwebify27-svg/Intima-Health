@@ -21,6 +21,7 @@ export interface IDoctor {
   rating?: number;
   reviewsCount?: number;
   salary: number;
+  fees?: number;
   qualifications: string[];
   availability: DayAvailability[];
   slotDuration?: number; // duration of patient checking slot in minutes

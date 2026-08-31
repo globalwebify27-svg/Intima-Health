@@ -23,6 +23,7 @@ const DoctorSchema = new Schema<IDoctor>({
   rating: { type: Number, default: 5.0 },
   reviewsCount: { type: Number, default: 0 },
   salary: { type: Number, required: true },
+  fees: { type: Number, default: 0 },
   qualifications: [{ type: String }],
   availability: [DayAvailabilitySchema],
   slotDuration: { type: Number, default: 30 },
