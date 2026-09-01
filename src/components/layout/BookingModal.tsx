@@ -260,7 +260,26 @@ export function BookingModal() {
   };
 
   const getAvailableTimeSlots = () => {
-    const availableSlots = realSlots.filter(s => s.available);
+    let availableSlots = realSlots.filter(s => s.available);
+
+    if (formData.date) {
+      const now = new Date();
+      // Get current local date in YYYY-MM-DD format
+      const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      
+      if (formData.date === localDate) {
+        const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+        const bufferMinutes = 15; // 15-minute buffer for doctor appointments
+        
+        availableSlots = availableSlots.filter(s => {
+          const [hours, minutes] = s.start.split(':').map(Number);
+          const slotTimeInMinutes = hours * 60 + minutes;
+          // Filter out slots that have passed OR are too close (within the buffer)
+          return slotTimeInMinutes > (currentTimeInMinutes + bufferMinutes);
+        });
+      }
+    }
+
     return availableSlots.map(s => formatSlotTime(s.start));
   };
 
