@@ -5,6 +5,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatTime12Hour } from "@/lib/utils";
 import { useBookingModal } from "@/store/useBookingModal";
 import { Video, MapPin, ExternalLink, Download } from "lucide-react";
 import { printReceipt } from "@/lib/print-receipt";
@@ -28,7 +29,7 @@ const columns: ColumnDef<Appointment>[] = [
   {
     id: "doctorName",
     header: "Doctor",
-    accessorFn: (row) => row.doctorId?.name ? `Dr. ${row.doctorId.name}` : "N/A",
+    accessorFn: (row) => row.doctorId?.name ? row.doctorId.name : "N/A",
     cell: ({ row }) => <span className="font-bold">{row.getValue("doctorName")}</span>,
   },
   {
@@ -38,6 +39,9 @@ const columns: ColumnDef<Appointment>[] = [
   {
     accessorKey: "time",
     header: "Time",
+    cell: ({ row }) => {
+      return <span>{formatTime12Hour(row.getValue("time") as string)}</span>;
+    }
   },
   {
     accessorKey: "serviceName",
@@ -106,19 +110,38 @@ const columns: ColumnDef<Appointment>[] = [
         const appointmentTime = new Date(`${row.original.date}T${row.original.time}`).getTime();
         const now = new Date().getTime();
         const isTimeOver = now > appointmentTime + 60 * 60 * 1000; // 1 hour buffer
+        const isTooEarly = now < appointmentTime - 15 * 60 * 1000; // before 15 mins
 
         if (isTimeOver) {
           actionNode = <span className="text-muted-foreground text-[10px] font-semibold italic opacity-50">Expired</span>;
         } else if (paymentStatus === "Paid") {
-          actionNode = (
-            <Button 
-              size="sm" 
-              className="rounded-lg"
-              onClick={() => window.location.href = "/patient/consultations"}
-            >
-              Join Call <ExternalLink className="w-3 h-3 ml-2" />
-            </Button>
-          );
+          if (isTooEarly) {
+            actionNode = (
+              <div className="flex flex-col items-center gap-1">
+                <div className="cursor-not-allowed inline-block">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="rounded-lg opacity-50 pointer-events-none"
+                    tabIndex={-1}
+                  >
+                    Join Call <ExternalLink className="w-3 h-3 ml-2" />
+                  </Button>
+                </div>
+                <span className="text-[9px] text-muted-foreground/80 font-medium whitespace-nowrap">Active 15 mins before</span>
+              </div>
+            );
+          } else {
+            actionNode = (
+              <Button 
+                size="sm" 
+                className="rounded-lg"
+                onClick={() => window.location.href = "/patient/consultations"}
+              >
+                Join Call <ExternalLink className="w-3 h-3 ml-2" />
+              </Button>
+            );
+          }
         } else {
           actionNode = (
             <Button 

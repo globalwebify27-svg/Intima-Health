@@ -48,7 +48,7 @@ export class AppointmentRepository {
     if (filters.date) query.date = filters.date;
     if (filters.status) query.status = filters.status;
     if (filters.clinicId) query.clinicId = filters.clinicId;
-    if (filters.paymentStatus) query.paymentStatus = filters.paymentStatus;
+    if (filters.paymentStatus && filters.paymentStatus !== "all") query.paymentStatus = filters.paymentStatus;
 
     return await AppointmentModel.find(query)
       .populate("patientId doctorId clinicId")

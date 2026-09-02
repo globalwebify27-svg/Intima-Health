@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Users, UserPlus, Calendar, IndianRupee, ArrowUpRight, ArrowDownRight, TrendingUp, Clock } from "lucide-react";
+import { formatTime12Hour } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 
@@ -236,7 +237,7 @@ export default function AdminDashboard() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{apt.patientName}</p>
                     <p className="text-[10px] text-muted-foreground truncate">
-                      Dr. {apt.doctorName} · {apt.date} · {apt.time}
+                      Dr. {apt.doctorName} · {apt.date} · {formatTime12Hour(apt.time)}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">

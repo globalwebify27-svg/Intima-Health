@@ -31,8 +31,9 @@ export type Appointment = {
   doctorName: string;
   date: string;
   time: string;
-  type: "Video" | "In-person";
+  type: "Video" | "Walk-in";
   status: "Scheduled" | "Completed" | "Cancelled";
+  serviceName?: string;
 };
 
 export type Order = {
@@ -70,7 +71,7 @@ export const mockMedicines: Medicine[] = [
 export const mockAppointments: Appointment[] = [
   { id: "apt_1", patientName: "John Doe", doctorName: "Dr. Sarah Jenkins", date: "2024-06-05", time: "10:00 AM", type: "Video", status: "Completed" },
   { id: "apt_2", patientName: "Michael Brown", doctorName: "Dr. Michael Chen", date: "2024-06-05", time: "02:30 PM", type: "Video", status: "Scheduled" },
-  { id: "apt_3", patientName: "William Davis", doctorName: "Dr. Emily Rodriguez", date: "2024-06-06", time: "11:00 AM", type: "In-person", status: "Scheduled" },
+  { id: "apt_3", patientName: "William Davis", doctorName: "Dr. Emily Rodriguez", date: "2024-06-06", time: "11:00 AM", type: "Walk-in", status: "Scheduled" },
   { id: "apt_4", patientName: "Jane Smith", doctorName: "Dr. Sarah Jenkins", date: "2024-06-04", time: "04:00 PM", type: "Video", status: "Cancelled" },
 ];
 

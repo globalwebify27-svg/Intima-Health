@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Calendar, Video, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatTime12Hour } from "@/lib/utils";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 
@@ -20,6 +21,7 @@ interface AppointmentData {
   date: string;
   time: string;
   type: string;
+  serviceName?: string;
   status: string;
   patientId?: PatientData;
   doctorId?: {
@@ -77,21 +79,24 @@ export default function ClinicAppointmentsPage({ params }: { params: Promise<{ i
     {
       accessorKey: "time",
       header: "Time",
+      cell: ({ row }) => <span>{formatTime12Hour(row.getValue("time") as string)}</span>,
     },
     {
       accessorKey: "type",
       header: "Type",
       cell: ({ row }) => {
         const type = row.original.type;
+        const serviceName = row.original?.serviceName;
+        const display = serviceName || type;
         return (
           <div className="flex items-center gap-2">
             {type === "Video" ? (
               <span className="flex items-center gap-1.5 text-blue-500 font-medium text-xs">
-                <Video className="w-4 h-4" /> Video Call
+                <Video className="w-4 h-4" /> {display}
               </span>
             ) : (
               <span className="flex items-center gap-1.5 text-green-600 font-medium text-xs">
-                <MapPin className="w-4 h-4" /> In-person Clinic
+                <MapPin className="w-4 h-4" /> {display}
               </span>
             )}
           </div>

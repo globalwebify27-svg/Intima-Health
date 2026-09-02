@@ -135,7 +135,7 @@ export default function TherapyPage() {
               
               <ul className="space-y-4 mb-10">
                 <li className="flex items-center text-foreground font-medium">
-                  <div className="w-2 h-2 rounded-full bg-primary mr-4" /> 50-minute comprehensive sessions
+                  <div className="w-2 h-2 rounded-full bg-primary mr-4" /> 30-minute comprehensive sessions
                 </li>
                 <li className="flex items-center text-foreground font-medium">
                   <div className="w-2 h-2 rounded-full bg-primary mr-4" /> Secure, high-definition video platform

@@ -31,7 +31,7 @@ function verifyTokenSignature(token: string): any | null {
   }
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const tokenCookie = request.cookies.get("token")?.value;
   const path = request.nextUrl.pathname;
 

@@ -121,18 +121,47 @@ export function UpcomingAppointmentsSlider({
                 )}
               </div>
               {upcomingApt.paymentStatus === "Paid" ? (
-                <Button 
-                  onClick={() => window.location.href = upcomingApt.type === "In-person" ? "/patient/appointments" : "/patient/consultations"} 
-                  className="w-full rounded-xl h-11 font-bold mt-6 shadow-md shadow-primary/10 hover:shadow-primary/20"
-                >
-                  {upcomingApt.type === "In-person" ? "View Appointment Details" : "Join Consultation Room"}
-                </Button>
+                (() => {
+                  const isVideo = upcomingApt.type !== "Walk-in";
+                  let canJoin = false;
+                  
+                  if (isVideo && upcomingApt.date && upcomingApt.time) {
+                    const now = new Date();
+                    const [hours, minutes] = upcomingApt.time.split(':').map(Number);
+                    const aptDate = new Date(`${upcomingApt.date}T00:00:00`);
+                    aptDate.setHours(hours, minutes, 0, 0);
+                    const diffMinutes = (aptDate.getTime() - now.getTime()) / (1000 * 60);
+                    // Joinable if within 15 minutes before, or already started
+                    canJoin = diffMinutes <= 15;
+                  }
+
+                  if (isVideo && !canJoin) {
+                    return (
+                      <Button 
+                        disabled
+                        variant="secondary"
+                        className="w-full rounded-xl h-11 font-bold mt-6 shadow-none opacity-80 cursor-not-allowed"
+                      >
+                        Available 15m before
+                      </Button>
+                    );
+                  }
+
+                  return (
+                    <Button 
+                      onClick={() => window.location.href = isVideo ? "/patient/consultations" : "/patient/appointments"} 
+                      className="w-full rounded-xl h-11 font-bold mt-6 shadow-md shadow-primary/10 hover:shadow-primary/20"
+                    >
+                      {isVideo ? "Join Consultation Room" : "View Appointment Details"}
+                    </Button>
+                  );
+                })()
               ) : (
                 <Button 
                   onClick={() => handlePayAppointment(upcomingApt._id)} 
                   className="w-full rounded-xl h-11 font-bold mt-6 bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-500/10"
                 >
-                  Pay Consultation Fee (₹{upcomingApt.type === "In-person" ? "1,499" : "999"})
+                  Pay Consultation Fee (₹{upcomingApt.type === "Walk-in" ? "1,499" : "999"})
                 </Button>
               )}
             </motion.div>

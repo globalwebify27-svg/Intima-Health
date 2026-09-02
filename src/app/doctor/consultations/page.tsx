@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import {
   User, Clipboard, Calendar, Clock, ChevronRight, X, Heart, ShieldAlert, FileText, Plus, Trash2, MapPin
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { formatTime12Hour } from "@/lib/utils";
 
 interface Patient {
   _id: string;
@@ -68,12 +69,12 @@ export default function DoctorConsultationsPage() {
 
 function ConsultationsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const targetAptId = searchParams.get("appointmentId");
 
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"Pending" | "Active" | "Completed" | "Expired" | "All">("Pending");
 
   // Video Room States
   const [activeConsultation, setActiveConsultation] = useState<Consultation | null>(null);
@@ -109,8 +110,12 @@ function ConsultationsContent() {
   };
 
   useEffect(() => {
+    if (!targetAptId) {
+      router.replace("/doctor/appointments");
+      return;
+    }
     fetchConsultations();
-  }, []);
+  }, [targetAptId, router]);
 
   useEffect(() => {
     if (activeConsultation) {
@@ -189,7 +194,18 @@ function ConsultationsContent() {
           (c.appointmentId && (c.appointmentId as any)._id === targetAptId)
       );
       if (found && found.status !== "Completed" && activeConsultation?._id !== found._id) {
-        handleStartConsultation(found);
+        let canJoin = false;
+        if (found.appointmentId?.date && found.appointmentId?.time) {
+          const now = new Date();
+          const [hours, minutes] = found.appointmentId.time.split(':').map(Number);
+          const aptDate = new Date(`${found.appointmentId.date}T00:00:00`);
+          aptDate.setHours(hours, minutes, 0, 0);
+          canJoin = (aptDate.getTime() - now.getTime()) / (1000 * 60) <= 15;
+        }
+        
+        if (canJoin) {
+          handleStartConsultation(found);
+        }
       }
     }
   }, [targetAptId, consultations, activeConsultation]);
@@ -286,122 +302,17 @@ function ConsultationsContent() {
     window.location.href = "/doctor/appointments";
   };
 
-  const processedConsultations = consultations.map((c) => {
-    if ((c.status === "Pending" || c.status === "Active") && c.appointmentId?.date && c.appointmentId?.time) {
-      const aptDateTime = new Date(`${c.appointmentId.date}T${c.appointmentId.time}:00`);
-      // We can add a small buffer (e.g., 2 hours) so that ongoing consultations don't expire immediately.
-      const expiryTime = new Date(aptDateTime.getTime() + 2 * 60 * 60 * 1000); 
-      if (new Date() > expiryTime) {
-        return { ...c, status: "Expired" as const };
-      }
-    }
-    return c;
-  });
-
-  const filteredConsultations = processedConsultations.filter((c) => {
-    if (activeTab === "All") return true;
-    return c.status === activeTab;
-  });
-
-  if (loading && consultations.length === 0) {
+  if (loading || !activeConsultation) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-muted-foreground font-medium">Loading consultations...</p>
+        <p className="text-muted-foreground font-medium">Entering consultation room...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-          Telemedicine Consultations
-        </h1>
-        <p className="text-muted-foreground mt-2 text-sm md:text-base">
-          Join digital consultation rooms, check medical history, write prescriptions, and complete sessions.
-        </p>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-border gap-4 overflow-x-auto">
-        {(["Pending", "Active", "Completed", "Expired", "All"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap relative ${
-              activeTab === tab 
-                ? "border-primary text-primary" 
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab} Sessions
-            {tab === "Pending" && processedConsultations.filter((c) => c.status === "Pending").length > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-primary text-white rounded-full font-extrabold">
-                {processedConsultations.filter((c) => c.status === "Pending").length}
-              </span>
-            )}
-            {tab === "Expired" && processedConsultations.filter((c) => c.status === "Expired").length > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-red-500 text-white rounded-full font-extrabold">
-                {processedConsultations.filter((c) => c.status === "Expired").length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Main List */}
-      <div className="space-y-4">
-        {filteredConsultations.length === 0 ? (
-          <div className="p-12 text-center border border-dashed border-border/80 bg-muted/20 rounded-3xl text-muted-foreground">
-            No {activeTab.toLowerCase()} consultation sessions found.
-          </div>
-        ) : (
-          filteredConsultations.map((session) => (
-            <div 
-              key={session._id}
-              className="flex flex-col md:flex-row items-start md:items-center justify-between p-6 bg-card border border-border/60 rounded-3xl shadow-sm hover:shadow-md transition-all gap-4"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-bold">
-                  {session.patientId?.name?.substring(0, 2).toUpperCase()}
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-lg">{session.patientId?.name}</h3>
-                    <Badge variant={session.status === "Completed" ? "secondary" : session.status === "Active" ? "default" : session.status === "Expired" ? "destructive" : "outline"}>
-                      {session.status}
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {session.appointmentId?.date}</span>
-                    <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {session.appointmentId?.time}</span>
-                  </div>
-                </div>
-              </div>
-
-              {session.status === "Completed" ? (
-                <div className="text-sm font-semibold text-green-600 flex items-center gap-1 bg-green-500/5 px-3 py-1.5 rounded-xl border border-green-500/10">
-                  <Check className="w-4 h-4" /> Consultation Completed
-                </div>
-              ) : session.status === "Expired" ? (
-                <div className="text-sm font-semibold text-red-600 flex items-center gap-1 bg-red-500/5 px-3 py-1.5 rounded-xl border border-red-500/10">
-                  <X className="w-4 h-4" /> Session Expired
-                </div>
-              ) : (
-                <Button 
-                  onClick={() => handleStartConsultation(session)} 
-                  className="rounded-xl px-5 h-11 font-bold gap-2 self-stretch md:self-auto"
-                >
-                  <Video className="w-4 h-4" /> Start Consultation
-                </Button>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-
       {/* Full-Screen Telemedicine Video overlay */}
       <AnimatePresence>
         {activeConsultation && (
@@ -411,8 +322,8 @@ function ConsultationsContent() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-background flex flex-col md:flex-row overflow-hidden"
           >
-            {/* Left Section: Live Video Room or In-Person Panel */}
-            {activeConsultation.appointmentId?.type === "In-person" ? (
+            {/* Left Section: Live Video Room or Walk-in Panel */}
+            {activeConsultation.appointmentId?.type === "Walk-in" ? (
               <div className="flex-1 flex flex-col items-center justify-center bg-slate-900/40 p-8 h-[55vh] md:h-full relative overflow-y-auto">
                 {/* Exit Button */}
                 <button
@@ -429,13 +340,13 @@ function ConsultationsContent() {
                   
                   <div className="space-y-2">
                     <span className="text-[10px] uppercase font-bold text-emerald-500 bg-emerald-500/5 border border-emerald-500/10 px-3 py-1 rounded-full">
-                      In-Person Consultation
+                      Walk-in Consultation
                     </span>
                     <h2 className="text-2xl font-black text-foreground pt-1">
                       {activeConsultation.patientId.name}
                     </h2>
                     <p className="text-xs text-muted-foreground">
-                      Session started at {activeConsultation.appointmentId.time} on {activeConsultation.appointmentId.date}
+                      Session started at {formatTime12Hour(activeConsultation.appointmentId.time)} on {activeConsultation.appointmentId.date}
                     </p>
                   </div>
 

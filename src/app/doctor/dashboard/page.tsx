@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Users, Calendar, Video, ArrowUpRight, Clock, FileSignature } from "lucide-react";
+import { formatTime12Hour } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
@@ -164,7 +165,7 @@ export default function DoctorDashboard() {
                 <div key={apt._id} className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="flex flex-col items-center justify-center px-3 h-12 rounded-xl bg-primary/10 text-primary font-bold text-sm">
-                      {apt.time}
+                      {formatTime12Hour(apt.time)}
                     </div>
                     <div>
                       <h4 className="font-semibold flex items-center gap-2">
@@ -175,7 +176,7 @@ export default function DoctorDashboard() {
                           </span>
                         )}
                       </h4>
-                      <p className="text-sm text-muted-foreground">{apt.type} Consult • {apt.notes || "Routine checkup"}</p>
+                      <p className="text-sm text-muted-foreground">{apt.serviceName || `${apt.type} Consult`} • {apt.notes || "Routine checkup"}</p>
                     </div>
                   </div>
                   {apt.status === "Completed" ? (

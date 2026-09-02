@@ -674,6 +674,7 @@ export function BookingModal() {
                           value={formData.date}
                           onChange={(e) => updateForm('date', e.target.value)}
                           min={new Date().toISOString().split('T')[0]}
+                          max={new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]}
                           className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                         />
                       </div>

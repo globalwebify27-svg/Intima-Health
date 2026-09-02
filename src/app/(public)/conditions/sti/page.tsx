@@ -185,7 +185,7 @@ export default function STIPage() {
             >
               <h2 className="text-3xl md:text-5xl font-serif mb-6">Private <span className="text-primary italic">Resolution</span>.</h2>
               <p className="text-lg text-muted-foreground mb-10 leading-relaxed">
-                If your lab results come back positive, we move fast to get you the treatment you need, without ever requiring an in-person clinic visit.
+                If your lab results come back positive, we move fast to get you the treatment you need, without ever requiring an walk-in clinic visit.
               </p>
               
               <div className="space-y-8">

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pill, Activity, Hospital, CreditCard, Calendar } from "lucide-react";
+import { Pill, Activity, Hospital, CreditCard, Calendar, Clock, Video, FileText, CheckCircle2, ChevronRight, AlertCircle, X, Download } from "lucide-react";
+import { formatTime12Hour } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useBookingModal } from "@/store/useBookingModal";
@@ -57,6 +58,7 @@ interface TherapySession {
   clinicId?: {
     name: string;
   };
+  createdAt?: string;
 }
 
 interface PharmacyOrder {
@@ -90,10 +92,9 @@ export default function PatientDashboard() {
       fetch(`/api/appointments?patientId=${pId}&_t=${t}`, { cache: "no-store" }),
       fetch(`/api/consultations?patientId=${pId}&_t=${t}`, { cache: "no-store" }),
       fetch(`/api/therapy-sessions?patientId=${pId}&_t=${t}`, { cache: "no-store" }),
-      fetch(`/api/pharmacy/orders?patientId=${pId}&_t=${t}`, { cache: "no-store" }),
-      fetch(`/api/clinics?_t=${t}`, { cache: "no-store" }) // to resolve clinic details if needed
+      fetch(`/api/pharmacy/orders?patientId=${pId}&_t=${t}`, { cache: "no-store" })
     ])
-      .then(async ([aptRes, consultRes, therapyRes, ordersRes, clinicsRes]) => {
+      .then(async ([aptRes, consultRes, therapyRes, ordersRes]) => {
         const aptData = await aptRes.json();
         const consultData = await consultRes.json();
         const therapyData = await therapyRes.json();
@@ -129,9 +130,6 @@ export default function PatientDashboard() {
   };
 
   useEffect(() => {
-    // Load products first
-    fetch(`/api/clinics?_t=${Date.now()}`, { cache: "no-store" }) // just warm DB
-
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
@@ -371,6 +369,9 @@ export default function PatientDashboard() {
                             <div>
                               <h4 className="font-bold text-sm text-amber-900">{session.name}</h4>
                               <p className="text-[10px] text-amber-700 font-medium">Estimated Cost: ₹{session.price}</p>
+                              {session.createdAt && (
+                                <p className="text-[10px] text-amber-700/80 mt-0.5">Advised by doc on {new Date(session.createdAt).toLocaleDateString()}</p>
+                              )}
                             </div>
                           </div>
                           <Button
@@ -396,7 +397,7 @@ export default function PatientDashboard() {
                             <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 font-bold">Th</div>
                             <div>
                               <h4 className="font-bold text-sm">{session.name}</h4>
-                              <p className="text-[10px] text-muted-foreground mt-0.5">{session.date} at {session.time}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{session.date} at {session.time ? formatTime12Hour(session.time) : ""}</p>
                             </div>
                           </div>
                           {session.status === "Booked" ? (

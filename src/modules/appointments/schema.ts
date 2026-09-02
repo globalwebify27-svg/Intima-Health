@@ -6,7 +6,7 @@ export interface IAppointment {
   clinicId?: Schema.Types.ObjectId;
   date: string; // e.g. "2026-06-12"
   time: string; // e.g. "10:00 AM"
-  type: "Video" | "In-person";
+  type: "Video" | "Walk-in";
   status: "Scheduled" | "Checked In" | "Engaged" | "Checked Out" | "Completed" | "Cancelled" | "Rescheduled";
   paymentStatus?: "Pending" | "Paid";
   paymentMethod?: "Online" | "Cash";
@@ -26,7 +26,7 @@ const AppointmentSchema = new Schema<IAppointment>({
   clinicId: { type: Schema.Types.ObjectId, ref: "Clinic", required: false },
   date: { type: String, required: true },
   time: { type: String, required: true },
-  type: { type: String, enum: ["Video", "In-person"], required: true },
+  type: { type: String, enum: ["Video", "Walk-in"], required: true },
   status: { type: String, enum: ["Scheduled", "Checked In", "Engaged", "Checked Out", "Completed", "Cancelled", "Rescheduled"], default: "Scheduled" },
   paymentStatus: { type: String, enum: ["Pending", "Paid"], default: "Pending" },
   paymentMethod: { type: String, enum: ["Online", "Cash"], default: "Online" },

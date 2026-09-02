@@ -20,6 +20,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatTime12Hour } from "@/lib/utils";
 
 interface ClinicData {
   _id: string;
@@ -465,7 +466,7 @@ export default function ClinicDashboardPage({ params }: { params: Promise<{ id: 
                       {apt.patientId?.name || "Anonymous Patient"}
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      {apt.date} at {apt.time} • {apt.type}
+                      {apt.date} at {formatTime12Hour(apt.time)} • {apt.type}
                     </p>
                     {apt.doctorId && (
                       <p className="text-[10px] text-primary mt-0.5 font-medium">
@@ -608,7 +609,7 @@ export default function ClinicDashboardPage({ params }: { params: Promise<{ id: 
                   </div>
                   <div>
                     <h3 className="text-lg font-bold">{selectedAppointment.patientId?.name || "Patient Appointment"}</h3>
-                    <p className="text-xs text-muted-foreground">{selectedAppointment.date} at {selectedAppointment.time}</p>
+                    <p className="text-xs text-muted-foreground">{selectedAppointment.date} at {formatTime12Hour(selectedAppointment.time)}</p>
                   </div>
                 </div>
                 <button onClick={() => setSelectedAppointment(null)} className="p-1 hover:bg-muted rounded-full"><X className="w-5 h-5 text-muted-foreground" /></button>

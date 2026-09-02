@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatTime12Hour } from "@/lib/utils";
 
 interface DoctorData {
   _id: string;
@@ -42,6 +43,7 @@ interface AppointmentData {
   date: string;
   time: string;
   type: string;
+  serviceName?: string;
   status: string;
   paymentStatus?: string;
   paymentMethod?: string;
@@ -112,7 +114,7 @@ export default function ClinicManagerDashboardPage() {
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
-  const [appointmentType, setAppointmentType] = useState("In-person");
+  const [appointmentType, setAppointmentType] = useState("Walk-in");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [paymentStatus, setPaymentStatus] = useState("Paid");
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -143,7 +145,7 @@ export default function ClinicManagerDashboardPage() {
     setSelectedDoctor("");
     setSelectedDate("");
     setSelectedTime("");
-    setAppointmentType("In-person");
+    setAppointmentType("Walk-in");
     setPaymentMethod("Cash");
     setPaymentStatus("Paid");
     setSlots([]);
@@ -572,16 +574,16 @@ export default function ClinicManagerDashboardPage() {
                           <div className="text-muted-foreground flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" /> {apt.patientId?.phone || "No phone"}</div>
                         </td>
                         <td className="p-3">
-                          <div className="font-medium text-foreground flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-muted-foreground" /> {apt.time}</div>
+                          <div className="font-medium text-foreground flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-muted-foreground" /> {formatTime12Hour(apt.time)}</div>
                           <div className="text-muted-foreground flex items-center gap-1 mt-0.5">
-                            {apt.type === "Video" ? <Video className="w-3 h-3 text-blue-500" /> : <MapPin className="w-3 h-3 text-green-500" />} {apt.type}
+                            {apt.serviceName || apt.type}
                           </div>
                         </td>
                         <td className="p-3 flex justify-center">
                           <select
                             className="h-8 w-28 rounded-lg border border-input bg-transparent px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-medium text-center"
                             value={apt.status}
-                            disabled={actionLoading === apt._id}
+                            disabled={actionLoading === apt._id || apt.status === "Engaged"}
                             onChange={(e) => {
                               if (e.target.value === "Rescheduled") {
                                 setRescheduleApt(apt);
@@ -809,7 +811,7 @@ export default function ClinicManagerDashboardPage() {
                     onChange={(e) => setAppointmentType(e.target.value)}
                     className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
-                    <option value="In-person">In-person</option>
+                    <option value="Walk-in">Walk-in</option>
                     <option value="Video">Video Call</option>
                   </select>
                 </div>
@@ -994,7 +996,7 @@ export default function ClinicManagerDashboardPage() {
                         onChange={(e) => setAppointmentType(e.target.value)}
                         className="w-full h-9 px-2 rounded-lg border border-border bg-background text-xs"
                       >
-                        <option value="In-person">In-person</option>
+                        <option value="Walk-in">Walk-in</option>
                         <option value="Video">Video Call</option>
                       </select>
                     </div>
@@ -1076,7 +1078,7 @@ export default function ClinicManagerDashboardPage() {
             <div className="space-y-4">
               <div className="space-y-1 text-sm text-muted-foreground">
                 <p><strong>Patient:</strong> {rescheduleApt.patientId?.name}</p>
-                <p><strong>Current:</strong> {rescheduleApt.date} at {rescheduleApt.time}</p>
+                <p><strong>Current:</strong> {rescheduleApt.date} at {formatTime12Hour(rescheduleApt.time)}</p>
               </div>
 
               <div className="space-y-1">
@@ -1118,7 +1120,7 @@ export default function ClinicManagerDashboardPage() {
                               : "bg-background border border-border hover:border-primary/50 text-foreground"
                           }`}
                         >
-                          {slot.start}
+                          {formatTime12Hour(slot.start)}
                         </button>
                       ))}
                     </div>

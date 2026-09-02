@@ -113,7 +113,7 @@ export default function ContactPage() {
             </h1>
             
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              Whether you have a clinical question, need support with an order, or want to book an in-person visit, our dedicated care team is ready.
+              Whether you have a clinical question, need support with an order, or want to book an walk-in visit, our dedicated care team is ready.
             </p>
           </motion.div>
         </div>
@@ -280,7 +280,7 @@ export default function ContactPage() {
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-serif mb-4">Our Clinics</h2>
             <p className="text-muted-foreground text-lg">
-              Prefer an in-person visit? We operate premium clinical centers in select cities. Walk-ins are not accepted; please book an appointment prior to your visit.
+              Prefer an walk-in visit? We operate premium clinical centers in select cities. Walk-ins are not accepted; please book an appointment prior to your visit.
             </p>
           </div>
           

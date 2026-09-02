@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatTime12Hour } from "@/lib/utils";
 
 interface AppointmentData {
   _id: string;
@@ -357,14 +358,9 @@ export default function AppointmentsPage() {
                       <div className="border-t border-border pt-3 space-y-2">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Clock className="w-4 h-4 text-primary" />
-                          <span>Time slot: {apt.time}</span>
+                          <span>Time slot: {formatTime12Hour(apt.time)}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          {apt.type === "Video" ? (
-                            <Video className="w-4 h-4 text-blue-500" />
-                          ) : (
-                            <MapPin className="w-4 h-4 text-green-500" />
-                          )}
                           <span>Type: {apt.type}</span>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1 font-bold flex justify-between items-center">
@@ -392,7 +388,7 @@ export default function AppointmentsPage() {
                           <select
                             className="flex-1 h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                             value={apt.status}
-                            disabled={actionLoading === apt._id}
+                            disabled={actionLoading === apt._id || apt.status === "Engaged"}
                             onChange={(e) => {
                               if (e.target.value === "Rescheduled") {
                                 setRescheduleApt(apt);
@@ -466,7 +462,7 @@ export default function AppointmentsPage() {
             <div className="space-y-4">
               <div className="space-y-1 text-sm text-muted-foreground">
                 <p><strong>Patient:</strong> {rescheduleApt.patientId?.name}</p>
-                <p><strong>Current:</strong> {rescheduleApt.date} at {rescheduleApt.time}</p>
+                <p><strong>Current:</strong> {rescheduleApt.date} at {formatTime12Hour(rescheduleApt.time)}</p>
               </div>
 
               <div className="space-y-1">
@@ -508,7 +504,7 @@ export default function AppointmentsPage() {
                               : "bg-background border border-border hover:border-primary/50 text-foreground"
                           }`}
                         >
-                          {slot.start}
+                          {formatTime12Hour(slot.start)}
                         </button>
                       ))}
                     </div>

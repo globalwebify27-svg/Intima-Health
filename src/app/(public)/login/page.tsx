@@ -25,7 +25,7 @@ export default function LoginPage() {
 
   const handleSendOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    
+
     // Client-side validation
     const cleanPhone = phone.replace(/\D/g, "");
     if (cleanPhone.length < 10) {
@@ -61,7 +61,7 @@ export default function LoginPage() {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Client-side validation
     const cleanOtp = otp.trim();
     if (cleanOtp.length !== 6 || !/^\d+$/.test(cleanOtp)) {
@@ -96,7 +96,7 @@ export default function LoginPage() {
       {/* Left side - Image/Branding (hidden on mobile) */}
       <div className="hidden lg:flex w-1/2 relative bg-primary/5 flex-col justify-between p-12 overflow-hidden border-r border-border/50">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10 pointer-events-none" />
-        
+
         {/* Decorative blur orbs */}
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/20 rounded-full blur-[100px]" />
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary/20 rounded-full blur-[100px]" />
@@ -116,7 +116,7 @@ export default function LoginPage() {
           <p className="text-lg text-muted-foreground mb-8">
             Access your personalized treatment plans, lab results, and connect with your dedicated care team—all in one secure place.
           </p>
-          
+
           <div className="flex items-center gap-4">
             <div className="flex -space-x-4">
               <div className="w-10 h-10 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-bold overflow-hidden relative">
@@ -134,7 +134,7 @@ export default function LoginPage() {
       {/* Right side - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-[420px] space-y-10">
-          
+
           <div className="lg:hidden mb-12 flex justify-center">
             <Link href="/">
               <span className="font-serif text-3xl font-bold tracking-tight text-foreground">
@@ -164,14 +164,26 @@ export default function LoginPage() {
                   <Label htmlFor="phone">WhatsApp Number</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-3.5 text-sm font-medium text-muted-foreground">+91</span>
-                    <Input 
-                      id="phone" 
-                      placeholder="98765 43210" 
-                      type="tel" 
+                    <Input
+                      id="phone"
+                      placeholder="98765 43210"
+                      type="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        const input = e.target;
+                        const rawValue = input.value;
+                        let val = rawValue.replace(/\D/g, '').slice(0, 10);
+                        if (val.length > 0 && !/^[6-9]/.test(val[0])) {
+                          val = '';
+                        }
+                        if (rawValue !== val) {
+                          input.value = val;
+                        }
+                        setPhone(val);
+                      }}
+                      maxLength={10}
                       className="pl-12 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
-                      required 
+                      required
                       disabled={loading}
                     />
                   </div>
@@ -186,21 +198,21 @@ export default function LoginPage() {
                   </div>
                   <div className="relative">
                     <MessageSquare className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                    <Input 
-                      id="otp" 
-                      placeholder="6-digit code" 
-                      type="text" 
+                    <Input
+                      id="otp"
+                      placeholder="6-digit code"
+                      type="text"
                       maxLength={6}
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
                       className="pl-10 h-12 bg-muted/30 border-border/60 focus-visible:ring-primary/20 tracking-widest text-center"
-                      required 
+                      required
                       disabled={loading}
                     />
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <p className="text-xs text-muted-foreground">Code sent to +91 {phone.replace(/\D/g, "").slice(-10)}.</p>
-                    <button 
+                    <button
                       type="button"
                       disabled={resendCooldown > 0 || loading}
                       onClick={() => handleSendOtp()}

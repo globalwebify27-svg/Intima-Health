@@ -1,21 +1,24 @@
 "use client";
 
-import { mockAppointments, Appointment } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Video, MapPin } from "lucide-react";
+import { formatTime12Hour } from "@/lib/utils";
 
-const columns: ColumnDef<Appointment>[] = [
+const columns: ColumnDef<any>[] = [
   {
-    accessorKey: "patientName",
+    id: "patientName",
     header: "Patient",
+    accessorFn: (row) => row.patientId?.name || "N/A",
     cell: ({ row }) => <span className="font-bold">{row.getValue("patientName")}</span>,
   },
   {
-    accessorKey: "doctorName",
+    id: "doctorName",
     header: "Doctor",
+    accessorFn: (row) => row.doctorId?.name || "N/A",
   },
   {
     accessorKey: "date",
@@ -24,16 +27,18 @@ const columns: ColumnDef<Appointment>[] = [
   {
     accessorKey: "time",
     header: "Time",
+    cell: ({ row }) => <span>{formatTime12Hour(row.getValue("time") as string)}</span>,
   },
   {
     accessorKey: "type",
     header: "Type",
     cell: ({ row }) => {
       const type = row.getValue("type") as string;
+      const serviceName = row.original?.serviceName;
+      const display = serviceName || type;
       return (
         <div className="flex items-center gap-2">
-          {type === "Video" ? <Video className="h-4 w-4 text-blue-500" /> : <MapPin className="h-4 w-4 text-green-500" />}
-          <span>{type}</span>
+          <span>{display}</span>
         </div>
       );
     }
@@ -63,6 +68,26 @@ const columns: ColumnDef<Appointment>[] = [
 ];
 
 export default function AppointmentsAdminPage() {
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const aptsRes = await fetch("/api/appointments");
+        const aptsJson = await aptsRes.json();
+        if (aptsJson.success) {
+          setAppointments(aptsJson.data || []);
+        }
+      } catch (err) {
+        console.error("Error fetching appointments:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAppointments();
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -73,7 +98,14 @@ export default function AppointmentsAdminPage() {
           </p>
         </div>
       </div>
-      <DataTable columns={columns} data={mockAppointments} />
+      
+      {loading ? (
+        <div className="flex items-center justify-center min-h-[40vh] text-muted-foreground">
+          Loading appointments...
+        </div>
+      ) : (
+        <DataTable columns={columns} data={appointments} />
+      )}
     </div>
   );
 }

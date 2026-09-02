@@ -123,7 +123,7 @@ export async function sendAppointmentBookingMessage(appointmentId: string, isPai
       }
     }
 
-    const docFees = appointment.feeAmount !== undefined ? appointment.feeAmount : (appointment.type === "In-person" ? "1,499" : "999");
+    const docFees = appointment.feeAmount !== undefined ? appointment.feeAmount : (appointment.type === "Walk-in" ? "1,499" : "999");
     const paymentLink = `http://localhost:3000/checkout?appointmentId=${appointmentId}`;
     
     let message = "";

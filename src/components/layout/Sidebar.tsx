@@ -91,7 +91,7 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
             onClick={async () => {
               try {
                 await fetch("/api/auth/logout", { method: "POST" });
-                window.location.href = "/staff-login";
+                window.location.href = roleName === "Patient" ? "/" : "/staff-login";
               } catch (err) {
                 console.error("Logout failed", err);
               }

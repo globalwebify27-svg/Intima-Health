@@ -7,7 +7,6 @@ const doctorLinks = [
   { title: "Dashboard", href: "/doctor/dashboard", icon: LayoutDashboard },
   { title: "My Patients", href: "/doctor/patients", icon: Users },
   { title: "Appointments", href: "/doctor/appointments", icon: Calendar },
-  { title: "Consultations", href: "/doctor/consultations", icon: Video },
   { title: "Prescriptions", href: "/doctor/prescriptions", icon: FileSignature },
   { title: "Availability", href: "/doctor/availability", icon: Clock },
 ];

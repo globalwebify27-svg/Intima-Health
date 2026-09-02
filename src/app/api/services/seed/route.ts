@@ -4,8 +4,8 @@ import { PlatformServiceModel } from "@/modules/services/schema";
 
 const seedData = [
   { name: "Online Consultation", icon: "Video", description: "15-min video call with a specialist", price: 999, type: "Consultation" },
-  { name: "Sex Therapy", icon: "HeartHandshake", description: "50-min psychological counseling", price: 2499, type: "Therapy" },
-  { name: "Walk-in Consultation", icon: "Building2", description: "In-person visit to our premium clinic", price: 1499, type: "Consultation" }
+  { name: "Sex Therapy", icon: "HeartHandshake", description: "30-min psychological counseling", price: 2499, type: "Therapy" },
+  { name: "Walk-in Consultation", icon: "Building2", description: "Walk-in visit to our premium clinic", price: 1499, type: "Consultation" }
 ];
 
 export async function POST() {

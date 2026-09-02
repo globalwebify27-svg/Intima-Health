@@ -9,7 +9,7 @@ export interface IBookAppointmentInput {
   doctorId: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:MM (start time)
-  type: "Video" | "In-person";
+  type: "Video" | "Walk-in";
   notes?: string;
 }
 

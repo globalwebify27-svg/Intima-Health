@@ -12,6 +12,7 @@ import {
   DollarSign,
   XCircle
 } from "lucide-react";
+import { formatTime12Hour } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -119,8 +120,8 @@ export default function PaymentsPage() {
         const aptRes = await fetch(`/api/appointments?clinicId=${cId}`);
         const aptJson = await aptRes.json();
         if (aptJson.success) {
-          // Filter to only In-person/Cash types since Video is online
-          setConsultations(aptJson.data.filter((a: any) => a.type === "In-person"));
+          // Filter to only Walk-in/Cash types since Video is online
+          setConsultations(aptJson.data.filter((a: any) => a.type === "Walk-in"));
         }
       }
     } catch (err) {
@@ -391,7 +392,7 @@ export default function PaymentsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="font-medium text-foreground">{apt.doctorId?.name || "Doctor"}</div>
-                        <div className="text-xs text-muted-foreground mt-0.5">{apt.date} at {apt.time}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{apt.date} at {formatTime12Hour(apt.time)}</div>
                       </td>
                       <td className="px-6 py-4">
                         <Badge variant="outline" className="font-medium bg-background">{apt.type}</Badge>
@@ -471,7 +472,7 @@ export default function PaymentsPage() {
                         <span className="font-medium">{ts.name}</span>
                       </td>
                       <td className="p-4">
-                        <span className="text-xs font-medium text-muted-foreground">{ts.date} at {ts.time}</span>
+                        <span className="text-xs font-medium text-muted-foreground">{ts.date} at {ts.time ? formatTime12Hour(ts.time) : ""}</span>
                       </td>
                       <td className="p-4">
                         <span className="font-bold">₹{ts.price}</span>

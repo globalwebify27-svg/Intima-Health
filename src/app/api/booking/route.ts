@@ -87,6 +87,12 @@ export async function POST(req: Request) {
         email = `${phone}@noemail-intima.com`;
       }
 
+      const last10 = phone.replace(/\D/g, "").slice(-10);
+      const existingPatientByPhone = await PatientModel.findOne({ phone: new RegExp(last10 + '$') }).exec();
+      if (existingPatientByPhone) {
+        return NextResponse.json({ success: false, message: "Number already exists. Please use correct number or login with existing." }, { status: 400 });
+      }
+
       // Find or create patient
       patient = await PatientModel.findOne({ email }).exec();
       if (!patient) {
@@ -170,7 +176,7 @@ export async function POST(req: Request) {
       doctorId: doctor._id.toString(),
       date,
       time: formattedTime,
-      type: isVideo ? "Video" : "In-person",
+      type: isVideo ? "Video" : "Walk-in",
       serviceName: serviceNameStr,
       notes: "Booked directly through public website booking form.",
       skipNotification: true,

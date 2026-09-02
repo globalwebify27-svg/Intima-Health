@@ -40,6 +40,7 @@ interface ConsultationData {
   notes?: string;
   prescriptionSummary?: string;
   prescribedTherapies?: string;
+  prescriptionStatus?: string;
   status: string;
   patientId?: PatientData;
   doctorId?: {
@@ -71,6 +72,8 @@ export default function PrescriptionsPage() {
   const [showDispenseModal, setShowDispenseModal] = useState(false);
   const [dispenseConsultation, setDispenseConsultation] = useState<ConsultationData | null>(null);
   const [dispenseItems, setDispenseItems] = useState<Array<{ productId: string; quantity: number; price: number; name: string; stock: number }>>([]);
+  const [checkoutStep, setCheckoutStep] = useState<"items" | "payment">("items");
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -137,6 +140,7 @@ export default function PrescriptionsPage() {
       })),
       totalAmount,
       status: "Delivered",
+      paymentMethod,
       shippingAddress: "Clinic Counter Dispense"
     };
 
@@ -151,11 +155,19 @@ export default function PrescriptionsPage() {
         throw new Error(resData.message || "Failed to dispense medicines.");
       }
 
+      // Update prescriptionStatus to Fulfilled
+      await fetch(`/api/consultations/${dispenseConsultation._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prescriptionStatus: "Fulfilled" }),
+      });
+
       setSuccessMsg("Medicines dispensed and billing order registered!");
       setTimeout(() => {
         setShowDispenseModal(false);
         setDispenseConsultation(null);
         setDispenseItems([]);
+        setCheckoutStep("items");
         setSuccessMsg("");
         setErrorMsg("");
         fetchPrescriptions();
@@ -192,6 +204,53 @@ export default function PrescriptionsPage() {
 
   const removeDispenseItem = (prodId: string) => {
     setDispenseItems(dispenseItems.filter(i => i.productId !== prodId));
+  };
+
+  const openDispenseModal = (c: ConsultationData) => {
+    setDispenseConsultation(c);
+    const autoItems: typeof dispenseItems = [];
+
+    if (c.prescriptionSummary) {
+      try {
+        const meds = JSON.parse(c.prescriptionSummary);
+        if (Array.isArray(meds)) {
+          meds.forEach((m: any) => {
+            const matchedProduct = products.find((p) =>
+              p.name.toLowerCase().includes(m.drug.toLowerCase()) ||
+              m.drug.toLowerCase().includes(p.name.toLowerCase())
+            );
+
+            if (matchedProduct) {
+              if (!autoItems.some(i => i.productId === matchedProduct._id)) {
+                autoItems.push({
+                  productId: matchedProduct._id,
+                  quantity: 1,
+                  price: matchedProduct.price,
+                  name: matchedProduct.name,
+                  stock: matchedProduct.stock
+                });
+              }
+            } else if (products.length > 0) {
+              const fallback = products[0];
+              if (!autoItems.some(i => i.productId === fallback._id)) {
+                autoItems.push({
+                  productId: fallback._id,
+                  quantity: 1,
+                  price: fallback.price,
+                  name: fallback.name, // Will show the actual stock name instead of the prescribed name if mismatched
+                  stock: fallback.stock
+                });
+              }
+            }
+          });
+        }
+      } catch (e) {}
+    }
+
+    setDispenseItems(autoItems);
+    setCheckoutStep("items");
+    setPaymentMethod("Cash");
+    setShowDispenseModal(true);
   };
 
   const filtered = consultations.filter((c) => {
@@ -291,10 +350,7 @@ export default function PrescriptionsPage() {
                   <tr 
                     key={c._id} 
                     className="hover:bg-muted/10 transition cursor-pointer"
-                    onClick={() => {
-                      setDispenseConsultation(c);
-                      setShowDispenseModal(true);
-                    }}
+                    onClick={() => openDispenseModal(c)}
                   >
                     <td className="p-4">
                       <div className="font-bold text-foreground">{c.patientId?.name || "Patient"}</div>
@@ -314,17 +370,22 @@ export default function PrescriptionsPage() {
                       </div>
                     </td>
                     <td className="p-4 text-right">
-                      <Button
-                        size="sm"
-                        className="text-xs font-bold text-white h-9 rounded-lg px-3.5 flex items-center gap-1.5 ml-auto"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDispenseConsultation(c);
-                          setShowDispenseModal(true);
-                        }}
-                      >
-                        <ShoppingBag className="w-4 h-4" /> Create Order
-                      </Button>
+                      {c.prescriptionStatus === "Fulfilled" ? (
+                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20 px-3 py-1.5 rounded-lg font-semibold flex items-center justify-center gap-1 w-max ml-auto">
+                          <CheckCircle2 className="w-4 h-4" /> Delivered
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="text-xs font-bold text-white h-9 rounded-lg px-3.5 flex items-center gap-1.5 ml-auto"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDispenseModal(c);
+                          }}
+                        >
+                          <ShoppingBag className="w-4 h-4" /> Create & Fulfill Order
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -367,6 +428,7 @@ export default function PrescriptionsPage() {
                 setShowDispenseModal(false);
                 setDispenseConsultation(null);
                 setDispenseItems([]);
+                setCheckoutStep("items");
                 setSuccessMsg("");
                 setErrorMsg("");
               }}
@@ -402,83 +464,120 @@ export default function PrescriptionsPage() {
                 </div>
               )}
 
-              {/* Product selector */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Select Clinic Medicine to Add</label>
-                <select
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      addDispenseItem(e.target.value);
-                      e.target.value = "";
-                    }
-                  }}
-                  className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="">-- Choose Medicine --</option>
-                  {products.map((p) => (
-                    <option key={p._id} value={p._id} disabled={p.stock <= 0}>
-                      {p.name} (Price: ₹{p.price} | Stock: {p.stock}) {p.stock <= 0 ? "[Out of Stock]" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
+
 
               {/* Items Selected list */}
-              {dispenseItems.length > 0 && (
-                <div className="border border-border rounded-2xl overflow-hidden bg-muted/10">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-border bg-muted/20 font-bold text-muted-foreground">
-                        <th className="p-3">Medicine</th>
-                        <th className="p-3">Price</th>
-                        <th className="p-3">Qty</th>
-                        <th className="p-3">Total</th>
-                        <th className="p-3 text-right">Remove</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border text-foreground">
-                      {dispenseItems.map((item) => (
-                        <tr key={item.productId} className="hover:bg-muted/10 transition">
-                          <td className="p-3 font-bold">{item.name}</td>
-                          <td className="p-3">₹{item.price}</td>
-                          <td className="p-3">
-                            <input
-                              type="number"
-                              min={1}
-                              max={item.stock}
-                              value={item.quantity}
-                              onChange={(e) => updateDispenseItemQty(item.productId, parseInt(e.target.value))}
-                              className="w-16 h-8 px-2 rounded border border-border bg-background text-center focus:outline-none"
-                            />
-                          </td>
-                          <td className="p-3 font-bold">₹{item.price * item.quantity}</td>
-                          <td className="p-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => removeDispenseItem(item.productId)}
-                              className="text-rose-500 hover:text-rose-700"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
+              {checkoutStep === "items" ? (
+                <>
+                  {dispenseItems.length > 0 && (
+                    <div className="border border-border rounded-2xl overflow-hidden bg-muted/10">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-border bg-muted/20 font-bold text-muted-foreground">
+                            <th className="p-3">Medicine</th>
+                            <th className="p-3">Price</th>
+                            <th className="p-3">Qty</th>
+                            <th className="p-3">Total</th>
+                            <th className="p-3 text-right">Remove</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border text-foreground">
+                          {dispenseItems.map((item) => (
+                            <tr key={item.productId} className="hover:bg-muted/10 transition">
+                              <td className="p-3 font-bold">{item.name}</td>
+                              <td className="p-3">₹{item.price}</td>
+                              <td className="p-3">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={item.stock}
+                                  value={item.quantity}
+                                  onChange={(e) => updateDispenseItemQty(item.productId, parseInt(e.target.value))}
+                                  className="w-16 h-8 px-2 rounded border border-border bg-background text-center focus:outline-none"
+                                />
+                              </td>
+                              <td className="p-3 font-bold">₹{item.price * item.quantity}</td>
+                              <td className="p-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => removeDispenseItem(item.productId)}
+                                  className="text-rose-500 hover:text-rose-700"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Total Calculation */}
+                  <div className="flex justify-between items-center bg-primary/5 p-4 rounded-xl border border-primary/20">
+                    <span className="text-sm font-bold text-primary">Dispensed Order Bill Total:</span>
+                    <span className="text-lg font-black text-primary">
+                      ₹{dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+                    </span>
+                  </div>
+
+                  <Button 
+                    type="button" 
+                    onClick={() => {
+                      if (dispenseItems.length === 0) {
+                        setErrorMsg("Please add at least one medicine to dispense.");
+                        return;
+                      }
+                      setCheckoutStep("payment");
+                    }} 
+                    className="w-full h-11 text-white font-bold rounded-xl mt-2"
+                  >
+                    Proceed to Payment
+                  </Button>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center bg-primary/5 p-4 rounded-xl border border-primary/20 mb-4">
+                    <span className="text-sm font-bold text-primary">Total Amount to Collect:</span>
+                    <span className="text-xl font-black text-primary">
+                      ₹{dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Select Payment Method</label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {["Cash", "Online", "Send Link in WhatsApp"].map((method) => (
+                        <div 
+                          key={method}
+                          onClick={() => setPaymentMethod(method)}
+                          className={`p-3 border rounded-xl cursor-pointer text-center font-medium text-sm transition-all ${
+                            paymentMethod === method 
+                              ? "border-primary bg-primary/10 text-primary" 
+                              : "border-border hover:border-primary/50 text-muted-foreground"
+                          }`}
+                        >
+                          {method}
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setCheckoutStep("items")} 
+                      className="w-1/3 h-11 rounded-xl"
+                    >
+                      Back
+                    </Button>
+                    <Button type="submit" disabled={submitting} className="w-2/3 h-11 text-white font-bold rounded-xl">
+                      {submitting ? "Settling Counter Billing..." : "Confirm & Complete"}
+                    </Button>
+                  </div>
                 </div>
               )}
-
-              {/* Total Calculation */}
-              <div className="flex justify-between items-center bg-primary/5 p-4 rounded-xl border border-primary/20">
-                <span className="text-sm font-bold text-primary">Dispensed Order Bill Total:</span>
-                <span className="text-lg font-black text-primary">
-                  ₹{dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
-                </span>
-              </div>
-
-              <Button type="submit" disabled={submitting} className="w-full h-11 text-white font-bold rounded-xl mt-2">
-                {submitting ? "Settling Counter Billing..." : "Confirm Dispense & Collect Counter Payment"}
-              </Button>
             </form>
           </div>
         </div>

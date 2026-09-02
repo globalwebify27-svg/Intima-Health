@@ -6,6 +6,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Video, MapPin, ExternalLink, Calendar } from "lucide-react";
+import { formatTime12Hour } from "@/lib/utils";
 
 const columns: ColumnDef<any>[] = [
   {
@@ -21,16 +22,18 @@ const columns: ColumnDef<any>[] = [
   {
     accessorKey: "time",
     header: "Time",
+    cell: ({ row }) => <span>{formatTime12Hour(row.getValue("time") as string)}</span>,
   },
   {
     accessorKey: "type",
     header: "Type",
     cell: ({ row }) => {
       const type = row.getValue("type") as string;
+      const serviceName = row.original?.serviceName;
+      const display = serviceName || type;
       return (
         <div className="flex items-center gap-2">
-          {type === "Video" ? <Video className="h-4 w-4 text-blue-500" /> : <MapPin className="h-4 w-4 text-green-500" />}
-          <span>{type}</span>
+          <span>{display}</span>
         </div>
       );
     }
@@ -57,7 +60,17 @@ const columns: ColumnDef<any>[] = [
           <Button 
             size="sm" 
             className="rounded-lg"
-            onClick={() => window.location.href = `/doctor/consultations?appointmentId=${id}`}
+            onClick={async () => {
+              if (status === "Checked In") {
+                // Optimistically mark as engaged so it immediately updates for clinic manager
+                fetch(`/api/appointments/${id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ status: "Engaged" })
+                }).catch(console.error);
+              }
+              window.location.href = `/doctor/consultations?appointmentId=${id}`;
+            }}
           >
             {status === "Engaged" ? "Rejoin Session" : "Start Session"} <ExternalLink className="w-3 h-3 ml-2" />
           </Button>
@@ -71,7 +84,7 @@ const columns: ColumnDef<any>[] = [
 export default function DoctorAppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"Upcoming" | "Past" | "Cancelled" | "All">("Upcoming");
+  const [activeTab, setActiveTab] = useState<"Upcoming/Active" | "Past" | "Cancelled" | "All">("Upcoming/Active");
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -114,18 +127,15 @@ export default function DoctorAppointmentsPage() {
     );
   }
 
-  const now = new Date();
-
   // Filter appointments
   const filteredAppointments = appointments.filter((apt) => {
     if (activeTab === "All") return true;
     if (activeTab === "Cancelled") return apt.status === "Cancelled";
     
-    const aptDateTime = new Date(`${apt.date}T${apt.time}:00`);
-    const isPast = aptDateTime < now;
+    const isPastState = ["Completed", "Expired", "No Show"].includes(apt.status);
 
-    if (activeTab === "Upcoming") return !isPast && apt.status !== "Cancelled";
-    if (activeTab === "Past") return isPast && apt.status !== "Cancelled";
+    if (activeTab === "Upcoming/Active") return apt.status !== "Cancelled" && !isPastState;
+    if (activeTab === "Past") return apt.status !== "Cancelled" && isPastState;
     return true;
   });
 
@@ -134,8 +144,8 @@ export default function DoctorAppointmentsPage() {
     const dateA = new Date(`${a.date}T${a.time}:00`);
     const dateB = new Date(`${b.date}T${b.time}:00`);
     
-    // For Upcoming, sort closest to now first (Ascending)
-    if (activeTab === "Upcoming") {
+    // For Upcoming/Active, sort closest to now first (Ascending)
+    if (activeTab === "Upcoming/Active") {
       return dateA.getTime() - dateB.getTime();
     }
     // For Past, Cancelled, and All, sort most recent past first (Descending)
@@ -148,7 +158,7 @@ export default function DoctorAppointmentsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Schedule</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your upcoming video consultations and in-person visits.
+            Manage your upcoming video consultations and walk-in visits.
           </p>
         </div>
         <Button className="rounded-xl" onClick={() => window.location.href = "/doctor/availability"}>Manage Availability</Button>
@@ -156,7 +166,7 @@ export default function DoctorAppointmentsPage() {
 
       {/* Tabs */}
       <div className="flex border-b border-border gap-4 overflow-x-auto">
-        {(["Upcoming", "Past", "Cancelled", "All"] as const).map((tab) => (
+        {(["Upcoming/Active", "Past", "Cancelled", "All"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -166,7 +176,7 @@ export default function DoctorAppointmentsPage() {
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {tab} Appointments
+            {tab === "Upcoming/Active" ? "Upcoming/Active" : tab} Appointments
           </button>
         ))}
       </div>

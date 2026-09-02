@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Pill, FileSignature, CheckCircle, X, Calendar, User, UserCheck, Phone, Mail, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 interface Medicine {
   drug: string;
@@ -45,6 +46,25 @@ export default function PharmacyPrescriptionsPage() {
   // Modal states
   const [selectedPrescription, setSelectedPrescription] = useState<Consultation | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [quantities, setQuantities] = useState<Record<number, number>>({});
+
+  const getMedsArray = (summary?: string): Medicine[] => {
+    if (!summary) return [];
+    try {
+      return JSON.parse(summary);
+    } catch {
+      return [];
+    }
+  };
+
+  const getTherapiesArray = (summary?: string): Therapy[] => {
+    if (!summary) return [];
+    try {
+      return JSON.parse(summary);
+    } catch {
+      return [];
+    }
+  };
 
   const fetchPrescriptions = async (cId: string) => {
     try {
@@ -87,23 +107,25 @@ export default function PharmacyPrescriptionsPage() {
       const prodJson = await prodRes.json();
       const clinicProducts = prodJson.success ? prodJson.data : [];
 
-      const items = meds.map((m) => {
+      const items = meds.map((m, idx) => {
         const matchedProduct = clinicProducts.find((p: any) =>
           p.name.toLowerCase().includes(m.drug.toLowerCase()) ||
           m.drug.toLowerCase().includes(p.name.toLowerCase())
         );
 
+        const qty = quantities[idx] || 1;
+
         if (matchedProduct) {
           return {
             productId: matchedProduct._id,
-            quantity: 1,
+            quantity: qty,
             priceAtPurchase: matchedProduct.price,
           };
         } else {
           const fallbackProduct = clinicProducts[0] || { _id: "65f27c62d08a50672e811bc3", price: 100 };
           return {
             productId: fallbackProduct._id,
-            quantity: 1,
+            quantity: qty,
             priceAtPurchase: fallbackProduct.price || 100,
           };
         }
@@ -145,23 +167,7 @@ export default function PharmacyPrescriptionsPage() {
     }
   };
 
-  const getMedsArray = (summary?: string): Medicine[] => {
-    if (!summary) return [];
-    try {
-      return JSON.parse(summary);
-    } catch {
-      return [];
-    }
-  };
 
-  const getTherapiesArray = (summary?: string): Therapy[] => {
-    if (!summary) return [];
-    try {
-      return JSON.parse(summary);
-    } catch {
-      return [];
-    }
-  };
 
   if (loading) {
     return (
@@ -226,6 +232,9 @@ export default function PharmacyPrescriptionsPage() {
                         className="rounded-xl" 
                         onClick={() => {
                           setSelectedPrescription(record);
+                          const initialQuantities: Record<number, number> = {};
+                          getMedsArray(record.prescriptionSummary).forEach((_, i) => initialQuantities[i] = 1);
+                          setQuantities(initialQuantities);
                           setIsDetailsModalOpen(true);
                         }}
                       >
@@ -237,6 +246,9 @@ export default function PharmacyPrescriptionsPage() {
                       className="rounded-xl w-full" 
                       onClick={() => {
                         setSelectedPrescription(record);
+                        const initialQuantities: Record<number, number> = {};
+                        getMedsArray(record.prescriptionSummary).forEach((_, i) => initialQuantities[i] = 1);
+                        setQuantities(initialQuantities);
                         setIsDetailsModalOpen(true);
                       }}
                     >
@@ -322,7 +334,7 @@ export default function PharmacyPrescriptionsPage() {
                       </div>
                       <h4 className="font-bold text-foreground">{med.drug}</h4>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                    <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground items-end">
                       <div>
                         <span className="block font-medium text-[10px] uppercase tracking-wider">Dosage</span>
                         <span className="font-semibold text-foreground">{med.dosage}</span>
@@ -335,6 +347,18 @@ export default function PharmacyPrescriptionsPage() {
                         <span className="block font-medium text-[10px] uppercase tracking-wider">Duration</span>
                         <span className="font-semibold text-foreground">{med.duration}</span>
                       </div>
+                      {selectedPrescription.prescriptionStatus !== "Fulfilled" && (
+                        <div>
+                          <span className="block font-medium text-[10px] uppercase tracking-wider mb-1">Qty</span>
+                          <Input 
+                            type="number" 
+                            min="1" 
+                            className="h-7 text-xs px-2 w-full bg-background"
+                            value={quantities[idx] || ""}
+                            onChange={(e) => setQuantities(prev => ({ ...prev, [idx]: parseInt(e.target.value) || 0 }))}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

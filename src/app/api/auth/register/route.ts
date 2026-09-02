@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     const existingPatient = await PatientModel.findOne({ phone: new RegExp(last10 + '$') }).exec();
     if (existingPatient) {
       return NextResponse.json(
-        { success: false, message: "A patient with this phone number already exists." },
+        { success: false, message: "Number already exists. Please use correct number or login with existing." },
         { status: 400 }
       );
     }

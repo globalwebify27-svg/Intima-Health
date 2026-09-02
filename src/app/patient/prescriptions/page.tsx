@@ -190,9 +190,9 @@ export default function PatientPrescriptionsPage() {
                     <p className="text-xs text-muted-foreground">Date: {new Date(consult.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
-                <div className="flex gap-3 pt-2">
-                  <Button className="w-full rounded-xl" onClick={() => handleOrderRefill(consult)}>Order Refill</Button>
-                  <Button variant="outline" size="icon" className="shrink-0 rounded-xl" onClick={() => handleDownloadPrescription(consult)}>
+                <div className="flex gap-3 pt-4">
+                  <Button className="flex-1 h-10 rounded-xl" onClick={() => handleOrderRefill(consult)}>Order</Button>
+                  <Button variant="outline" className="w-10 h-10 p-0 shrink-0 rounded-xl flex items-center justify-center bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 hover:text-primary" onClick={() => handleDownloadPrescription(consult)}>
                     <FileText className="w-4 h-4" />
                   </Button>
                 </div>

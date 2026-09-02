@@ -72,7 +72,7 @@ export async function POST(req: Request) {
         doctorId,
         date,
         time,
-        type: type || "In-person",
+        type: type || "Walk-in",
         notes: "Scheduled by clinic manager as walk-in.",
         paymentMethod: paymentMethod || "Cash",
         paymentStatus: paymentStatus || "Paid"
