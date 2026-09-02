@@ -52,10 +52,11 @@ interface TherapySession {
   _id: string;
   name: string;
   price: number;
-  status: "Recommended" | "Booked" | "Paid";
+  status: "Recommended" | "Booked" | "Paid" | string;
   date?: string;
   time?: string;
   clinicId?: {
+    _id: string;
     name: string;
   };
   createdAt?: string;
@@ -80,10 +81,72 @@ export default function PatientDashboard() {
   const [products, setProducts] = useState<any[]>([]);
 
   const [therapyToBook, setTherapyToBook] = useState<TherapySession | null>(null);
+  const [therapyStep, setTherapyStep] = useState(1);
+  const [therapyDoctor, setTherapyDoctor] = useState<any>(null);
+  const [doctorsList, setDoctorsList] = useState<any[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [realSlots, setRealSlots] = useState<any[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [therapyDate, setTherapyDate] = useState("");
   const [therapyTime, setTherapyTime] = useState("");
-  const [bookingTherapy, setBookingTherapy] = useState(false);
   const [isTherapyListModalOpen, setIsTherapyListModalOpen] = useState(false);
+
+  const closeTherapyModal = () => {
+    setTherapyToBook(null);
+    setTherapyStep(1);
+    setTherapyDoctor(null);
+    setTherapyDate("");
+    setTherapyTime("");
+    setRealSlots([]);
+  };
+
+  useEffect(() => {
+    if (therapyToBook && therapyStep === 1) {
+      setLoadingDocs(true);
+      const clinicId = therapyToBook.clinicId?._id || "";
+      fetch(`/api/doctors?clinicId=${clinicId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data) {
+            setDoctorsList(data.data);
+          }
+        })
+        .catch((err) => console.error(err))
+        .finally(() => setLoadingDocs(false));
+    }
+  }, [therapyToBook, therapyStep]);
+
+  useEffect(() => {
+    if (therapyToBook && therapyStep === 2 && therapyDoctor && therapyDate) {
+      setLoadingSlots(true);
+      fetch(`/api/doctors/${therapyDoctor._id}/slots?date=${therapyDate}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data) {
+            setRealSlots(data.data);
+          } else {
+            setRealSlots([]);
+          }
+        })
+        .catch((err) => console.error(err))
+        .finally(() => setLoadingSlots(false));
+    }
+  }, [therapyDoctor, therapyDate, therapyStep, therapyToBook]);
+
+  const formatSlotTime = (time24: string) => {
+    if (!time24) return "";
+    let [hoursStr, minutesStr] = time24.split(":");
+    let hours = parseInt(hoursStr, 10);
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    return `${String(hours).padStart(2, "0")}:${minutesStr} ${ampm}`;
+  };
+
+  const getAvailableTimeSlots = () => {
+    return realSlots.filter(s => s.available).map(s => formatSlotTime(s.start));
+  };
 
   const fetchDashboardData = (pId: string) => {
     setLoading(true);
@@ -239,21 +302,30 @@ export default function PatientDashboard() {
     }
   };
 
-  const handleBookTherapy = async () => {
-    if (!therapyToBook || !therapyDate || !therapyTime) return;
-    setBookingTherapy(true);
+  const handlePayAndBookTherapy = async () => {
+    if (!therapyToBook || !therapyDate || !therapyTime || !therapyDoctor) return;
+    setPaymentProcessing(true);
+    
+    // Simulate payment delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     try {
       const res = await fetch(`/api/therapy-sessions/${therapyToBook._id}/book`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: therapyDate, time: therapyTime })
+        body: JSON.stringify({ date: therapyDate, time: therapyTime, doctorId: therapyDoctor._id })
       });
       const data = await res.json();
       if (data.success) {
-        alert("Therapy booked successfully!");
-        setTherapyToBook(null);
-        setTherapyDate("");
-        setTherapyTime("");
+        // Process payment directly since it's online
+        await fetch("/api/therapy-sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "pay", sessionId: therapyToBook._id })
+        });
+        
+        alert("Payment successful & Therapy booked online!");
+        closeTherapyModal();
         if (patientId) fetchDashboardData(patientId);
       } else {
         alert(data.message || "Failed to book therapy");
@@ -262,7 +334,7 @@ export default function PatientDashboard() {
       console.error(err);
       alert("An error occurred");
     } finally {
-      setBookingTherapy(false);
+      setPaymentProcessing(false);
     }
   };
 
@@ -509,47 +581,150 @@ export default function PatientDashboard() {
       {therapyToBook && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-background rounded-3xl max-w-md w-full p-6 shadow-xl border border-border">
-            <h3 className="text-xl font-bold mb-2">Book Therapy Session</h3>
-            <p className="text-muted-foreground text-sm mb-6">Select a date and time for your prescribed {therapyToBook.name}.</p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-foreground mb-1">Date</label>
-                <input
-                  type="date"
-                  className="w-full rounded-xl border border-border bg-transparent p-3 text-sm focus:outline-none focus:border-primary font-medium"
-                  value={therapyDate}
-                  onChange={(e) => setTherapyDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-foreground mb-1">Time</label>
-                <input
-                  type="time"
-                  className="w-full rounded-xl border border-border bg-transparent p-3 text-sm focus:outline-none focus:border-primary font-medium"
-                  value={therapyTime}
-                  onChange={(e) => setTherapyTime(e.target.value)}
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4 border-t border-border mt-4">
-                <Button
-                  variant="outline"
-                  className="flex-1 rounded-xl"
-                  onClick={() => { setTherapyToBook(null); setTherapyDate(""); setTherapyTime(""); }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="flex-1 rounded-xl text-white font-bold"
-                  disabled={!therapyDate || !therapyTime || bookingTherapy}
-                  onClick={handleBookTherapy}
-                >
-                  {bookingTherapy ? "Booking..." : "Confirm Booking"}
-                </Button>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">Book Therapy Session</h3>
+              <Badge variant="outline" className="text-xs bg-primary/5 text-primary border-primary/20">Online Therapy</Badge>
             </div>
+            
+            {/* Step Indicators */}
+            <div className="flex items-center justify-between mb-6 relative">
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-border/50 rounded-full z-0"></div>
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-primary rounded-full z-0 transition-all duration-300" style={{ width: `${(therapyStep - 1) * 50}%` }}></div>
+              
+              <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${therapyStep >= 1 ? 'bg-primary border-primary text-white' : 'bg-card border-border text-muted-foreground'}`}>1</div>
+              <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${therapyStep >= 2 ? 'bg-primary border-primary text-white' : 'bg-card border-border text-muted-foreground'}`}>2</div>
+              <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${therapyStep >= 3 ? 'bg-primary border-primary text-white' : 'bg-card border-border text-muted-foreground'}`}>3</div>
+            </div>
+
+            {therapyStep === 1 && (
+              <div className="space-y-4">
+                <p className="text-sm font-bold text-foreground">Select a Specialist for {therapyToBook.name}</p>
+                {loadingDocs ? (
+                  <div className="text-sm text-center py-8 text-muted-foreground">Loading specialists...</div>
+                ) : doctorsList.length === 0 ? (
+                  <div className="text-sm text-center py-8 text-rose-500 font-medium">No specialists available right now.</div>
+                ) : (
+                  <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
+                    {doctorsList.map(doc => (
+                      <div 
+                        key={doc._id}
+                        onClick={() => setTherapyDoctor(doc)}
+                        className={`p-3 rounded-2xl border-2 cursor-pointer transition-all ${therapyDoctor?._id === doc._id ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/30'}`}
+                      >
+                        <div className="font-bold text-sm">{doc.name}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{doc.specialization}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="flex gap-3 pt-4 border-t border-border mt-4">
+                  <Button variant="outline" className="flex-1 rounded-xl" onClick={closeTherapyModal}>Cancel</Button>
+                  <Button 
+                    className="flex-1 rounded-xl text-white font-bold" 
+                    disabled={!therapyDoctor}
+                    onClick={() => setTherapyStep(2)}
+                  >
+                    Next Step
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {therapyStep === 2 && (
+              <div className="space-y-4">
+                <p className="text-sm font-bold text-foreground mb-4">Select Date & Time with {therapyDoctor?.name}</p>
+                
+                <div>
+                  <label className="block text-sm font-bold text-foreground mb-2">Select Date</label>
+                  <input
+                    type="date"
+                    className="w-full rounded-xl border border-border bg-transparent p-3 text-sm focus:outline-none focus:border-primary font-medium"
+                    value={therapyDate}
+                    onChange={(e) => {
+                      setTherapyDate(e.target.value);
+                      setTherapyTime("");
+                    }}
+                    min={new Date().toISOString().split("T")[0]}
+                  />
+                </div>
+                
+                {therapyDate && (
+                  <div className="space-y-2 pt-2 min-h-[120px]">
+                    <label className="text-xs font-bold text-foreground flex items-center gap-2 mb-2">
+                      <Clock className="w-3.5 h-3.5 text-primary" /> Available Time Slots
+                    </label>
+                    {loadingSlots ? (
+                      <div className="text-xs text-center py-4 text-muted-foreground">Loading slots...</div>
+                    ) : getAvailableTimeSlots().length === 0 ? (
+                      <div className="text-xs text-center py-4 text-rose-500 font-medium">No slots available for this date.</div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {getAvailableTimeSlots().map((time, index) => (
+                          <button
+                            key={`${time}-${index}`}
+                            onClick={() => setTherapyTime(time)}
+                            className={`py-2.5 px-4 rounded-xl border transition-all text-xs font-semibold ${
+                              therapyTime === time 
+                                ? "bg-primary text-white border-primary shadow-sm" 
+                                : "bg-background border-border hover:border-primary/50 text-foreground"
+                            }`}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4 border-t border-border mt-4">
+                  <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setTherapyStep(1)}>Back</Button>
+                  <Button 
+                    className="flex-1 rounded-xl text-white font-bold" 
+                    disabled={!therapyDate || !therapyTime}
+                    onClick={() => setTherapyStep(3)}
+                  >
+                    Next Step
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {therapyStep === 3 && (
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
+                  <h4 className="font-bold text-sm border-b border-border pb-2">Booking Summary</h4>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Therapy:</span>
+                    <span className="font-semibold">{therapyToBook.name} (Online)</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Specialist:</span>
+                    <span className="font-semibold">{therapyDoctor?.name}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Date & Time:</span>
+                    <span className="font-semibold">{therapyDate} at {therapyTime}</span>
+                  </div>
+                  <div className="flex justify-between text-sm pt-2 border-t border-border">
+                    <span className="font-bold">Total Amount:</span>
+                    <span className="font-bold text-primary">₹{therapyToBook.price}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-border mt-4">
+                  <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setTherapyStep(2)} disabled={paymentProcessing}>Back</Button>
+                  <Button 
+                    className="flex-1 rounded-xl text-white font-bold bg-primary hover:bg-primary/90" 
+                    onClick={handlePayAndBookTherapy}
+                    disabled={paymentProcessing}
+                  >
+                    {paymentProcessing ? "Processing..." : "Pay & Book"}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
