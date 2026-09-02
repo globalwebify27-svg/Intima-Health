@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Users, Calendar, Video, ArrowUpRight, Clock, FileSignature } from "lucide-react";
 import { formatTime12Hour } from "@/lib/utils";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
@@ -59,6 +60,29 @@ export default function DoctorDashboard() {
     window.addEventListener("focus", onFocus);
     return () => { clearInterval(interval); window.removeEventListener("focus", onFocus); };
   }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Loading Dashboard...</h1>
+          <p className="text-muted-foreground mt-2">Please wait while we fetch your schedule.</p>
+        </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="p-6 bg-card rounded-2xl border border-border shadow-sm animate-pulse">
+              <div className="h-4 w-24 bg-muted rounded mb-4" />
+              <div className="h-8 w-16 bg-muted rounded" />
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 p-6 bg-card rounded-2xl border border-border shadow-sm min-h-[400px] animate-pulse" />
+          <div className="p-6 bg-card rounded-2xl border border-border shadow-sm min-h-[400px] animate-pulse" />
+        </div>
+      </div>
+    );
+  }
 
   const handleStartSession = async (appointmentId: string) => {
     try {
@@ -157,7 +181,9 @@ export default function DoctorDashboard() {
         <div className="lg:col-span-2 p-6 bg-card rounded-2xl border border-border shadow-sm min-h-[400px]">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold">Today's Schedule</h3>
-            <Button variant="outline" size="sm">View Calendar</Button>
+            <Link href="/doctor/appointments">
+              <Button variant="outline" size="sm">View Calendar</Button>
+            </Link>
           </div>
           <div className="space-y-4">
             {todayApts.length > 0 ? (
@@ -214,15 +240,21 @@ export default function DoctorDashboard() {
         <div className="p-6 bg-card rounded-2xl border border-border shadow-sm min-h-[400px]">
           <h3 className="text-lg font-bold mb-6">Quick Actions</h3>
           <div className="space-y-3">
-            <Button variant="outline" className="w-full justify-start h-12" size="lg">
-              <FileSignature className="w-4 h-4 mr-2" /> Write Prescription
-            </Button>
-            <Button variant="outline" className="w-full justify-start h-12" size="lg">
-              <Clock className="w-4 h-4 mr-2" /> Update Availability
-            </Button>
-            <Button variant="outline" className="w-full justify-start h-12" size="lg">
-              <Users className="w-4 h-4 mr-2" /> View Patient Directory
-            </Button>
+            <Link href="/doctor/prescriptions" className="block">
+              <Button variant="outline" className="w-full justify-start h-12" size="lg">
+                <FileSignature className="w-4 h-4 mr-2" /> Write Prescription
+              </Button>
+            </Link>
+            <Link href="/doctor/availability" className="block">
+              <Button variant="outline" className="w-full justify-start h-12" size="lg">
+                <Clock className="w-4 h-4 mr-2" /> Update Availability
+              </Button>
+            </Link>
+            <Link href="/doctor/patients" className="block">
+              <Button variant="outline" className="w-full justify-start h-12" size="lg">
+                <Users className="w-4 h-4 mr-2" /> View Patient Directory
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
