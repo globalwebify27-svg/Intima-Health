@@ -257,7 +257,19 @@ export function Header() {
         
         <div className="flex items-center gap-4 shrink-0">
           <button 
-            onClick={openCart}
+            onClick={async () => {
+              try {
+                const res = await fetch("/api/auth/me");
+                const data = await res.json();
+                if (data.success && data.user) {
+                  openCart();
+                } else {
+                  router.push("/login?redirect=cart");
+                }
+              } catch (error) {
+                router.push("/login");
+              }
+            }}
             className="relative p-2 text-foreground/80 hover:text-primary transition-colors"
           >
             <ShoppingBag className="w-5 h-5" />
@@ -280,7 +292,7 @@ export function Header() {
               Log in
             </Link>
             <button 
-              onClick={openBooking}
+              onClick={() => openBooking()}
               className={cn(buttonVariants({ size: "lg" }), "rounded-full px-6 py-3 text-sm font-semibold shadow-sm hover:shadow-md transition-all")}
             >
               Get Started

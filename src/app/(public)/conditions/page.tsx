@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Activity, ShieldCheck, Zap, HeartPulse, Beaker, ShieldAlert, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Activity, ShieldCheck, Zap, HeartPulse, Beaker, ShieldAlert, ArrowRight, CheckCircle2, Heart } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useBookingModal } from "@/store/useBookingModal";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -41,7 +42,7 @@ const conditions = [
   {
     icon: Zap,
     title: "Erectile Dysfunction",
-    description: "Advanced medical evaluation and effective treatment plans tailored by senior specialist Dr. Deepak Kelkar.",
+    description: "Advanced medical evaluation and effective treatment plans tailored by our senior specialists.",
     treatments: ["Pharmacotherapy", "Vascular Assessment", "Psychological Counseling"],
     color: "bg-blue-50 text-blue-600",
     slug: "/conditions/erectile-dysfunction"
@@ -61,10 +62,36 @@ const conditions = [
     treatments: ["Affirmative Therapy", "Stress Management", "Individual Counseling"],
     color: "bg-purple-50 text-purple-600",
     slug: "/conditions/homosexual-anxiety"
+  },
+  {
+    icon: Heart,
+    title: "Depression & Mood Disorders",
+    description: "Depression and mood disorders can deeply impact every aspect of life. We offer evidence-based interventions including medication management and psychotherapy tailored to your unique needs.",
+    treatments: ["Medication Management", "Cognitive Behavioral Therapy (CBT)", "Lifestyle Interventions"],
+    color: "bg-rose-50 text-rose-600",
+    slug: "/conditions/depression"
+  },
+  {
+    icon: ShieldAlert,
+    title: "Anxiety & OCD Treatment",
+    description: "Anxiety and Obsessive-Compulsive Disorder (OCD) can be overwhelming. Our targeted approach combines medication and specialized therapeutic techniques to restore your peace of mind.",
+    treatments: ["Exposure and Response Prevention (ERP)", "Targeted Pharmacotherapy", "Mindfulness-Based Techniques"],
+    color: "bg-indigo-50 text-indigo-600",
+    slug: "/conditions/anxiety"
+  },
+  {
+    icon: Activity,
+    title: "Alcohol & Drug De-Addiction",
+    description: "Substance use disorders require compassionate, medically supervised care. We provide safe detoxification, rehabilitation, and long-term relapse prevention strategies.",
+    treatments: ["Medically Supervised Detox", "Inpatient Rehabilitation", "Relapse Prevention Therapy"],
+    color: "bg-emerald-50 text-emerald-600",
+    slug: "/conditions/de-addiction"
   }
 ];
 
 export default function ConditionsPage() {
+  const { openBooking } = useBookingModal();
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       
@@ -94,10 +121,7 @@ export default function ConditionsPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button size="lg" className="rounded-full px-8 text-base font-semibold shadow-xl">
-                Take Self Assessment
-              </Button>
-              <Button variant="outline" size="lg" className="rounded-full px-8 text-base font-semibold bg-transparent">
+              <Button onClick={() => openBooking()} size="lg" className="rounded-full px-8 text-base font-semibold shadow-xl">
                 Book a Consultation
               </Button>
             </div>
@@ -174,7 +198,7 @@ export default function ConditionsPage() {
             <p className="text-xl text-primary-foreground/80 mb-10 leading-relaxed">
               Every body is unique. Our specialists are experienced in a wide range of sexual and reproductive health issues. Speak with a doctor today to discuss your specific symptoms.
             </p>
-            <Button size="lg" variant="secondary" className="rounded-full px-10 py-6 text-lg font-bold shadow-2xl hover:scale-105 transition-transform">
+            <Button onClick={() => openBooking()} size="lg" variant="secondary" className="rounded-full px-10 py-6 text-lg font-bold shadow-2xl hover:scale-105 transition-transform">
               Schedule a Video Consultation
             </Button>
           </motion.div>

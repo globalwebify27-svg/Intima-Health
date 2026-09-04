@@ -80,7 +80,7 @@ const conditionDataMap: Record<string, ConditionDetails> = {
     title: "Erectile Dysfunction",
     badge: "Clinical Vascular & Psychosexual Care",
     heroHeadline: "Restore Firmness, Stamina, and Confidence",
-    heroSubtext: "Physician-guided diagnosis and evidence-based treatment plans for ED led by Dr. Deepak Kelkar.",
+    heroSubtext: "Physician-guided diagnosis and evidence-based treatment plans for ED led by our expert medical team.",
     description: "Erectile Dysfunction (ED) can stem from physical vascular factors, stress, or hormonal shifts. We provide full diagnostic evaluation and personalized treatment protocols.",
     causes: [
       { icon: Activity, title: "Vascular Restricted Blood Flow", description: "Reduced arterial inflow impacting erection firmness and duration." },
@@ -124,6 +124,74 @@ const conditionDataMap: Record<string, ConditionDetails> = {
       { title: "Affirmative Individual Therapy", description: "Supportive counseling centered on self-acceptance and emotional resilience." },
       { title: "Relationship & Intimacy Counseling", description: "Specialized care for same-sex couples navigating communication and intimacy." },
       { title: "Anxiety Reduction Protocols", description: "Therapeutic and medical options to relieve chronic panic or social fear." }
+    ]
+  },
+  "depression": {
+    title: "Depression & Mood Disorders",
+    badge: "Psychiatric Care",
+    heroHeadline: "Expert Care for Depression & Mood Disorders",
+    heroSubtext: "Comprehensive diagnostic evaluation and clinical treatment plans by our senior specialists to help you regain your quality of life.",
+    description: "Depression and mood disorders can deeply impact every aspect of life. We offer evidence-based interventions including medication management and psychotherapy tailored to your unique needs.",
+    causes: [
+      { icon: BrainCircuit, title: "Neurochemical Imbalance", description: "Imbalances in serotonin, dopamine, and norepinephrine affecting mood regulation." },
+      { icon: HeartPulse, title: "Chronic Stress", description: "Prolonged emotional or physical stress altering brain chemistry." },
+      { icon: ShieldAlert, title: "Genetic Factors", description: "Biological predispositions that make individuals more susceptible to mood disorders." }
+    ],
+    treatments: [
+      { title: "Medication Management", description: "Targeted psychiatric medications to restore neurochemical balance." },
+      { title: "Cognitive Behavioral Therapy (CBT)", description: "Structured counseling to identify and change negative thought patterns." },
+      { title: "Lifestyle Interventions", description: "Guidance on sleep, nutrition, and exercise to support mental health recovery." }
+    ]
+  },
+  "anxiety": {
+    title: "Anxiety & OCD Treatment",
+    badge: "Specialized Therapy",
+    heroHeadline: "Overcome Anxiety and OCD",
+    heroSubtext: "Comprehensive therapy and evidence-based medical care to help you break free from the cycle of anxiety and obsessive thoughts.",
+    description: "Anxiety and Obsessive-Compulsive Disorder (OCD) can be overwhelming. Our targeted approach combines medication and specialized therapeutic techniques to restore your peace of mind.",
+    causes: [
+      { icon: BrainCircuit, title: "Overactive Amygdala", description: "Heightened fear response and hypervigilance in the brain's emotional center." },
+      { icon: Activity, title: "Intrusive Thoughts", description: "Persistent, unwanted thoughts that drive compulsive behaviors." },
+      { icon: ShieldAlert, title: "Environmental Triggers", description: "Stressful life events that precipitate or worsen anxiety symptoms." }
+    ],
+    treatments: [
+      { title: "Exposure and Response Prevention (ERP)", description: "The gold standard psychological treatment for OCD." },
+      { title: "Targeted Pharmacotherapy", description: "Use of SSRIs and other medications to reduce anxiety intensity." },
+      { title: "Mindfulness-Based Techniques", description: "Skills training to anchor yourself in the present moment and reduce panic." }
+    ]
+  },
+  "de-addiction": {
+    title: "Alcohol & Drug De-Addiction",
+    badge: "Rehabilitation Services",
+    heroHeadline: "A New Beginning: Comprehensive De-Addiction",
+    heroSubtext: "Inpatient rehabilitation and outpatient support at Ashakiran Rehabilitation Centre & Sanmitra Manas.",
+    description: "Substance use disorders require compassionate, medically supervised care. We provide safe detoxification, rehabilitation, and long-term relapse prevention strategies.",
+    causes: [
+      { icon: BrainCircuit, title: "Dopamine Dysregulation", description: "Substances altering the brain's reward pathway leading to dependency." },
+      { icon: ShieldAlert, title: "Self-Medication", description: "Using substances to cope with underlying trauma or psychiatric conditions." },
+      { icon: Activity, title: "Physiological Dependence", description: "The body adapting to the substance, resulting in withdrawal symptoms." }
+    ],
+    treatments: [
+      { title: "Medically Supervised Detox", description: "Safe and comfortable withdrawal management." },
+      { title: "Inpatient Rehabilitation", description: "Structured residential programs for intensive recovery support." },
+      { title: "Relapse Prevention Therapy", description: "Ongoing counseling and support groups to maintain long-term sobriety." }
+    ]
+  },
+  "mind-gym": {
+    title: "Happiness 20 – Mind Gym",
+    badge: "Mental Fitness",
+    heroHeadline: "Transform Your Stress in 20 Minutes a Day",
+    heroSubtext: "A guided mental fitness program designed to build resilience, focus, and lasting emotional well-being.",
+    description: "Physical fitness requires the gym, and mental fitness requires consistent practice. The Happiness 20 Mind Gym is a daily 20-minute protocol to optimize your psychological health.",
+    causes: [
+      { icon: BrainCircuit, title: "Mental Fatigue", description: "Exhaustion from constant decision-making and cognitive overload." },
+      { icon: HeartPulse, title: "Burnout", description: "Emotional depletion from sustained professional or personal stress." },
+      { icon: ShieldCheck, title: "Lack of Focus", description: "Difficulty concentrating due to a fragmented attention span." }
+    ],
+    treatments: [
+      { title: "Guided Meditation", description: "Daily audio-guided sessions to calm the nervous system." },
+      { title: "Cognitive Restructuring", description: "Quick exercises to reframe challenges and build optimism." },
+      { title: "Resilience Training", description: "Techniques to recover faster from setbacks and maintain peak performance." }
     ]
   }
 };
@@ -241,7 +309,7 @@ export default function ConditionDetailPage({ params }: { params: Promise<{ slug
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="max-w-2xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-serif mb-4">Confidential & Expert Care</h2>
             <p className="text-lg text-primary-foreground/80 mb-8">
-              Schedule a discrete consultation with Dr. Deepak Kelkar's psychiatric and psychosexual medical team.
+              Schedule a discrete consultation with our psychiatric and psychosexual medical team.
             </p>
             <BookNowButton className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "rounded-full px-10 py-5 text-base font-bold shadow-xl hover:scale-105 transition-transform")}>
               Get Started

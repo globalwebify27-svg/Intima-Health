@@ -5,14 +5,15 @@ import { useBookingModal } from "@/store/useBookingModal";
 
 interface BookNowButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
+  prefilledData?: any;
 }
 
-export function BookNowButton({ children, className, ...props }: BookNowButtonProps) {
+export function BookNowButton({ children, className, prefilledData, ...props }: BookNowButtonProps) {
   const { openBooking } = useBookingModal();
 
   return (
     <button
-      onClick={() => openBooking()}
+      onClick={() => openBooking(prefilledData)}
       className={className}
       {...props}
     >

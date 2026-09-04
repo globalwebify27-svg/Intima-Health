@@ -319,6 +319,16 @@ export default function ContentPage() {
                         </select>
                       </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold">Excerpt</label>
+                        <textarea required rows={2} value={formData.excerpt || ""} onChange={e => setFormData({...formData, excerpt: e.target.value})} className="w-full p-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none resize-y" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold">Read Time (e.g., 5 min read)</label>
+                        <input required type="text" value={formData.readTime || ""} onChange={e => setFormData({...formData, readTime: e.target.value})} className="w-full h-10 px-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none" />
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       <label className="text-sm font-bold">Category</label>
                       <select value={formData.categoryId || ""} onChange={e => setFormData({...formData, categoryId: e.target.value})} className="w-full h-10 px-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none">

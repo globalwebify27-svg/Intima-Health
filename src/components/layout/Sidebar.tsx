@@ -69,7 +69,7 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
       <div className="p-4 mt-auto border-t border-border">
         <div className="flex flex-col gap-2">
           {roleName === "Patient" && (
-            <Button onClick={openBooking} className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-sm h-11 mb-2">
+            <Button onClick={() => openBooking()} className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-sm h-11 mb-2">
               Book Appointment
             </Button>
           )}

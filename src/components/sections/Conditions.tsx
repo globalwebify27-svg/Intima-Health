@@ -10,7 +10,7 @@ const conditions = [
   {
     id: "depression",
     title: "Depression & Mood Disorders",
-    description: "Expert diagnostic care and clinical treatment plans by Dr. Deepak Kelkar.",
+    description: "Expert diagnostic care and clinical treatment plans by our senior specialists.",
     icon: Heart,
     href: "/conditions/depression"
   },
@@ -27,13 +27,6 @@ const conditions = [
     description: "Inpatient rehabilitation at Ashakiran Rehabilitation Centre & Sanmitra Manas.",
     icon: Activity,
     href: "/conditions/de-addiction"
-  },
-  {
-    id: "mind-gym",
-    title: "Happiness 20 – Mind Gym",
-    description: "Daily 20-minute guided mental fitness and stress transformation program.",
-    icon: Sparkles,
-    href: "/conditions/mind-gym"
   }
 ];
 
@@ -204,7 +197,7 @@ export function Conditions() {
 
           {/* Wide Card: Couple Therapy */}
           <motion.div variants={cardVariants} className="lg:col-span-3">
-            <button onClick={openBooking} className="group block h-full w-full text-left cursor-pointer">
+            <button onClick={() => openBooking()} className="group block h-full w-full text-left cursor-pointer">
               <div className="h-full rounded-[2rem] bg-gradient-to-r from-primary to-secondary p-1 border border-transparent shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgb(122,46,122,0.2)] hover:-translate-y-2 transition-all duration-500 relative overflow-hidden flex flex-col">
                 <div className="bg-white rounded-[1.9rem] p-8 md:p-12 w-full h-full flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
                   

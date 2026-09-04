@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Video, CalendarCheck, FileBadge, ShieldCheck, Headphones, ArrowRight, Activity, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useBookingModal } from "@/store/useBookingModal";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -38,6 +39,8 @@ const steps = [
 ];
 
 export default function ConsultationsPage() {
+  const { openBooking } = useBookingModal();
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       
@@ -69,7 +72,7 @@ export default function ConsultationsPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="rounded-full px-8 text-base font-semibold shadow-xl group">
+                <Button size="lg" onClick={() => openBooking()} className="rounded-full px-8 text-base font-semibold shadow-xl group">
                   Schedule a Consultation
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
@@ -220,7 +223,7 @@ export default function ConsultationsPage() {
           >
             <h2 className="text-4xl md:text-5xl font-serif mb-6">Ready to take control of your health?</h2>
             <p className="text-xl text-primary-foreground/80 mb-10">Appointments available as early as today.</p>
-            <Button size="lg" variant="secondary" className="rounded-full px-10 py-6 text-lg font-bold shadow-2xl hover:scale-105 transition-transform">
+            <Button size="lg" variant="secondary" onClick={() => openBooking()} className="rounded-full px-10 py-6 text-lg font-bold shadow-2xl hover:scale-105 transition-transform">
               Find Available Times
             </Button>
           </motion.div>

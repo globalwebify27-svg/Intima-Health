@@ -27,6 +27,7 @@ export interface IDoctor {
   slotDuration?: number; // duration of patient checking slot in minutes
   conditions?: string[];
   status: "Active" | "Inactive" | "Pending";
+  showOnHomepage?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
   createdBy?: string;

@@ -81,6 +81,8 @@ export class DoctorService {
     specialization?: string;
     status?: string;
     clinicId?: string;
+    state?: string;
+    city?: string;
     page?: number;
     limit?: number;
   }) {

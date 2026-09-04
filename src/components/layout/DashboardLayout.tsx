@@ -78,7 +78,7 @@ export function DashboardLayout({ children, links, roleName, basePath }: Dashboa
 
           <div className="flex items-center gap-4">
             {roleName === "Patient" && (
-              <Button onClick={openBooking} className="hidden sm:flex rounded-full px-5 font-bold bg-primary hover:bg-primary/90 text-white shadow-sm text-xs">
+              <Button onClick={() => openBooking()} className="hidden sm:flex rounded-full px-5 font-bold shadow-md hover:-translate-y-0.5 transition-all">
                 Book Appointment
               </Button>
             )}

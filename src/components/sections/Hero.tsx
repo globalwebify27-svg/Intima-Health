@@ -129,7 +129,7 @@ export function Hero() {
             
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
-                <Button size="lg" onClick={openBooking} className="rounded-2xl px-8 py-7 text-base font-bold shadow-float hover:shadow-lg transition-all w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-none">
+                <Button size="lg" onClick={() => openBooking()} className="rounded-2xl px-8 py-7 text-base font-bold shadow-float hover:shadow-lg transition-all w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-none">
                   Book Appointment <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </motion.div>

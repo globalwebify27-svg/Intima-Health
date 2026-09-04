@@ -30,6 +30,8 @@ export interface IPost {
   title: string;
   slug: string;
   content: string;
+  excerpt?: string;
+  readTime?: string;
   categoryId?: Schema.Types.ObjectId;
   author: string;
   status: "Draft" | "Published";
@@ -44,6 +46,8 @@ const PostSchema = new Schema<IPost>({
   title: { type: String, required: true },
   slug: { type: String, required: true, unique: true, index: true },
   content: { type: String, required: true },
+  excerpt: { type: String },
+  readTime: { type: String },
   categoryId: { type: Schema.Types.ObjectId, ref: "Category" },
   author: { type: String, required: true },
   status: { type: String, enum: ["Draft", "Published"], default: "Draft" },

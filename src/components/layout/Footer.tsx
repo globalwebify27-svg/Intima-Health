@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Mail, MessageCircle, Globe } from "lucide-react";
+import { Mail, MessageCircle, Globe } from "lucide-react";
+import { NewsletterForm } from "@/components/ui/newsletter-form";
 
 export function Footer() {
   return (
@@ -19,16 +20,7 @@ export function Footer() {
               </p>
             </div>
             
-            <div className="w-full max-w-md relative group">
-              <input 
-                type="email" 
-                placeholder="Enter your email address" 
-                className="w-full bg-white border border-border/60 rounded-full px-8 py-5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#4A154B]/50 transition-all font-medium shadow-sm"
-              />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#4A154B] hover:bg-[#3d113e] text-white rounded-full flex items-center justify-center transition-all group-hover:scale-105 shadow-md">
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
+            <NewsletterForm />
             
           </div>
         </div>

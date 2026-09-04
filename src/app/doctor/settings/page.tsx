@@ -32,7 +32,6 @@ export default function DoctorSettingsPage() {
   const [avatar, setAvatar] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [experience, setExperience] = useState("");
-  const [fees, setFees] = useState("");
   const [qualifications, setQualifications] = useState("");
   const [bio, setBio] = useState("");
 
@@ -57,7 +56,6 @@ export default function DoctorSettingsPage() {
           setAvatar(doc.avatar || "");
           setSpecialization(doc.specialization || "");
           setExperience(String(doc.experience || "0"));
-          setFees(String(doc.fees || "0"));
           setQualifications(doc.qualifications?.join(", ") || "");
           setBio(doc.bio || "");
         }
@@ -104,7 +102,6 @@ export default function DoctorSettingsPage() {
       avatar: avatar || undefined,
       specialization,
       experience: Number(experience),
-      fees: Number(fees),
       qualifications: qualifications.split(",").map((q) => q.trim()).filter(Boolean),
       bio,
     };
@@ -264,18 +261,6 @@ export default function DoctorSettingsPage() {
                   type="number"
                   value={experience}
                   onChange={(e) => setExperience(e.target.value)}
-                  className="rounded-xl h-11 border-border/60"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="fees" className="text-sm font-bold flex items-center gap-1.5"><DollarSign className="w-4 h-4 text-muted-foreground" /> Consultation Fees (₹)</Label>
-                <Input
-                  id="fees"
-                  type="number"
-                  value={fees}
-                  onChange={(e) => setFees(e.target.value)}
                   className="rounded-xl h-11 border-border/60"
                   required
                 />

@@ -65,12 +65,20 @@ export class ConsultationRepository {
       // Only include appointments where payment has been made
       const appointments = await AppointmentModel.find({ clinicId: filters.clinicId, paymentStatus: "Paid" }).select("_id").exec();
       const appointmentIds = appointments.map(a => a._id);
-      query.appointmentId = { $in: appointmentIds };
+      query.$or = [
+        { appointmentId: { $in: appointmentIds } },
+        { appointmentId: { $exists: false } },
+        { appointmentId: null }
+      ];
     } else if (filters.doctorId) {
       // For doctor-specific queries, restrict to paid appointments only
       const paidApts = await AppointmentModel.find({ doctorId: filters.doctorId, paymentStatus: "Paid" }).select("_id").exec();
       const paidAptIds = paidApts.map(a => a._id);
-      query.appointmentId = { $in: paidAptIds };
+      query.$or = [
+        { appointmentId: { $in: paidAptIds } },
+        { appointmentId: { $exists: false } },
+        { appointmentId: null }
+      ];
     }
 
     const consultations = await ConsultationModel.find(query)

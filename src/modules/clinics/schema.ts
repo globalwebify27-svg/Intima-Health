@@ -2,6 +2,7 @@ import mongoose, { Schema } from "mongoose";
 
 export interface IClinic {
   name: string;
+  state?: string;
   city: string; // e.g. "Pune", "Mumbai", "Delhi"
   address: string;
   phone: string;
@@ -13,6 +14,7 @@ export interface IClinic {
 
 const ClinicSchema = new Schema<IClinic>({
   name: { type: String, required: true },
+  state: { type: String },
   city: { type: String, required: true, index: true },
   address: { type: String, required: true },
   phone: { type: String, required: true },
@@ -22,6 +24,8 @@ const ClinicSchema = new Schema<IClinic>({
   timestamps: true
 });
 
+// Fix for Next.js HMR
+delete mongoose.models.Clinic;
 export const ClinicModel = mongoose.models.Clinic || mongoose.model<IClinic>("Clinic", ClinicSchema);
 
 export interface IClinicService {

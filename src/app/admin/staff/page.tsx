@@ -36,6 +36,7 @@ interface StaffData {
   }>;
   qualifications?: string[];
   conditions?: string[];
+  showOnHomepage?: boolean;
 }
 
 export default function StaffDirectoryPage() {
@@ -64,6 +65,7 @@ export default function StaffDirectoryPage() {
   const [bio, setBio] = useState("");
   const [qualificationsText, setQualificationsText] = useState("");
   const [conditionsText, setConditionsText] = useState("");
+  const [showOnHomepage, setShowOnHomepage] = useState(false);
   const [availability, setAvailability] = useState<Array<{ day: string; slots: Array<{ start: string; end: string }> }>>([]);
 
   // Time Slot Builder Form state
@@ -136,6 +138,7 @@ export default function StaffDirectoryPage() {
     setBio("");
     setQualificationsText("");
     setConditionsText("");
+    setShowOnHomepage(false);
     setAvailability([]);
     setSubmitError("");
     setSuccessMsg("");
@@ -171,6 +174,7 @@ export default function StaffDirectoryPage() {
         salary: salary ? Number(salary) : undefined,
         qualifications: qualificationsText ? qualificationsText.split(",").map(q => q.trim()).filter(Boolean) : ["MD"],
         conditions: conditionsText ? conditionsText.split(",").map(c => c.trim().toLowerCase()).filter(Boolean) : [],
+        showOnHomepage,
         availability,
       };
     }
@@ -220,6 +224,7 @@ export default function StaffDirectoryPage() {
       setBio(member.bio || "");
       setQualificationsText(member.qualifications?.join(", ") || "");
       setConditionsText(member.conditions?.join(", ") || "");
+      setShowOnHomepage(member.showOnHomepage || false);
       setAvailability(member.availability || []);
     }
 
@@ -253,7 +258,12 @@ export default function StaffDirectoryPage() {
       header: "Staff Name",
       cell: ({ row }) => (
         <div>
-          <div className="font-bold text-foreground">{row.original.name}</div>
+          <div className="font-bold text-foreground flex items-center gap-2">
+            {row.original.name}
+            {row.original.showOnHomepage && (
+              <Badge variant="outline" className="bg-primary/5 text-primary text-[10px] py-0 h-4 border-primary/20">Featured</Badge>
+            )}
+          </div>
           <div className="text-xs text-muted-foreground mt-0.5">{row.original.email}</div>
         </div>
       ),
@@ -582,6 +592,19 @@ export default function StaffDirectoryPage() {
                           placeholder="Brief biography details about experience and specialization..."
                           className="w-full p-2.5 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                         />
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 sm:col-span-2 mt-2 bg-primary/5 border border-primary/10 p-3 rounded-lg">
+                        <input
+                          type="checkbox"
+                          id="showOnHomepage"
+                          checked={showOnHomepage}
+                          onChange={(e) => setShowOnHomepage(e.target.checked)}
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                        />
+                        <label htmlFor="showOnHomepage" className="text-sm font-semibold cursor-pointer">
+                          Feature Doctor on Public Homepage
+                        </label>
                       </div>
                     </div>
 

@@ -50,6 +50,7 @@ export async function GET() {
         availability: docProfile ? docProfile.availability : undefined,
         qualifications: docProfile ? docProfile.qualifications : undefined,
         conditions: docProfile ? docProfile.conditions : undefined,
+        showOnHomepage: docProfile ? docProfile.showOnHomepage : undefined,
       };
     });
 
@@ -120,6 +121,7 @@ export async function POST(req: Request) {
         qualifications: doctorDetails.qualifications || ["MD"],
         availability: doctorDetails.availability || [],
         conditions: doctorDetails.conditions || [],
+        showOnHomepage: doctorDetails.showOnHomepage || false,
         status: status || "Active"
       });
 

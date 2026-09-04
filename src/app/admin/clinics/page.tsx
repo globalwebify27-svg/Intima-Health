@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 interface ClinicData {
   _id: string;
   name: string;
+  state?: string;
   city: string;
   address: string;
   phone: string;
@@ -39,6 +40,7 @@ export default function ClinicsAdminPage() {
 
   // Form Fields
   const [name, setName] = useState("");
+  const [state, setState] = useState("");
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
@@ -71,6 +73,7 @@ export default function ClinicsAdminPage() {
 
     const body = {
       name,
+      state,
       city,
       address,
       phone,
@@ -107,6 +110,7 @@ export default function ClinicsAdminPage() {
     setIsEditMode(true);
     setEditClinicId(clinic._id);
     setName(clinic.name);
+    setState(clinic.state || "");
     setCity(clinic.city);
     setAddress(clinic.address);
     setPhone(clinic.phone);
@@ -141,6 +145,7 @@ export default function ClinicsAdminPage() {
 
   const resetForm = () => {
     setName("");
+    setState("");
     setCity("");
     setAddress("");
     setPhone("");
@@ -167,6 +172,11 @@ export default function ClinicsAdminPage() {
           </button>
         );
       }
+    },
+    {
+      accessorKey: "state",
+      header: "State",
+      cell: ({ row }) => row.getValue("state") || "—"
     },
     {
       accessorKey: "city",
@@ -341,15 +351,28 @@ export default function ClinicsAdminPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-sm font-bold">City *</label>
-                      <input
-                        type="text"
-                        placeholder="Pune"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-sm font-bold">State *</label>
+                        <input
+                          type="text"
+                          placeholder="Maharashtra"
+                          value={state}
+                          onChange={(e) => setState(e.target.value)}
+                          className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-sm font-bold">City *</label>
+                        <input
+                          type="text"
+                          placeholder="Pune"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-1">
@@ -428,7 +451,7 @@ export default function ClinicsAdminPage() {
                 {step < 2 ? (
                   <Button
                     onClick={() => {
-                      if (!name || !city || !address) {
+                      if (!name || !state || !city || !address) {
                         setSubmitError("Please fill out all required fields.");
                         return;
                       }
@@ -494,6 +517,7 @@ export default function ClinicsAdminPage() {
               </div>
 
               <div className="space-y-3 border-t border-b border-border py-4">
+                <p className="text-sm"><strong>State:</strong> {viewClinic.state || "—"}</p>
                 <p className="text-sm"><strong>City:</strong> {viewClinic.city}</p>
                 <p className="text-sm"><strong>Address:</strong> {viewClinic.address}</p>
                 <p className="text-sm"><strong>WhatsApp / Phone:</strong> {viewClinic.phone}</p>

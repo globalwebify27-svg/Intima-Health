@@ -20,10 +20,10 @@ export const CreateDoctorSchema = z.object({
   bio: z.string().min(10, "Bio must be at least 10 characters"),
   fees: z.number().positive("Fees must be a positive number"),
   qualifications: z.array(z.string()).min(1, "At least one qualification is required"),
-  availability: z.array(DayAvailabilitySchema).optional().default([]),
-  slotDuration: z.number().int().positive().optional().default(30),
+  availability: z.array(DayAvailabilitySchema).optional(),
+  slotDuration: z.number().int().positive().optional(),
   conditions: z.array(z.string()).optional(),
-  status: z.enum(["Active", "Inactive", "Pending"]).optional().default("Pending"),
+  status: z.enum(["Active", "Inactive", "Pending"]).optional(),
 });
 
 export const UpdateDoctorSchema = CreateDoctorSchema.partial();

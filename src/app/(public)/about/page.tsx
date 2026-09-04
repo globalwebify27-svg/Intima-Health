@@ -271,10 +271,10 @@ export default function AboutPage() {
                 Embrace Life with Confidence
               </h2>
               <p className="text-lg text-background/80 mb-8 leading-relaxed">
-                Intimate health is not just about avoiding discomfort; it's about embracing vitality, pleasure, and confidence in every stage of life. Our community is built on open conversations and shared experiences.
+                Intimate health is not just about avoiding discomfort; it's about embracing vitality, pleasure, and confidence in every stage of life. Our clinic is dedicated to providing compassionate, personalized care to help you thrive.
               </p>
-              <Link href="/community" className="inline-flex items-center text-primary-foreground font-medium hover:text-primary-foreground/80 transition-colors">
-                Join the conversation
+              <Link href="/doctors" className="inline-flex items-center text-primary-foreground font-medium hover:text-primary-foreground/80 transition-colors">
+                Meet our experts
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
             </motion.div>

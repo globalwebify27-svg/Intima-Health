@@ -1,36 +1,23 @@
 "use client";
 
 import { ArrowRight, Award, ShieldCheck, Microscope, Stethoscope, Dna } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import Image from "next/image";
 import { motion, Variants } from "framer-motion";
+import Link from "next/link";
+import { BookNowButton } from "@/components/ui/book-now-button";
 
-const experts = [
-  {
-    id: "expert-1",
-    name: "Dr. Deepak Kelkar",
-    specialty: "Senior Psychiatrist & Founder",
-    credentials: "MD Psychiatry, Mind Gym Pioneer",
-    experience: "35+ Years Practice",
-    image: "/images/doctor_1.png"
-  },
-  {
-    id: "expert-2",
-    name: "Dr. Amol Kelkar",
-    specialty: "Consultant Psychiatrist",
-    credentials: "MD Psychiatry, De-Addiction Specialist",
-    experience: "12+ Years Practice",
-    image: "/images/doctor_2.png"
-  },
-  {
-    id: "expert-3",
-    name: "Dr. Radhika Kelkar",
-    specialty: "Child & Adolescent Psychiatrist",
-    credentials: "DPM, Fellowship in Child Psychiatry",
-    experience: "10+ Years Practice",
-    image: "/images/doctor_3.png"
-  }
-];
+import { useEffect, useState } from "react";
+
+interface Doctor {
+  _id: string;
+  name: string;
+  specialization: string;
+  qualifications: string[];
+  experience: number;
+  avatar?: string;
+  clinicId?: any;
+}
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -50,6 +37,30 @@ const cardVariants: Variants = {
 };
 
 export function FeaturedExperts() {
+  const [experts, setExperts] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDoctors() {
+      try {
+        const res = await fetch("/api/public/doctors");
+        const json = await res.json();
+        if (json.success && json.data) {
+          setExperts(json.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch featured doctors", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDoctors();
+  }, []);
+
+  if (loading || experts.length === 0) {
+    return null; // or a loading state if preferred, but hiding is cleaner if no data
+  }
+
   return (
     <section className="py-24 lg:py-32 relative overflow-hidden bg-primary/[0.02]">
       
@@ -103,7 +114,7 @@ export function FeaturedExperts() {
         >
           {experts.map((expert) => (
             <motion.div 
-              key={expert.id} 
+              key={expert._id} 
               variants={cardVariants}
               className="bg-white rounded-[2.5rem] overflow-hidden border border-border/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(122,46,122,0.12)] hover:-translate-y-2 transition-all duration-500 group flex flex-col items-center text-center p-10 lg:p-12 relative"
             >
@@ -111,14 +122,18 @@ export function FeaturedExperts() {
               {/* Decorative top blur */}
               <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-primary/[0.03] to-transparent pointer-events-none" />
               
-              <div className="relative w-40 h-40 rounded-full mb-8 shadow-xl ring-4 ring-white group-hover:scale-105 transition-transform duration-500 z-10">
-                <Image 
-                  src={expert.image}
-                  alt={expert.name}
-                  fill
-                  sizes="160px"
-                  className="object-cover rounded-full"
-                />
+              <div className="relative w-40 h-40 rounded-full mb-8 shadow-xl ring-4 ring-white group-hover:scale-105 transition-transform duration-500 z-10 bg-slate-100 flex items-center justify-center overflow-hidden">
+                {expert.avatar ? (
+                  <Image 
+                    src={expert.avatar}
+                    alt={expert.name}
+                    fill
+                    sizes="160px"
+                    className="object-cover rounded-full"
+                  />
+                ) : (
+                  <Stethoscope className="w-16 h-16 text-slate-300" />
+                )}
               </div>
               
               <div className="flex items-center justify-center gap-2 mb-4 bg-primary/5 px-4 py-1.5 rounded-full z-10">
@@ -127,30 +142,40 @@ export function FeaturedExperts() {
               </div>
               
               <h3 className="text-2xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors z-10">{expert.name}</h3>
-              <p className="text-muted-foreground font-semibold mb-8 text-lg z-10">{expert.specialty}</p>
+              <p className="text-muted-foreground font-semibold mb-8 text-lg z-10">{expert.specialization}</p>
               
-              <div className="flex flex-col gap-4 mb-10 w-full bg-slate-50 border border-slate-100 rounded-3xl p-5 z-10">
-                <div className="flex items-center justify-center text-sm font-medium text-foreground/80">
-                  <Award className="w-4 h-4 mr-2 text-primary" strokeWidth={2.5} />
-                  {expert.credentials}
+                <div className="flex flex-col gap-4 mt-auto w-full bg-slate-50 border border-slate-100 rounded-3xl p-5 z-10 mb-4">
+                  <div className="text-center text-sm font-medium text-foreground/80 leading-snug">
+                    <Award className="w-4 h-4 mr-1.5 inline-block text-primary align-text-bottom" strokeWidth={2.5} />
+                    <span>{expert.qualifications?.join(", ") || "Certified Professional"}</span>
+                  </div>
+                  <div className="flex items-center justify-center text-sm font-medium text-foreground/80">
+                    <span className="w-4 h-4 mr-2 flex items-center justify-center text-primary font-black text-lg">+</span>
+                    {expert.experience} Years Practice
+                  </div>
                 </div>
-                <div className="flex items-center justify-center text-sm font-medium text-foreground/80">
-                  <span className="w-4 h-4 mr-2 flex items-center justify-center text-primary font-black text-lg">+</span>
-                  {expert.experience}
+
+                <div className="w-full z-10 mt-auto">
+                  <BookNowButton 
+                    prefilledData={{
+                      doctorId: expert._id,
+                      clinic: expert.clinicId?._id || expert.clinicId,
+                      city: expert.clinicId?.city
+                    }}
+                    className="w-full h-12 rounded-full font-bold bg-primary hover:bg-primary/90 text-white transition-all shadow-md hover:shadow-lg"
+                  >
+                    Book Consultation
+                  </BookNowButton>
                 </div>
-              </div>
               
-              <Button className="w-full rounded-2xl py-7 font-bold mt-auto hover:bg-primary hover:text-white transition-all text-lg shadow-sm hover:shadow-lg z-10" variant="outline">
-                Schedule a Visit
-              </Button>
             </motion.div>
           ))}
         </motion.div>
         
         <div className="mt-20 text-center">
-          <Button variant="ghost" className="text-primary font-bold text-lg group hover:bg-primary/5 rounded-full px-8 py-6">
+          <Link href="/doctors" className={buttonVariants({ variant: "ghost", className: "text-primary font-bold text-lg group hover:bg-primary/5 rounded-full px-8 py-6" })}>
             See the full clinical team <ArrowRight className="ml-3 h-5 w-5 transform group-hover:translate-x-1 transition-transform" />
-          </Button>
+          </Link>
         </div>
       </div>
     </section>

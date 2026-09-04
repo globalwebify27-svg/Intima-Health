@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import crypto from "crypto";
+
 
 export async function POST(req: Request) {
   try {
@@ -18,27 +16,13 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const folder = (formData.get("folder") as string) || "avatars";
-    
-    // Create public/uploads/[folder] directory if not exist
-    const uploadDir = path.join(process.cwd(), "public", "uploads", folder);
-    await mkdir(uploadDir, { recursive: true });
-
-    // Generate unique file name
-    const uniqueSuffix = crypto.randomBytes(8).toString("hex");
-    const fileExtension = path.extname(file.name) || ".png";
-    const fileName = `${uniqueSuffix}${fileExtension}`;
-    const filePath = path.join(uploadDir, fileName);
-
-    // Write file
-    await writeFile(filePath, buffer);
-
-    // Return relative public path
-    const fileUrl = `/uploads/${folder}/${fileName}`;
+    const mimeType = file.type || "image/png";
+    const base64String = buffer.toString("base64");
+    const fileUrl = `data:${mimeType};base64,${base64String}`;
 
     return NextResponse.json({
       success: true,
-      message: "File uploaded successfully.",
+      message: "File converted to base64 successfully.",
       url: fileUrl,
     });
   } catch (error: any) {

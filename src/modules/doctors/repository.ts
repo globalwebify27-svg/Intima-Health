@@ -35,6 +35,8 @@ export class DoctorRepository {
     specialization?: string;
     status?: string;
     clinicId?: string;
+    state?: string;
+    city?: string;
     page?: number;
     limit?: number;
   }): Promise<{ doctors: IDoctor[]; total: number }> {
@@ -48,7 +50,25 @@ export class DoctorRepository {
       query.status = filters.status;
     }
 
-    if (filters.clinicId) {
+    if (filters.state || filters.city) {
+      // Lazy load to avoid circular dependency issues
+      const { ClinicModel } = require("@/modules/clinics/schema");
+      const clinicQuery: Record<string, any> = { status: "Active" };
+      if (filters.state) clinicQuery.state = filters.state;
+      if (filters.city) clinicQuery.city = filters.city;
+      
+      const clinics = await ClinicModel.find(clinicQuery).select('_id').exec();
+      const clinicIds = clinics.map((c: any) => c._id);
+      
+      if (filters.clinicId) {
+        if (!clinicIds.some((id: any) => id.toString() === filters.clinicId)) {
+          return { doctors: [], total: 0 };
+        }
+        query.clinicId = filters.clinicId;
+      } else {
+        query.clinicId = { $in: clinicIds };
+      }
+    } else if (filters.clinicId) {
       query.clinicId = filters.clinicId;
     }
 

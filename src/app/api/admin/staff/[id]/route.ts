@@ -75,6 +75,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
           if (doctorDetails.qualifications) doctor.qualifications = doctorDetails.qualifications;
           if (doctorDetails.availability) doctor.availability = doctorDetails.availability;
           if (doctorDetails.conditions) doctor.conditions = doctorDetails.conditions;
+          if (doctorDetails.showOnHomepage !== undefined) doctor.showOnHomepage = doctorDetails.showOnHomepage;
         }
         await doctor.save();
       }

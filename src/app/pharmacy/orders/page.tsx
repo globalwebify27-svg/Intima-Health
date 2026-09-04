@@ -6,7 +6,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MoreHorizontal, Package, Search } from "lucide-react";
+import { Package, Search } from "lucide-react";
 
 interface OrderItem {
   productId?: {
@@ -160,9 +160,6 @@ export default function PharmacyOrdersPage() {
                 <Package className="w-4 h-4 mr-2" /> Fulfill
               </Button>
             )}
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
           </div>
         );
       },

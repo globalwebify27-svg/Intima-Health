@@ -65,7 +65,7 @@ interface Doctor {
 }
 
 export function BookingModal() {
-  const { isOpen, closeBooking } = useBookingModal();
+  const { isOpen, closeBooking, prefilledData } = useBookingModal();
   const router = useRouter();
 
   const [step, setStep] = useState(1);
@@ -137,6 +137,16 @@ export function BookingModal() {
     } else {
       // Fetch services
       fetchServices();
+      
+      if (prefilledData) {
+        setFormData(prev => ({
+          ...prev,
+          city: prefilledData.city?.toLowerCase() || "",
+          clinic: prefilledData.clinic || "",
+          doctorId: prefilledData.doctorId || "",
+        }));
+      }
+
       // Check if user is logged in
       fetch("/api/auth/me")
         .then(res => res.json())
@@ -217,6 +227,16 @@ export function BookingModal() {
       setRealSlots([]);
     }
   }, [isOpen, formData.doctorId, formData.date]);
+
+  // Auto-resolve city if clinic is prefilled but city is missing
+  useEffect(() => {
+    if (formData.clinic && !formData.city && clinicsList.length > 0) {
+      const clinicObj = clinicsList.find(c => c._id === formData.clinic);
+      if (clinicObj && clinicObj.city) {
+        setFormData(prev => ({ ...prev, city: clinicObj.city.toLowerCase() }));
+      }
+    }
+  }, [clinicsList, formData.clinic, formData.city]);
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 6));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -555,21 +575,27 @@ export function BookingModal() {
                       ) : derivedCities.length === 0 ? (
                         <div className="col-span-2 sm:col-span-3 py-8 text-center text-xs text-muted-foreground">No clinic locations found.</div>
                       ) : (
-                        derivedCities.map((city) => (
-                          <button
-                            key={city.id}
-                            onClick={() => updateForm('city', city.id)}
-                            className={`flex flex-col items-center text-center p-3 sm:p-5 rounded-2xl border transition-all ${
-                              formData.city === city.id 
-                                ? "border-primary bg-primary/5 shadow-sm" 
-                                : "border-border hover:border-primary/40 hover:bg-muted"
-                            }`}
-                          >
-                            <MapPin className={`w-5 h-5 sm:w-6 sm:h-6 mb-2 sm:mb-3 ${formData.city === city.id ? "text-primary" : "text-muted-foreground"}`} />
-                            <h4 className="text-sm font-bold mb-1">{city.name}</h4>
-                            <p className="text-[9px] sm:text-[10px] text-muted-foreground leading-relaxed">{city.description}</p>
-                          </button>
-                        ))
+                        derivedCities.map((city) => {
+                          const isLocked = prefilledData?.city && prefilledData.city.toLowerCase() !== city.id;
+                          return (
+                            <button
+                              key={city.id}
+                              onClick={() => !isLocked && updateForm('city', city.id)}
+                              disabled={!!isLocked}
+                              className={`flex flex-col items-center text-center p-3 sm:p-5 rounded-2xl border transition-all ${
+                                formData.city === city.id 
+                                  ? "border-primary bg-primary/5 shadow-sm" 
+                                  : isLocked 
+                                    ? "border-border/50 opacity-50 cursor-not-allowed grayscale"
+                                    : "border-border hover:border-primary/40 hover:bg-muted"
+                              }`}
+                            >
+                              <MapPin className={`w-5 h-5 sm:w-6 sm:h-6 mb-2 sm:mb-3 ${formData.city === city.id ? "text-primary" : "text-muted-foreground"}`} />
+                              <h4 className="text-sm font-bold mb-1">{city.name}</h4>
+                              <p className="text-[9px] sm:text-[10px] text-muted-foreground leading-relaxed">{city.description}</p>
+                            </button>
+                          );
+                        })
                       )}
                     </div>
                   </motion.div>
@@ -588,23 +614,29 @@ export function BookingModal() {
                     {filteredClinics.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No clinics registered in this city.</p>
                     ) : (
-                      filteredClinics.map((clinic) => (
-                        <button
-                          key={clinic._id}
-                          onClick={() => updateForm('clinic', clinic._id)}
-                          className={`w-full flex items-center p-4 rounded-2xl border text-left transition-all ${
-                            formData.clinic === clinic._id 
-                              ? "border-primary bg-primary/5 shadow-sm" 
-                              : "border-border hover:border-primary/40 hover:bg-muted"
-                          }`}
-                        >
-                          <Building2 className={`w-5 h-5 mr-4 ${formData.clinic === clinic._id ? "text-primary" : "text-muted-foreground"}`} />
-                          <div className="flex-1">
-                            <h4 className="text-sm font-bold">{clinic.name}</h4>
-                            <p className="text-muted-foreground text-xs mt-0.5">{clinic.address}</p>
-                          </div>
-                        </button>
-                      ))
+                      filteredClinics.map((clinic) => {
+                        const isLocked = prefilledData?.clinic && prefilledData.clinic !== clinic._id;
+                        return (
+                          <button
+                            key={clinic._id}
+                            onClick={() => !isLocked && updateForm('clinic', clinic._id)}
+                            disabled={!!isLocked}
+                            className={`w-full flex items-center p-4 rounded-2xl border text-left transition-all ${
+                              formData.clinic === clinic._id 
+                                ? "border-primary bg-primary/5 shadow-sm" 
+                                : isLocked
+                                  ? "border-border/50 opacity-50 cursor-not-allowed grayscale"
+                                  : "border-border hover:border-primary/40 hover:bg-muted"
+                            }`}
+                          >
+                            <Building2 className={`w-5 h-5 mr-4 ${formData.clinic === clinic._id ? "text-primary" : "text-muted-foreground"}`} />
+                            <div className="flex-1">
+                              <h4 className="text-sm font-bold">{clinic.name}</h4>
+                              <p className="text-muted-foreground text-xs mt-0.5">{clinic.address}</p>
+                            </div>
+                          </button>
+                        );
+                      })
                     )}
                   </motion.div>
                 )}
@@ -624,32 +656,38 @@ export function BookingModal() {
                     ) : displayDoctors.length === 0 ? (
                       <div className="py-8 text-center text-xs text-muted-foreground">No doctors registered in this clinic.</div>
                     ) : (
-                      displayDoctors.map((doc) => (
-                        <button
-                          key={doc._id}
-                          onClick={() => updateForm('doctorId', doc._id)}
-                          className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center gap-4 ${
-                            formData.doctorId === doc._id 
-                              ? "border-primary bg-primary/5 shadow-sm" 
-                              : "border-border hover:border-primary/40 hover:bg-muted"
-                          }`}
-                        >
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-                            {doc.name.split(' ').pop()?.[0]}
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="text-sm font-bold">{doc.name}</h4>
-                            <p className="text-xs text-muted-foreground">{doc.specialization} • {doc.experience} yrs exp</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{doc.bio}</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="flex items-center gap-0.5 mt-0.5">
-                                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                <span className="text-[10px] font-bold">5.0</span>
+                      displayDoctors.map((doc) => {
+                        const isLocked = prefilledData?.doctorId && prefilledData.doctorId !== doc._id;
+                        return (
+                          <button
+                            key={doc._id}
+                            onClick={() => !isLocked && updateForm('doctorId', doc._id)}
+                            disabled={!!isLocked}
+                            className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center gap-4 ${
+                              formData.doctorId === doc._id 
+                                ? "border-primary bg-primary/5 shadow-sm" 
+                                : isLocked
+                                  ? "border-border/50 opacity-50 cursor-not-allowed grayscale"
+                                  : "border-border hover:border-primary/40 hover:bg-muted"
+                            }`}
+                          >
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                              {doc.name.split(' ').pop()?.[0]}
                             </div>
-                          </div>
-                        </button>
-                      ))
+                            <div className="flex-1">
+                              <h4 className="text-sm font-bold">{doc.name}</h4>
+                              <p className="text-xs text-muted-foreground">{doc.specialization} • {doc.experience} yrs exp</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{doc.bio}</p>
+                            </div>
+                            <div className="text-right">
+                              <div className="flex items-center gap-0.5 mt-0.5">
+                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                  <span className="text-[10px] font-bold">5.0</span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })
                     )}
                   </motion.div>
                 )}

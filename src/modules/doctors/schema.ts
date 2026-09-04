@@ -29,6 +29,7 @@ const DoctorSchema = new Schema<IDoctor>({
   slotDuration: { type: Number, default: 30 },
   conditions: [{ type: String }],
   status: { type: String, enum: ["Active", "Inactive", "Pending"], default: "Pending" },
+  showOnHomepage: { type: Boolean, default: false },
   createdBy: { type: String },
   updatedBy: { type: String },
   deletedAt: { type: Date, default: null },
@@ -45,4 +46,6 @@ DoctorSchema.pre("findOne", function() {
   this.where({ deletedAt: null });
 });
 
+// Fix for Next.js HMR
+delete mongoose.models.Doctor;
 export const DoctorModel = mongoose.models.Doctor || mongoose.model<IDoctor>("Doctor", DoctorSchema);

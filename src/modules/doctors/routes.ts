@@ -9,10 +9,12 @@ export async function handleGetDoctors(req: Request) {
     const specialization = searchParams.get("specialization") || undefined;
     const status = searchParams.get("status") || undefined;
     const clinicId = searchParams.get("clinicId") || undefined;
+    const state = searchParams.get("state") || undefined;
+    const city = searchParams.get("city") || undefined;
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
 
-    const result = await DoctorService.getDoctorsList({ specialization, status, clinicId, page, limit });
+    const result = await DoctorService.getDoctorsList({ specialization, status, clinicId, state, city, page, limit });
     return NextResponse.json({
       success: true,
       message: "Doctors listed successfully.",
