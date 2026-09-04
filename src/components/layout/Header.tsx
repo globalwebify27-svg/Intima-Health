@@ -50,7 +50,8 @@ export function Header() {
   const { openBooking } = useBookingModal();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const cartItemCount = items.reduce((total, item) => total + item.quantity, 0);
-  
+  const [isCheckingCartAuth, setIsCheckingCartAuth] = useState(false);
+
   return (
     <>
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40">
@@ -258,6 +259,8 @@ export function Header() {
         <div className="flex items-center gap-4 shrink-0">
           <button 
             onClick={async () => {
+              if (isCheckingCartAuth) return;
+              setIsCheckingCartAuth(true);
               try {
                 const res = await fetch("/api/auth/me");
                 const data = await res.json();
@@ -268,11 +271,18 @@ export function Header() {
                 }
               } catch (error) {
                 router.push("/login");
+              } finally {
+                setIsCheckingCartAuth(false);
               }
             }}
-            className="relative p-2 text-foreground/80 hover:text-primary transition-colors"
+            disabled={isCheckingCartAuth}
+            className="relative p-2 text-foreground/80 hover:text-primary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <ShoppingBag className="w-5 h-5" />
+            {isCheckingCartAuth ? (
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <ShoppingBag className="w-5 h-5" />
+            )}
             {cartItemCount > 0 && (
               <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-primary rounded-full">
                 {cartItemCount}

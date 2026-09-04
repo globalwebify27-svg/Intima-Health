@@ -9,10 +9,15 @@ export async function GET() {
     await connectDB();
     
     // Find all doctors marked to show on homepage
-    const doctors = await DoctorModel.find({ 
+    let doctors = await DoctorModel.find({ 
       showOnHomepage: true,
       status: "Active" 
     }).populate('clinicId').exec();
+
+    // Fallback: If no doctors are marked for the homepage, just fetch 3 active doctors
+    if (doctors.length === 0) {
+      doctors = await DoctorModel.find({ status: "Active" }).limit(3).populate('clinicId').exec();
+    }
 
     return NextResponse.json({
       success: true,

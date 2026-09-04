@@ -57,8 +57,19 @@ export function FeaturedExperts() {
     fetchDoctors();
   }, []);
 
-  if (loading || experts.length === 0) {
-    return null; // or a loading state if preferred, but hiding is cleaner if no data
+  if (loading) {
+    return (
+      <section className="py-24 lg:py-32 relative bg-primary/[0.02]">
+        <div className="container mx-auto px-6 text-center flex flex-col items-center justify-center min-h-[300px]">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-muted-foreground font-medium text-lg animate-pulse">Loading our expert team...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (experts.length === 0) {
+    return null; // hide if no data
   }
 
   return (
