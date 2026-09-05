@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pill, FileSignature, CheckCircle, X, Calendar, User, UserCheck, Phone, Mail, Activity } from "lucide-react";
+import { Pill, FileSignature, CheckCircle, CheckCircle2, AlertCircle, Trash2, X, Calendar, User, UserCheck, Phone, Mail, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -38,15 +38,28 @@ interface Consultation {
   createdAt: string;
 }
 
+interface ProductData {
+  _id: string;
+  name: string;
+  price: number;
+  stock: number;
+}
+
 export default function PharmacyPrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<Consultation[]>([]);
+  const [products, setProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
   const [clinicId, setClinicId] = useState<string | null>(null);
 
-  // Modal states
-  const [selectedPrescription, setSelectedPrescription] = useState<Consultation | null>(null);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [quantities, setQuantities] = useState<Record<number, number>>({});
+  // Dispensing state
+  const [showDispenseModal, setShowDispenseModal] = useState(false);
+  const [dispenseConsultation, setDispenseConsultation] = useState<Consultation | null>(null);
+  const [dispenseItems, setDispenseItems] = useState<Array<{ productId: string; quantity: number; price: number; name: string; stock: number }>>([]);
+  const [checkoutStep, setCheckoutStep] = useState<"items" | "payment">("items");
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [submitting, setSubmitting] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const getMedsArray = (summary?: string): Medicine[] => {
     if (!summary) return [];
@@ -75,6 +88,14 @@ export default function PharmacyPrescriptionsPage() {
         const activeRx = json.data.filter((c: any) => c.prescriptionSummary);
         setPrescriptions(activeRx);
       }
+
+      if (cId) {
+        const prodRes = await fetch(`/api/pharmacy/products?clinicId=${cId}`);
+        const prodJson = await prodRes.json();
+        if (prodJson.success) {
+          setProducts(prodJson.data);
+        }
+      }
     } catch (err) {
       console.error("Error fetching prescriptions:", err);
     } finally {
@@ -96,75 +117,166 @@ export default function PharmacyPrescriptionsPage() {
       .catch(() => fetchPrescriptions(""));
   }, []);
 
-  const handleVerifyFulfill = async (record: Consultation) => {
-    if (!record.prescriptionSummary || !clinicId) return;
+  const handleDispenseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dispenseConsultation) return;
+    if (dispenseItems.length === 0) {
+      setErrorMsg("Please add at least one medicine to dispense.");
+      return;
+    }
+
+    setSubmitting(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    const totalAmount = dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    const payload = {
+      patientId: dispenseConsultation.patientId?._id,
+      clinicId,
+      items: dispenseItems.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        priceAtPurchase: item.price
+      })),
+      totalAmount,
+      status: "Delivered",
+      paymentMethod,
+      shippingAddress: "Clinic Counter Dispense"
+    };
+
     try {
-      const meds: Medicine[] = JSON.parse(record.prescriptionSummary);
-      if (meds.length === 0) return;
-
-      // Fetch clinic products to map medicine names to actual database products
-      const prodRes = await fetch(`/api/pharmacy/products?clinicId=${clinicId}`);
-      const prodJson = await prodRes.json();
-      const clinicProducts = prodJson.success ? prodJson.data : [];
-
-      const items = meds.map((m, idx) => {
-        const matchedProduct = clinicProducts.find((p: any) =>
-          p.name.toLowerCase().includes(m.drug.toLowerCase()) ||
-          m.drug.toLowerCase().includes(p.name.toLowerCase())
-        );
-
-        const qty = quantities[idx] || 1;
-
-        if (matchedProduct) {
-          return {
-            productId: matchedProduct._id,
-            quantity: qty,
-            priceAtPurchase: matchedProduct.price,
-          };
-        } else {
-          const fallbackProduct = clinicProducts[0] || { _id: "65f27c62d08a50672e811bc3", price: 100 };
-          return {
-            productId: fallbackProduct._id,
-            quantity: qty,
-            priceAtPurchase: fallbackProduct.price || 100,
-          };
-        }
-      });
-
-      const totalAmount = items.reduce((acc, item) => acc + item.priceAtPurchase * item.quantity, 0);
-
       const res = await fetch("/api/pharmacy/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientId: record.patientId._id,
-          clinicId,
-          items,
-          totalAmount,
-          status: "Delivered",
-          shippingAddress: "Handed over at clinic pharmacy counter"
-        }),
+        body: JSON.stringify(payload)
+      });
+      const resData = await res.json();
+      if (!resData.success) {
+        throw new Error(resData.message || "Failed to dispense medicines.");
+      }
+
+      // Update prescriptionStatus to Fulfilled
+      await fetch(`/api/consultations/${dispenseConsultation._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prescriptionStatus: "Fulfilled" }),
       });
 
-      const data = await res.json();
-      if (data.success) {
-        // Update prescriptionStatus to Fulfilled
-        await fetch(`/api/consultations/${record._id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prescriptionStatus: "Fulfilled" }),
-        });
-
-        alert(`Rx #${record._id.substring(18).toUpperCase()} fulfilled successfully! Order created and stock updated.`);
-        setIsDetailsModalOpen(false);
-        fetchPrescriptions(clinicId);
-      } else {
-        alert(data.message || "Failed to fulfill prescription.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Failed to process prescription fulfillment.");
+      setSuccessMsg("Medicines dispensed and billing order registered!");
+      setTimeout(() => {
+        setShowDispenseModal(false);
+        setDispenseConsultation(null);
+        setDispenseItems([]);
+        setCheckoutStep("items");
+        setSuccessMsg("");
+        setErrorMsg("");
+        fetchPrescriptions(clinicId!);
+      }, 1500);
+    } catch (err: any) {
+      setErrorMsg(err.message || "An error occurred.");
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const addDispenseItem = (prodId: string) => {
+    const prod = products.find(p => p._id === prodId);
+    if (!prod) return;
+    if (dispenseItems.some(i => i.productId === prodId)) return;
+
+    setDispenseItems([
+      ...dispenseItems,
+      { productId: prod._id, quantity: 1, price: prod.price, name: prod.name, stock: prod.stock }
+    ]);
+  };
+
+  const updateDispenseItemQty = (prodId: string, qty: number) => {
+    setDispenseItems(
+      dispenseItems.map(item => {
+        if (item.productId === prodId) {
+          const clampedQty = Math.max(1, Math.min(item.stock, qty));
+          return { ...item, quantity: clampedQty };
+        }
+        return item;
+      })
+    );
+  };
+
+  const removeDispenseItem = (prodId: string) => {
+    setDispenseItems(dispenseItems.filter(i => i.productId !== prodId));
+  };
+
+  const openDispenseModal = (c: Consultation) => {
+    setDispenseConsultation(c);
+    const autoItems: typeof dispenseItems = [];
+
+    if (c.prescriptionSummary) {
+      try {
+        const meds = JSON.parse(c.prescriptionSummary);
+        if (Array.isArray(meds)) {
+          meds.forEach((m: any) => {
+            const matchedProduct = products.find((p) =>
+              p.name.toLowerCase().includes(m.drug.toLowerCase()) ||
+              m.drug.toLowerCase().includes(p.name.toLowerCase())
+            );
+
+            if (matchedProduct) {
+              if (!autoItems.some(i => i.productId === matchedProduct._id)) {
+                autoItems.push({
+                  productId: matchedProduct._id,
+                  quantity: 1,
+                  price: matchedProduct.price,
+                  name: matchedProduct.name,
+                  stock: matchedProduct.stock
+                });
+              }
+            } else if (products.length > 0) {
+              const fallback = products[0];
+              if (!autoItems.some(i => i.productId === fallback._id)) {
+                autoItems.push({
+                  productId: fallback._id,
+                  quantity: 1,
+                  price: fallback.price,
+                  name: fallback.name, // Will show the actual stock name instead of the prescribed name if mismatched
+                  stock: fallback.stock
+                });
+              }
+            }
+          });
+        }
+      } catch (e) {}
+    }
+
+    setDispenseItems(autoItems);
+    setCheckoutStep("items");
+    setPaymentMethod("Cash");
+    setShowDispenseModal(true);
+  };
+
+  const renderPrescriptionSummary = (summary?: string, isModal = false) => {
+    if (!summary) return "No medications noted";
+    try {
+      const parsed = JSON.parse(summary);
+      if (Array.isArray(parsed)) {
+        if (isModal) {
+          return (
+            <ul className="list-disc pl-5 space-y-1 mt-2 not-italic">
+              {parsed.map((item: any, idx: number) => (
+                <li key={idx} className="text-sm text-muted-foreground">
+                  <strong className="text-foreground">{item.drug}</strong> - Dosage: {item.dosage}, Frequency: {item.frequency}, Duration: {item.duration}
+                </li>
+              ))}
+            </ul>
+          );
+        } else {
+          return parsed.map((item: any) => `${item.drug} (${item.frequency})`).join(", ");
+        }
+      }
+    } catch (e) {
+      // Not JSON, fallback
+    }
+    return summary;
   };
 
 
@@ -229,28 +341,16 @@ export default function PharmacyPrescriptionsPage() {
                       </Badge>
                       <Button 
                         variant="outline" 
-                        className="rounded-xl" 
-                        onClick={() => {
-                          setSelectedPrescription(record);
-                          const initialQuantities: Record<number, number> = {};
-                          getMedsArray(record.prescriptionSummary).forEach((_, i) => initialQuantities[i] = 1);
-                          setQuantities(initialQuantities);
-                          setIsDetailsModalOpen(true);
-                        }}
+                        className="rounded-xl"
+                        onClick={() => openDispenseModal(record)}
                       >
                         View Details
                       </Button>
                     </>
                   ) : (
                     <Button 
-                      className="rounded-xl w-full" 
-                      onClick={() => {
-                        setSelectedPrescription(record);
-                        const initialQuantities: Record<number, number> = {};
-                        getMedsArray(record.prescriptionSummary).forEach((_, i) => initialQuantities[i] = 1);
-                        setQuantities(initialQuantities);
-                        setIsDetailsModalOpen(true);
-                      }}
+                      className="rounded-xl" 
+                      onClick={() => openDispenseModal(record)}
                     >
                       <CheckCircle className="w-4 h-4 mr-2" /> Verify & Fulfill
                     </Button>
@@ -267,155 +367,164 @@ export default function PharmacyPrescriptionsPage() {
         )}
       </div>
 
-      {/* Prescription Details Modal */}
-      {isDetailsModalOpen && selectedPrescription && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card w-full max-w-lg rounded-2xl border border-border p-6 shadow-lg relative space-y-6 max-h-[90vh] overflow-y-auto">
+      {/* --- MODAL: DISPENSE PRESCRIPTION & CREATE PHARMACY ORDER --- */}
+      {showDispenseModal && dispenseConsultation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-card border border-border rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4">
             <button 
               onClick={() => {
-                setIsDetailsModalOpen(false);
-                setSelectedPrescription(null);
+                setShowDispenseModal(false);
+                setDispenseConsultation(null);
+                setDispenseItems([]);
+                setCheckoutStep("items");
+                setSuccessMsg("");
+                setErrorMsg("");
               }}
-              className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
             >
               <X className="w-5 h-5" />
             </button>
-            
-            <div>
-              <h2 className="text-xl font-bold">
-                {selectedPrescription.prescriptionStatus === "Fulfilled" 
-                  ? "Prescription Details" 
-                  : "Verify & Fulfill Prescription"}
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1 font-mono">
-                Rx ID: #{selectedPrescription._id.toUpperCase()}
-              </p>
+
+            <div className="flex items-center gap-2 border-b border-border pb-3">
+              <Pill className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-bold">Dispense Medicines & Settle Order</h3>
             </div>
 
-            {/* Quick Metadata Info */}
-            <div className="grid grid-cols-2 gap-4 border-y border-border py-4">
-              <div className="space-y-3">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" /> Patient Info
-                </h4>
-                <div className="text-sm">
-                  <p className="font-semibold">{selectedPrescription.patientId?.name || "Patient"}</p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <Mail className="w-3 h-3" /> {selectedPrescription.patientId?.email}
-                  </p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <Phone className="w-3 h-3" /> {selectedPrescription.patientId?.phone || "No Phone"}
-                  </p>
-                </div>
+            <div className="bg-muted/30 border border-border/40 p-4 rounded-xl space-y-2 text-xs">
+              <div className="font-bold text-foreground">Doctor's Prescribed Advisory:</div>
+              <div className="text-muted-foreground italic">
+                {renderPrescriptionSummary(dispenseConsultation.prescriptionSummary, true)}
               </div>
-
-              <div className="space-y-3">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <UserCheck className="w-3.5 h-3.5" /> Authorized By
-                </h4>
-                <div className="text-sm">
-                  <p className="font-semibold">Dr. {selectedPrescription.doctorId?.name || "Sarah Jenkins"}</p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <Calendar className="w-3.5 h-3.5" /> {new Date(selectedPrescription.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
+              <div className="text-[10px] text-muted-foreground border-t border-border/30 pt-2 mt-2">
+                Patient: <strong className="text-foreground">{dispenseConsultation.patientId?.name}</strong> | Doctor: <strong className="text-foreground">Dr. {dispenseConsultation.doctorId?.name}</strong>
               </div>
             </div>
 
-            {/* Medications List */}
-            <div className="space-y-3">
-              <h3 className="font-bold text-sm">Prescribed Medications</h3>
-              <div className="space-y-3">
-                {getMedsArray(selectedPrescription.prescriptionSummary).map((med, idx) => (
-                  <div key={idx} className="p-4 rounded-xl border border-border bg-muted/40 hover:bg-muted/65 transition-colors">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 bg-primary/10 rounded-lg">
-                        <Pill className="w-4 h-4 text-primary" />
-                      </div>
-                      <h4 className="font-bold text-foreground">{med.drug}</h4>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground items-end">
-                      <div>
-                        <span className="block font-medium text-[10px] uppercase tracking-wider">Dosage</span>
-                        <span className="font-semibold text-foreground">{med.dosage}</span>
-                      </div>
-                      <div>
-                        <span className="block font-medium text-[10px] uppercase tracking-wider">Frequency</span>
-                        <span className="font-semibold text-foreground">{med.frequency}</span>
-                      </div>
-                      <div>
-                        <span className="block font-medium text-[10px] uppercase tracking-wider">Duration</span>
-                        <span className="font-semibold text-foreground">{med.duration}</span>
-                      </div>
-                      {selectedPrescription.prescriptionStatus !== "Fulfilled" && (
-                        <div>
-                          <span className="block font-medium text-[10px] uppercase tracking-wider mb-1">Qty</span>
-                          <Input 
-                            type="number" 
-                            min="1" 
-                            className="h-7 text-xs px-2 w-full bg-background"
-                            value={quantities[idx] || ""}
-                            onChange={(e) => setQuantities(prev => ({ ...prev, [idx]: parseInt(e.target.value) || 0 }))}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Prescribed Therapies */}
-            {getTherapiesArray(selectedPrescription.prescribedTherapies).length > 0 && (
-              <div className="space-y-3">
-                <h3 className="font-bold text-sm">Prescribed Therapies</h3>
-                <div className="space-y-3">
-                  {getTherapiesArray(selectedPrescription.prescribedTherapies).map((th, idx) => (
-                    <div key={idx} className="p-4 rounded-xl border border-purple-200 bg-purple-50/20 dark:bg-purple-950/10 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 transition-colors">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="p-1.5 bg-purple-500/10 rounded-lg">
-                          <Activity className="w-4 h-4 text-purple-600" />
-                        </div>
-                        <h4 className="font-bold text-foreground">{th.name}</h4>
-                      </div>
-                      {th.price && (
-                        <p className="text-xs text-muted-foreground ml-8">Session Cost: ₹{th.price}</p>
-                      )}
-                    </div>
-                  ))}
+            <form onSubmit={handleDispenseSubmit} className="space-y-4">
+              {successMsg && (
+                <div className="p-3.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 text-xs font-medium rounded-xl border border-emerald-200/50 flex items-center gap-2">
+                  <CheckCircle2 className="w-4.5 h-4.5 shrink-0" /> {successMsg}
                 </div>
-              </div>
-            )}
+              )}
+              {errorMsg && (
+                <div className="p-3.5 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 text-xs font-medium rounded-xl border border-rose-200/50 flex items-center gap-2">
+                  <AlertCircle className="w-4.5 h-4.5 shrink-0" /> {errorMsg}
+                </div>
+              )}
 
-            {/* Actions */}
-            <div className="flex gap-3 justify-end pt-4 border-t border-border">
-              {selectedPrescription.prescriptionStatus === "Fulfilled" ? (
-                <Button 
-                  onClick={() => {
-                    setIsDetailsModalOpen(false);
-                    setSelectedPrescription(null);
-                  }}
-                  className="rounded-xl"
-                >
-                  Close
-                </Button>
-              ) : (
+              {/* Items Selected list */}
+              {checkoutStep === "items" ? (
                 <>
+                  {dispenseItems.length > 0 && (
+                    <div className="border border-border rounded-2xl overflow-hidden bg-muted/10">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-border bg-muted/20 font-bold text-muted-foreground">
+                            <th className="p-3">Medicine</th>
+                            <th className="p-3">Price</th>
+                            <th className="p-3">Qty</th>
+                            <th className="p-3">Total</th>
+                            <th className="p-3 text-right">Remove</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border text-foreground">
+                          {dispenseItems.map((item) => (
+                            <tr key={item.productId} className="hover:bg-muted/10 transition">
+                              <td className="p-3 font-bold">{item.name}</td>
+                              <td className="p-3">₹{item.price}</td>
+                              <td className="p-3">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={item.stock}
+                                  value={item.quantity}
+                                  onChange={(e) => updateDispenseItemQty(item.productId, parseInt(e.target.value))}
+                                  className="w-16 h-8 px-2 rounded border border-border bg-background text-center focus:outline-none"
+                                />
+                              </td>
+                              <td className="p-3 font-bold">₹{item.price * item.quantity}</td>
+                              <td className="p-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => removeDispenseItem(item.productId)}
+                                  className="text-rose-500 hover:text-rose-700"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Total Calculation */}
+                  <div className="flex justify-between items-center bg-primary/5 p-4 rounded-xl border border-primary/20">
+                    <span className="text-sm font-bold text-primary">Dispensed Order Bill Total:</span>
+                    <span className="text-lg font-black text-primary">
+                      ₹{dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+                    </span>
+                  </div>
+
                   <Button 
-                    variant="outline" 
+                    type="button" 
                     onClick={() => {
-                      setIsDetailsModalOpen(false);
-                      setSelectedPrescription(null);
-                    }}
+                      if (dispenseItems.length === 0) {
+                        setErrorMsg("Please add at least one medicine to dispense.");
+                        return;
+                      }
+                      setCheckoutStep("payment");
+                    }} 
+                    className="w-full h-11 text-white font-bold rounded-xl mt-2"
                   >
-                    Cancel
-                  </Button>
-                  <Button onClick={() => handleVerifyFulfill(selectedPrescription)}>
-                    <CheckCircle className="w-4 h-4 mr-2" /> Verify & Fulfill
+                    Proceed to Payment
                   </Button>
                 </>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center bg-primary/5 p-4 rounded-xl border border-primary/20 mb-4">
+                    <span className="text-sm font-bold text-primary">Total Amount to Collect:</span>
+                    <span className="text-xl font-black text-primary">
+                      ₹{dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Select Payment Method</label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {["Cash", "Online", "Send Link in WhatsApp"].map((method) => (
+                        <div 
+                          key={method}
+                          onClick={() => setPaymentMethod(method)}
+                          className={`p-3 border rounded-xl cursor-pointer text-center font-medium text-sm transition-all ${
+                            paymentMethod === method 
+                              ? "border-primary bg-primary/10 text-primary" 
+                              : "border-border hover:border-primary/50 text-muted-foreground"
+                          }`}
+                        >
+                          {method}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setCheckoutStep("items")} 
+                      className="w-1/3 h-11 rounded-xl"
+                    >
+                      Back
+                    </Button>
+                    <Button type="submit" disabled={submitting} className="w-2/3 h-11 text-white font-bold rounded-xl">
+                      {submitting ? "Settling Counter Billing..." : "Confirm & Complete"}
+                    </Button>
+                  </div>
+                </div>
               )}
-            </div>
+            </form>
           </div>
         </div>
       )}
