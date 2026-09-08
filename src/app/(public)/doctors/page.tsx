@@ -95,7 +95,7 @@ export default function DoctorsPage() {
         <div className="absolute inset-0 z-0">
           <Image
             src="/images/doctors-header-bg.jpg"
-            alt="Intima Health Clinic"
+            alt="KELKAR MANAS HEALTH CLINIC Clinic"
             fill
             className="object-cover object-center"
             priority
@@ -258,7 +258,7 @@ export default function DoctorsPage() {
           <h2 className="text-3xl md:text-5xl font-serif mb-8 leading-tight">
             "Our philosophy is simple: sexual health is health. We provide a judgment-free space where clinical excellence meets genuine empathy."
           </h2>
-          <p className="text-xl text-primary font-medium tracking-wide">— The Intima Health Clinical Board</p>
+          <p className="text-xl text-primary font-medium tracking-wide">— The KELKAR MANAS HEALTH CLINIC Clinical Board</p>
         </div>
       </section>
 

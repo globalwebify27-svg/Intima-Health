@@ -10,7 +10,7 @@ import Link from "next/link";
 const products = [
   {
     id: "intima-comprehensive",
-    title: "Intima Full Spectrum Screen",
+    title: "Kelkar Manas Full Spectrum Screen",
     subtitle: "Complete clinical workup",
     description: "Our flagship diagnostic suite. Covers the 10 most common markers for total reproductive and sexual wellness.",
     slug: "sti-screen",

@@ -18,7 +18,7 @@ export interface IPatient {
 
 const PatientSchema = new Schema<IPatient>({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true, index: true },
+  email: { type: String, required: true, index: true },
   phone: { type: String, required: true },
   dob: { type: Date },
   gender: { type: String },

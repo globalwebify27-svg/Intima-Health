@@ -67,9 +67,17 @@ export default function ClinicsAdminPage() {
     fetchClinics();
   }, []);
 
-  const handleCreateOrUpdate = async () => {
+  const handleCreateOrUpdate = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setSubmitting(true);
     setSubmitError("");
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setSubmitError("Please enter a valid email address.");
+      setSubmitting(false);
+      return;
+    }
 
     const body = {
       name,
@@ -324,13 +332,14 @@ export default function ClinicsAdminPage() {
                 ))}
               </div>
 
-              {/* Body */}
-              <div className="p-6 overflow-y-auto space-y-5 flex-1">
-                {submitError && (
-                  <div className="p-3 bg-destructive/10 text-destructive text-sm font-medium rounded-xl border border-destructive/20">
-                    {submitError}
-                  </div>
-                )}
+              {/* Body & Footer Form Wrap */}
+              <form onSubmit={handleCreateOrUpdate} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-6 overflow-y-auto space-y-5 flex-1">
+                  {submitError && (
+                    <div className="p-3 bg-destructive/10 text-destructive text-sm font-medium rounded-xl border border-destructive/20">
+                      {submitError}
+                    </div>
+                  )}
 
                 {/* STEP 1 */}
                 {step === 1 && (
@@ -411,7 +420,7 @@ export default function ClinicsAdminPage() {
                       <label className="text-sm font-bold">Email Address *</label>
                       <input
                         type="email"
-                        placeholder="pune@intima.health"
+                        placeholder="pune@kelkarmanas.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -433,49 +442,52 @@ export default function ClinicsAdminPage() {
                 )}
               </div>
 
-              {/* Footer */}
-              <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/20">
-                {step > 1 ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => setStep(step - 1)}
-                    disabled={submitting}
-                    className="rounded-xl h-11 px-4 gap-2"
-                  >
-                    <ArrowLeft className="w-4 h-4" /> Back
-                  </Button>
-                ) : (
-                  <div />
-                )}
+                {/* Footer */}
+                <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/20">
+                  {step > 1 ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setStep(step - 1)}
+                      disabled={submitting}
+                      className="rounded-xl h-11 px-4 gap-2"
+                    >
+                      <ArrowLeft className="w-4 h-4" /> Back
+                    </Button>
+                  ) : (
+                    <div />
+                  )}
 
-                {step < 2 ? (
-                  <Button
-                    onClick={() => {
-                      if (!name || !state || !city || !address) {
-                        setSubmitError("Please fill out all required fields.");
-                        return;
-                      }
-                      setSubmitError("");
-                      setStep(step + 1);
-                    }}
-                    className="rounded-xl h-11 px-5 gap-2 ml-auto"
-                  >
-                    Next <ArrowRight className="w-4 h-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleCreateOrUpdate}
-                    disabled={submitting || !phone || !email}
-                    className="rounded-xl h-11 px-5 gap-2 ml-auto"
-                  >
-                    {submitting ? "Saving..." : (
-                      <>
-                        <Check className="w-4 h-4" /> {isEditMode ? "Save Changes" : "Save Clinic"}
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
+                  {step < 2 ? (
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (!name || !state || !city || !address) {
+                          setSubmitError("Please fill out all required fields.");
+                          return;
+                        }
+                        setSubmitError("");
+                        setStep(step + 1);
+                      }}
+                      className="rounded-xl h-11 px-5 gap-2 ml-auto"
+                    >
+                      Next <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      disabled={submitting || !phone || !email}
+                      className="rounded-xl h-11 px-5 gap-2 ml-auto"
+                    >
+                      {submitting ? "Saving..." : (
+                        <>
+                          <Check className="w-4 h-4" /> {isEditMode ? "Save Changes" : "Save Clinic"}
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

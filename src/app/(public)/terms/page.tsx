@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | Intima Health",
-  description: "Read the Terms of Service for using Intima Health.",
+  title: "Terms of Service | KELKAR MANAS HEALTH CLINIC",
+  description: "Read the Terms of Service for using KELKAR MANAS HEALTH CLINIC.",
 };
 
 export default function TermsPage() {
@@ -16,12 +16,12 @@ export default function TermsPage() {
           
           <h2 className="text-2xl font-bold mt-12 mb-4">1. Acceptance of Terms</h2>
           <p>
-            By accessing and using the Intima Health website and services, you accept and agree to be bound by the terms and provision of this agreement.
+            By accessing and using the KELKAR MANAS HEALTH CLINIC website and services, you accept and agree to be bound by the terms and provision of this agreement.
           </p>
 
           <h2 className="text-2xl font-bold mt-12 mb-4">2. Medical Disclaimer</h2>
           <p>
-            The content on the Intima Health website is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.
+            The content on the KELKAR MANAS HEALTH CLINIC website is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.
           </p>
 
           <h2 className="text-2xl font-bold mt-12 mb-4">3. User Accounts</h2>
@@ -31,7 +31,7 @@ export default function TermsPage() {
 
           <h2 className="text-2xl font-bold mt-12 mb-4">4. Intellectual Property</h2>
           <p>
-            The Service and its original content, features, and functionality are and will remain the exclusive property of Intima Health and its licensors. The Service is protected by copyright, trademark, and other laws of both the country and foreign countries.
+            The Service and its original content, features, and functionality are and will remain the exclusive property of KELKAR MANAS HEALTH CLINIC and its licensors. The Service is protected by copyright, trademark, and other laws of both the country and foreign countries.
           </p>
 
           <h2 className="text-2xl font-bold mt-12 mb-4">5. Changes to Terms</h2>

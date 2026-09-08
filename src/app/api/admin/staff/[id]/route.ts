@@ -68,10 +68,26 @@ export async function PUT(req: Request, { params }: RouteParams) {
 
         if (doctorDetails) {
           if (doctorDetails.phone) doctor.phone = doctorDetails.phone;
-          if (doctorDetails.specialization) doctor.specialization = doctorDetails.specialization;
-          if (doctorDetails.experience !== undefined) doctor.experience = Number(doctorDetails.experience);
-          if (doctorDetails.bio) doctor.bio = doctorDetails.bio;
-          if (doctorDetails.salary !== undefined) doctor.salary = Number(doctorDetails.salary);
+          if (doctorDetails.specialization !== undefined) doctor.specialization = doctorDetails.specialization;
+          if (doctorDetails.registrationNumber) doctor.registrationNumber = doctorDetails.registrationNumber;
+          if (doctorDetails.experience === "") {
+            doctor.experience = undefined as any;
+          } else if (doctorDetails.experience !== undefined) {
+            doctor.experience = Number(doctorDetails.experience);
+          }
+                    if (doctorDetails.bio !== undefined) doctor.bio = doctorDetails.bio;
+          
+          if (doctorDetails.rating === "") {
+            doctor.rating = undefined as any;
+          } else if (doctorDetails.rating !== undefined) {
+            doctor.rating = Number(doctorDetails.rating);
+          }
+          
+          if (doctorDetails.salary === "") {
+            doctor.salary = undefined as any;
+          } else if (doctorDetails.salary !== undefined) {
+            doctor.salary = Number(doctorDetails.salary);
+          }
           if (doctorDetails.qualifications) doctor.qualifications = doctorDetails.qualifications;
           if (doctorDetails.availability) doctor.availability = doctorDetails.availability;
           if (doctorDetails.conditions) doctor.conditions = doctorDetails.conditions;

@@ -67,7 +67,7 @@ export default function StaffLoginPage() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left side - Branding (hidden on mobile) */}
-      <div className="hidden lg:flex w-1/2 relative bg-primary/5 flex-col justify-between p-12 overflow-hidden border-r border-border/50">
+      <div className="hidden lg:flex w-1/2 relative bg-primary/5 flex-col p-12 overflow-hidden border-r border-border/50">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10 pointer-events-none" />
         
         {/* Decorative blur orbs */}
@@ -75,21 +75,33 @@ export default function StaffLoginPage() {
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary/20 rounded-full blur-[100px]" />
 
         <div className="relative z-10">
-          <Link href="/" className="inline-block">
-            <span className="font-serif text-3xl font-bold tracking-tight text-foreground">
-              Intima<span className="font-sans text-primary font-semibold">Health</span>
-              <span className="ml-2 text-sm font-sans font-medium text-muted-foreground uppercase tracking-widest border border-border rounded px-2 py-0.5">Staff Portal</span>
-            </span>
+          <Link href="/" className="inline-flex flex-col items-start gap-2">
+            <Image src="/logo.png" alt="Kelkar Manas Health Clinic" width={280} height={80} className="object-contain -ml-2" priority />
+            <span className="text-xs font-sans font-bold text-muted-foreground uppercase tracking-widest border border-border/70 bg-background/50 backdrop-blur-sm rounded-md px-2.5 py-1">Staff Portal</span>
           </Link>
         </div>
 
-        <div className="relative z-10 max-w-md">
+        <div className="relative z-10 max-w-md mt-32">
           <h2 className="text-4xl font-serif font-medium mb-6 leading-tight">
-            Provider & Admin Access
+            Clinic Management System
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Manage patient care, track orders, and oversee operations securely.
+            A secure, comprehensive platform to oversee daily clinical operations, manage patient care efficiently, and coordinate pharmacy services.
           </p>
+          <ul className="space-y-4 text-sm text-muted-foreground font-medium">
+            <li className="flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+              Secure Electronic Health Records
+            </li>
+            <li className="flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+              Integrated Pharmacy Management
+            </li>
+            <li className="flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+              Centralized Staff & Schedule Coordination
+            </li>
+          </ul>
         </div>
       </div>
 
@@ -97,13 +109,11 @@ export default function StaffLoginPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-[420px] space-y-10">
           
-          <div className="lg:hidden mb-12 flex justify-center flex-col items-center gap-2">
+          <div className="lg:hidden mb-12 flex justify-center flex-col items-center gap-4">
             <Link href="/">
-              <span className="font-serif text-3xl font-bold tracking-tight text-foreground">
-                Intima<span className="font-sans text-primary font-semibold">Health</span>
-              </span>
+              <Image src="/logo.png" alt="Kelkar Manas Health Clinic" width={220} height={60} className="object-contain" priority />
             </Link>
-            <span className="text-xs font-sans font-medium text-muted-foreground uppercase tracking-widest border border-border rounded px-2 py-0.5">Staff Portal</span>
+            <span className="text-xs font-sans font-bold text-muted-foreground uppercase tracking-widest border border-border/70 bg-muted/30 rounded-md px-2.5 py-1">Staff Portal</span>
           </div>
 
           <div className="space-y-3">
@@ -121,7 +131,7 @@ export default function StaffLoginPage() {
                   <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                   <Input 
                     id="email" 
-                    placeholder="doctor@intimahealth.com" 
+                    placeholder="doctor@kelkarmanas.com" 
                     type="email" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

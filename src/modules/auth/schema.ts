@@ -4,7 +4,7 @@ import crypto from "crypto";
 
 const UserSchema = new Schema<IUser>({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true, index: true },
+  email: { type: String, required: true, index: true },
   passwordHash: { type: String, required: true },
   role: { 
     type: String, 

@@ -17,7 +17,7 @@ export default function PublicLayout({
       <main className="flex-1">{children}</main>
       <Footer />
       <MobileBottomNav />
-      <CartDrawer />
+      {/* <CartDrawer /> */}
       <BookingModal />
     </div>
   );

@@ -8,7 +8,7 @@ const adminLinks = [
   { title: "Clinics", href: "/admin/clinics", icon: Building2 },
   { title: "Staff Directory", href: "/admin/staff", icon: Users },
   { title: "Platform Services", href: "/admin/services", icon: Activity },
-  { title: "Pharmacy Store", href: "/admin/store", icon: ShoppingBag },
+  // { title: "Pharmacy Store", href: "/admin/store", icon: ShoppingBag },
   { title: "Content", href: "/admin/content", icon: FileText },
   { title: "Reports", href: "/admin/reports", icon: BarChart3 },
   { title: "Newsletter", href: "/admin/newsletter", icon: Mail },

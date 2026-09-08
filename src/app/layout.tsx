@@ -8,7 +8,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Intima Health Platform",
+  title: "KELKAR MANAS HEALTH CLINIC Platform",
   description: "Premium Sexual and Reproductive Health Platform",
 };
 

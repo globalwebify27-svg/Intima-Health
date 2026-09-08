@@ -573,7 +573,7 @@ function ConsultationsContent() {
                     {/* Therapy Builder */}
                     <div className="space-y-4 pt-4 border-t border-border/50">
                       <div className="flex items-center justify-between">
-                        <Label className="text-sm font-bold flex items-center gap-1.5"><Heart className="w-4 h-4 text-primary" /> Prescribe Therapy</Label>
+                        <Label className="text-sm font-bold flex items-center gap-1.5"><Heart className="w-4 h-4 text-primary" /> Recommended Therapy</Label>
                         <Button 
                           variant="ghost" 
                           size="sm" 

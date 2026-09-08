@@ -58,9 +58,7 @@ export function Header() {
       <div className="container mx-auto flex h-20 items-center justify-between px-6 lg:px-12">
         <div className="flex items-center gap-10">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="font-serif text-2xl font-bold tracking-tight text-foreground">
-              Intima<span className="font-sans text-primary font-semibold">Health</span>
-            </span>
+            <img src="/logo.png" alt="KELKAR MANAS HEALTH CLINIC" className="h-20 w-auto object-contain" />
           </Link>
 
           <NavigationMenu className="hidden xl:flex">
@@ -167,12 +165,13 @@ export function Header() {
                 </NavigationMenuContent>
               </NavigationMenuItem>
 
-              {/* Shop (Products) */}
+              {/* Shop (Products) - Hidden for now 
               <NavigationMenuItem>
                 <Link href="/products" className={cn(navigationMenuTriggerStyle(), "bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors")}>
                   Pharmacy
                 </Link>
               </NavigationMenuItem>
+              */}
 
               {/* Clinics (Physical Trust) - Hidden for now */}
               {/* 
@@ -245,7 +244,7 @@ export function Header() {
                     </ListItem>
                     <div className="pt-3 mt-1 border-t border-border/50">
                       <ListItem href="/staff-login" title="Provider Login" className="bg-muted/30">
-                        Secure access for IntimaHealth staff.
+                        Secure access for KELKAR MANAS HEALTH CLINIC staff.
                       </ListItem>
                     </div>
                   </ul>
@@ -257,6 +256,7 @@ export function Header() {
         </div>
         
         <div className="flex items-center gap-4 shrink-0">
+          {/* Cart - Hidden for now
           <button 
             onClick={async () => {
               if (isCheckingCartAuth) return;
@@ -289,6 +289,7 @@ export function Header() {
               </span>
             )}
           </button>
+          */}
           
           <button 
             className="xl:hidden p-2 text-foreground/80 hover:text-primary transition-colors"
@@ -331,9 +332,7 @@ export function Header() {
             className="fixed inset-y-0 right-0 z-[101] w-[85%] max-w-sm bg-background border-l border-border shadow-2xl flex flex-col xl:hidden"
           >
             <div className="flex items-center justify-between p-6 border-b border-border">
-              <span className="font-serif text-xl font-bold tracking-tight text-foreground">
-                Intima<span className="font-sans text-primary font-semibold">Health</span>
-              </span>
+              <img src="/logo.png" alt="KELKAR MANAS HEALTH CLINIC" className="h-20 w-auto object-contain" />
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="p-2 rounded-full hover:bg-muted transition-colors"
@@ -354,14 +353,14 @@ export function Header() {
                 
                 <MobileNavGroup title="Our Services">
                   <Link href="/consultations" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Online Consultations</Link>
-                  <Link href="/pharmacy" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Discreet Pharmacy</Link>
+                  {/* <Link href="/pharmacy" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Discreet Pharmacy</Link> */}
                   <Link href="/diagnostics" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">At-Home Diagnostics</Link>
                   <Link href="/therapy" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Sex Therapy</Link>
                 </MobileNavGroup>
 
-                <div className="border-b border-border/50">
+                {/* <div className="border-b border-border/50">
                   <Link href="/products" onClick={() => setIsMobileMenuOpen(false)} className="flex py-4 text-lg font-medium hover:text-primary transition-colors">Pharmacy</Link>
-                </div>
+                </div> */}
 
                 {/* Clinics - Hidden for now
                 <MobileNavGroup title="Clinics">

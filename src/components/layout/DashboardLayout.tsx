@@ -69,7 +69,7 @@ export function DashboardLayout({ children, links, roleName, basePath }: Dashboa
           <div className="flex items-center gap-2 text-sm">
             <div className="flex items-center gap-2 text-sm bg-muted/60 border border-border px-3.5 py-1.5 rounded-2xl shadow-sm">
               <Building2 className="w-4 h-4 text-primary shrink-0" />
-              <span className="text-foreground font-bold">{clinicName || "Intima Health"}</span>
+              <span className="text-foreground font-bold">{clinicName || "KELKAR MANAS HEALTH CLINIC"}</span>
               <span className="text-xs font-bold text-muted-foreground bg-card border border-border px-2 py-0.5 rounded-full">
                 {clinicLocation || "Global"}
               </span>

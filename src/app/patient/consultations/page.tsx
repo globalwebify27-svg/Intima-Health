@@ -228,7 +228,7 @@ function ConsultationRoomContent() {
             <PhoneOff className="w-5 h-5" />
           </Button>
         </div>
-        <p className="text-[9px] text-slate-500 mt-1">Encrypted peer-to-peer connection • Powered by Intima Health</p>
+        <p className="text-[9px] text-slate-500 mt-1">Encrypted peer-to-peer connection • Powered by KELKAR MANAS HEALTH CLINIC</p>
       </div>
     </div>
   );

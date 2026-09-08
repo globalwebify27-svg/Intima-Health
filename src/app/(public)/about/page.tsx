@@ -61,7 +61,7 @@ export default function AboutPage() {
             >
               <div className="flex items-center gap-4 mb-6">
                 <div className="h-px w-12 bg-primary"></div>
-                <span className="text-sm font-bold tracking-widest text-primary uppercase">About Dr. Kelkar Hospital</span>
+                <span className="text-sm font-bold tracking-widest text-primary uppercase">About Dr. Kelkar Manas Hospital</span>
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium text-foreground leading-[1.1] mb-6">
                 Leading Psychiatric & <br/>
@@ -117,7 +117,7 @@ export default function AboutPage() {
             >
               <Image
                 src="/images/clinical_abstract.png"
-                alt="Intima Health Clinical Research"
+                alt="KELKAR MANAS HEALTH CLINIC Clinical Research"
                 fill
                 className="object-cover"
                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
@@ -159,7 +159,7 @@ export default function AboutPage() {
             <h2 className="text-sm font-bold tracking-widest text-primary uppercase mb-3">Our Values</h2>
             <h3 className="text-3xl md:text-4xl font-serif text-foreground mb-4">What Drives Us Forward</h3>
             <p className="text-lg text-muted-foreground">
-              Everything we do at Intima Health is guided by four core principles that ensure we deliver the best possible care and products.
+              Everything we do at KELKAR MANAS HEALTH CLINIC is guided by four core principles that ensure we deliver the best possible care and products.
             </p>
           </motion.div>
 

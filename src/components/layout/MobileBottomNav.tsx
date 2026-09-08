@@ -22,11 +22,11 @@ const navItems = [
     href: "/booking",
     icon: CalendarDays,
   },
-  {
+  /* {
     label: "Pharmacy",
     href: "/products",
     icon: ShoppingBag,
-  },
+  }, */
   {
     label: "Log in",
     href: "/login",

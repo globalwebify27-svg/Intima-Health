@@ -53,7 +53,7 @@ export function WhyChooseUs() {
                         >
                             <span className="font-black text-4xl tracking-tighter">IH</span>
                         </motion.div>
-                        <h3 className="text-3xl font-bold text-foreground mb-5 tracking-tight">The Intima Standard</h3>
+                        <h3 className="text-3xl font-bold text-foreground mb-5 tracking-tight">The Kelkar Manas Standard</h3>
                         <p className="text-muted-foreground font-medium leading-relaxed max-w-xs mx-auto">
                           We believe that accessing world-class sexual healthcare should be as private and effortless as checking your email.
                         </p>

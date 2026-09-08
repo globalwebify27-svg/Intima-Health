@@ -63,7 +63,7 @@ export default function ResearchPage() {
             </h1>
             
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              Every protocol and treatment at Intima Health is grounded in rigorous clinical research. Explore our open-access registry of studies and findings.
+              Every protocol and treatment at KELKAR MANAS HEALTH CLINIC is grounded in rigorous clinical research. Explore our open-access registry of studies and findings.
             </p>
           </motion.div>
         </div>

@@ -4,6 +4,11 @@ export function printPrescription(consultation: any) {
   doctorName = doctorName.replace(/^(Dr\.\s*)+/i, "");
   
   const doctorSpecialization = consultation.doctorId?.specialization || "General Medicine";
+  const doctorQualifications = consultation.doctorId?.qualifications?.join(", ") || "";
+  const doctorRegNumber = consultation.doctorId?.registrationNumber || "";
+  
+  const clinicAddress = consultation.clinicId?.address || "P294+H8J, Ramdas Peth, Akola, Maharashtra 444001";
+
   const patientName = consultation.patientId?.name || "Patient";
   const patientGender = consultation.patientId?.gender || "N/A";
   const patientDob = consultation.patientId?.dob ? new Date(consultation.patientId.dob).toLocaleDateString() : "N/A";
@@ -28,7 +33,7 @@ export function printPrescription(consultation: any) {
       <td style="padding: 10px 4px; font-weight: bold; color: #0f172a; font-size: 13px;">${med.drug}</td>
       <td style="padding: 10px 4px; color: #475569; font-size: 13px;">${med.dosage}</td>
       <td style="padding: 10px 4px; color: #475569; font-size: 13px;">${med.frequency}</td>
-      <td style="padding: 10px 4px; text-align: right; color: #0f172a; font-weight: 600; font-size: 13px;">${med.duration}</td>
+      <td style="padding: 10px 4px; text-align: right; color: #0f172a; font-weight: 600; font-size: 13px;">${med.duration} Days</td>
     </tr>
   `).join("");
 
@@ -187,7 +192,7 @@ export function printPrescription(consultation: any) {
         
         <div class="header">
           <div>
-            <div class="brand">Intima<span>Health</span></div>
+            <div class="brand"><img src="/logo.png" alt="KELKAR MANAS HEALTH CLINIC" style="height: 80px; width: auto;" /></div>
             <div class="brand-sub">Sexual & Reproductive Wellness Clinic</div>
           </div>
           <div>
@@ -200,7 +205,10 @@ export function printPrescription(consultation: any) {
           <div class="meta-item">
             <div class="meta-label">Doctor Information</div>
             <div class="meta-val">Dr. ${doctorName}</div>
-            <div style="color: #64748b; font-size: 11px; font-weight: 500; margin-top: 1px;">${doctorSpecialization}</div>
+            <div style="color: #64748b; font-size: 11px; font-weight: 500; margin-top: 1px;">
+              ${doctorQualifications ? doctorQualifications + ' | ' : ''}${doctorSpecialization}
+            </div>
+            ${doctorRegNumber ? `<div style="color: #64748b; font-size: 11px; font-weight: 500; margin-top: 1px;">Reg No: ${doctorRegNumber}</div>` : ''}
           </div>
           <div class="meta-item">
             <div class="meta-label">Patient Information</div>
@@ -210,10 +218,6 @@ export function printPrescription(consultation: any) {
           <div class="meta-item">
             <div class="meta-label">Date Prescribed</div>
             <div class="meta-val">${dateStr}</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Refills Authorized</div>
-            <div class="meta-val">Refills as indicated</div>
           </div>
         </div>
 
@@ -236,6 +240,10 @@ export function printPrescription(consultation: any) {
         <div class="footer">
           <div style="font-size: 10px; color: #94a3b8; max-width: 320px; line-height: 1.3;">
             This document is a digitally signed digital health prescription. For any clarifications, please contact the prescribing clinic directly.
+            <div style="margin-top: 8px; color: #64748b; font-weight: 500;">
+              <strong style="color: #475569;">Clinic Address:</strong><br/>
+              ${clinicAddress}
+            </div>
           </div>
           <div class="signature-box">
             <div class="signature-line"></div>

@@ -131,7 +131,7 @@ export function printReceipt(appointment: any, receiptTitle: string = "Payment R
       <body>
         <div class="receipt-container">
           <div class="header">
-            <h2>Intima Health</h2>
+            <h2>KELKAR MANAS HEALTH CLINIC</h2>
             <h3>${receiptTitle}</h3>
           </div>
           
@@ -189,7 +189,7 @@ export function printReceipt(appointment: any, receiptTitle: string = "Payment R
           </div>
 
           <div class="footer">
-            Thank you for choosing Intima Health.<br>
+            Thank you for choosing KELKAR MANAS HEALTH CLINIC.<br>
             This is a computer-generated receipt and requires no signature.
           </div>
         </div>

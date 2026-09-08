@@ -26,7 +26,7 @@ const hardcodedFaqs = [
     questions: [
       {
         q: "Is my medical data safe?",
-        a: "Absolutely. Intima Health is fully HIPAA-compliant. We use bank-level encryption (AES-256) to protect your health records, consultation videos, and personal information. Your data is never sold to third parties."
+        a: "Absolutely. KELKAR MANAS HEALTH CLINIC is fully HIPAA-compliant. We use bank-level encryption (AES-256) to protect your health records, consultation videos, and personal information. Your data is never sold to third parties."
       },
       {
         q: "How will the charge appear on my bank statement?",
@@ -47,7 +47,7 @@ const hardcodedFaqs = [
       },
       {
         q: "Can I use my insurance?",
-        a: "Intima Health currently operates on a cash-pay basis to keep our services affordable, discreet, and fast. However, we can provide you with an itemized superbill that you can submit to your insurance for potential out-of-network reimbursement."
+        a: "KELKAR MANAS HEALTH CLINIC currently operates on a cash-pay basis to keep our services affordable, discreet, and fast. However, we can provide you with an itemized superbill that you can submit to your insurance for potential out-of-network reimbursement."
       },
       {
         q: "How long does shipping take?",
@@ -59,7 +59,7 @@ const hardcodedFaqs = [
 
 const aboutContent = `
 <h2>Our Story</h2>
-<p>Founded by a team of visionary gynecologists, urologists, and wellness experts, Intima Health was born out of a simple observation: intimate health is too often ignored, misunderstood, or stigmatized.</p>
+<p>Founded by a team of visionary gynecologists, urologists, and wellness experts, KELKAR MANAS HEALTH CLINIC was born out of a simple observation: intimate health is too often ignored, misunderstood, or stigmatized.</p>
 <p>We recognized the need for a sanctuary—a place where clinical excellence meets compassionate care. Since our inception, we have been dedicated to researching, developing, and providing solutions that are not only effective but beautifully designed and seamlessly integrated into your daily life.</p>
 <ul>
   <li>Evidence-based clinical formulations</li>

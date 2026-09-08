@@ -16,6 +16,7 @@ export interface IDoctor {
   phone: string;
   avatar?: string;
   specialization: string;
+  registrationNumber?: string;
   experience: number; // in years
   bio: string;
   rating?: number;

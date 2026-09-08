@@ -88,23 +88,34 @@ export async function POST(req: Request) {
       }
 
       const last10 = phone.replace(/\D/g, "").slice(-10);
-      const existingPatientByPhone = await PatientModel.findOne({ phone: new RegExp(last10 + '$') }).exec();
+      let existingPatientByPhone = await PatientModel.findOne({ phone: new RegExp(last10 + '$') }).exec();
+      
       if (existingPatientByPhone) {
-        return NextResponse.json({ success: false, message: "Number already exists. Please use correct number or login with existing." }, { status: 400 });
-      }
-
-      // Find or create patient
-      patient = await PatientModel.findOne({ email }).exec();
-      if (!patient) {
-        isNewPatient = true;
-        patient = await PatientModel.create({
-          name: `${firstName} ${lastName}`.trim(),
-          email,
-          phone,
-          gender: "Male",
-          dob: dob ? new Date(dob) : undefined,
-          status: "Active"
-        });
+        // If it was auto-created by OTP, update it.
+        if (existingPatientByPhone.name.startsWith("Patient ") || (existingPatientByPhone.email && existingPatientByPhone.email.endsWith("@intima.app"))) {
+          existingPatientByPhone.name = `${firstName} ${lastName}`.trim();
+          existingPatientByPhone.email = email;
+          if (dob) existingPatientByPhone.dob = new Date(dob);
+          await existingPatientByPhone.save();
+          patient = existingPatientByPhone;
+          isNewPatient = true;
+        } else {
+          return NextResponse.json({ success: false, message: "Number already exists. Please use correct number or login with existing." }, { status: 400 });
+        }
+      } else {
+        // Find or create patient
+        patient = await PatientModel.findOne({ email }).exec();
+        if (!patient) {
+          isNewPatient = true;
+          patient = await PatientModel.create({
+            name: `${firstName} ${lastName}`.trim(),
+            email,
+            phone,
+            gender: "Male",
+            dob: dob ? new Date(dob) : undefined,
+            status: "Active"
+          });
+        }
       }
 
       // Find or create user credentials

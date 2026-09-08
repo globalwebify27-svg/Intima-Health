@@ -80,7 +80,7 @@ export default function CheckoutPage() {
       <header className="bg-background border-b border-border py-6">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <Link href="/" className="font-serif text-2xl font-bold tracking-tight text-foreground">
-            Intima<span className="font-sans text-primary font-semibold">Health</span>
+            KELKAR MANAS HEALTH CLINIC
           </Link>
           <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
             <Lock className="w-4 h-4" />

@@ -9,7 +9,6 @@ import {
   Sparkles, 
   CheckCircle2, 
   AlertCircle, 
-  DollarSign, 
   X,
   Activity
 } from "lucide-react";
@@ -326,14 +325,13 @@ export default function ManagePlatformServicesPage() {
                 <div className="space-y-1">
                   <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Price (₹) *</label>
                   <div className="relative">
-                    <DollarSign className="absolute left-2.5 top-3.5 w-3.5 h-3.5 text-muted-foreground" />
                     <input
                       type="number"
                       required
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder="999"
-                      className="w-full h-10 pl-8 pr-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,9 +30,9 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col bg-card">
-      <div className="flex h-16 items-center px-6 border-b border-border">
-        <Link href="/" className="font-serif text-2xl font-bold tracking-tight text-foreground">
-          Intima<span className="font-sans text-primary font-semibold">Health</span>
+      <div className="flex py-6 items-center justify-center border-b border-border">
+        <Link href="/" className="flex items-center">
+          <Image src="/logo.png" alt="Kelkar Manas Health Clinic" width={180} height={50} className="object-contain" priority />
         </Link>
       </div>
       <div className="px-6 py-4">
@@ -127,14 +128,14 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
               <SidebarContent />
             </SheetContent>
           </Sheet>
-          <Link href="/" className="font-serif text-lg font-bold tracking-tight text-foreground ml-1">
-            Intima<span className="font-sans text-primary font-semibold">Health</span>
+          <Link href="/" className="flex items-center ml-2">
+            <Image src="/logo.png" alt="Kelkar Manas Health Clinic" width={140} height={32} className="object-contain" priority />
           </Link>
         </div>
 
         {(clinicName || clinicLocation) && (
           <div className="flex items-center gap-1.5 text-[10px] bg-muted/60 border border-border px-2 py-1 rounded-xl shadow-sm">
-            <span className="text-foreground font-bold max-w-[80px] sm:max-w-[120px] truncate">{clinicName || "Intima Health"}</span>
+            <span className="text-foreground font-bold max-w-[80px] sm:max-w-[120px] truncate">{clinicName || "KELKAR MANAS HEALTH CLINIC"}</span>
             <span className="text-[9px] font-bold text-muted-foreground bg-card border border-border px-1.5 py-0.5 rounded-full shrink-0">
               {clinicLocation || "Global"}
             </span>

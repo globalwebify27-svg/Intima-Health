@@ -28,14 +28,14 @@ export async function POST(req: Request) {
     const userCount = await UserModel.countDocuments();
     if (userCount === 0) {
       const defaultAdmin = new UserModel({
-        name: "Intima Admin",
-        email: "admin@intima.health",
+        name: "Kelkar Admin",
+        email: "admin@kelkarmanas.com",
         passwordHash: hashPassword("adminpassword123"),
         role: "SUPER_ADMIN",
         status: "Active",
       });
       await defaultAdmin.save();
-      console.log("Seeded default administrator successfully: admin@intima.health / adminpassword123");
+      console.log("Seeded default administrator successfully: admin@kelkarmanas.com / adminpassword123");
     }
 
     const user = await UserModel.findOne({ email }).exec();

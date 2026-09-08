@@ -26,8 +26,10 @@ interface StaffData {
   status: "Active" | "Inactive" | "Pending";
   doctorId?: string;
   specialization?: string;
+  registrationNumber?: string;
   phone?: string;
   salary?: number;
+  rating?: number;
   experience?: number;
   bio?: string;
   availability?: Array<{
@@ -60,8 +62,10 @@ export default function StaffDirectoryPage() {
   // Doctor Fields
   const [phone, setPhone] = useState("");
   const [specialization, setSpecialization] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
   const [experience, setExperience] = useState("");
   const [salary, setSalary] = useState("");
+  const [rating, setRating] = useState("");
   const [bio, setBio] = useState("");
   const [qualificationsText, setQualificationsText] = useState("");
   const [conditionsText, setConditionsText] = useState("");
@@ -133,8 +137,10 @@ export default function StaffDirectoryPage() {
     setStatus("Active");
     setPhone("");
     setSpecialization("");
+    setRegistrationNumber("");
     setExperience("");
     setSalary("");
+    setRating("");
     setBio("");
     setQualificationsText("");
     setConditionsText("");
@@ -168,11 +174,13 @@ export default function StaffDirectoryPage() {
     if (activeTab === "DOCTOR") {
       body.doctorDetails = {
         phone: phone || undefined,
-        specialization: specialization || undefined,
-        experience: experience ? Number(experience) : undefined,
-        bio: bio || undefined,
-        salary: salary ? Number(salary) : undefined,
-        qualifications: qualificationsText ? qualificationsText.split(",").map(q => q.trim()).filter(Boolean) : ["MD"],
+        specialization: specialization || "",
+        registrationNumber: registrationNumber || undefined,
+        experience: experience !== "" ? Number(experience) : "",
+        bio: bio !== "" ? bio : "",
+        salary: salary !== "" ? Number(salary) : "",
+        rating: rating !== "" ? Number(rating) : "",
+        qualifications: qualificationsText ? qualificationsText.split(",").map(q => q.trim()).filter(Boolean) : [],
         conditions: conditionsText ? conditionsText.split(",").map(c => c.trim().toLowerCase()).filter(Boolean) : [],
         showOnHomepage,
         availability,
@@ -219,8 +227,10 @@ export default function StaffDirectoryPage() {
     if (member.role === "DOCTOR") {
       setPhone(member.phone || "");
       setSpecialization(member.specialization || "");
+      setRegistrationNumber(member.registrationNumber || "");
       setExperience(String(member.experience || ""));
       setSalary(String(member.salary || ""));
+      setRating(String(member.rating || ""));
       setBio(member.bio || "");
       setQualificationsText(member.qualifications?.join(", ") || "");
       setConditionsText(member.conditions?.join(", ") || "");
@@ -446,7 +456,7 @@ export default function StaffDirectoryPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="staff@intima.health"
+                      placeholder="staff@kelkarmanas.com"
                       className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                     />
                   </div>
@@ -521,10 +531,9 @@ export default function StaffDirectoryPage() {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Specialization *</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Specialization</label>
                         <input
                           type="text"
-                          required
                           value={specialization}
                           onChange={(e) => setSpecialization(e.target.value)}
                           placeholder="Sexual Medicine"
@@ -533,11 +542,21 @@ export default function StaffDirectoryPage() {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Experience (Years) *</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Registration Number *</label>
+                        <input
+                          type="text"
+                          required
+                          value={registrationNumber}
+                          onChange={(e) => setRegistrationNumber(e.target.value)}
+                          placeholder="MCI-123456"
+                          className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Experience (Years)</label>
                         <input
                           type="number"
-                          required
-                          min={0}
                           value={experience}
                           onChange={(e) => setExperience(e.target.value)}
                           placeholder="8"
@@ -546,14 +565,26 @@ export default function StaffDirectoryPage() {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Doctor's Salary (₹) *</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Doctor's Salary (₹)</label>
                         <input
                           type="number"
-                          required
-                          min={1}
                           value={salary}
                           onChange={(e) => setSalary(e.target.value)}
                           placeholder="50000"
+                          className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Doctor's Rating</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="5"
+                          value={rating}
+                          onChange={(e) => setRating(e.target.value)}
+                          placeholder="5.0"
                           className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                         />
                       </div>
@@ -571,10 +602,9 @@ export default function StaffDirectoryPage() {
                       </div>
 
                       <div className="space-y-1 sm:col-span-2">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Conditions Treated (Comma-separated, e.g. ed, pe, low-libido, sti, fertility, couples) *</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Conditions Treated (Comma-separated, e.g. ed, pe, low-libido, sti, fertility, couples)</label>
                         <input
                           type="text"
-                          required
                           value={conditionsText}
                           onChange={(e) => setConditionsText(e.target.value)}
                           placeholder="ed, pe, low-libido, sti, fertility, couples"
@@ -583,9 +613,8 @@ export default function StaffDirectoryPage() {
                       </div>
 
                       <div className="space-y-1 sm:col-span-2">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Doctor Biography *</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Doctor Biography</label>
                         <textarea
-                          required
                           rows={2}
                           value={bio}
                           onChange={(e) => setBio(e.target.value)}

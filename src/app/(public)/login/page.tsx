@@ -92,22 +92,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-[calc(100vh-80px)] bg-background flex flex-col items-center justify-center py-6 px-4 lg:py-10 lg:px-12 container mx-auto">
+      <div className="w-full max-w-6xl flex bg-card rounded-2xl lg:rounded-3xl overflow-hidden border border-border shadow-sm min-h-[500px] lg:min-h-[700px]">
       {/* Left side - Image/Branding (hidden on mobile) */}
-      <div className="hidden lg:flex w-1/2 relative bg-primary/5 flex-col justify-between p-12 overflow-hidden border-r border-border/50">
+      <div className="hidden lg:flex w-1/2 relative bg-primary/5 flex-col justify-center p-12 overflow-hidden border-r border-border/50">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10 pointer-events-none" />
 
         {/* Decorative blur orbs */}
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/20 rounded-full blur-[100px]" />
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary/20 rounded-full blur-[100px]" />
-
-        <div className="relative z-10">
-          <Link href="/" className="inline-block">
-            <span className="font-serif text-3xl font-bold tracking-tight text-foreground">
-              Intima<span className="font-sans text-primary font-semibold">Health</span>
-            </span>
-          </Link>
-        </div>
 
         <div className="relative z-10 max-w-md">
           <h2 className="text-4xl font-serif font-medium mb-6 leading-tight">
@@ -132,15 +125,19 @@ export default function LoginPage() {
       </div>
 
       {/* Right side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-[420px] space-y-10">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12 relative overflow-hidden">
+        {/* Subtle mobile background decoration */}
+        <div className="lg:hidden absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
+        
+        <div className="w-full max-w-[420px] space-y-8 lg:space-y-10 relative z-10">
 
-          <div className="lg:hidden mb-12 flex justify-center">
-            <Link href="/">
-              <span className="font-serif text-3xl font-bold tracking-tight text-foreground">
-                Intima<span className="font-sans text-primary font-semibold">Health</span>
-              </span>
-            </Link>
+          <div className="lg:hidden mb-8 space-y-2 text-center">
+            <h2 className="text-2xl font-serif font-medium leading-tight">
+              Take control of your absolute well-being.
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Access your personalized treatment plans and connect with your care team.
+            </p>
           </div>
 
           <div className="space-y-3">
@@ -242,6 +239,7 @@ export default function LoginPage() {
             </Link>.
           </p>
         </div>
+      </div>
       </div>
     </div>
   );

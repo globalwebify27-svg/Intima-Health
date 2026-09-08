@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Intima Health",
-  description: "Learn about how Intima Health protects your privacy and handles your data.",
+  title: "Privacy Policy | KELKAR MANAS HEALTH CLINIC",
+  description: "Learn about how KELKAR MANAS HEALTH CLINIC protects your privacy and handles your data.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -16,7 +16,7 @@ export default function PrivacyPolicyPage() {
           
           <h2 className="text-2xl font-bold mt-12 mb-4">1. Information We Collect</h2>
           <p>
-            At Intima Health, we take your privacy seriously. We collect information to provide better services to our users. This includes basic information like your IP address, as well as more complex information like the personal details you provide during registration or appointment booking.
+            At KELKAR MANAS HEALTH CLINIC, we take your privacy seriously. We collect information to provide better services to our users. This includes basic information like your IP address, as well as more complex information like the personal details you provide during registration or appointment booking.
           </p>
 
           <h2 className="text-2xl font-bold mt-12 mb-4">2. How We Use Information</h2>

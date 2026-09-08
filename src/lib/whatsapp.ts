@@ -46,7 +46,7 @@ Message: ${message}
           destination,
           userName: recipientId,
           templateParams: [title, message],
-          source: "IntimaHealthPlatform",
+          source: "KELKAR MANAS HEALTH CLINICPlatform",
         };
 
         const response = await fetch(apiUrl, {
@@ -87,12 +87,12 @@ export async function sendWelcomeMessage(patientId: string) {
     const patient = await PatientModel.findById(patientId).exec();
     if (!patient || !patient.phone) return;
 
-    const welcomeMsg = `Welcome to Intima Health, ${patient.name}! 🌟 Your patient profile has been created successfully. You can log in to your patient portal using your WhatsApp number at http://localhost:3000/login or download and log in to our Mobile App using your phone number to access all your details. App Link: https://intima.health/download-app`;
+    const welcomeMsg = `Welcome to KELKAR MANAS HEALTH CLINIC, ${patient.name}! 🌟 Your patient profile has been created successfully. You can log in to your patient portal using your WhatsApp number with an OTP at http://localhost:3000/login or download and log in to our Mobile App using your phone number with an OTP to access all your details. App Link: https://kelkarmanas.health/download-app`;
     
     await sendWhatsAppMessage({
       recipientId: patient._id.toString(),
       phone: patient.phone,
-      title: "Welcome to Intima Health",
+      title: "Welcome to KELKAR MANAS HEALTH CLINIC",
       message: welcomeMsg,
     });
   } catch (error) {
@@ -115,7 +115,7 @@ export async function sendAppointmentBookingMessage(appointmentId: string, isPai
     const doctor = appointment.doctorId as any;
     if (!patient || !patient.phone) return;
 
-    let clinicName = "Intima Health Clinic";
+    let clinicName = "KELKAR MANAS HEALTH CLINIC Clinic";
     if (doctor?.clinicId) {
       const clinic = await ClinicModel.findById(doctor.clinicId).exec();
       if (clinic) {
@@ -134,7 +134,7 @@ export async function sendAppointmentBookingMessage(appointmentId: string, isPai
         `Type: ${appointment.type}\n` +
         `Clinic: ${clinicName}\n\n` +
         `Your consultation fee of ₹${docFees} has been paid successfully. ✅\n\n` +
-        `To access all your details, prescriptions, and join video consultations, download our Mobile App: https://intima.health/download-app or visit http://localhost:3000/patient/dashboard`;
+        `To access all your details, prescriptions, and join video consultations, download our Mobile App: https://kelkarmanas.health/download-app or visit http://localhost:3000/patient/dashboard`;
     } else {
       message = `Hello ${patient.name}, your appointment with Dr. ${doctor?.name || "our specialist"} is confirmed! 🗓️\n\n` +
         `Date: ${appointment.date}\n` +

@@ -112,7 +112,7 @@ export function FeaturedExperts() {
             Care led by <span className="text-primary">industry authorities.</span>
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground font-medium leading-relaxed">
-            We don't rely on generic practitioners. Intima Health is built on the expertise of leading specialists who focus exclusively on reproductive and sexual wellness.
+            We don't rely on generic practitioners. KELKAR MANAS HEALTH CLINIC is built on the expertise of leading specialists who focus exclusively on reproductive and sexual wellness.
           </p>
         </motion.div>
 

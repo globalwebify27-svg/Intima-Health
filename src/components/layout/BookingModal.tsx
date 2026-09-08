@@ -20,7 +20,9 @@ import {
   X,
   User,
   Star,
-  Activity
+  Activity,
+  Mail,
+  Phone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBookingModal } from "@/store/useBookingModal";
@@ -62,6 +64,8 @@ interface Doctor {
   bio: string;
   rating?: number;
   conditions?: string[];
+  avatar?: string;
+  qualifications?: string[];
 }
 
 export function BookingModal() {
@@ -109,6 +113,7 @@ export function BookingModal() {
   const [otpCode, setOtpCode] = useState("");
   const [loadingOtp, setLoadingOtp] = useState(false);
   const [otpError, setOtpError] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
 
   useEffect(() => {
@@ -133,6 +138,7 @@ export function BookingModal() {
       setOtpStep('phone');
       setOtpCode("");
       setOtpError("");
+      setEmailError("");
       setLoggedInUser(null);
     } else {
       // Fetch services
@@ -265,7 +271,7 @@ export function BookingModal() {
       if (formData.isExistingPatient) {
         return !!formData.phone && otpStep === 'verified';
       }
-      return !!formData.firstName && !!formData.lastName && !!formData.phone;
+      return !!formData.firstName && !!formData.lastName && !!formData.phone && otpStep === 'verified' && !emailError;
     }
     return true;
   };
@@ -331,6 +337,13 @@ export function BookingModal() {
       });
       const data = await res.json();
       if (data.success) {
+        if (!formData.isExistingPatient && data.isNewPatient === false) {
+          throw new Error("An account with this number already exists. Please select 'Existing Patient'.");
+        }
+        if (formData.isExistingPatient && data.isNewPatient === true) {
+          throw new Error("No account found with this number. Please select 'New Patient'.");
+        }
+        
         setOtpStep('otp');
         setResendTimer(30);
         if (data.code) {
@@ -358,13 +371,15 @@ export function BookingModal() {
       const data = await res.json();
       if (data.success) {
         setOtpStep('verified');
-        if (data.user?.name) {
-          const parts = data.user.name.split(' ');
-          updateForm('firstName', parts[0] || '');
-          updateForm('lastName', parts.slice(1).join(' ') || '');
-        }
-        if (data.user?.email) {
-          updateForm('email', data.user.email);
+        if (formData.isExistingPatient) {
+          if (data.user?.name) {
+            const parts = data.user.name.split(' ');
+            updateForm('firstName', parts[0] || '');
+            updateForm('lastName', parts.slice(1).join(' ') || '');
+          }
+          if (data.user?.email && !data.user.email.endsWith('@intima.app')) {
+            updateForm('email', data.user.email);
+          }
         }
       } else {
         throw new Error(data.message || "Invalid OTP code.");
@@ -386,6 +401,11 @@ export function BookingModal() {
       return;
     }
 
+    if (otpStep !== 'verified') {
+      setErrorMsg("Please verify your phone number first.");
+      return;
+    }
+
     if (!formData.isExistingPatient) {
       if (!formData.firstName || formData.firstName.trim().length < 2 || !nameRegex.test(formData.firstName)) {
         setErrorMsg("Please enter a valid first name (letters only, min 2 characters).");
@@ -397,11 +417,6 @@ export function BookingModal() {
       }
       if (formData.email && formData.email.trim() !== "" && !emailRegex.test(formData.email)) {
         setErrorMsg("Please enter a valid email address.");
-        return;
-      }
-    } else {
-      if (otpStep !== 'verified') {
-        setErrorMsg("Please verify your phone number first.");
         return;
       }
     }
@@ -671,18 +686,27 @@ export function BookingModal() {
                                   : "border-border hover:border-primary/40 hover:bg-muted"
                             }`}
                           >
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-                              {doc.name.split(' ').pop()?.[0]}
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0 overflow-hidden">
+                              {doc.avatar ? (
+                                <img src={doc.avatar} alt={doc.name} className="w-full h-full object-cover" />
+                              ) : (
+                                doc.name.split(' ').pop()?.[0]
+                              )}
                             </div>
                             <div className="flex-1">
                               <h4 className="text-sm font-bold">{doc.name}</h4>
-                              <p className="text-xs text-muted-foreground">{doc.specialization} • {doc.experience} yrs exp</p>
+                              <p className="text-xs text-muted-foreground">
+                                {[
+                                  doc.qualifications?.join(", "),
+                                  doc.specialization
+                                ].filter(Boolean).join(" • ")}
+                              </p>
                               <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{doc.bio}</p>
                             </div>
                             <div className="text-right">
                               <div className="flex items-center gap-0.5 mt-0.5">
                                   <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                  <span className="text-[10px] font-bold">5.0</span>
+                                  <span className="text-[10px] font-bold">{doc.rating || '5.0'}</span>
                               </div>
                             </div>
                           </button>
@@ -795,7 +819,7 @@ export function BookingModal() {
                               </div>
                               
                               <p className="text-xs text-muted-foreground leading-relaxed text-center">
-                                We've automatically created your patient profile. Your login credentials and receipt have been dispatched to your registered WhatsApp number.
+                                We've automatically created your patient profile. Your receipt have been dispatched to your registered WhatsApp number.
                               </p>
 
                               <div className="h-px bg-border/50 my-2" />
@@ -837,7 +861,12 @@ export function BookingModal() {
                                     type="radio" 
                                     name="patientType"
                                     checked={!formData.isExistingPatient} 
-                                    onChange={() => updateForm('isExistingPatient', false)} 
+                                    onChange={() => {
+                                      updateForm('isExistingPatient', false);
+                                      setOtpStep('phone');
+                                      setOtpCode("");
+                                      setOtpError("");
+                                    }} 
                                     className="accent-primary" 
                                   />
                                   New Patient
@@ -847,7 +876,12 @@ export function BookingModal() {
                                     type="radio" 
                                     name="patientType"
                                     checked={formData.isExistingPatient} 
-                                    onChange={() => updateForm('isExistingPatient', true)} 
+                                    onChange={() => {
+                                      updateForm('isExistingPatient', true);
+                                      setOtpStep('phone');
+                                      setOtpCode("");
+                                      setOtpError("");
+                                    }} 
                                     className="accent-primary" 
                                   />
                                   Existing Patient
@@ -857,52 +891,146 @@ export function BookingModal() {
                             
                             {!formData.isExistingPatient ? (
                               <>
-                                <div className="grid grid-cols-2 gap-3">
-                                  <input 
-                                    type="text" 
-                                    value={formData.firstName}
-                                    onChange={(e) => {
-                                      const val = e.target.value.replace(/[^A-Za-z\s]/g, '');
-                                      updateForm('firstName', val);
-                                    }}
-                                    className="bg-background border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary" 
-                                    placeholder="First Name" 
-                                  />
-                                  <input 
-                                    type="text" 
-                                    value={formData.lastName}
-                                    onChange={(e) => {
-                                      const val = e.target.value.replace(/[^A-Za-z\s]/g, '');
-                                      updateForm('lastName', val);
-                                    }}
-                                    className="bg-background border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary" 
-                                    placeholder="Last Name" 
-                                  />
+                                <div className="space-y-4 mt-2">
+                                  <div className="grid grid-cols-2 gap-3">
+                                  <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                      <User className="h-3.5 w-3.5 text-muted-foreground/70" />
+                                    </div>
+                                    <input 
+                                      type="text" 
+                                      value={formData.firstName}
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                                        updateForm('firstName', val);
+                                      }}
+                                      className="bg-background/50 border border-border/60 hover:border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-xl pl-9 pr-3 py-2.5 text-xs w-full transition-all focus:outline-none" 
+                                      placeholder="First Name" 
+                                    />
+                                  </div>
+                                  <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                      <User className="h-3.5 w-3.5 text-muted-foreground/70" />
+                                    </div>
+                                    <input 
+                                      type="text" 
+                                      value={formData.lastName}
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                                        updateForm('lastName', val);
+                                      }}
+                                      className="bg-background/50 border border-border/60 hover:border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-xl pl-9 pr-3 py-2.5 text-xs w-full transition-all focus:outline-none" 
+                                      placeholder="Last Name" 
+                                    />
+                                  </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                  <input 
-                                    type="email" 
-                                    value={formData.email}
-                                    onChange={(e) => updateForm('email', e.target.value)}
-                                    className="bg-background border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary" 
-                                    placeholder="Email (Optional)" 
-                                  />
-                                  <input 
-                                    type="tel" 
-                                    value={formData.phone}
-                                    onChange={(e) => {
-                                      let val = e.target.value.replace(/\D/g, '');
-                                      if (val.length > 0 && !/^[6-9]/.test(val[0])) {
-                                        val = '';
-                                      }
-                                      updateForm('phone', val);
-                                    }}
-                                    maxLength={10}
-                                    className="bg-background border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary" 
-                                    placeholder="WhatsApp Number" 
-                                  />
+                                <div className="space-y-4">
+                                  <div className="flex flex-col relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10 h-[38px]">
+                                      <Mail className="h-3.5 w-3.5 text-muted-foreground/70" />
+                                    </div>
+                                    <input 
+                                      type="email" 
+                                      value={formData.email}
+                                      onBlur={(e) => {
+                                        if (e.target.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) {
+                                          setEmailError("Invalid email address format.");
+                                        } else {
+                                          setEmailError("");
+                                        }
+                                      }}
+                                      onChange={(e) => {
+                                        updateForm('email', e.target.value);
+                                        if (emailError) setEmailError("");
+                                      }}
+                                      className={`bg-background/50 border ${emailError ? 'border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20' : 'border-border/60 hover:border-primary/40 focus:border-primary focus:ring-primary/30'} rounded-xl pl-9 pr-3 py-2.5 text-xs w-full transition-all focus:outline-none focus:ring-1`} 
+                                      placeholder="Email (Optional)" 
+                                    />
+                                    {emailError && <span className="text-[10px] text-rose-500 font-medium mt-1.5 px-1">{emailError}</span>}
+                                  </div>
+                                  
+                                  <div className="flex flex-col space-y-3 p-3 rounded-2xl bg-muted/30 border border-border/40">
+                                    <div className="flex gap-2 relative">
+                                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Phone className="h-3.5 w-3.5 text-muted-foreground/70" />
+                                      </div>
+                                      <input 
+                                        type="tel" 
+                                        value={formData.phone}
+                                        onChange={(e) => {
+                                          let val = e.target.value.replace(/\D/g, '');
+                                          if (val.length > 0 && !/^[6-9]/.test(val[0])) {
+                                            val = '';
+                                          }
+                                          updateForm('phone', val);
+                                          if (otpStep !== 'phone') setOtpStep('phone');
+                                        }}
+                                        disabled={otpStep === 'verified' || loadingOtp}
+                                        maxLength={10}
+                                        className="bg-background/80 border border-border/60 hover:border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-xl pl-9 pr-3 py-2.5 text-xs w-full transition-all focus:outline-none flex-1 disabled:opacity-60" 
+                                        placeholder="WhatsApp Number" 
+                                      />
+                                      {otpStep === 'phone' && (
+                                        <button 
+                                          type="button"
+                                          onClick={handleSendOtp}
+                                          disabled={loadingOtp || formData.phone.length !== 10}
+                                          className="bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm disabled:opacity-50 hover:bg-primary/90 transition-all active:scale-95"
+                                        >
+                                          {loadingOtp ? "Sending..." : "Verify"}
+                                        </button>
+                                      )}
+                                      {otpStep === 'verified' && (
+                                        <div className="bg-emerald-50 text-emerald-600 px-4 py-2.5 rounded-xl text-xs font-bold border border-emerald-200/60 flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+                                          <ShieldCheck className="w-4 h-4" /> Verified
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    {otpStep === 'otp' && (
+                                      <motion.div 
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        className="space-y-2 pt-1"
+                                      >
+                                        <div className="flex gap-2">
+                                          <input 
+                                            type="text" 
+                                            value={otpCode}
+                                            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                                            maxLength={6}
+                                            className="bg-background border border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl px-4 py-2.5 text-sm font-medium w-full tracking-[0.25em] text-center transition-all focus:outline-none flex-1 shadow-sm" 
+                                            placeholder="Enter 6-digit OTP" 
+                                          />
+                                          <button 
+                                            type="button"
+                                            onClick={handleVerifyOtp}
+                                            disabled={loadingOtp || otpCode.length < 4}
+                                            className="bg-primary text-primary-foreground px-6 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap shadow-md disabled:opacity-50 hover:bg-primary/90 transition-all active:scale-95"
+                                          >
+                                            {loadingOtp ? "Verifying..." : "Confirm OTP"}
+                                          </button>
+                                        </div>
+                                        <div className="flex items-center justify-end px-1">
+                                          <button
+                                            type="button"
+                                            onClick={handleSendOtp}
+                                            disabled={resendTimer > 0 || loadingOtp}
+                                            className="text-[10px] font-bold text-primary hover:underline disabled:text-muted-foreground disabled:no-underline disabled:opacity-60 transition-all ml-auto"
+                                          >
+                                            {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : "Resend OTP"}
+                                          </button>
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                    
+                                    {otpError && (
+                                      <p className="text-[11px] text-rose-500 font-medium px-1 mt-1">{otpError}</p>
+                                    )}
+                                  </div>
                                 </div>
-                              </>
+                              </div>
+                            </>
                             ) : (
                               <div className="space-y-3">
                                 <div className="flex gap-2">

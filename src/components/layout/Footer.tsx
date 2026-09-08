@@ -37,9 +37,12 @@ export function Footer() {
           <div className="grid grid-cols-2 md:grid-cols-12 gap-12 mb-20">
             
             <div className="col-span-2 md:col-span-4 lg:col-span-5">
-               <span className="text-3xl font-black tracking-tighter text-white mb-4 block">
-                Dr. Kelkar<span className="text-white/50"> Hospital</span>
+               <span className="text-3xl font-black tracking-tighter text-white mb-1 block">
+                Kelkar<span className="text-white/50"> Manas</span>
               </span>
+              <p className="text-xs font-semibold text-white/60 mb-4 tracking-wider uppercase">
+                Holistic wellness & psychotherapy
+              </p>
               <p className="text-sm text-white/70 leading-relaxed max-w-xs font-medium mb-4">
                 P294+H8J, Ramdas Peth, Akola, Maharashtra 444001
               </p>
@@ -68,7 +71,7 @@ export function Footer() {
                 <li><Link href="/services" className="hover:text-white transition-colors">All Services</Link></li>
                 <li><Link href="/conditions" className="hover:text-white transition-colors">Conditions</Link></li>
                 <li><Link href="/consultations" className="hover:text-white transition-colors">Consultations</Link></li>
-                <li><Link href="/products" className="hover:text-white transition-colors">Pharmacy</Link></li>
+                {/* <li><Link href="/products" className="hover:text-white transition-colors">Pharmacy</Link></li> */}
                 <li><Link href="/doctors" className="hover:text-white transition-colors">Our Doctors</Link></li>
               </ul>
             </div>
@@ -94,7 +97,7 @@ export function Footer() {
           </div>
 
           <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-white/10 text-xs font-bold text-white/40 uppercase tracking-widest">
-            <p>&copy; {new Date().getFullYear()} Intima Health.</p>
+            <p>&copy; {new Date().getFullYear()} KELKAR MANAS HEALTH CLINIC.</p>
             <div className="flex gap-6 mt-4 md:mt-0">
               <span>Built with Care</span>
               <span>Built for Privacy</span>
@@ -105,7 +108,7 @@ export function Footer() {
         {/* Massive Typography Watermark */}
         <div className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 w-full text-center pointer-events-none select-none overflow-hidden flex justify-center">
           <span className="text-[18vw] font-black tracking-tighter text-white/[0.03] whitespace-nowrap leading-none">
-            INTIMA
+            KELKAR MANAS
           </span>
         </div>
         

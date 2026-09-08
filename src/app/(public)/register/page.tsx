@@ -88,9 +88,7 @@ export default function RegisterPage() {
         
         <div className="relative z-10 flex justify-end">
           <Link href="/" className="inline-block">
-            <span className="font-serif text-3xl font-bold tracking-tight text-foreground">
-              Intima<span className="font-sans text-primary font-semibold">Health</span>
-            </span>
+            <img src="/logo.png" alt="KELKAR MANAS HEALTH CLINIC" className="h-20 w-auto object-contain" />
           </Link>
         </div>
 
@@ -130,9 +128,7 @@ export default function RegisterPage() {
           
           <div className="lg:hidden mb-8 flex justify-center">
             <Link href="/">
-              <span className="font-serif text-3xl font-bold tracking-tight text-foreground">
-                Intima<span className="font-sans text-primary font-semibold">Health</span>
-              </span>
+              <img src="/logo.png" alt="KELKAR MANAS HEALTH CLINIC" className="h-20 w-auto object-contain" />
             </Link>
           </div>
 

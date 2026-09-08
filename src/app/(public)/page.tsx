@@ -12,7 +12,7 @@ export default function HomePage() {
       <Hero />
       <TrustIndicators />
       <Conditions />
-      <FeaturedProducts />
+      {/* <FeaturedProducts /> */}
       <SelfAssessmentCTA />
       <FeaturedExperts />
       <WhyChooseUs />

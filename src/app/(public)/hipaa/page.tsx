@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "HIPAA Notice of Privacy Practices | Intima Health",
+  title: "HIPAA Notice of Privacy Practices | KELKAR MANAS HEALTH CLINIC",
   description: "Read our HIPAA Notice of Privacy Practices to understand how we protect your medical information.",
 };
 
@@ -16,7 +16,7 @@ export default function HIPAAPage() {
           
           <h2 className="text-2xl font-bold mt-12 mb-4">1. Our Commitment to Your Privacy</h2>
           <p>
-            At Intima Health, we are dedicated to maintaining the privacy of your protected health information (PHI). In conducting our business, we will create records regarding you and the treatment and services we provide to you.
+            At KELKAR MANAS HEALTH CLINIC, we are dedicated to maintaining the privacy of your protected health information (PHI). In conducting our business, we will create records regarding you and the treatment and services we provide to you.
           </p>
 
           <h2 className="text-2xl font-bold mt-12 mb-4">2. How We May Use and Disclose Your PHI</h2>
