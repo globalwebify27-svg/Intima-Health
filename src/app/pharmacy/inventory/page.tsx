@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MoreHorizontal, Plus, Edit3, X } from "lucide-react";
+import { MoreHorizontal, Plus, Edit3, X, Upload, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface Product {
   _id: string;
@@ -21,7 +22,9 @@ interface Product {
 export default function PharmacyInventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
   const [clinicId, setClinicId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -94,6 +97,80 @@ export default function PharmacyInventoryPage() {
     } catch (err) {
       console.error(err);
       alert("Error adding product");
+    }
+  };
+
+  const downloadTemplate = () => {
+    const csvContent = "Name,Category,Price,Stock\nParacetamol 500mg,Analgesic,40,120\nAmoxicillin 250mg,Antibiotic,150,45\n";
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "medicine_import_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !clinicId) return;
+
+    try {
+      setIsUploading(true);
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      
+      const parsedData = XLSX.utils.sheet_to_json(sheet) as any[];
+      
+      // Standardize the keys (lower case, trim)
+      const mappedProducts = parsedData.map(row => {
+        const getVal = (keyNames: string[]) => {
+          for (const key of Object.keys(row)) {
+            if (keyNames.includes(key.toLowerCase().trim())) {
+              return row[key];
+            }
+          }
+          return undefined;
+        };
+        
+        return {
+          name: getVal(["name", "medicine name", "medicine"]),
+          category: getVal(["category", "type"]),
+          price: getVal(["price", "cost"]),
+          stock: getVal(["stock", "quantity", "qty", "stock level"]),
+        };
+      }).filter(p => p.name && p.category && p.price !== undefined && p.stock !== undefined);
+
+      if (mappedProducts.length === 0) {
+        alert("No valid products found. Ensure columns like Name, Category, Price, and Stock exist.");
+        return;
+      }
+
+      const res = await fetch("/api/pharmacy/products/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clinicId, products: mappedProducts }),
+      });
+      const resData = await res.json();
+      
+      if (resData.success) {
+        alert(resData.message || "Products imported successfully!");
+        fetchInventory(clinicId);
+      } else {
+        alert(resData.message || "Failed to import products.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error parsing file or uploading data.");
+    } finally {
+      setIsUploading(false);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -193,13 +270,29 @@ export default function PharmacyInventoryPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
-          <p className="text-muted-foreground mt-2">
-            Track stock levels and manage medication pricing.
+          <p className="text-muted-foreground mt-1">
+            Manage clinic pharmacy stock, prices, and categories.
           </p>
         </div>
-        <Button className="rounded-xl" onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" /> Add Product
-        </Button>
+        <div className="flex items-center gap-3">
+          <input 
+            type="file" 
+            accept=".csv, .xlsx, .xls" 
+            className="hidden" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+          />
+          <Button variant="ghost" className="rounded-xl text-primary" onClick={downloadTemplate}>
+            <Download className="w-4 h-4 mr-2" /> Template
+          </Button>
+          <Button variant="outline" className="rounded-xl" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+            <Upload className="w-4 h-4 mr-2" /> 
+            {isUploading ? "Importing..." : "Import Medicine"}
+          </Button>
+          <Button className="rounded-xl" onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" /> Add Product
+          </Button>
+        </div>
       </div>
       
       <DataTable columns={columns} data={products} />
