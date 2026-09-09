@@ -1,20 +1,17 @@
-export function printPrescription(consultation: any) {
+const fs = require('fs');
+
+const content = `export function printPrescription(consultation: any) {
   let doctorName = consultation.doctorId?.name || "";
-  doctorName = doctorName.replace(/^(Dr\.\s*)+/i, "");
+  doctorName = doctorName.replace(/^(Dr\\.\\s*)+/i, "");
   
   const doctorSpecialization = consultation.doctorId?.specialization || "";
   const doctorQualifications = consultation.doctorId?.qualifications?.join(", ") || "";
   const doctorRegNumber = consultation.doctorId?.registrationNumber || "";
   
-  const clinic = consultation.appointmentId?.clinicId || {};
-  const clinicName = clinic.name || "";
-  
-  // Combine address components dynamically based on schema structure
-  const addressParts = [clinic.address, clinic.city, clinic.state].filter(Boolean);
-  const clinicAddress = addressParts.join(", ") || "";
-  
-  const clinicPhone = clinic.phone || "";
-  const clinicEmail = clinic.email || "";
+  const clinicName = consultation.clinicId?.name || "";
+  const clinicAddress = consultation.clinicId?.address || "";
+  const clinicPhone = consultation.clinicId?.phone || "";
+  const clinicEmail = consultation.clinicId?.email || "";
 
   const patientName = consultation.patientId?.name || "";
   const patientGender = consultation.patientId?.gender || "";
@@ -35,20 +32,20 @@ export function printPrescription(consultation: any) {
     return;
   }
 
-  const medicinesHtml = meds.map((med: any, idx: number) => `
+  const medicinesHtml = meds.map((med: any, idx: number) => \\\`
     <tr style="border-bottom: 1px solid #f1f5f9;">
-      <td style="padding: 14px 8px; font-weight: 600; color: #1e293b; font-size: 13px;">${idx + 1}. ${med.drug}</td>
-      <td style="padding: 14px 8px; color: #475569; font-size: 13px;">${med.dosage}</td>
-      <td style="padding: 14px 8px; color: #475569; font-size: 13px;">${med.frequency}</td>
-      <td style="padding: 14px 8px; text-align: right; color: #1e293b; font-weight: 600; font-size: 13px;">${med.duration} Days</td>
+      <td style="padding: 14px 8px; font-weight: 600; color: #1e293b; font-size: 13px;">\\\${idx + 1}. \\\${med.drug}</td>
+      <td style="padding: 14px 8px; color: #475569; font-size: 13px;">\\\${med.dosage}</td>
+      <td style="padding: 14px 8px; color: #475569; font-size: 13px;">\\\${med.frequency}</td>
+      <td style="padding: 14px 8px; text-align: right; color: #1e293b; font-weight: 600; font-size: 13px;">\\\${med.duration} Days</td>
     </tr>
-  `).join("");
+  \\\`).join("");
 
-  const htmlContent = `
+  const htmlContent = \\\`
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Prescription - ${rxNumber}</title>
+        <title>Prescription - \\\${rxNumber}</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
         <style>
           :root {
@@ -295,10 +292,10 @@ export function printPrescription(consultation: any) {
               <img src="/logo.png" alt="Clinic Logo" onerror="this.style.display='none'" />
             </div>
             <div class="doc-details">
-              <div class="doc-name">DR. ${doctorName}</div>
-              ${doctorSpecialization ? `<div class="doc-spec">${doctorSpecialization}</div>` : ''}
-              ${doctorQualifications ? `<div class="doc-creds">${doctorQualifications}</div>` : ''}
-              ${doctorRegNumber ? `<div class="doc-creds">Reg. No: ${doctorRegNumber}</div>` : ''}
+              <div class="doc-name">DR. \\\${doctorName}</div>
+              \\\${doctorSpecialization ? \\\`<div class="doc-spec">\\\${doctorSpecialization}</div>\\\` : ''}
+              \\\${doctorQualifications ? \\\`<div class="doc-creds">\\\${doctorQualifications}</div>\\\` : ''}
+              \\\${doctorRegNumber ? \\\`<div class="doc-creds">Reg. No: \\\${doctorRegNumber}</div>\\\` : ''}
             </div>
           </div>
 
@@ -308,13 +305,13 @@ export function printPrescription(consultation: any) {
           <div class="meta-banner">
             <div class="meta-block">
               <h4>Patient Details</h4>
-              <p>${patientName}</p>
-              <div class="sub">${patientGender ? `Gender: ${patientGender} | ` : ''}${patientDob ? `DOB: ${patientDob}` : ''}</div>
+              <p>\\\${patientName}</p>
+              <div class="sub">\\\${patientGender ? \\\`Gender: \\\${patientGender} | \\\` : ''}\\\${patientDob ? \\\`DOB: \\\${patientDob}\\\` : ''}</div>
             </div>
             <div class="meta-block" style="text-align: right;">
               <h4>Prescription Info</h4>
-              <p>ID: ${rxNumber}</p>
-              <div class="sub">Date: ${dateStr}</div>
+              <p>ID: \\\${rxNumber}</p>
+              <div class="sub">Date: \\\${dateStr}</div>
             </div>
           </div>
 
@@ -331,7 +328,7 @@ export function printPrescription(consultation: any) {
               </tr>
             </thead>
             <tbody>
-              ${medicinesHtml || `<tr><td colspan="4" style="text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; font-style: italic;">No medications prescribed.</td></tr>`}
+              \\\${medicinesHtml || \\\`<tr><td colspan="4" style="text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; font-style: italic;">No medications prescribed.</td></tr>\\\`}
             </tbody>
           </table>
 
@@ -341,16 +338,16 @@ export function printPrescription(consultation: any) {
             <div class="signature-area">
               <div class="signature-box">
                 <div class="signature-line"></div>
-                <div class="signature-name">Dr. ${doctorName}</div>
+                <div class="signature-name">Dr. \\\${doctorName}</div>
                 <div class="signature-label">Authorized Signatory</div>
               </div>
             </div>
 
             <div class="footer-bottom">
               <div class="footer-text">
-                <strong>${clinicName}</strong><br/>
-                ${clinicAddress}<br/>
-                ${clinicPhone ? `Phone: ${clinicPhone} | ` : ''}${clinicEmail ? `Email: ${clinicEmail}` : ''}
+                <strong>\\\${clinicName}</strong><br/>
+                \\\${clinicAddress}<br/>
+                \\\${clinicPhone ? \\\`Phone: \\\${clinicPhone} | \\\` : ''}\\\${clinicEmail ? \\\`Email: \\\${clinicEmail}\\\` : ''}
               </div>
               <div class="emergency-notice">
                 IN CASE OF EMERGENCY, PLEASE CONTACT THE NEAREST HOSPITAL CASUALTY
@@ -370,8 +367,10 @@ export function printPrescription(consultation: any) {
         </script>
       </body>
     </html>
-  `;
+  \\\`;
 
   printWindow.document.write(htmlContent);
   printWindow.document.close();
 }
+`;
+fs.writeFileSync('src/lib/print-prescription.ts', content);

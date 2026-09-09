@@ -6,7 +6,10 @@ export class ConsultationRepository {
     return await ConsultationModel.findById(id)
       .populate("patientId")
       .populate("doctorId")
-      .populate("appointmentId")
+      .populate({
+        path: "appointmentId",
+        populate: { path: "clinicId" }
+      })
       .exec();
   }
 
@@ -23,7 +26,10 @@ export class ConsultationRepository {
     )
       .populate("patientId")
       .populate("doctorId")
-      .populate("appointmentId")
+      .populate({
+        path: "appointmentId",
+        populate: { path: "clinicId" }
+      })
       .exec();
   }
 
@@ -80,7 +86,10 @@ export class ConsultationRepository {
     const consultations = await ConsultationModel.find(query)
       .populate("patientId")
       .populate("doctorId")
-      .populate("appointmentId")
+      .populate({
+        path: "appointmentId",
+        populate: { path: "clinicId" }
+      })
       .sort({ createdAt: -1 })
       .exec();
 
