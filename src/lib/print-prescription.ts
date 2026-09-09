@@ -70,6 +70,8 @@ export function printPrescription(consultation: any) {
               -webkit-print-color-adjust: exact; 
               print-color-adjust: exact;
               background: white !important;
+              padding: 0 !important;
+              margin: 0 !important;
             }
             .btn-print {
               display: none !important;
@@ -78,9 +80,12 @@ export function printPrescription(consultation: any) {
               border: none !important;
               box-shadow: none !important;
               margin: 0 !important;
-              width: 210mm !important;
-              height: 297mm !important;
+              width: 100% !important;
+              height: 296mm !important;
               padding: 15mm !important;
+              overflow: hidden !important;
+              page-break-after: avoid !important;
+              page-break-inside: avoid !important;
             }
           }
           body {
