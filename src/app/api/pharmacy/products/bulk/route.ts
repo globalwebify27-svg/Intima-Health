@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     // Validate and format products
     const validProducts = [];
     for (const p of products) {
-      if (!p.name || !p.category || p.price === undefined || p.stock === undefined) {
+      if (!p.name || p.price === undefined || p.stock === undefined) {
         continue; // Skip invalid rows
       }
 

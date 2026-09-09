@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     await connectDB();
     const body = await request.json();
     
-    if (!body.clinicId || !body.name || !body.category || body.price === undefined || body.stock === undefined) {
+    if (!body.clinicId || !body.name || body.price === undefined || body.stock === undefined) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 });
     }
 
@@ -125,4 +125,38 @@ export async function PUT(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    await connectDB();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ success: false, message: "Missing product ID" }, { status: 400 });
+    }
+
+    // Soft delete
+    const deletedProduct = await ProductModel.findByIdAndUpdate(
+      id,
+      { $set: { deletedAt: new Date() } },
+      { new: true }
+    ).exec();
+
+    if (!deletedProduct) {
+      return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Product deleted successfully."
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, message: error.message || "Failed to delete product." },
+      { status: 500 }
+    );
+  }
+}
+
 

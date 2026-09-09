@@ -542,10 +542,10 @@ export function BookingModal() {
                     <h3 className="text-lg font-bold font-serif mb-4">Select Service Type</h3>
                     {loadingServices ? (
                       <div className="py-8 text-center text-xs text-muted-foreground">Loading services...</div>
-                    ) : services.filter(s => s.status === "Active").length === 0 ? (
+                    ) : services.filter(s => s.status === "Active" && s.type !== "Therapy").length === 0 ? (
                       <div className="py-8 text-center text-xs text-muted-foreground">No services available.</div>
                     ) : (
-                      services.filter(s => s.status === "Active").map((service) => {
+                      services.filter(s => s.status === "Active" && s.type !== "Therapy").map((service) => {
                         const Icon = getServiceIcon(service.icon);
                         return (
                           <button

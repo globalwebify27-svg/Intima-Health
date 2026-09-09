@@ -4,7 +4,7 @@ import mongoose, { Schema } from "mongoose";
 export interface IProduct {
   clinicId?: Schema.Types.ObjectId;
   name: string;
-  category: string;
+  category?: string;
   price: number;
   stock: number;
   description?: string;
@@ -17,7 +17,7 @@ export interface IProduct {
 const ProductSchema = new Schema<IProduct>({
   clinicId: { type: Schema.Types.ObjectId, ref: "Clinic", required: false },
   name: { type: String, required: true },
-  category: { type: String, required: true },
+  category: { type: String, default: "" },
   price: { type: Number, required: true },
   stock: { type: Number, required: true, default: 0 },
   description: { type: String },
@@ -27,6 +27,7 @@ const ProductSchema = new Schema<IProduct>({
   deletedAt: { type: Date, default: null },
 }, {
   timestamps: true,
+  collection: "products"
 });
 
 // --- ORDER ---
@@ -108,7 +109,7 @@ OrderSchema.pre("findOne", function(this: any) { this.where({ deletedAt: null })
 PaymentSchema.pre("find", function(this: any) { this.where({ deletedAt: null }); });
 PaymentSchema.pre("findOne", function(this: any) { this.where({ deletedAt: null }); });
 
-export const ProductModel = mongoose.models.Product || mongoose.model<IProduct>("Product", ProductSchema);
+export const ProductModel = mongoose.models.PharmacyProduct || mongoose.model<IProduct>("PharmacyProduct", ProductSchema);
 export const OrderModel = mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);
 export const PaymentModel = mongoose.models.Payment || mongoose.model<IPayment>("Payment", PaymentSchema);
 

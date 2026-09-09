@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MoreHorizontal, Plus, Edit3, X, Upload, Download } from "lucide-react";
+import { MoreHorizontal, Plus, Edit3, X, Upload, Download, Trash2 } from "lucide-react";
 import * as XLSX from "xlsx";
 
 interface Product {
@@ -142,10 +142,10 @@ export default function PharmacyInventoryPage() {
           price: getVal(["price", "cost"]),
           stock: getVal(["stock", "quantity", "qty", "stock level"]),
         };
-      }).filter(p => p.name && p.category && p.price !== undefined && p.stock !== undefined);
+      }).filter(p => p.name && p.price !== undefined && p.stock !== undefined);
 
       if (mappedProducts.length === 0) {
-        alert("No valid products found. Ensure columns like Name, Category, Price, and Stock exist.");
+        alert("No valid products found. Ensure columns like Name, Price, and Stock exist.");
         return;
       }
 
@@ -200,7 +200,28 @@ export default function PharmacyInventoryPage() {
       }
     } catch (err) {
       console.error(err);
-      alert("Error updating product");
+      alert("Error editing product");
+    }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    if (!clinicId) return;
+    if (!confirm("Are you sure you want to delete this product?")) return;
+
+    try {
+      const res = await fetch(`/api/pharmacy/products?id=${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        fetchInventory(clinicId);
+      } else {
+        alert(data.message || "Failed to delete product");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting product");
     }
   };
 
@@ -249,9 +270,14 @@ export default function PharmacyInventoryPage() {
       cell: ({ row }) => {
         const product = row.original;
         return (
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => openEditModal(product)}>
-            <Edit3 className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => openEditModal(product)}>
+              <Edit3 className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive hover:bg-destructive/10 text-muted-foreground" onClick={() => handleDeleteProduct(product._id)}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         );
       },
     },
