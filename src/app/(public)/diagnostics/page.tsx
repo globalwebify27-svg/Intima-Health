@@ -163,56 +163,6 @@ export default function DiagnosticsPage() {
         </div>
       </section>
 
-      {/* Kits Section */}
-      <section className="py-24 bg-background border-t border-border">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-16">
-            <h2 className="text-3xl md:text-5xl font-serif mb-4">Available Testing Kits</h2>
-            <p className="text-muted-foreground text-lg">HSA/FSA eligible. No insurance required.</p>
-          </div>
-          
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            {kits.map((kit, idx) => (
-              <motion.div 
-                key={idx}
-                variants={fadeIn}
-                className="flex flex-col bg-card rounded-[2rem] border border-border overflow-hidden hover:shadow-xl transition-all duration-300"
-              >
-                <div className="p-8 flex-1">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${kit.color}`}>
-                    <kit.icon className="w-7 h-7" />
-                  </div>
-                  
-                  <h3 className="text-2xl font-serif font-medium text-foreground mb-4">
-                    {kit.title}
-                  </h3>
-                  
-                  <p className="text-muted-foreground leading-relaxed mb-8">
-                    {kit.description}
-                  </p>
-                  
-                  <div className="mt-auto">
-                    <span className="text-3xl font-bold text-foreground">{kit.price}</span>
-                  </div>
-                </div>
-                
-                <div className="p-6 bg-muted/30 border-t border-border">
-                  <Button className="w-full rounded-xl py-6 text-base font-semibold group">
-                    Order Kit
-                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
 
     </div>
   );

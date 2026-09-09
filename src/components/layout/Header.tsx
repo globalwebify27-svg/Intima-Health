@@ -111,6 +111,7 @@ export function Header() {
               </NavigationMenuItem>
 
               {/* Psychometric Tests Offered */}
+              {/* Psychometric Tests Offered - Hidden for now 
               <NavigationMenuItem>
                 <NavigationMenuTrigger 
                   onClick={() => router.push('/diagnostics')}
@@ -135,6 +136,7 @@ export function Header() {
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
+              */}
 
               {/* Sexual Problems (From Client Screenshot) */}
               <NavigationMenuItem>
@@ -354,7 +356,7 @@ export function Header() {
                 <MobileNavGroup title="Our Services">
                   <Link href="/consultations" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Online Consultations</Link>
                   {/* <Link href="/pharmacy" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Discreet Pharmacy</Link> */}
-                  <Link href="/diagnostics" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">At-Home Diagnostics</Link>
+                  {/* <Link href="/diagnostics" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">At-Home Diagnostics</Link> */}
                   <Link href="/therapy" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Sex Therapy</Link>
                 </MobileNavGroup>
 
