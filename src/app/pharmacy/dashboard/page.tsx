@@ -55,7 +55,7 @@ export default function PharmacyDashboard() {
       const rxRes = await fetch(`/api/consultations?clinicId=${cId}`);
       const rxJson = await rxRes.json();
       if (rxJson.success && rxJson.data) {
-        const activeRx = rxJson.data.filter((c: any) => c.prescriptionSummary && c.prescriptionStatus !== "Fulfilled");
+        const activeRx = rxJson.data.filter((c: any) => c.prescriptionSummary && c.prescriptionSummary !== "[]" && c.prescriptionStatus !== "Fulfilled");
         setPrescriptionsCount(activeRx.length);
       }
     } catch (err) {

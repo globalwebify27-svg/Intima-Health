@@ -85,7 +85,7 @@ export default function PharmacyPrescriptionsPage() {
       const res = await fetch(url);
       const json = await res.json();
       if (json.success && json.data) {
-        const activeRx = json.data.filter((c: any) => c.prescriptionSummary);
+        const activeRx = json.data.filter((c: any) => c.prescriptionSummary && c.prescriptionSummary !== "[]");
         setPrescriptions(activeRx);
       }
 
@@ -211,7 +211,7 @@ export default function PharmacyPrescriptionsPage() {
     setDispenseConsultation(c);
     const autoItems: typeof dispenseItems = [];
 
-    if (c.prescriptionSummary) {
+    if (c.prescriptionSummary && c.prescriptionSummary !== "[]") {
       try {
         const meds = JSON.parse(c.prescriptionSummary);
         if (Array.isArray(meds)) {

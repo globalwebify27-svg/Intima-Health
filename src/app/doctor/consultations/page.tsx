@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTime12Hour } from "@/lib/utils";
+import { ZegoVideoCall } from "@/components/consultations/ZegoVideoCall";
 
 interface Patient {
   _id: string;
@@ -193,9 +194,20 @@ function ConsultationsContent() {
           c.appointmentId?._id === targetAptId || 
           (c.appointmentId && (c.appointmentId as any)._id === targetAptId)
       );
+      if (found && found.status === "Completed") {
+        window.location.href = "/doctor/appointments";
+        return;
+      }
+
       if (found && found.status !== "Completed" && activeConsultation?._id !== found._id) {
         let canJoin = false;
-        if (found.appointmentId?.date && found.appointmentId?.time) {
+        const isVideo = found.appointmentId?.type === "Video" || 
+                        (found as any).appointmentId?.serviceName?.toLowerCase().includes("online");
+
+        if (isVideo) {
+          // For video consultations, doctor can always join
+          canJoin = true;
+        } else if (found.appointmentId?.date && found.appointmentId?.time) {
           const now = new Date();
           const [hours, minutes] = found.appointmentId.time.split(':').map(Number);
           const aptDate = new Date(`${found.appointmentId.date}T00:00:00`);
@@ -275,8 +287,8 @@ function ConsultationsContent() {
         body: JSON.stringify({
           status: "Completed",
           notes,
-          prescriptionSummary: JSON.stringify(filteredPrescription),
-          prescribedTherapies: JSON.stringify(filteredTherapies),
+          prescriptionSummary: filteredPrescription.length > 0 ? JSON.stringify(filteredPrescription) : "",
+          prescribedTherapies: filteredTherapies.length > 0 ? JSON.stringify(filteredTherapies) : "",
         }),
       });
 
@@ -371,81 +383,27 @@ function ConsultationsContent() {
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col relative bg-slate-950 p-4 h-[55vh] md:h-full justify-between">
-                {/* Patient Badge overlay */}
-                <div className="absolute top-6 left-6 z-10 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-3 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-white">
-                    {activeConsultation.patientId.name.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <h4 className="text-white text-xs font-bold">{activeConsultation.patientId.name}</h4>
-                    <p className="text-[10px] text-green-500 font-semibold flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping" /> Connected</p>
-                  </div>
-                </div>
-
-                {/* Video Grid */}
-                <div className="w-full h-full flex flex-col md:flex-row gap-4 items-center justify-center p-8 relative">
-                  {/* Simulated Doctor Stream */}
-                  {isCamOn ? (
-                    <div className="w-full md:w-[60%] h-full rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 relative shadow-2xl">
-                      <div className="absolute bottom-4 left-4 z-10 bg-black/60 px-3 py-1.5 rounded-xl text-white text-xs font-bold">
-                        Patient (Stream Video)
-                      </div>
-                      {/* Simulated avatar placeholder */}
-                      <div className="w-full h-full flex items-center justify-center bg-slate-800">
-                        <User className="w-20 h-20 text-slate-600 animate-pulse" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="w-full md:w-[60%] h-full rounded-3xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 font-bold text-sm">
-                      Camera is Turned Off
-                    </div>
-                  )}
-
-                  {/* Self Stream (Floating or side) */}
-                  <div className="absolute bottom-6 right-6 w-36 h-48 rounded-2xl border-2 border-slate-700 overflow-hidden bg-slate-900 shadow-2xl z-20 hidden md:block">
-                    <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded-lg text-white text-[9px] font-bold">
-                      You (Doctor)
-                    </div>
-                    <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                      <User className="w-10 h-10 text-slate-600" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Video control bar */}
-                <div className="flex items-center justify-center gap-4 py-4 z-10 bg-gradient-to-t from-slate-950 to-transparent">
-                  <Button 
-                    onClick={() => setIsMicOn(!isMicOn)}
-                    className={`rounded-full w-12 h-12 flex items-center justify-center p-0 ${
-                      isMicOn ? "bg-slate-800 hover:bg-slate-700 text-white" : "bg-red-600 hover:bg-red-500 text-white"
-                    }`}
-                  >
-                    {isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-                  </Button>
-                  <Button 
-                    onClick={() => setIsCamOn(!isCamOn)}
-                    className={`rounded-full w-12 h-12 flex items-center justify-center p-0 ${
-                      isCamOn ? "bg-slate-800 hover:bg-slate-700 text-white" : "bg-red-600 hover:bg-red-500 text-white"
-                    }`}
-                  >
-                    {isCamOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-                  </Button>
-                  <Button 
-                    onClick={() => setIsScreenSharing(!isScreenSharing)}
-                    className={`rounded-full w-12 h-12 flex items-center justify-center p-0 ${
-                      isScreenSharing ? "bg-primary text-white" : "bg-slate-800 hover:bg-slate-700 text-white"
-                    }`}
-                  >
-                    <ScreenShare className="w-5 h-5" />
-                  </Button>
-                  <Button 
-                    onClick={handleExitSession}
-                    className="rounded-full w-12 h-12 bg-red-600 hover:bg-red-500 text-white flex items-center justify-center p-0"
-                  >
-                    <PhoneOff className="w-5 h-5" />
-                  </Button>
-                </div>
+              <div className="flex-1 flex flex-col relative bg-slate-950 p-0 h-[55vh] md:h-full justify-between">
+                <ZegoVideoCall 
+                  roomID={activeConsultation.videoChannelName}
+                  userID={(activeConsultation.doctorId?._id || "doctor-1").toString()}
+                  userName="Doctor"
+                  onLeaveRoom={handleExitSession}
+                  onJoinRoom={async () => {
+                    const aptId = (activeConsultation.appointmentId as any)?._id || activeConsultation.appointmentId;
+                    if (aptId) {
+                      try {
+                        await fetch(`/api/appointments/${aptId}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ status: "Engaged" }),
+                        });
+                      } catch (err) {
+                        console.error("Failed to update status to Engaged", err);
+                      }
+                    }
+                  }}
+                />
               </div>
             )}
 

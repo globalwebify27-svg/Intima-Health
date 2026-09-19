@@ -105,14 +105,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Doctor profile not found." }, { status: 404 });
     }
 
-    const prescriptionSummary = JSON.stringify(
+    const prescriptionSummary = hasDrugs ? JSON.stringify(
       drugs.map((d: any) => ({
         drug: d.drug,
         dosage: d.dosage,
         frequency: d.frequency,
         duration: d.duration,
       }))
-    );
+    ) : undefined;
 
     const prescribedTherapiesJson = Array.isArray(therapies) && therapies.length > 0
       ? JSON.stringify(therapies.map((t: any) => ({ name: t.name, price: Number(t.price) })))

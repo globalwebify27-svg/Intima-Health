@@ -114,8 +114,7 @@ const columns: ColumnDef<Appointment>[] = [
 
         if (isTimeOver) {
           actionNode = <span className="text-muted-foreground text-[10px] font-semibold italic opacity-50">Expired</span>;
-        } else if (paymentStatus === "Paid") {
-          if (isTooEarly) {
+        } else if (isTooEarly) {
             actionNode = (
               <div className="flex flex-col items-center gap-1">
                 <div className="cursor-not-allowed inline-block">
@@ -136,7 +135,7 @@ const columns: ColumnDef<Appointment>[] = [
               <Button 
                 size="sm" 
                 className="rounded-lg"
-                onClick={() => window.location.href = "/patient/consultations"}
+                onClick={() => window.location.href = `/patient/consultations?appointmentId=${appointmentId}`}
               >
                 Join Call <ExternalLink className="w-3 h-3 ml-2" />
               </Button>
@@ -169,7 +168,6 @@ const columns: ColumnDef<Appointment>[] = [
             </Button>
           );
         }
-      }
 
       return (
         <div className="flex items-center gap-2">

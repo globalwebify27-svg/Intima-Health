@@ -210,7 +210,7 @@ export default function PrescriptionsPage() {
     setDispenseConsultation(c);
     const autoItems: typeof dispenseItems = [];
 
-    if (c.prescriptionSummary) {
+    if (c.prescriptionSummary && c.prescriptionSummary !== "[]") {
       try {
         const meds = JSON.parse(c.prescriptionSummary);
         if (Array.isArray(meds)) {
@@ -256,7 +256,7 @@ export default function PrescriptionsPage() {
   const filtered = consultations.filter((c) => {
     const patientName = c.patientId?.name.toLowerCase() || "";
     const doctorName = c.doctorId?.name.toLowerCase() || "";
-    const summaryText = c.prescriptionSummary?.toLowerCase() || "";
+    const summaryText = (c.prescriptionSummary && c.prescriptionSummary !== "[]") ? c.prescriptionSummary.toLowerCase() : "";
     const query = searchQuery.toLowerCase();
 
     return patientName.includes(query) || doctorName.includes(query) || summaryText.includes(query);
@@ -365,8 +365,8 @@ export default function PrescriptionsPage() {
                       <div className="flex items-center gap-1 mt-1"><Clock className="w-3.5 h-3.5" /> {c.appointmentId?.time || "N/A"}</div>
                     </td>
                     <td className="p-4">
-                      <div className="max-w-[280px] truncate text-muted-foreground" title={c.prescriptionSummary}>
-                        {renderPrescriptionSummary(c.prescriptionSummary)}
+                      <div className="max-w-[280px] truncate text-muted-foreground" title={(c.prescriptionSummary && c.prescriptionSummary !== "[]") ? c.prescriptionSummary : undefined}>
+                        {renderPrescriptionSummary((c.prescriptionSummary && c.prescriptionSummary !== "[]") ? c.prescriptionSummary : undefined)}
                       </div>
                     </td>
                     <td className="p-4 text-right">

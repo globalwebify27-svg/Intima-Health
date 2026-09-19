@@ -84,7 +84,7 @@ export class ConsultationService {
     // --- Completion-specific logic ---
     if (data.status === "Completed") {
       // Update appointment status to Completed
-      const aptId = updated.appointmentId;
+      const aptId = (updated.appointmentId as any)?._id || updated.appointmentId;
       if (aptId) {
         await AppointmentModel.findByIdAndUpdate(aptId, { status: "Completed" }).exec();
       }

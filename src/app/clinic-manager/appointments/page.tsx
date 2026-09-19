@@ -388,7 +388,7 @@ export default function AppointmentsPage() {
                           <select
                             className="flex-1 h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                             value={apt.status}
-                            disabled={actionLoading === apt._id || apt.status === "Engaged"}
+                            disabled={actionLoading === apt._id || apt.status === "Engaged" || apt.type === "Video"}
                             onChange={(e) => {
                               if (e.target.value === "Rescheduled") {
                                 setRescheduleApt(apt);

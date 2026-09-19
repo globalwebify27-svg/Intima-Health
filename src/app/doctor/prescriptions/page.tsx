@@ -82,7 +82,7 @@ export default function DoctorPrescriptionsPage() {
         const res = await fetch(`/api/consultations?_t=${Date.now()}`, { cache: "no-store" });
         const json = await res.json();
         if (json.success) {
-          setPrescriptions(json.data.filter((c: any) => c.status === "Completed" && c.prescriptionSummary));
+          setPrescriptions(json.data.filter((c: any) => c.status === "Completed" && c.prescriptionSummary && c.prescriptionSummary !== "[]"));
         }
 
         if (meJson.user.clinicId) {

@@ -37,8 +37,14 @@ export class ConsultationRepository {
     // 1. Auto-create consultations for any scheduled appointments that don't have one
     // Note: AppointmentModel pre("find") hook already filters deletedAt: null
     try {
-      // Only auto-create consultations for paid appointments
-      const aptQuery: any = { status: "Scheduled", paymentStatus: "Paid" };
+      // Auto-create consultations for paid appointments OR online video appointments (payment may be collected separately)
+      const aptQuery: any = {
+        status: "Scheduled",
+        $or: [
+          { paymentStatus: "Paid" },
+          { type: "Video" }
+        ]
+      };
       if (filters.doctorId) aptQuery.doctorId = filters.doctorId;
       if (filters.patientId) aptQuery.patientId = filters.patientId;
       if (filters.clinicId) aptQuery.clinicId = filters.clinicId;
@@ -73,8 +79,11 @@ export class ConsultationRepository {
       const appointmentIds = appointments.map(a => a._id);
       query.appointmentId = { $in: appointmentIds };
     } else if (filters.doctorId) {
-      // For doctor-specific queries, restrict to paid appointments only
-      const paidApts = await AppointmentModel.find({ doctorId: filters.doctorId, paymentStatus: "Paid" }).select("_id").exec();
+      // For doctor-specific queries, restrict to paid appointments OR video appointments
+      const paidApts = await AppointmentModel.find({
+        doctorId: filters.doctorId,
+        $or: [{ paymentStatus: "Paid" }, { type: "Video" }]
+      }).select("_id").exec();
       const paidAptIds = paidApts.map(a => a._id);
       query.$or = [
         { appointmentId: { $in: paidAptIds } },

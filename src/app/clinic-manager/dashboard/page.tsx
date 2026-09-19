@@ -440,7 +440,7 @@ export default function ClinicManagerDashboardPage() {
   const totalUpcomingCount = appointments.filter(a => ["Scheduled", "Rescheduled"].includes(a.status)).length;
   
   // Filter prescriptions (completed consultations with prescriptionSummary)
-  const prescriptionLogs = consultations.filter(c => c.status === "Completed" && c.prescriptionSummary);
+  const prescriptionLogs = consultations.filter(c => c.status === "Completed" && c.prescriptionSummary && c.prescriptionSummary !== "[]");
 
   if (loading) {
     return (
@@ -583,7 +583,7 @@ export default function ClinicManagerDashboardPage() {
                           <select
                             className="h-8 w-28 rounded-lg border border-input bg-transparent px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-medium text-center"
                             value={apt.status}
-                            disabled={actionLoading === apt._id || apt.status === "Engaged"}
+                            disabled={actionLoading === apt._id || apt.status === "Engaged" || apt.type === "Video"}
                             onChange={(e) => {
                               if (e.target.value === "Rescheduled") {
                                 setRescheduleApt(apt);

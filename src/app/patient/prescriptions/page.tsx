@@ -36,7 +36,7 @@ export default function PatientPrescriptionsPage() {
       if (json.success && json.data) {
         // Filter consultations with active prescriptions
         const completedPrescriptions = json.data.filter(
-          (c: any) => c.status === "Completed" && c.prescriptionSummary
+          (c: any) => c.status === "Completed" && c.prescriptionSummary && c.prescriptionSummary !== "[]"
         );
         setPrescriptions(completedPrescriptions);
       }

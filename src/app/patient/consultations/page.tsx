@@ -3,12 +3,8 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Video, VideoOff, Mic, MicOff, ScreenShare, PhoneOff, 
-  User, Calendar, Clock, ChevronRight, Heart, ShieldCheck 
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { ShieldCheck } from "lucide-react";
+import { ZegoVideoCall } from "@/components/consultations/ZegoVideoCall";
 
 interface Doctor {
   _id: string;
@@ -18,12 +14,7 @@ interface Doctor {
 
 interface Consultation {
   _id: string;
-  appointmentId: {
-    _id?: string;
-    date: string;
-    time: string;
-    type?: string;
-  };
+  appointmentId: any;
   patientId: any;
   doctorId: Doctor;
   videoChannelName: string;
@@ -49,15 +40,9 @@ function ConsultationRoomContent() {
   const searchParams = useSearchParams();
   const targetAptId = searchParams.get("appointmentId");
 
-  const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [activeConsultation, setActiveConsultation] = useState<Consultation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  // Video Room Controls
-  const [isMicOn, setIsMicOn] = useState(true);
-  const [isCamOn, setIsCamOn] = useState(true);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
 
   const fetchConsultations = async (pId: string) => {
     try {
@@ -65,17 +50,21 @@ function ConsultationRoomContent() {
       const resData = await res.json();
       if (resData.success) {
         const list: Consultation[] = resData.data || [];
-        setConsultations(list);
 
-        // Find the active or pending consultation
-        let active = list.find(c => c.status === "Active");
+        // Always prioritize the consultation linked to the appointmentId from URL
+        let active: Consultation | undefined;
+        if (targetAptId) {
+          active = list.find(c => {
+            const aptId = (c.appointmentId as any)?._id || c.appointmentId;
+            return String(aptId) === targetAptId;
+          });
+        }
+        // Fallback: find active/pending if no URL param or no match
+        if (!active) {
+          active = list.find(c => c.status === "Active");
+        }
         if (!active) {
           active = list.find(c => c.status === "Pending");
-        }
-        
-        if (targetAptId) {
-          const match = list.find(c => c.appointmentId?._id === targetAptId);
-          if (match) active = match;
         }
 
         if (active) {
@@ -158,77 +147,29 @@ function ConsultationRoomContent() {
       </div>
 
       {/* Main Video Stream Window */}
-      <div className="w-full h-full flex flex-col md:flex-row gap-4 items-center justify-center p-8 relative">
-        
-        {/* Doctor video feed */}
-        <div className="w-full md:w-[70%] h-[75vh] rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 relative shadow-2xl">
-          <div className="absolute bottom-4 left-4 z-10 bg-black/60 px-3 py-1.5 rounded-xl text-white text-xs font-bold flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-red-500 rounded-full" /> Live Doctor Feed
-          </div>
-          
-          {/* Simulated doctor stream */}
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950">
-            <User className="w-24 h-24 text-slate-700 animate-pulse mb-3" />
-            <p className="text-xs text-slate-500 font-bold tracking-wider">Awaiting specialist connection...</p>
-            <p className="text-[10px] text-slate-600">The doctor will join you shortly.</p>
-          </div>
+      <div className="w-full h-full flex flex-col items-center justify-center relative pt-24 pb-8 px-8">
+        <div className="w-full h-[80vh] rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 relative shadow-2xl">
+          <ZegoVideoCall 
+            roomID={activeConsultation.videoChannelName}
+            userID={activeConsultation.patientId && typeof activeConsultation.patientId === 'object' ? (activeConsultation.patientId as any)._id : String(activeConsultation.patientId) || `patient-stable-id`}
+            userName="Patient"
+            onLeaveRoom={handleEndCall}
+            onJoinRoom={async () => {
+              const aptId = (activeConsultation.appointmentId as any)?._id || activeConsultation.appointmentId;
+              if (aptId) {
+                try {
+                  await fetch(`/api/appointments/${aptId}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ status: "Checked In" }),
+                  });
+                } catch (err) {
+                  console.error("Failed to update status to Checked In", err);
+                }
+              }
+            }}
+          />
         </div>
-
-        {/* Self Video Stream (Floating) */}
-        <div className="absolute bottom-28 right-12 w-40 h-52 rounded-2xl border-2 border-slate-700 overflow-hidden bg-slate-900 shadow-2xl z-20 hidden md:block">
-          <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded-lg text-white text-[9px] font-bold">
-            You (Patient)
-          </div>
-          {isCamOn ? (
-            <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-              <User className="w-12 h-12 text-slate-600" />
-            </div>
-          ) : (
-            <div className="w-full h-full bg-slate-950 flex items-center justify-center text-[10px] text-slate-500 font-bold">
-              Camera Off
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Control Bar Overlay */}
-      <div className="flex flex-col items-center gap-2 py-6 z-10 bg-gradient-to-t from-slate-950 to-transparent">
-        <div className="flex items-center justify-center gap-4">
-          <Button 
-            onClick={() => setIsMicOn(!isMicOn)}
-            className={`rounded-full w-12 h-12 flex items-center justify-center p-0 ${
-              isMicOn ? "bg-slate-800 hover:bg-slate-700 text-white" : "bg-red-600 hover:bg-red-500 text-white"
-            }`}
-          >
-            {isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-          </Button>
-          
-          <Button 
-            onClick={() => setIsCamOn(!isCamOn)}
-            className={`rounded-full w-12 h-12 flex items-center justify-center p-0 ${
-              isCamOn ? "bg-slate-800 hover:bg-slate-700 text-white" : "bg-red-600 hover:bg-red-500 text-white"
-            }`}
-          >
-            {isCamOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-          </Button>
-
-          <Button 
-            onClick={() => setIsScreenSharing(!isScreenSharing)}
-            className={`rounded-full w-12 h-12 flex items-center justify-center p-0 ${
-              isScreenSharing ? "bg-primary text-white" : "bg-slate-800 hover:bg-slate-700 text-white"
-            }`}
-          >
-            <ScreenShare className="w-5 h-5" />
-          </Button>
-
-          <Button 
-            onClick={handleEndCall}
-            className="rounded-full w-12 h-12 bg-red-600 hover:bg-red-500 text-white flex items-center justify-center p-0"
-          >
-            <PhoneOff className="w-5 h-5" />
-          </Button>
-        </div>
-        <p className="text-[9px] text-slate-500 mt-1">Encrypted peer-to-peer connection • Powered by KELKAR MANAS HEALTH CLINIC</p>
       </div>
     </div>
   );

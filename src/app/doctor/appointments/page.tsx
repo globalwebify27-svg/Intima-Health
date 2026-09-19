@@ -55,20 +55,12 @@ const columns: ColumnDef<any>[] = [
       const status = row.getValue("status") as string;
       const id = row.original._id;
       
-      if (status === "Checked In" || status === "Engaged") {
+      if (status === "Checked In" || status === "Engaged" || (row.original.type === "Video" && status === "Scheduled") || (row.original.serviceName && row.original.serviceName.toLowerCase().includes("online") && status === "Scheduled")) {
         return (
           <Button 
             size="sm" 
             className="rounded-lg"
             onClick={async () => {
-              if (status === "Checked In") {
-                // Optimistically mark as engaged so it immediately updates for clinic manager
-                fetch(`/api/appointments/${id}`, {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ status: "Engaged" })
-                }).catch(console.error);
-              }
               window.location.href = `/doctor/consultations?appointmentId=${id}`;
             }}
           >

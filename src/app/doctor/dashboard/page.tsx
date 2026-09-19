@@ -84,18 +84,8 @@ export default function DoctorDashboard() {
     );
   }
 
-  const handleStartSession = async (appointmentId: string) => {
-    try {
-      await fetch(`/api/appointments/${appointmentId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Engaged" }),
-      });
-    } catch (err) {
-      console.error("Failed to update status to Engaged", err);
-    } finally {
-      window.location.href = `/doctor/consultations?appointmentId=${appointmentId}`;
-    }
+  const handleStartSession = (appointmentId: string) => {
+    window.location.href = `/doctor/consultations?appointmentId=${appointmentId}`;
   };
 
   const todayStr = typeof window !== "undefined" ? new Date().toLocaleDateString("en-CA") : "";
@@ -213,7 +203,7 @@ export default function DoctorDashboard() {
                     <span className="text-xs font-bold text-red-600 bg-red-500/10 px-3.5 py-1.5 rounded-xl border border-red-500/20">
                       Cancelled
                     </span>
-                  ) : (apt.status === "Checked In" || apt.status === "Engaged") ? (
+                  ) : (apt.status === "Checked In" || apt.status === "Engaged" || (apt.type === "Video" && apt.status === "Scheduled") || (apt.serviceName && apt.serviceName.toLowerCase().includes("online") && apt.status === "Scheduled")) ? (
                     <Button 
                       size="sm"
                       onClick={() => handleStartSession(apt._id)}
