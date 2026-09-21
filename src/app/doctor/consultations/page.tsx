@@ -301,6 +301,7 @@ function ConsultationsContent() {
       }
     } catch (err) {
       console.error("Save failed", err);
+      alert("Failed to complete consultation. Please check your connection and try again.");
     } finally {
       setCompleting(false);
     }

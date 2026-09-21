@@ -80,8 +80,8 @@ export class ConsultationService {
         } else {
           console.error("Could not resolve clinicId for therapy sessions. doctorDoc:", doctorDoc?._id, "clinicId:", clinicId);
         }
-      } catch (e) {
-        console.error("Failed to sync prescribed therapies:", e);
+      } catch (err) {
+        console.error("Failed to sync prescribed therapies:", err);
       }
     }
 
@@ -93,9 +93,11 @@ export class ConsultationService {
         await AppointmentModel.findByIdAndUpdate(aptId, { status: "Completed" }).exec();
       }
 
-      // Send digital prescription WhatsApp notification to the patient
+      // Send digital prescription WhatsApp notification (fire-and-forget — don't block response)
       if (updated.prescriptionSummary) {
-        await sendPrescriptionMessage((updated as any)._id.toString());
+        sendPrescriptionMessage((updated as any)._id.toString()).catch((err) =>
+          console.error("WhatsApp notification failed (non-critical):", err)
+        );
       }
     }
 
