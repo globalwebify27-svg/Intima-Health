@@ -294,7 +294,9 @@ function ConsultationsContent() {
 
       const data = await res.json();
       if (data.success) {
-        setActiveConsultation(null);
+        // Do not setActiveConsultation(null) here because it triggers a re-render
+        // which causes the useEffect to fire and set the status back to Active
+        // before the page redirects!
         window.location.href = "/doctor/appointments";
       } else {
         alert(data.message || "Failed to complete consultation.");
