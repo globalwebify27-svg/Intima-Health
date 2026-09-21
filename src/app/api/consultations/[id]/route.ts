@@ -46,6 +46,27 @@ export async function PUT(req: Request, { params }: RouteParams) {
     const body = await req.json();
     const updated = await ConsultationService.updateConsultation(id, body, payload.email);
 
+    // Safeguard: if status was "Completed" in request, force it directly via native MongoDB
+    // to avoid Mongoose model caching issues on Vercel serverless
+    if (body.status === "Completed") {
+      const { connectDB: _connectDB } = await import("@/db/connect");
+      const mongoose = (await import("mongoose")).default;
+      const rawCol = mongoose.connection.collection("consultations");
+      const { ObjectId } = await import("mongodb");
+      await rawCol.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: "Completed", updatedAt: new Date() } }
+      );
+      // Also update the appointment
+      if (updated && updated.appointmentId) {
+        const aptId = (updated.appointmentId as any)?._id || updated.appointmentId;
+        await mongoose.connection.collection("appointments").updateOne(
+          { _id: new ObjectId(aptId.toString()) },
+          { $set: { status: "Completed", updatedAt: new Date() } }
+        );
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: "Consultation updated successfully.",
