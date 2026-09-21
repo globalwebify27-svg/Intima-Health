@@ -104,17 +104,19 @@ const columns: ColumnDef<Appointment>[] = [
       const paymentStatus = row.original.paymentStatus || "Pending";
       const appointmentId = row.original._id;
       
+      const isOnline = type === "Video" || (row.original.serviceName && row.original.serviceName.toLowerCase().includes("online"));
+
       let actionNode = null;
 
-      if (type === "Video" && status === "Scheduled") {
+      if (isOnline && (status === "Scheduled" || status === "Engaged")) {
         const appointmentTime = new Date(`${row.original.date}T${row.original.time}`).getTime();
         const now = new Date().getTime();
         const isTimeOver = now > appointmentTime + 60 * 60 * 1000; // 1 hour buffer
         const isTooEarly = now < appointmentTime - 15 * 60 * 1000; // before 15 mins
 
-        if (isTimeOver) {
+        if (isTimeOver && status !== "Engaged") {
           actionNode = <span className="text-muted-foreground text-[10px] font-semibold italic opacity-50">Expired</span>;
-        } else if (isTooEarly) {
+        } else if (isTooEarly && status !== "Engaged") {
             actionNode = (
               <div className="flex flex-col items-center gap-1">
                 <div className="cursor-not-allowed inline-block">
@@ -141,7 +143,7 @@ const columns: ColumnDef<Appointment>[] = [
               </Button>
             );
           }
-        } else {
+        } else if (paymentStatus !== "Paid" && status !== "Completed" && status !== "Cancelled") {
           actionNode = (
             <Button 
               size="sm" 
@@ -154,7 +156,7 @@ const columns: ColumnDef<Appointment>[] = [
                   });
                   const data = await res.json();
                   if (data.success) {
-                    alert("Consultation fee paid successfully! You can now join the call.");
+                    alert("Consultation fee paid successfully!");
                     window.location.reload();
                   } else {
                     alert(data.message || "Payment failed.");
@@ -187,10 +189,10 @@ export default function PatientAppointmentsPage() {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const meRes = await fetch("/api/auth/me");
+        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
         const meJson = await meRes.json();
         if (meJson.success && meJson.user && meJson.user.patientId) {
-          const res = await fetch(`/api/appointments?patientId=${meJson.user.patientId}`);
+          const res = await fetch(`/api/appointments?patientId=${meJson.user.patientId}&_t=${Date.now()}`, { cache: "no-store" });
           const json = await res.json();
           if (json.success) {
             const sortedApts = (json.data || []).sort((a: Appointment, b: Appointment) => {
@@ -206,6 +208,17 @@ export default function PatientAppointmentsPage() {
       }
     };
     fetchAppointments();
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") fetchAppointments();
+    }, 15000);
+    const onFocus = () => fetchAppointments();
+    window.addEventListener("focus", onFocus);
+    
+    return () => { 
+      clearInterval(interval); 
+      window.removeEventListener("focus", onFocus); 
+    };
   }, []);
 
   if (loading) {

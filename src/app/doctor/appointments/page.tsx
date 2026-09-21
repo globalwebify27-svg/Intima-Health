@@ -55,7 +55,50 @@ const columns: ColumnDef<any>[] = [
       const status = row.getValue("status") as string;
       const id = row.original._id;
       
-      if (status === "Checked In" || status === "Engaged" || (row.original.type === "Video" && status === "Scheduled") || (row.original.serviceName && row.original.serviceName.toLowerCase().includes("online") && status === "Scheduled")) {
+      const type = row.original.type as string;
+      const serviceName = row.original.serviceName as string | undefined;
+      const isOnline = type === "Video" || (serviceName && serviceName.toLowerCase().includes("online"));
+
+      if (isOnline && (status === "Scheduled" || status === "Engaged")) {
+        const appointmentTime = new Date(`${row.original.date}T${row.original.time}`).getTime();
+        const now = new Date().getTime();
+        const isTimeOver = now > appointmentTime + 60 * 60 * 1000; // 1 hour buffer
+        const isTooEarly = now < appointmentTime - 15 * 60 * 1000; // before 15 mins
+
+        if (status === "Scheduled" && isTooEarly) {
+            return (
+              <div className="flex flex-col items-center gap-1">
+                <div className="cursor-not-allowed inline-block">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="rounded-lg opacity-50 pointer-events-none"
+                    tabIndex={-1}
+                  >
+                    Start Session <ExternalLink className="w-3 h-3 ml-2" />
+                  </Button>
+                </div>
+                <span className="text-[9px] text-muted-foreground/80 font-medium whitespace-nowrap">Active 15 mins before</span>
+              </div>
+            );
+        } else if (isTimeOver && status !== "Engaged") {
+             return <span className="text-muted-foreground text-[10px] font-semibold italic opacity-50">Expired</span>;
+        } else {
+          return (
+            <Button 
+              size="sm" 
+              className="rounded-lg"
+              onClick={async () => {
+                window.location.href = `/doctor/consultations?appointmentId=${id}`;
+              }}
+            >
+              {status === "Engaged" ? "Rejoin Session" : "Start Session"} <ExternalLink className="w-3 h-3 ml-2" />
+            </Button>
+          );
+        }
+      }
+
+      if (status === "Checked In") {
         return (
           <Button 
             size="sm" 
@@ -64,7 +107,7 @@ const columns: ColumnDef<any>[] = [
               window.location.href = `/doctor/consultations?appointmentId=${id}`;
             }}
           >
-            {status === "Engaged" ? "Rejoin Session" : "Start Session"} <ExternalLink className="w-3 h-3 ml-2" />
+            Start Session <ExternalLink className="w-3 h-3 ml-2" />
           </Button>
         );
       }
@@ -81,7 +124,7 @@ export default function DoctorAppointmentsPage() {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const meRes = await fetch("/api/auth/me");
+        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
         const meJson = await meRes.json();
         if (!meJson.success || meJson.user.role !== "DOCTOR") {
           window.location.href = "/staff-login";
@@ -90,7 +133,7 @@ export default function DoctorAppointmentsPage() {
 
         const dId = meJson.user.doctorId;
         if (dId) {
-          const aptsRes = await fetch(`/api/appointments?doctorId=${dId}`);
+          const aptsRes = await fetch(`/api/appointments?doctorId=${dId}&_t=${Date.now()}`, { cache: "no-store" });
           const aptsJson = await aptsRes.json();
           if (aptsJson.success) {
             setAppointments(aptsJson.data || []);

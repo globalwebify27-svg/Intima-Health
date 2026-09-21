@@ -34,9 +34,12 @@ export default function PatientPrescriptionsPage() {
       const res = await fetch(`/api/consultations?patientId=${pId}`);
       const json = await res.json();
       if (json.success && json.data) {
-        // Filter consultations with active prescriptions
+        // Filter consultations with active prescriptions or therapies
         const completedPrescriptions = json.data.filter(
-          (c: any) => c.status === "Completed" && c.prescriptionSummary && c.prescriptionSummary !== "[]"
+          (c: any) => c.status === "Completed" && (
+            (c.prescriptionSummary && c.prescriptionSummary !== "[]") ||
+            (c.prescribedTherapies && c.prescribedTherapies !== "[]")
+          )
         );
         setPrescriptions(completedPrescriptions);
       }

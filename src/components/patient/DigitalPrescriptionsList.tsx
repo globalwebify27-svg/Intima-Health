@@ -36,7 +36,10 @@ export function DigitalPrescriptionsList({
   handleDownloadPrescription
 }: DigitalPrescriptionsListProps) {
   const completedConsultations = consultations.filter(
-    c => c.status === "Completed" && c.prescriptionSummary
+    c => c.status === "Completed" && (
+      (c.prescriptionSummary && c.prescriptionSummary !== "[]") ||
+      (c.prescribedTherapies && c.prescribedTherapies !== "[]")
+    )
   );
 
   return (

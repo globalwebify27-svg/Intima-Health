@@ -25,8 +25,12 @@ export class ConsultationService {
 
   static async updateConsultation(id: string, data: Partial<IConsultation>, updatedBy?: string) {
     if (data.status === "Completed") {
-      if (!data.notes || data.notes.trim() === "") {
-        throw new Error("Clinical notes are mandatory to complete a consultation.");
+      // Require at least notes OR a prescription OR therapies to complete
+      const hasPrescription = data.prescriptionSummary && data.prescriptionSummary !== "[]" && data.prescriptionSummary.trim() !== "";
+      const hasTherapies = data.prescribedTherapies && data.prescribedTherapies !== "[]" && data.prescribedTherapies.trim() !== "";
+      const hasNotes = data.notes && data.notes.trim() !== "";
+      if (!hasPrescription && !hasTherapies && !hasNotes) {
+        throw new Error("Please add at least clinical notes, a prescription, or a prescribed therapy to complete this consultation.");
       }
     }
 
