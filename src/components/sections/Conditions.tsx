@@ -12,21 +12,21 @@ const conditions = [
     title: "Depression & Mood Disorders",
     description: "Expert diagnostic care and clinical treatment plans by our senior specialists.",
     icon: Heart,
-    href: "/conditions/depression"
+    href: "/treatments/treatment-of-depression"
   },
   {
     id: "anxiety-ocd",
     title: "Anxiety & OCD Treatment",
     description: "Comprehensive therapy and evidence-based medical care for anxiety and OCD.",
     icon: ShieldAlert,
-    href: "/conditions/anxiety"
+    href: "/treatments/treatment-of-anxiety"
   },
   {
     id: "deaddiction",
     title: "Alcohol & Drug De-Addiction",
     description: "Inpatient rehabilitation at Ashakiran Rehabilitation Centre & Sanmitra Manas.",
     icon: Activity,
-    href: "/conditions/de-addiction"
+    href: "/treatments/treatment-of-alcohol-addiction"
   }
 ];
 
@@ -70,7 +70,7 @@ export function Conditions() {
               Whether you are looking to optimize your performance or overcome a clinical challenge, our specialized medical protocols are built exclusively for men's most sensitive health needs.
             </p>
           </div>
-          <Link href="/conditions">
+          <Link href="/treatments">
             <motion.div 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -91,7 +91,7 @@ export function Conditions() {
         >
           {/* Featured Card 1: Erectile Dysfunction (Spans 2 columns) */}
           <motion.div variants={cardVariants} className="lg:col-span-2">
-            <Link href="/conditions/ed" className="group block h-full">
+            <Link href="/treatments/erectile-dysfunction" className="group block h-full">
               <div className="h-full rounded-[2rem] bg-white border border-transparent shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgb(122,46,122,0.08)] hover:-translate-y-2 hover:border-primary/20 transition-all duration-500 relative overflow-hidden flex flex-col md:flex-row">
                 
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-transparent to-primary/[0.03] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-0" />
@@ -132,7 +132,7 @@ export function Conditions() {
 
           {/* Featured Card 2: Premature Ejaculation */}
           <motion.div variants={cardVariants} className="lg:col-span-1">
-            <Link href="/conditions/pe" className="group block h-full">
+            <Link href="/treatments/premature-ejaculation" className="group block h-full">
               <div className="h-full rounded-[2rem] bg-white border border-transparent shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgb(122,46,122,0.08)] hover:-translate-y-2 hover:border-primary/20 transition-all duration-500 relative overflow-hidden flex flex-col">
                 
                 <div className="relative w-full h-48 overflow-hidden shrink-0 bg-muted/20">

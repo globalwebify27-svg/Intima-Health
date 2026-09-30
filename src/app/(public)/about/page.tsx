@@ -31,18 +31,54 @@ const floatAnimation = {
 };
 
 export default function AboutPage() {
-  const [aboutContent, setAboutContent] = React.useState<string | null>(null);
+  const [aboutData, setAboutData] = React.useState<any>(null);
 
-  React.useEffect(() => {
-    fetch("/api/public/content/pages/about")
-      .then(res => res.json())
-      .then(json => {
-        if (json.success) {
-          setAboutContent(json.data.content);
-        }
-      })
-      .catch(err => console.error(err));
-  }, []);
+  // We are hardcoding the data as requested by the user instead of fetching from the database.
+  // React.useEffect(() => {
+  //   fetch("/api/public/content/pages/about")
+  //     .then(res => res.json())
+  //     .then(json => {
+  //       if (json.success && json.data.content) {
+  //         try {
+  //           setAboutData(JSON.parse(json.data.content));
+  //         } catch (e) {
+  //           console.error("Failed to parse about content JSON");
+  //         }
+  //       }
+  //     })
+  //     .catch(err => console.error(err));
+  // }, []);
+
+  const data = {
+    heroTitle1: "Leading Psychiatric &",
+    heroTitle2: "Mental Health Care.",
+    heroSubtitle: "Founded by Dr. Deepak Kelkar, Dr. Kelkar Hospital in Akola & Nagpur provides pioneer psychiatric treatment, de-addiction rehabilitation, and the Happiness 20 – Mind Gym program.",
+    valuesTitle: "What Drives Us Forward",
+    valuesDescription: "Everything we do at Kelkar Hospital is guided by four core principles that ensure we deliver the best possible care.",
+    values: [
+      { icon: "Shield", title: "Clinical Excellence", description: "Backed by rigorous research and leading medical professionals." },
+      { icon: "Heart", title: "Compassionate Care", description: "Empathy and understanding at the heart of every interaction." },
+      { icon: "Sparkles", title: "Innovation", description: "Continuously pushing boundaries in intimate health solutions." },
+      { icon: "Users", title: "Inclusivity", description: "Accessible, judgment-free care designed for every body." }
+    ],
+    expertsTitle: "Meet Our Medical Experts",
+    expertsDescription: "Our products and protocols are developed by leading specialists in psychiatry and de-addiction.",
+    experts: [
+      { img: "/images/dr_kelkar_hero_nobg.png", name: "Dr. Deepak Kelkar", role: "Senior Psychiatrist & Founder", spec: "MD Psychiatry, Mind Gym Pioneer" },
+      { img: "/images/doctor_2.png", name: "Dr. Amol Kelkar", role: "Consultant Psychiatrist", spec: "De-Addiction Specialist" },
+      { img: "/images/doctor_3.png", name: "Dr. Radhika Kelkar", role: "Specialist in Child Psychiatry", spec: "DPM, Child Development" }
+    ],
+    aboutContent: "Kelkar Hospital, Akola, has been providing comprehensive treatment for all types of mental health and psychiatric disorders in Akola for the past 44 years.<br/><br/>The hospital is led by qualified and experienced psychiatrists, offering scientific and compassionate care for a wide range of mental health conditions.<br/><br/>Associated with Kelkar Hospital is Sanmitra Hospital, where treatment for various mental health conditions is provided free of cost to eligible patients under government health schemes.<br/><br/>Patients who come with the PM-JAY (Ayushman Bharat) Card or are eligible under the Mahatma Jyotiba Phule Jan Arogya Yojana (MJPJAY) can receive treatment free of cost, as per scheme eligibility and approved packages.<br/><br/>The covered services may include psychiatric consultation, medicines, hospitalization, food and accommodation, and ECT (electroconvulsive therapy/shock treatment), as applicable under the government scheme.<br/><br/>Our aim is to ensure that financial difficulties do not become a barrier to receiving appropriate and timely mental healthcare."
+  };
+
+  const aboutContent = data.aboutContent;
+
+  const getIcon = (name: string) => {
+    if (name === "Shield") return Shield;
+    if (name === "Heart") return Heart;
+    if (name === "Sparkles") return Sparkles;
+    return Users;
+  };
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Redesigned Clean Hero Section */}
@@ -64,11 +100,11 @@ export default function AboutPage() {
                 <span className="text-sm font-bold tracking-widest text-primary uppercase">About Dr. Kelkar Manas Hospital</span>
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium text-foreground leading-[1.1] mb-6">
-                Leading Psychiatric & <br/>
-                <span className="text-primary italic">Mental Health Care.</span>
+                {data.heroTitle1} <br/>
+                <span className="text-primary italic">{data.heroTitle2}</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed border-l-2 border-primary/20 pl-6 max-w-lg">
-                Founded by Dr. Deepak Kelkar, Dr. Kelkar Hospital in Akola & Nagpur provides pioneer psychiatric treatment, de-addiction rehabilitation, and the Happiness 20 – Mind Gym program.
+                {data.heroSubtitle}
               </p>
               
               <div className="flex flex-wrap gap-4">
@@ -86,12 +122,12 @@ export default function AboutPage() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="w-full lg:w-1/2 relative"
             >
-              <div className="relative w-full aspect-[4/3] sm:aspect-[3/2] lg:aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl border-4 border-background z-10">
+              <div className="relative w-full aspect-[4/3] sm:aspect-[3/2] lg:aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl border-4 border-background z-10 bg-gradient-to-t from-primary/20 via-primary/5 to-background">
                 <Image
-                  src="/images/doctor_1.png"
+                  src="/images/dr_kelkar_hero_nobg.png"
                   alt="Dr. Deepak Kelkar"
                   fill
-                  className="object-cover"
+                  className="object-cover object-top"
                   sizes="(max-width: 768px) 100vw, 50vw"
                   priority
                 />
@@ -157,9 +193,9 @@ export default function AboutPage() {
             className="text-center max-w-3xl mx-auto mb-16"
           >
             <h2 className="text-sm font-bold tracking-widest text-primary uppercase mb-3">Our Values</h2>
-            <h3 className="text-3xl md:text-4xl font-serif text-foreground mb-4">What Drives Us Forward</h3>
+            <h3 className="text-3xl md:text-4xl font-serif text-foreground mb-4">{data.valuesTitle}</h3>
             <p className="text-lg text-muted-foreground">
-              Everything we do at KELKAR MANAS HEALTH CLINIC is guided by four core principles that ensure we deliver the best possible care and products.
+              {data.valuesDescription}
             </p>
           </motion.div>
 
@@ -170,40 +206,22 @@ export default function AboutPage() {
             variants={staggerContainer}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
           >
-            {[
-              {
-                icon: Shield,
-                title: "Clinical Excellence",
-                description: "Backed by rigorous research and leading medical professionals."
-              },
-              {
-                icon: Heart,
-                title: "Compassionate Care",
-                description: "Empathy and understanding at the heart of every interaction."
-              },
-              {
-                icon: Sparkles,
-                title: "Innovation",
-                description: "Continuously pushing boundaries in intimate health solutions."
-              },
-              {
-                icon: Users,
-                title: "Inclusivity",
-                description: "Accessible, judgment-free care designed for every body."
-              }
-            ].map((value, idx) => (
-              <motion.div 
-                key={idx}
-                variants={fadeIn}
-                className="bg-card p-8 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow group"
-              >
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
-                  <value.icon className="w-6 h-6" />
-                </div>
-                <h4 className="text-xl font-semibold text-foreground mb-3">{value.title}</h4>
-                <p className="text-muted-foreground leading-relaxed">{value.description}</p>
-              </motion.div>
-            ))}
+            {data.values.map((value: any, idx: number) => {
+              const IconComp = getIcon(value.icon);
+              return (
+                <motion.div 
+                  key={idx}
+                  variants={fadeIn}
+                  className="bg-card p-8 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow group"
+                >
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
+                    <IconComp className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-xl font-semibold text-foreground mb-3">{value.title}</h4>
+                  <p className="text-muted-foreground leading-relaxed">{value.description}</p>
+                </motion.div>
+              );
+            })}
           </motion.div>
         </div>
       </section>
@@ -218,9 +236,9 @@ export default function AboutPage() {
             variants={fadeIn}
             className="text-center max-w-3xl mx-auto mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-serif text-foreground mb-4">Meet Our Medical Experts</h2>
+            <h2 className="text-3xl md:text-4xl font-serif text-foreground mb-4">{data.expertsTitle}</h2>
             <p className="text-lg text-muted-foreground">
-              Our products and protocols are developed by leading specialists in gynecology, urology, and dermatology.
+              {data.expertsDescription}
             </p>
           </motion.div>
 
@@ -231,18 +249,14 @@ export default function AboutPage() {
             variants={staggerContainer}
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
-            {[
-              { img: "/images/doctor_1.png", name: "Dr. Deepak Kelkar", role: "Senior Psychiatrist & Founder", spec: "MD Psychiatry, Mind Gym Pioneer" },
-              { img: "/images/doctor_2.png", name: "Dr. Amol Kelkar", role: "Consultant Psychiatrist", spec: "De-Addiction Specialist" },
-              { img: "/images/doctor_3.png", name: "Dr. Radhika Kelkar", role: "Specialist in Child Psychiatry", spec: "DPM, Child Development" }
-            ].map((doc, idx) => (
+            {data.experts.map((doc: any, idx: number) => (
               <motion.div key={idx} variants={fadeIn} className="group cursor-pointer">
                 <div className="relative w-full aspect-[4/5] rounded-[2rem] overflow-hidden mb-6 bg-muted/50 border border-border">
                   <Image
                     src={doc.img}
                     alt={doc.name}
                     fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    className={`object-cover group-hover:scale-105 transition-transform duration-700 ease-out ${doc.name === 'Dr. Deepak Kelkar' ? 'object-top' : ''}`}
                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                   {/* Subtle overlay gradient */}
                   <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

@@ -64,46 +64,64 @@ export function Header() {
           <NavigationMenu className="hidden xl:flex">
             <NavigationMenuList className="gap-1">
               
-              {/* Services (From Image) */}
+              {/* Treatments (From Image) */}
               <NavigationMenuItem>
                 <NavigationMenuTrigger 
-                  onClick={() => router.push('/services')}
+                  onClick={() => router.push('/treatments')}
                   className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors cursor-pointer"
                 >
-                  Services
+                  Treatments
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <ul className="grid w-[450px] gap-2 p-4 md:w-[600px] md:grid-cols-2">
-                    <ListItem href="/services/treatment-of-depression" title="Treatment of Depression">
+                  <ul className="grid w-[450px] gap-2 p-4 md:w-[700px] md:grid-cols-3">
+                    <ListItem href="/treatments/treatment-of-depression" title="Treatment of Depression">
                       Comprehensive clinical psychiatric care.
                     </ListItem>
-                    <ListItem href="/services/treatment-of-anxiety" title="Treatment of Anxiety">
+                    <ListItem href="/treatments/treatment-of-anxiety" title="Treatment of Anxiety">
                       Therapy & evidence-based medical care.
                     </ListItem>
-                    <ListItem href="/services/ocd-treatment" title="Treatment of OCD">
+                    <ListItem href="/treatments/treatment-of-phobia" title="Treatment of Phobia">
+                      Overcome irrational fears and anxiety.
+                    </ListItem>
+                    <ListItem href="/treatments/treatment-of-panic-attacks" title="Treatment of Panic Attacks">
+                      Manage and reduce sudden panic episodes.
+                    </ListItem>
+                    <ListItem href="/treatments/treatment-of-ocd" title="Treatment of OCD">
                       Specialized Obsessive-Compulsive Disorder management.
                     </ListItem>
-                    <ListItem href="/services/alcohol-de-addiction" title="Alcohol De-Addiction">
+                    <ListItem href="/treatments/treatment-of-hysteria" title="Treatment of Hysteria">
+                      Therapeutic interventions for conversion disorders.
+                    </ListItem>
+                    <ListItem href="/treatments/child-and-adolescent-psychiatry" title="Child & Adolescent Psychiatry">
+                      Care for ADHD, autism, and behavioral challenges.
+                    </ListItem>
+                    <ListItem href="/treatments/geriatric-psychiatry" title="Geriatric Psychiatry">
+                      Memory care and late-life depression.
+                    </ListItem>
+                    <ListItem href="/treatments/cognitive-behavioural-therapy" title="Cognitive Behavioural Therapy">
+                      Structured evidence-based psychotherapy.
+                    </ListItem>
+                    <ListItem href="/treatments/treatment-of-alcohol-addiction" title="Alcohol Addiction">
                       Inpatient rehabilitation & detox programs.
                     </ListItem>
-                    <ListItem href="/services/nicotine-de-addiction" title="Nicotine De-Addiction">
-                      Cessation protocols & counseling.
+                    <ListItem href="/treatments/nicotine-de-addiction" title="Nicotine De-Addiction">
+                      Structured tobacco cessation protocols.
                     </ListItem>
-                    <ListItem href="/services/brown-sugar-de-addiction" title="Brown Sugar De-Addiction">
-                      Specialized opioid recovery programs.
+                    <ListItem href="/treatments/brown-sugar-de-addiction" title="Brown Sugar De-Addiction">
+                      Residential opioid dependence rehab.
                     </ListItem>
-                    <ListItem href="/services/child-and-adolescent-psychiatry" title="Child & Adolescent Psychiatry">
-                      Behavioral & developmental mental health care.
+                    <ListItem href="/treatments/schizophrenia" title="Schizophrenia Treatment">
+                      Management of thoughts, perceptions & behavior.
                     </ListItem>
-                    <ListItem href="/services/geriatric-psychiatry" title="Geriatric Psychiatry">
-                      Senior mental wellness & memory care.
+                    <ListItem href="/treatments/ibs" title="Irritable Bowel Syndrome (IBS)">
+                      Gut-brain interactions & bowel habit management.
                     </ListItem>
-                    <ListItem href="/services/cognitive-behavioural-therapy" title="Cognitive Behavioural Therapy">
-                      Structured psychological therapy sessions.
+                    <ListItem href="/treatments/mania" title="Mania (Bipolar Disorder)">
+                      Management of mood elevation & energy.
                     </ListItem>
-                    <div className="md:col-span-2 pt-3 mt-1 border-t border-border/50 text-center">
-                      <Link href="/services" className="inline-flex items-center text-sm font-semibold text-primary hover:underline transition-all">
-                        View All Psychiatric & Rehab Services <span className="ml-1">&rarr;</span>
+                    <div className="md:col-span-3 pt-3 mt-1 border-t border-border/50 text-center">
+                      <Link href="/treatments" className="inline-flex items-center text-sm font-semibold text-primary hover:underline transition-all">
+                        View All Treatments <span className="ml-1">&rarr;</span>
                       </Link>
                     </div>
                   </ul>
@@ -141,27 +159,39 @@ export function Header() {
               {/* Sexual Problems (From Client Screenshot) */}
               <NavigationMenuItem>
                 <NavigationMenuTrigger 
-                  onClick={() => router.push('/conditions')}
+                  onClick={() => router.push('/sexual-problems')}
                   className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors cursor-pointer"
                 >
                   Sexual Problems
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-2 p-4 md:grid-cols-2">
-                    <ListItem href="/conditions/sex-for-happiness" title="Sex For Happiness">
-                      Wellness & fulfillment counseling.
-                    </ListItem>
-                    <ListItem href="/conditions/premature-ejaculation" title="Premature Ejaculation">
-                      Stamina, control & medical therapy.
-                    </ListItem>
-                    <ListItem href="/conditions/erectile-dysfunction" title="Erectile Dysfunction">
+                  <ul className="grid w-[550px] gap-2 p-4 md:grid-cols-2">
+                    <ListItem href="/treatments/erectile-dysfunction" title="Erectile Dysfunction">
                       Clinical treatment & recovery plans.
                     </ListItem>
-                    <ListItem href="/conditions/masturbation-counseling" title="Masturbation Counseling">
+                    <ListItem href="/treatments/premature-ejaculation" title="Premature Ejaculation">
+                      Stamina, control & medical therapy.
+                    </ListItem>
+                    <ListItem href="/treatments/sexual-performance-anxiety" title="Performance Anxiety">
+                      Counseling to build sexual confidence.
+                    </ListItem>
+                    <ListItem href="/treatments/sexually-transmitted-infections" title="STIs">
+                      Diagnosis and medical treatment.
+                    </ListItem>
+                    <ListItem href="/treatments/precum" title="Precum">
+                      Medical advice and guidance.
+                    </ListItem>
+                    <ListItem href="/treatments/nocturnal-emissions" title="Nocturnal Emissions">
+                      Management of nightfall.
+                    </ListItem>
+                    <ListItem href="/treatments/masturbation-habit" title="Masturbation Habit">
                       Myths, guidance & behavioral counseling.
                     </ListItem>
-                    <ListItem href="/conditions/homosexual-anxiety" title="Homosexual Anxiety">
-                      Confidential care & psychological support.
+                    <ListItem href="/treatments/infertility" title="Infertility">
+                      Diagnostic evaluation and support.
+                    </ListItem>
+                    <ListItem href="/treatments/homosexuality-counseling" title="Homosexuality Counseling">
+                      Confidential care & awareness support.
                     </ListItem>
                   </ul>
                 </NavigationMenuContent>
@@ -201,6 +231,13 @@ export function Header() {
               <NavigationMenuItem>
                 <Link href="/about" className={cn(navigationMenuTriggerStyle(), "bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors")}>
                   About Us
+                </Link>
+              </NavigationMenuItem>
+
+              {/* Contact Us */}
+              <NavigationMenuItem>
+                <Link href="/contact" className={cn(navigationMenuTriggerStyle(), "bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors")}>
+                  Contact Us
                 </Link>
               </NavigationMenuItem>
 
@@ -353,11 +390,15 @@ export function Header() {
                   <Link href="/conditions" onClick={() => setIsMobileMenuOpen(false)} className="py-2 font-semibold text-primary hover:underline transition-colors mt-2 border-t border-border/30 pt-2">View All Conditions &rarr;</Link>
                 </MobileNavGroup>
                 
-                <MobileNavGroup title="Our Services">
-                  <Link href="/consultations" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Online Consultations</Link>
-                  {/* <Link href="/pharmacy" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Discreet Pharmacy</Link> */}
-                  {/* <Link href="/diagnostics" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">At-Home Diagnostics</Link> */}
-                  <Link href="/therapy" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Sex Therapy</Link>
+                <MobileNavGroup title="Our Treatments">
+                  <Link href="/treatments/treatment-of-phobia" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of Phobia</Link>
+                  <Link href="/treatments/treatment-of-panic-attacks" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of Panic Attacks</Link>
+                  <Link href="/treatments/treatment-of-ocd" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of OCD</Link>
+                  <Link href="/treatments/treatment-of-hysteria" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of Hysteria</Link>
+                  <Link href="/treatments/treatment-of-depression" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of Depression</Link>
+                  <Link href="/treatments/treatment-of-anxiety" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of Anxiety</Link>
+                  <Link href="/treatments/treatment-of-alcohol-addiction" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of Alcohol Addiction</Link>
+                  <Link href="/treatments/sexual-health-problems" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment Available for Sexual Health Problems</Link>
                 </MobileNavGroup>
 
                 {/* <div className="border-b border-border/50">
@@ -374,6 +415,10 @@ export function Header() {
 
                 <div className="border-b border-border/50">
                   <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="flex py-4 text-lg font-medium hover:text-primary transition-colors">About Us</Link>
+                </div>
+                
+                <div className="border-b border-border/50">
+                  <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="flex py-4 text-lg font-medium hover:text-primary transition-colors">Contact Us</Link>
                 </div>
 
                 <MobileNavGroup title="Our Experts">

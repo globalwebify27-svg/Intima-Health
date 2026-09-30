@@ -286,10 +286,356 @@ export default function ContentPage() {
                       <label className="text-sm font-bold">Slug (URL)</label>
                       <input required type="text" value={formData.slug || ""} onChange={e => setFormData({...formData, slug: e.target.value})} className="w-full h-10 px-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none" />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold">Content (HTML/Markdown)</label>
-                      <textarea required rows={6} value={formData.content || ""} onChange={e => setFormData({...formData, content: e.target.value})} className="w-full p-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none resize-y" />
-                    </div>
+                    {formData.slug === "contact" ? (() => {
+                      let contactData: any = {};
+                      try {
+                        contactData = JSON.parse(formData.content || "{}");
+                      } catch (e) {}
+                      const updateField = (key: string, value: string) => {
+                        const newData = { ...contactData, [key]: value };
+                        setFormData({ ...formData, content: JSON.stringify(newData) });
+                      };
+                      return (
+                        <div className="space-y-4 pt-2">
+                          <h3 className="font-bold border-b pb-2">Contact Page Details</h3>
+                          
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Hero Section</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Hero Title</label>
+                                <input type="text" value={contactData.heroTitle || ""} onChange={e => updateField("heroTitle", e.target.value)} placeholder="e.g. Get in touch." className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Hero Subtitle</label>
+                                <textarea rows={2} value={contactData.heroSubtitle || ""} onChange={e => updateField("heroSubtitle", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Direct Channels (Contact Info)</h4>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground">Introductory Text</label>
+                              <textarea rows={2} value={contactData.description || ""} onChange={e => updateField("description", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none resize-y" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Phone 1</label>
+                                <input type="text" value={contactData.phone1 || ""} onChange={e => updateField("phone1", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Phone 2</label>
+                                <input type="text" value={contactData.phone2 || ""} onChange={e => updateField("phone2", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">YouTube URL</label>
+                                <input type="text" value={contactData.youtube || ""} onChange={e => updateField("youtube", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Instagram URL</label>
+                                <input type="text" value={contactData.instagram || ""} onChange={e => updateField("instagram", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Twitter/X Text</label>
+                                <input type="text" value={contactData.twitter || ""} onChange={e => updateField("twitter", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Website URL</label>
+                                <input type="text" value={contactData.website || ""} onChange={e => updateField("website", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Google Maps URL</label>
+                                <input type="text" value={contactData.googleMaps || ""} onChange={e => updateField("googleMaps", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Google Reviews URL</label>
+                                <input type="text" value={contactData.googleReviews || ""} onChange={e => updateField("googleReviews", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Hospitals Section</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Title</label>
+                                <input type="text" value={contactData.hospitalsTitle || ""} onChange={e => updateField("hospitalsTitle", e.target.value)} placeholder="e.g. Our Hospitals" className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Description</label>
+                                <textarea rows={2} value={contactData.hospitalsDesc || ""} onChange={e => updateField("hospitalsDesc", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground">Hospital Names (comma-separated)</label>
+                              <textarea rows={3} value={contactData.hospitalNames || ""} onChange={e => updateField("hospitalNames", e.target.value)} placeholder="Kelkar Hospital, Sanmitra Hospital, Ashakiran Hospital" className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })() : formData.slug === "about" ? (() => {
+                      let aboutData: any = {};
+                      try {
+                        aboutData = JSON.parse(formData.content || "{}");
+                      } catch (e) {}
+                      const updateField = (key: string, value: any) => {
+                        const newData = { ...aboutData, [key]: value };
+                        setFormData({ ...formData, content: JSON.stringify(newData) });
+                      };
+                      return (
+                        <div className="space-y-4 pt-2">
+                          <h3 className="font-bold border-b pb-2">About Page Details</h3>
+                          
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Hero Section</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Hero Title 1</label>
+                                <input type="text" value={aboutData.heroTitle1 || ""} onChange={e => updateField("heroTitle1", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Hero Title 2</label>
+                                <input type="text" value={aboutData.heroTitle2 || ""} onChange={e => updateField("heroTitle2", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground">Hero Subtitle</label>
+                              <textarea rows={2} value={aboutData.heroSubtitle || ""} onChange={e => updateField("heroSubtitle", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Values Section</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Values Title</label>
+                                <input type="text" value={aboutData.valuesTitle || ""} onChange={e => updateField("valuesTitle", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Values Description</label>
+                                <textarea rows={2} value={aboutData.valuesDescription || ""} onChange={e => updateField("valuesDescription", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Experts Section</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Experts Title</label>
+                                <input type="text" value={aboutData.expertsTitle || ""} onChange={e => updateField("expertsTitle", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Experts Description</label>
+                                <textarea rows={2} value={aboutData.expertsDescription || ""} onChange={e => updateField("expertsDescription", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <p className="text-xs text-muted-foreground italic">Note: The arrays for Values and Experts can be edited via raw JSON or advanced setup later.</p>
+                        </div>
+                      );
+                    })() : formData.slug === "contact" ? (() => {
+                      let contactData: any = {};
+                      try {
+                        contactData = JSON.parse(formData.content || "{}");
+                      } catch (e) {}
+                      const updateField = (key: string, value: any) => {
+                        const newData = { ...contactData, [key]: value };
+                        setFormData({ ...formData, content: JSON.stringify(newData) });
+                      };
+                      return (
+                        <div className="space-y-4 pt-2">
+                          <h3 className="font-bold border-b pb-2">Contact Page Details</h3>
+                          
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Hero Section</h4>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground">Hero Title</label>
+                              <input type="text" value={contactData.heroTitle || ""} onChange={e => updateField("heroTitle", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground">Hero Subtitle</label>
+                              <textarea rows={2} value={contactData.heroSubtitle || ""} onChange={e => updateField("heroSubtitle", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Direct Channels</h4>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground">Description</label>
+                              <textarea rows={2} value={contactData.description || ""} onChange={e => updateField("description", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Phone 1</label>
+                                <input type="text" value={contactData.phone1 || ""} onChange={e => updateField("phone1", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Phone 2</label>
+                                <input type="text" value={contactData.phone2 || ""} onChange={e => updateField("phone2", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">YouTube Link</label>
+                                <input type="text" value={contactData.youtube || ""} onChange={e => updateField("youtube", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Instagram Link</label>
+                                <input type="text" value={contactData.instagram || ""} onChange={e => updateField("instagram", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Twitter (X) Link</label>
+                                <input type="text" value={contactData.twitter || ""} onChange={e => updateField("twitter", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Website Link</label>
+                                <input type="text" value={contactData.website || ""} onChange={e => updateField("website", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Google Maps Link</label>
+                                <input type="text" value={contactData.googleMaps || ""} onChange={e => updateField("googleMaps", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Google Reviews Link</label>
+                                <input type="text" value={contactData.googleReviews || ""} onChange={e => updateField("googleReviews", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Hospitals Section</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Hospitals Title</label>
+                                <input type="text" value={contactData.hospitalsTitle || ""} onChange={e => updateField("hospitalsTitle", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Hospitals Desc</label>
+                                <textarea rows={2} value={contactData.hospitalsDesc || ""} onChange={e => updateField("hospitalsDesc", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground">Hospital Names (comma separated)</label>
+                              <textarea rows={2} value={contactData.hospitalNames || ""} onChange={e => updateField("hospitalNames", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })() : formData.slug === "services" ? (() => {
+                      let servicesData: any = {};
+                      try {
+                        servicesData = JSON.parse(formData.content || "{}");
+                      } catch (e) {}
+                      const updateField = (key: string, value: any) => {
+                        const newData = { ...servicesData, [key]: value };
+                        setFormData({ ...formData, content: JSON.stringify(newData) });
+                      };
+                      return (
+                        <div className="space-y-4 pt-2">
+                          <h3 className="font-bold border-b pb-2">Services Page Details</h3>
+                          
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Hero Section</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Hero Title 1</label>
+                                <input type="text" value={servicesData.heroTitle1 || ""} onChange={e => updateField("heroTitle1", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Hero Title 2</label>
+                                <input type="text" value={servicesData.heroTitle2 || ""} onChange={e => updateField("heroTitle2", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground">Hero Subtitle</label>
+                              <textarea rows={2} value={servicesData.heroSubtitle || ""} onChange={e => updateField("heroSubtitle", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Specialties Section</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Services Title</label>
+                                <input type="text" value={servicesData.servicesTitle || ""} onChange={e => updateField("servicesTitle", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Services Description</label>
+                                <textarea rows={2} value={servicesData.servicesDescription || ""} onChange={e => updateField("servicesDescription", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <p className="text-xs text-muted-foreground italic">Note: The services list can be edited via raw JSON or advanced setup later.</p>
+                        </div>
+                      );
+                    })() : formData.slug === "conditions" ? (() => {
+                      let conditionsData: any = {};
+                      try {
+                        conditionsData = JSON.parse(formData.content || "{}");
+                      } catch (e) {}
+                      const updateField = (key: string, value: any) => {
+                        const newData = { ...conditionsData, [key]: value };
+                        setFormData({ ...formData, content: JSON.stringify(newData) });
+                      };
+                      return (
+                        <div className="space-y-4 pt-2">
+                          <h3 className="font-bold border-b pb-2">Conditions Page Details</h3>
+                          
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Hero Section</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Hero Title 1</label>
+                                <input type="text" value={conditionsData.heroTitle1 || ""} onChange={e => updateField("heroTitle1", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Hero Title 2</label>
+                                <input type="text" value={conditionsData.heroTitle2 || ""} onChange={e => updateField("heroTitle2", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground">Hero Subtitle</label>
+                              <textarea rows={2} value={conditionsData.heroSubtitle || ""} onChange={e => updateField("heroSubtitle", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Conditions Section</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Conditions Title</label>
+                                <input type="text" value={conditionsData.conditionsTitle || ""} onChange={e => updateField("conditionsTitle", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Conditions Description</label>
+                                <textarea rows={2} value={conditionsData.conditionsDescription || ""} onChange={e => updateField("conditionsDescription", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <p className="text-xs text-muted-foreground italic">Note: The conditions list can be edited via raw JSON or advanced setup later.</p>
+                        </div>
+                      );
+                    })() : (
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold">Content (HTML/Markdown)</label>
+                        <textarea required rows={6} value={formData.content || ""} onChange={e => setFormData({...formData, content: e.target.value})} className="w-full p-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none resize-y" />
+                      </div>
+                    )}
                   </>
                 )}
 
