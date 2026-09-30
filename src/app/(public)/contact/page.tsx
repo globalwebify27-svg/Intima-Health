@@ -165,8 +165,8 @@ export default function ContactPage() {
                           <h4 className="font-semibold text-lg mb-1">Mobile Numbers</h4>
                           <p className="text-muted-foreground text-sm mb-1">Appointment / Contact</p>
                           <div className="flex flex-col gap-1 mt-2">
-                            {data.phone1 && <a href={`tel:${data.phone1.replace(/\s/g, '')}`} className="text-primary font-medium hover:underline text-lg">📞 {data.phone1}</a>}
-                            {data.phone2 && <a href={`tel:${data.phone2.replace(/\s/g, '')}`} className="text-primary font-medium hover:underline text-lg">📞 {data.phone2}</a>}
+                            <a href="tel:+918484931874" className="text-primary font-medium hover:underline text-lg">📞 +91 8484931874</a>
+                            <a href="tel:+917028088838" className="text-primary font-medium hover:underline text-lg">📞 +91 7028088838</a>
                           </div>
                         </div>
                       </motion.div>
@@ -178,12 +178,12 @@ export default function ContactPage() {
                         <div>
                           <h4 className="font-semibold text-lg mb-1">Connect With Us</h4>
                           <div className="flex flex-col gap-2 mt-2">
-                            {data.youtube && <a href={data.youtube} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary text-sm">YouTube: {data.youtube.split('@')[1] ? `@${data.youtube.split('@')[1]}` : data.youtube}</a>}
-                            {data.instagram && <a href={data.instagram} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary text-sm">Instagram: dr.deepak.kelkar</a>}
-                            {data.twitter && <p className="text-muted-foreground text-sm">Twitter/X: {data.twitter}</p>}
-                            {data.website && <a href={data.website} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary text-sm">Website: {data.website}</a>}
-                            {data.googleMaps && <a href={data.googleMaps} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary text-sm">Google Maps</a>}
-                            {data.googleReviews && <a href={data.googleReviews} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary text-sm">Google Reviews</a>}
+                            <a href="https://www.youtube.com/@deepakkelkar736" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary text-sm">YouTube: @deepakkelkar736</a>
+                            <a href="https://www.instagram.com/dr_kelkar_sexologist/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary text-sm">Instagram: dr.deepak.kelkar, dr_kelkar_sexologist</a>
+                            <p className="text-muted-foreground text-sm">Twitter/X: Dr. Deepak Kelkar / Kelkar Hospital</p>
+                            <a href="https://kelkarhospital.in/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary text-sm">Website: kelkarhospital.in</a>
+                            <a href="https://share.google/lOTkT4usjPYR8eKv8" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary text-sm">Google Maps</a>
+                            <a href="https://g.page/r/CR-i3bCCuZXuEBM/review" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary text-sm">Google Reviews</a>
                           </div>
                         </div>
                       </motion.div>

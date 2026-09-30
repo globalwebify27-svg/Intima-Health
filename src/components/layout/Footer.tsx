@@ -47,16 +47,16 @@ export function Footer() {
                 P294+H8J, Ramdas Peth, Akola, Maharashtra 444001
               </p>
               <p className="text-sm text-white/70 font-medium mb-6">
-                Direct Appointment: <a href="tel:9822570101" className="underline hover:text-white">+91 9822570101</a><br />
-                WhatsApp: <a href="https://api.whatsapp.com/send?phone=919049993104" target="_blank" className="underline hover:text-white">+91 9049993104</a><br />
+                Mobile: <a href="tel:918484931874" className="underline hover:text-white">+91 8484931874</a><br />
+                Mobile: <a href="tel:917028088838" className="underline hover:text-white">+91 7028088838</a><br />
                 Email: kelkarhospitalpvt@gmail.com
               </p>
               
               <div className="flex gap-4">
-                <a href="tel:9822570101" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
+                <a href="tel:918484931874" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
                   <Globe className="w-4 h-4" />
                 </a>
-                <a href="https://api.whatsapp.com/send?phone=919049993104" target="_blank" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
+                <a href="https://api.whatsapp.com/send?phone=918484931874" target="_blank" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
                   <MessageCircle className="w-4 h-4" />
                 </a>
                 <a href="mailto:kelkarhospitalpvt@gmail.com" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
