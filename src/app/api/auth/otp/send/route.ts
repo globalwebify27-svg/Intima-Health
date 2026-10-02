@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { PatientModel } from "@/modules/patients/schema";
 import { OtpModel } from "@/modules/auth/otp";
+import { sendWhatsAppOtp } from "@/lib/whatsapp";
 
 export async function POST(req: Request) {
   try {
@@ -51,8 +52,8 @@ export async function POST(req: Request) {
       expiresAt: new Date(Date.now() + 5 * 60 * 1000)
     });
 
-    // Output to server logs for developer testing
-    console.log(`\n==========================================\n[WhatsApp OTP] Code: ${code} for +91 ${last10}\n==========================================\n`);
+    // Send WhatsApp OTP via AiSensy
+    await sendWhatsAppOtp({ phone: last10, code });
 
     return NextResponse.json({
       success: true,

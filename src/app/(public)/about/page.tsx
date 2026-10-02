@@ -334,9 +334,6 @@ export default function AboutPage() {
             <p className="text-xl text-muted-foreground mb-10">
               Discover our range of expertly formulated products designed for your unique needs.
             </p>
-            <Link href="/products" className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-primary-foreground bg-primary rounded-full hover:bg-primary/90 transition-colors shadow-xl shadow-primary/20">
-              Shop Now
-            </Link>
           </motion.div>
         </div>
       </section>

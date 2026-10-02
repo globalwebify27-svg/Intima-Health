@@ -3,6 +3,60 @@ import { DoctorModel } from "@/modules/doctors/schema";
 import { ClinicModel } from "@/modules/clinics/schema";
 import { NotificationModel } from "@/modules/system/schema";
 
+export async function sendWhatsAppOtp({ phone, code }: { phone: string; code: string }) {
+  try {
+    const digits = phone.replace(/\D/g, "");
+    const last10 = digits.slice(-10);
+    const destination = last10.length === 10 ? `91${last10}` : digits;
+
+    const apiKey = process.env.AISENSY_OTP_API_KEY || process.env.AISENSY_API_KEY;
+    const campaignName = process.env.AISENSY_OTP_CAMPAIGN_NAME || process.env.AISENSY_CAMPAIGN_NAME || "otp_verification";
+    const apiUrl = process.env.AISENSY_API_URL || "https://backend.aisensy.com/campaign/t1/api/v2";
+
+    if (!apiKey) {
+      console.warn("[AiSensy WhatsApp OTP] Warning: AISENSY_API_KEY is missing.");
+      return { success: false, message: "API key missing" };
+    }
+
+    const payload = {
+      apiKey,
+      campaignName,
+      destination,
+      userName: `User_${last10}`,
+      templateParams: [code],
+      buttons: [
+        {
+          type: "button",
+          sub_type: "url",
+          index: "0",
+          parameters: [
+            {
+              type: "text",
+              text: code
+            }
+          ]
+        }
+      ],
+      source: "IntimaHealthAuth",
+    };
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const resData = await response.json();
+    console.log("[AiSensy WhatsApp OTP Response]:", resData);
+    return resData;
+  } catch (error) {
+    console.error("[AiSensy WhatsApp OTP Exception]:", error);
+    return { success: false, error };
+  }
+}
+
 export async function sendWhatsAppMessage({
   recipientId,
   recipientType = "PATIENT",
