@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     });
 
     // Send WhatsApp OTP via AiSensy
-    await sendWhatsAppOtp({ phone: last10, code });
+    const aiSensyResponse = await sendWhatsAppOtp({ phone: last10, code });
 
     return NextResponse.json({
       success: true,
@@ -62,6 +62,7 @@ export async function POST(req: Request) {
         : "OTP sent successfully via WhatsApp.",
       code,          // for developer testing
       isNewPatient,  // Flutter uses this to route to profile completion
+      aiSensyDebug: aiSensyResponse, // Added so you can view it in the browser's Network tab
     });
   } catch (error: any) {
     return NextResponse.json(

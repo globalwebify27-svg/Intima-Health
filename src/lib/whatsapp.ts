@@ -40,6 +40,8 @@ export async function sendWhatsAppOtp({ phone, code }: { phone: string; code: st
       source: "IntimaHealthAuth",
     };
 
+    console.log("[AiSensy Debug] Sending Payload:", JSON.stringify({ ...payload, apiKey: "***HIDDEN***" }));
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
