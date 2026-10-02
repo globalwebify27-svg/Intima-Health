@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { OrderModel, ProductModel } from "@/modules/pharmacy/schema";
+import { PatientModel } from "@/modules/patients/schema"; // <-- Added to register Schema for populate
 
 export async function GET(request: Request) {
   try {
