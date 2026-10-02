@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Activity, CalendarDays, User, ShoppingBag } from "lucide-react";
+import { Home, Activity, CalendarDays, User, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBookingModal } from "@/store/useBookingModal";
 
@@ -13,8 +13,8 @@ const navItems = [
     icon: Home,
   },
   {
-    label: "Conditions",
-    href: "/conditions",
+    label: "Treatments",
+    href: "/treatments",
     icon: Activity,
   },
   {
@@ -22,11 +22,11 @@ const navItems = [
     href: "/booking",
     icon: CalendarDays,
   },
-  /* {
-    label: "Pharmacy",
-    href: "/products",
-    icon: ShoppingBag,
-  }, */
+  {
+    label: "Doctors",
+    href: "/doctors",
+    icon: Stethoscope,
+  },
   {
     label: "Log in",
     href: "/login",

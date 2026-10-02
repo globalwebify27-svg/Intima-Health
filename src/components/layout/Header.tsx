@@ -18,6 +18,7 @@ import { useCart } from "@/store/useCart";
 import { ShoppingBag, Menu, X, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBookingModal } from "@/store/useBookingModal";
+import { NAV_ITEMS } from "@/constants/navigation";
 
 const ListItem = React.forwardRef<
   React.ElementRef<typeof Link>,
@@ -35,9 +36,11 @@ const ListItem = React.forwardRef<
         {...props}
       >
         <div className="text-sm font-semibold leading-none">{title}</div>
-        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground mt-1">
-          {children}
-        </p>
+        {children && (
+          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground mt-1">
+            {children}
+          </p>
+        )}
       </Link>
     </li>
   );
@@ -54,425 +57,254 @@ export function Header() {
 
   return (
     <>
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40">
-      <div className="container mx-auto flex h-20 items-center justify-between px-6 lg:px-12">
-        <div className="flex items-center gap-10">
-          <Link href="/" className="flex items-center space-x-2">
-            <img src="/logo.png" alt="KELKAR MANAS HEALTH CLINIC" className="h-20 w-auto object-contain" />
-          </Link>
-
-          <NavigationMenu className="hidden xl:flex">
-            <NavigationMenuList className="gap-1">
-              
-              {/* Treatments (From Image) */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger 
-                  onClick={() => router.push('/treatments')}
-                  className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors cursor-pointer"
-                >
-                  Treatments
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[450px] gap-2 p-4 md:w-[700px] md:grid-cols-3">
-                    <ListItem href="/treatments/treatment-of-depression" title="Treatment of Depression">
-                      Comprehensive clinical psychiatric care.
-                    </ListItem>
-                    <ListItem href="/treatments/treatment-of-anxiety" title="Treatment of Anxiety">
-                      Therapy & evidence-based medical care.
-                    </ListItem>
-                    <ListItem href="/treatments/treatment-of-phobia" title="Treatment of Phobia">
-                      Overcome irrational fears and anxiety.
-                    </ListItem>
-                    <ListItem href="/treatments/treatment-of-panic-attacks" title="Treatment of Panic Attacks">
-                      Manage and reduce sudden panic episodes.
-                    </ListItem>
-                    <ListItem href="/treatments/treatment-of-ocd" title="Treatment of OCD">
-                      Specialized Obsessive-Compulsive Disorder management.
-                    </ListItem>
-                    <ListItem href="/treatments/treatment-of-hysteria" title="Treatment of Hysteria">
-                      Therapeutic interventions for conversion disorders.
-                    </ListItem>
-                    <ListItem href="/treatments/child-and-adolescent-psychiatry" title="Child & Adolescent Psychiatry">
-                      Care for ADHD, autism, and behavioral challenges.
-                    </ListItem>
-                    <ListItem href="/treatments/geriatric-psychiatry" title="Geriatric Psychiatry">
-                      Memory care and late-life depression.
-                    </ListItem>
-                    <ListItem href="/treatments/cognitive-behavioural-therapy" title="Cognitive Behavioural Therapy">
-                      Structured evidence-based psychotherapy.
-                    </ListItem>
-                    <ListItem href="/treatments/treatment-of-alcohol-addiction" title="Alcohol Addiction">
-                      Inpatient rehabilitation & detox programs.
-                    </ListItem>
-                    <ListItem href="/treatments/nicotine-de-addiction" title="Nicotine De-Addiction">
-                      Structured tobacco cessation protocols.
-                    </ListItem>
-                    <ListItem href="/treatments/brown-sugar-de-addiction" title="Brown Sugar De-Addiction">
-                      Residential opioid dependence rehab.
-                    </ListItem>
-                    <ListItem href="/treatments/schizophrenia" title="Schizophrenia Treatment">
-                      Management of thoughts, perceptions & behavior.
-                    </ListItem>
-                    <ListItem href="/treatments/ibs" title="Irritable Bowel Syndrome (IBS)">
-                      Gut-brain interactions & bowel habit management.
-                    </ListItem>
-                    <ListItem href="/treatments/mania" title="Mania (Bipolar Disorder)">
-                      Management of mood elevation & energy.
-                    </ListItem>
-                    <div className="md:col-span-3 pt-3 mt-1 border-t border-border/50 text-center">
-                      <Link href="/treatments" className="inline-flex items-center text-sm font-semibold text-primary hover:underline transition-all">
-                        View All Treatments <span className="ml-1">&rarr;</span>
-                      </Link>
-                    </div>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              {/* Psychometric Tests Offered */}
-              {/* Psychometric Tests Offered - Hidden for now 
-              <NavigationMenuItem>
-                <NavigationMenuTrigger 
-                  onClick={() => router.push('/diagnostics')}
-                  className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors cursor-pointer"
-                >
-                  Psychometric Tests
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[350px] gap-2 p-4">
-                    <ListItem href="/diagnostics" title="IQ & Cognitive Assessments">
-                      Standardized intelligence & memory evaluations.
-                    </ListItem>
-                    <ListItem href="/diagnostics" title="Personality & Mood Tests">
-                      Clinical profiling for depression & anxiety.
-                    </ListItem>
-                    <ListItem href="/diagnostics" title="ADHD & Autism Evaluation">
-                      Developmental psychometric assessments.
-                    </ListItem>
-                    <ListItem href="/diagnostics" title="De-Addiction Severity Tests">
-                      Substance dependence risk evaluation.
-                    </ListItem>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-              */}
-
-              {/* Sexual Problems (From Client Screenshot) */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger 
-                  onClick={() => router.push('/sexual-problems')}
-                  className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors cursor-pointer"
-                >
-                  Sexual Problems
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[550px] gap-2 p-4 md:grid-cols-2">
-                    <ListItem href="/treatments/erectile-dysfunction" title="Erectile Dysfunction">
-                      Clinical treatment & recovery plans.
-                    </ListItem>
-                    <ListItem href="/treatments/premature-ejaculation" title="Premature Ejaculation">
-                      Stamina, control & medical therapy.
-                    </ListItem>
-                    <ListItem href="/treatments/sexual-performance-anxiety" title="Performance Anxiety">
-                      Counseling to build sexual confidence.
-                    </ListItem>
-                    <ListItem href="/treatments/sexually-transmitted-infections" title="STIs">
-                      Diagnosis and medical treatment.
-                    </ListItem>
-                    <ListItem href="/treatments/precum" title="Precum">
-                      Medical advice and guidance.
-                    </ListItem>
-                    <ListItem href="/treatments/nocturnal-emissions" title="Nocturnal Emissions">
-                      Management of nightfall.
-                    </ListItem>
-                    <ListItem href="/treatments/masturbation-habit" title="Masturbation Habit">
-                      Myths, guidance & behavioral counseling.
-                    </ListItem>
-                    <ListItem href="/treatments/infertility" title="Infertility">
-                      Diagnostic evaluation and support.
-                    </ListItem>
-                    <ListItem href="/treatments/homosexuality-counseling" title="Homosexuality Counseling">
-                      Confidential care & awareness support.
-                    </ListItem>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              {/* Shop (Products) - Hidden for now 
-              <NavigationMenuItem>
-                <Link href="/products" className={cn(navigationMenuTriggerStyle(), "bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors")}>
-                  Pharmacy
-                </Link>
-              </NavigationMenuItem>
-              */}
-
-              {/* Clinics (Physical Trust) - Hidden for now */}
-              {/* 
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors">
-                  Clinics
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[300px] gap-3 p-4">
-                    <ListItem href="/clinics/delhi" title="New Delhi">
-                      Vasant Vihar Premium Clinic
-                    </ListItem>
-                    <ListItem href="/clinics/mumbai" title="Mumbai">
-                      Bandra West Flagship Center
-                    </ListItem>
-                    <ListItem href="/clinics/bangalore" title="Bangalore">
-                      Indiranagar Hub
-                    </ListItem>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-              */}
-
-              {/* About Us (Brand Trust) */}
-              <NavigationMenuItem>
-                <Link href="/about" className={cn(navigationMenuTriggerStyle(), "bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors")}>
-                  About Us
-                </Link>
-              </NavigationMenuItem>
-
-              {/* Contact Us */}
-              <NavigationMenuItem>
-                <Link href="/contact" className={cn(navigationMenuTriggerStyle(), "bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors")}>
-                  Contact Us
-                </Link>
-              </NavigationMenuItem>
-
-              {/* Our Sexologists */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors">
-                  Our Experts
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[300px] gap-3 p-4">
-                    <ListItem href="/doctors" title="Meet the Team">
-                      View our board-certified experts.
-                    </ListItem>
-                    <ListItem 
-                      href="#" 
-                      title="Book Appointment"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        openBooking();
-                      }}
-                    >
-                      Schedule a secure video consultation.
-                    </ListItem>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              {/* Resources */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors">
-                  Resources
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[300px] gap-3 p-4">
-                    <ListItem href="/blog" title="Clinical Journal">
-                      Articles on longevity and intimacy.
-                    </ListItem>
-                    <ListItem href="/research" title="Research Library">
-                      Our clinical studies and findings.
-                    </ListItem>
-                    <ListItem href="/faq" title="FAQ & Support">
-                      Answers to common questions.
-                    </ListItem>
-                    <div className="pt-3 mt-1 border-t border-border/50">
-                      <ListItem href="/staff-login" title="Provider Login" className="bg-muted/30">
-                        Secure access for KELKAR MANAS HEALTH CLINIC staff.
-                      </ListItem>
-                    </div>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-            </NavigationMenuList>
-          </NavigationMenu>
-        </div>
-        
-        <div className="flex items-center gap-4 shrink-0">
-          {/* Cart - Hidden for now
-          <button 
-            onClick={async () => {
-              if (isCheckingCartAuth) return;
-              setIsCheckingCartAuth(true);
-              try {
-                const res = await fetch("/api/auth/me");
-                const data = await res.json();
-                if (data.success && data.user) {
-                  openCart();
-                } else {
-                  router.push("/login?redirect=cart");
-                }
-              } catch (error) {
-                router.push("/login");
-              } finally {
-                setIsCheckingCartAuth(false);
-              }
-            }}
-            disabled={isCheckingCartAuth}
-            className="relative p-2 text-foreground/80 hover:text-primary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {isCheckingCartAuth ? (
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <ShoppingBag className="w-5 h-5" />
-            )}
-            {cartItemCount > 0 && (
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-primary rounded-full">
-                {cartItemCount}
-              </span>
-            )}
-          </button>
-          */}
-          
-          <button 
-            className="xl:hidden p-2 text-foreground/80 hover:text-primary transition-colors"
-            onClick={() => setIsMobileMenuOpen(true)}
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-
-          <div className="hidden sm:flex items-center gap-6">
-            <Link href="/login" className="text-sm font-semibold text-foreground/80 hover:text-primary transition-colors">
-              Log in
-            </Link>
-            <button 
-              onClick={() => openBooking()}
-              className={cn(buttonVariants({ size: "lg" }), "rounded-full px-6 py-3 text-sm font-semibold shadow-sm hover:shadow-md transition-all")}
-            >
-              Get Started
-            </button>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    {/* Mobile Navigation Overlay */}
-    <AnimatePresence>
-      {isMobileMenuOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm xl:hidden"
-          />
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 right-0 z-[101] w-[85%] max-w-sm bg-background border-l border-border shadow-2xl flex flex-col xl:hidden"
-          >
-            <div className="flex items-center justify-between p-6 border-b border-border">
+      <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40">
+        <div className="container mx-auto flex h-20 items-center justify-between px-6 lg:px-12">
+          <div className="flex items-center gap-10">
+            <Link href="/" className="flex items-center space-x-2">
               <img src="/logo.png" alt="KELKAR MANAS HEALTH CLINIC" className="h-20 w-auto object-contain" />
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-              >
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-2">
-              <nav className="flex flex-col text-lg font-medium">
-                <MobileNavGroup title="Conditions We Treat">
-                  <Link href="/conditions/ed" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Erectile Dysfunction</Link>
-                  <Link href="/conditions/pe" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Premature Ejaculation</Link>
-                  <Link href="/conditions/testosterone" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Low Testosterone</Link>
-                  <Link href="/conditions/sti" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">STI Management</Link>
-                  <Link href="/conditions" onClick={() => setIsMobileMenuOpen(false)} className="py-2 font-semibold text-primary hover:underline transition-colors mt-2 border-t border-border/30 pt-2">View All Conditions &rarr;</Link>
-                </MobileNavGroup>
-                
-                <MobileNavGroup title="Our Treatments">
-                  <Link href="/treatments/treatment-of-phobia" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of Phobia</Link>
-                  <Link href="/treatments/treatment-of-panic-attacks" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of Panic Attacks</Link>
-                  <Link href="/treatments/treatment-of-ocd" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of OCD</Link>
-                  <Link href="/treatments/treatment-of-hysteria" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of Hysteria</Link>
-                  <Link href="/treatments/treatment-of-depression" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of Depression</Link>
-                  <Link href="/treatments/treatment-of-anxiety" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of Anxiety</Link>
-                  <Link href="/treatments/treatment-of-alcohol-addiction" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment of Alcohol Addiction</Link>
-                  <Link href="/treatments/sexual-health-problems" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Treatment Available for Sexual Health Problems</Link>
-                </MobileNavGroup>
+            </Link>
 
-                {/* <div className="border-b border-border/50">
-                  <Link href="/products" onClick={() => setIsMobileMenuOpen(false)} className="flex py-4 text-lg font-medium hover:text-primary transition-colors">Pharmacy</Link>
-                </div> */}
+            <NavigationMenu className="hidden xl:flex">
+              <NavigationMenuList className="gap-1">
+                {NAV_ITEMS.map((group) => {
+                  if (!group.items || group.items.length === 0) {
+                    return (
+                      <NavigationMenuItem key={group.title}>
+                        <Link
+                          href={group.href || "#"}
+                          className={cn(
+                            navigationMenuTriggerStyle(),
+                            "bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors"
+                          )}
+                        >
+                          {group.title}
+                        </Link>
+                      </NavigationMenuItem>
+                    );
+                  }
 
-                {/* Clinics - Hidden for now
-                <MobileNavGroup title="Clinics">
-                  <Link href="/clinics/delhi" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">New Delhi</Link>
-                  <Link href="/clinics/mumbai" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Mumbai</Link>
-                  <Link href="/clinics/bangalore" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Bangalore</Link>
-                </MobileNavGroup>
-                */}
+                  const mainItems = group.items.filter((item) => !item.isFooterLink);
+                  const footerItems = group.items.filter((item) => item.isFooterLink);
 
-                <div className="border-b border-border/50">
-                  <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="flex py-4 text-lg font-medium hover:text-primary transition-colors">About Us</Link>
-                </div>
-                
-                <div className="border-b border-border/50">
-                  <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="flex py-4 text-lg font-medium hover:text-primary transition-colors">Contact Us</Link>
-                </div>
+                  return (
+                    <NavigationMenuItem key={group.title}>
+                      <NavigationMenuTrigger
+                        onClick={() => group.href && router.push(group.href)}
+                        className="bg-transparent text-foreground/80 hover:text-primary font-semibold transition-colors cursor-pointer"
+                      >
+                        {group.title}
+                      </NavigationMenuTrigger>
+                      <NavigationMenuContent>
+                        <ul
+                          className={cn(
+                            "grid gap-2 p-4",
+                            group.widthClass || "w-[300px]",
+                            group.gridCols || "grid-cols-1"
+                          )}
+                        >
+                          {mainItems.map((sub) => (
+                            <ListItem
+                              key={sub.title}
+                              href={sub.href}
+                              title={sub.title}
+                              onClick={
+                                sub.actionKey === "openBooking"
+                                  ? (e) => {
+                                      e.preventDefault();
+                                      openBooking();
+                                    }
+                                  : undefined
+                              }
+                              className={sub.className}
+                            >
+                              {sub.description}
+                            </ListItem>
+                          ))}
 
-                <MobileNavGroup title="Our Experts">
-                  <Link href="/doctors" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Meet the Team</Link>
-                  <button 
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      openBooking();
-                    }} 
-                    className="py-2 hover:text-primary text-left transition-colors"
-                  >
-                    Book Appointment
-                  </button>
-                </MobileNavGroup>
+                          {footerItems.length > 0 && (
+                            <div
+                              className={cn(
+                                "pt-3 mt-1 border-t border-border/50",
+                                group.gridCols?.includes("cols-") ? "md:col-span-full text-center" : ""
+                              )}
+                            >
+                              {footerItems.map((footerSub) => (
+                                <div key={footerSub.title}>
+                                  {footerSub.description ? (
+                                    <ListItem
+                                      href={footerSub.href}
+                                      title={footerSub.title}
+                                      className={footerSub.className}
+                                    >
+                                      {footerSub.description}
+                                    </ListItem>
+                                  ) : (
+                                    <Link
+                                      href={footerSub.href}
+                                      className="inline-flex items-center text-sm font-semibold text-primary hover:underline transition-all"
+                                    >
+                                      {footerSub.title} <span className="ml-1">&rarr;</span>
+                                    </Link>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </ul>
+                      </NavigationMenuContent>
+                    </NavigationMenuItem>
+                  );
+                })}
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
 
-                <MobileNavGroup title="Resources">
-                  <Link href="/blog" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Clinical Journal</Link>
-                  <Link href="/research" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">Research Library</Link>
-                  <Link href="/faq" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-primary transition-colors">FAQ & Support</Link>
-                  <Link href="/staff-login" onClick={() => setIsMobileMenuOpen(false)} className="py-2 font-semibold text-muted-foreground hover:text-primary transition-colors mt-2 border-t border-border/30 pt-2">Provider Login &rarr;</Link>
-                </MobileNavGroup>
-              </nav>
-            </div>
-            
-            <div className="p-6 border-t border-border bg-muted/30 flex flex-col gap-4">
-              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button variant="outline" className="w-full rounded-full py-6 text-base">
-                  Log In
-                </Button>
+          <div className="flex items-center gap-4 shrink-0">
+            <button
+              className="xl:hidden p-2 text-foreground/80 hover:text-primary transition-colors"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+
+            <div className="hidden sm:flex items-center gap-6">
+              <Link href="/login" className="text-sm font-semibold text-foreground/80 hover:text-primary transition-colors">
+                Log in
               </Link>
-              <button 
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  openBooking();
-                }}
-                className={cn(buttonVariants(), "w-full rounded-full py-6 text-base font-semibold shadow-sm hover:shadow-md transition-all")}
+              <button
+                onClick={() => openBooking()}
+                className={cn(buttonVariants({ size: "lg" }), "rounded-full px-6 py-3 text-sm font-semibold shadow-sm hover:shadow-md transition-all")}
               >
                 Get Started
               </button>
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Navigation Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm xl:hidden"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 right-0 z-[101] w-[85%] max-w-sm bg-background border-l border-border shadow-2xl flex flex-col xl:hidden"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-border">
+                <img src="/logo.png" alt="KELKAR MANAS HEALTH CLINIC" className="h-20 w-auto object-contain" />
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 rounded-full hover:bg-muted transition-colors"
+                >
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-2">
+                <nav className="flex flex-col text-lg font-medium">
+                  {NAV_ITEMS.map((group) => {
+                    if (!group.items || group.items.length === 0) {
+                      return (
+                        <div key={group.title} className="border-b border-border/50">
+                          <Link
+                            href={group.href || "#"}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="flex py-4 text-lg font-medium hover:text-primary transition-colors"
+                          >
+                            {group.title}
+                          </Link>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <MobileNavGroup key={group.title} title={group.title}>
+                        {group.items.map((sub) => {
+                          if (sub.actionKey === "openBooking") {
+                            return (
+                              <button
+                                key={sub.title}
+                                onClick={() => {
+                                  setIsMobileMenuOpen(false);
+                                  openBooking();
+                                }}
+                                className="py-2 hover:text-primary text-left transition-colors"
+                              >
+                                {sub.title}
+                              </button>
+                            );
+                          }
+
+                          if (sub.isFooterLink) {
+                            return (
+                              <Link
+                                key={sub.title}
+                                href={sub.href}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="py-2 font-semibold text-primary hover:underline transition-colors mt-2 border-t border-border/30 pt-2"
+                              >
+                                {sub.title} &rarr;
+                              </Link>
+                            );
+                          }
+
+                          return (
+                            <Link
+                              key={sub.title}
+                              href={sub.href}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="py-2 hover:text-primary transition-colors"
+                            >
+                              {sub.title}
+                            </Link>
+                          );
+                        })}
+                      </MobileNavGroup>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              <div className="p-6 border-t border-border bg-muted/30 flex flex-col gap-4">
+                <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button variant="outline" className="w-full rounded-full py-6 text-base">
+                    Log In
+                  </Button>
+                </Link>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    openBooking();
+                  }}
+                  className={cn(buttonVariants(), "w-full rounded-full py-6 text-base font-semibold shadow-sm hover:shadow-md transition-all")}
+                >
+                  Get Started
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }
 
-function MobileNavGroup({ title, children }: { title: string, children: React.ReactNode }) {
+function MobileNavGroup({ title, children }: { title: string; children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div className="border-b border-border/50">
-      <button 
-        onClick={() => setIsOpen(!isOpen)} 
+      <button
+        onClick={() => setIsOpen(!isOpen)}
         className="flex w-full items-center justify-between py-4 text-lg font-medium hover:text-primary transition-colors"
       >
         {title}
