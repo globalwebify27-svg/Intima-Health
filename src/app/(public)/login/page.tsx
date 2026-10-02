@@ -46,9 +46,6 @@ export default function LoginPage() {
       if (data.success) {
         setStep('otp');
         setResendCooldown(30);
-        if (data.code) {
-          alert(`[Test OTP Code]: ${data.code}\n(This popup is for developer/testing convenience)`);
-        }
       } else {
         throw new Error(data.message || "Failed to send OTP.");
       }
