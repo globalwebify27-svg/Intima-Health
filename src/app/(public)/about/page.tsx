@@ -32,24 +32,28 @@ const floatAnimation = {
 
 export default function AboutPage() {
   const [aboutData, setAboutData] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  // We are hardcoding the data as requested by the user instead of fetching from the database.
-  // React.useEffect(() => {
-  //   fetch("/api/public/content/pages/about")
-  //     .then(res => res.json())
-  //     .then(json => {
-  //       if (json.success && json.data.content) {
-  //         try {
-  //           setAboutData(JSON.parse(json.data.content));
-  //         } catch (e) {
-  //           console.error("Failed to parse about content JSON");
-  //         }
-  //       }
-  //     })
-  //     .catch(err => console.error(err));
-  // }, []);
+  React.useEffect(() => {
+    fetch("/api/public/content/pages/about")
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      })
+      .then(json => {
+        if (json && json.success && json.data && json.data.content) {
+          try {
+            setAboutData(JSON.parse(json.data.content));
+          } catch (e) {
+            console.error("Failed to parse about content JSON");
+          }
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const data = {
+  const defaultData = {
     heroTitle1: "Leading Psychiatric &",
     heroTitle2: "Mental Health Care.",
     heroSubtitle: "Founded by Dr. Deepak Kelkar, Dr. Kelkar Hospital in Akola & Nagpur provides pioneer psychiatric treatment, de-addiction rehabilitation, and the Happiness 20 – Mind Gym program.",
@@ -71,6 +75,7 @@ export default function AboutPage() {
     aboutContent: "Kelkar Hospital, Akola, has been providing comprehensive treatment for all types of mental health and psychiatric disorders in Akola for the past 44 years.<br/><br/>The hospital is led by qualified and experienced psychiatrists, offering scientific and compassionate care for a wide range of mental health conditions.<br/><br/>Associated with Kelkar Hospital is Sanmitra Hospital, where treatment for various mental health conditions is provided free of cost to eligible patients under government health schemes.<br/><br/>Patients who come with the PM-JAY (Ayushman Bharat) Card or are eligible under the Mahatma Jyotiba Phule Jan Arogya Yojana (MJPJAY) can receive treatment free of cost, as per scheme eligibility and approved packages.<br/><br/>The covered services may include psychiatric consultation, medicines, hospitalization, food and accommodation, and ECT (electroconvulsive therapy/shock treatment), as applicable under the government scheme.<br/><br/>Our aim is to ensure that financial difficulties do not become a barrier to receiving appropriate and timely mental healthcare."
   };
 
+  const data = aboutData || defaultData;
   const aboutContent = data.aboutContent;
 
   const getIcon = (name: string) => {

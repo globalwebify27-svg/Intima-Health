@@ -43,7 +43,7 @@ export default function ConditionsPage() {
         description: "Advanced medical evaluation and effective treatment plans tailored by our senior specialists.",
         treatments: ["Pharmacotherapy", "Vascular Assessment", "Psychological Counseling"],
         color: "bg-blue-50 text-blue-600",
-        slug: "/treatments/erectile-dysfunction"
+        slug: "/sexual-problems/erectile-dysfunction"
       },
       {
         icon: "Activity",
@@ -51,7 +51,7 @@ export default function ConditionsPage() {
         description: "Clinical and psychological treatment protocols to improve endurance, control, and sexual confidence.",
         treatments: ["Medical Therapy", "Behavioral Exercises", "Sensitivity Control"],
         color: "bg-indigo-50 text-indigo-600",
-        slug: "/treatments/premature-ejaculation"
+        slug: "/sexual-problems/premature-ejaculation"
       },
       {
         icon: "HeartPulse",
@@ -59,7 +59,7 @@ export default function ConditionsPage() {
         description: "Holistic psychosexual wellness and counseling to overcome fear and enhance intimacy.",
         treatments: ["Intimacy Counseling", "CBT", "Mind-Body Integration"],
         color: "bg-rose-50 text-rose-600",
-        slug: "/treatments/sexual-performance-anxiety"
+        slug: "/sexual-problems/sexual-performance-anxiety"
       },
       {
         icon: "ShieldAlert",
@@ -67,7 +67,7 @@ export default function ConditionsPage() {
         description: "Confidential diagnosis, testing, and treatment for Sexually Transmitted Infections.",
         treatments: ["Diagnostic Testing", "Medical Treatment", "Prevention Counseling"],
         color: "bg-emerald-50 text-emerald-600",
-        slug: "/treatments/sexually-transmitted-infections"
+        slug: "/sexual-problems/sexually-transmitted-infections"
       },
       {
         icon: "Beaker",
@@ -75,7 +75,7 @@ export default function ConditionsPage() {
         description: "Medical advice, counseling, and guidance to understand and manage physiological symptoms.",
         treatments: ["Medical Evaluation", "Psychoeducation", "Behavioral Guidance"],
         color: "bg-cyan-50 text-cyan-600",
-        slug: "/treatments/precum"
+        slug: "/sexual-problems/precum"
       },
       {
         icon: "Heart",
@@ -83,7 +83,7 @@ export default function ConditionsPage() {
         description: "Clinical management and psychological reassurance for nightfall and related anxiety.",
         treatments: ["Psychoeducation", "Lifestyle Counseling", "Anxiety Reduction"],
         color: "bg-blue-50 text-blue-600",
-        slug: "/treatments/nocturnal-emissions"
+        slug: "/sexual-problems/nocturnal-emissions"
       },
       {
         icon: "ShieldCheck",
@@ -91,7 +91,7 @@ export default function ConditionsPage() {
         description: "Confidential behavioral guidance, myth-busting, and psychological counseling for compulsion.",
         treatments: ["Behavioral Therapy", "Psychoeducation", "Anxiety Reduction"],
         color: "bg-purple-50 text-purple-600",
-        slug: "/treatments/masturbation-habit"
+        slug: "/sexual-problems/masturbation-habit"
       },
       {
         icon: "Activity",
@@ -99,7 +99,7 @@ export default function ConditionsPage() {
         description: "Comprehensive evaluation, testing, and supportive treatments for couples facing infertility challenges.",
         treatments: ["Medical Testing", "Fertility Counseling", "Specialist Referrals"],
         color: "bg-orange-50 text-orange-600",
-        slug: "/treatments/infertility"
+        slug: "/sexual-problems/infertility"
       },
       {
         icon: "ShieldAlert",
@@ -107,7 +107,7 @@ export default function ConditionsPage() {
         description: "Private, judgment-free psychological support and counseling for identity and social anxiety.",
         treatments: ["Affirmative Therapy", "Stress Management", "Individual Counseling"],
         color: "bg-indigo-50 text-indigo-600",
-        slug: "/treatments/homosexuality-counseling"
+        slug: "/sexual-problems/homosexuality-counseling"
       }
     ]
   };

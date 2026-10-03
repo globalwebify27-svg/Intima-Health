@@ -333,22 +333,12 @@ export function BookingModal() {
       const res = await fetch("/api/auth/otp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: formData.phone }),
+        body: JSON.stringify({ phone: formData.phone, isExistingPatient: formData.isExistingPatient }),
       });
       const data = await res.json();
       if (data.success) {
-        if (!formData.isExistingPatient && data.isNewPatient === false) {
-          throw new Error("An account with this number already exists. Please select 'Existing Patient'.");
-        }
-        if (formData.isExistingPatient && data.isNewPatient === true) {
-          throw new Error("No account found with this number. Please select 'New Patient'.");
-        }
-        
         setOtpStep('otp');
         setResendTimer(30);
-        if (data.code) {
-          alert(`[Test OTP Code]: ${data.code}`);
-        }
       } else {
         throw new Error(data.message || "Failed to send OTP.");
       }

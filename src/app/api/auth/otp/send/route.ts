@@ -7,7 +7,7 @@ import { sendWhatsAppOtp } from "@/lib/whatsapp";
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const { phone } = await req.json();
+    const { phone, isExistingPatient } = await req.json();
 
     if (!phone) {
       return NextResponse.json({ success: false, message: "Phone number is required." }, { status: 400 });
@@ -28,7 +28,15 @@ export async function POST(req: Request) {
 
     let isNewPatient = false;
 
-    if (!patient) {
+    if (patient) {
+      if (isExistingPatient === false) {
+        return NextResponse.json({ success: false, message: "An account with this number already exists. Please select 'Existing Patient'." }, { status: 400 });
+      }
+    } else {
+      if (isExistingPatient === true) {
+        return NextResponse.json({ success: false, message: "No account found with this number. Please select 'New Patient'." }, { status: 400 });
+      }
+
       // Auto-create a minimal patient profile for self-registration
       patient = await PatientModel.create({
         name: `Patient ${last10.slice(-4)}`, // placeholder name, updated later in profile
@@ -60,7 +68,6 @@ export async function POST(req: Request) {
       message: isNewPatient
         ? "New account created. OTP sent via WhatsApp."
         : "OTP sent successfully via WhatsApp.",
-      code,          // for developer testing
       isNewPatient,  // Flutter uses this to route to profile completion
       aiSensyDebug: aiSensyResponse, // Added so you can view it in the browser's Network tab
     });

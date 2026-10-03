@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Rss, List, HelpCircle, Plus, Edit2, Trash2, X } from "lucide-react";
+import { FileText, Rss, List, HelpCircle, Plus, Edit2, Trash2, X, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-type Tab = "pages" | "posts" | "categories" | "faqs";
+type Tab = "pages" | "posts" | "categories" | "faqs" | "treatments" | "sexual-problems";
 
 export default function ContentPage() {
   const [activeTab, setActiveTab] = useState<Tab>("pages");
@@ -16,6 +16,9 @@ export default function ContentPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [faqs, setFaqs] = useState<any[]>([]);
+  const [treatments, setTreatments] = useState<any[]>([]);
+  const [sexualProblems, setSexualProblems] = useState<any[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,7 +36,11 @@ export default function ContentPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/content/${activeTab}`);
+      let fetchUrl = `/api/admin/content/${activeTab}`;
+      if (activeTab === "treatments") fetchUrl = "/api/admin/content/treatments?type=treatment";
+      if (activeTab === "sexual-problems") fetchUrl = "/api/admin/content/treatments?type=sexual-problem";
+      
+      const res = await fetch(fetchUrl);
       const json = await res.json();
       if (json.success) {
         if (activeTab === "pages") setPages(json.data);
@@ -46,6 +53,8 @@ export default function ContentPage() {
         }
         if (activeTab === "categories") setCategories(json.data);
         if (activeTab === "faqs") setFaqs(json.data);
+        if (activeTab === "treatments") setTreatments(json.data);
+        if (activeTab === "sexual-problems") setSexualProblems(json.data);
       }
     } catch (err) {
       console.error(`Failed to fetch ${activeTab}:`, err);
@@ -71,16 +80,21 @@ export default function ContentPage() {
     e.preventDefault();
     setSaving(true);
     try {
+      const apiType = modalType === "sexual-problems" ? "treatments" : modalType;
       const url = editingItem 
-        ? `/api/admin/content/${modalType}/${editingItem._id}`
-        : `/api/admin/content/${modalType}`;
+        ? `/api/admin/content/${apiType}/${editingItem._id}`
+        : `/api/admin/content/${apiType}`;
       
       const method = editingItem ? "PUT" : "POST";
       
+      const bodyPayload = (modalType === "treatments" || modalType === "sexual-problems") 
+        ? { ...formData, type: modalType === "sexual-problems" ? "sexual-problem" : "treatment" }
+        : formData;
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(bodyPayload)
       });
       
       if (res.ok) {
@@ -100,7 +114,8 @@ export default function ContentPage() {
   const handleDelete = async (type: Tab, id: string) => {
     if (!confirm("Are you sure you want to delete this item?")) return;
     try {
-      const res = await fetch(`/api/admin/content/${type}/${id}`, { method: "DELETE" });
+      const apiType = type === "sexual-problems" ? "treatments" : type;
+      const res = await fetch(`/api/admin/content/${apiType}/${id}`, { method: "DELETE" });
       if (res.ok) {
         fetchData();
       }
@@ -109,11 +124,40 @@ export default function ContentPage() {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: form,
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setFormData({ ...formData, heroImage: json.url });
+      } else {
+        alert("Upload failed: " + json.message);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("An error occurred during upload.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const TABS = [
     { id: "pages", label: "Pages", icon: FileText },
     { id: "posts", label: "Blog Posts", icon: Rss },
-    { id: "categories", label: "Categories", icon: List },
     { id: "faqs", label: "FAQs", icon: HelpCircle },
+    { id: "treatments", label: "Treatments", icon: Activity },
+    { id: "sexual-problems", label: "Sexual Problems", icon: Activity },
   ] as const;
 
   return (
@@ -185,17 +229,26 @@ export default function ContentPage() {
                       <th className="p-4 font-semibold w-24">Actions</th>
                     </>
                   )}
-                  {activeTab === "categories" && (
-                    <>
-                      <th className="p-4 font-semibold">Name</th>
-                      <th className="p-4 font-semibold">Slug</th>
-                      <th className="p-4 font-semibold w-24">Actions</th>
-                    </>
-                  )}
                   {activeTab === "faqs" && (
                     <>
                       <th className="p-4 font-semibold">Question</th>
                       <th className="p-4 font-semibold">Category</th>
+                      <th className="p-4 font-semibold w-24">Actions</th>
+                    </>
+                  )}
+                  {activeTab === "treatments" && (
+                    <>
+                      <th className="p-4 font-semibold">Title</th>
+                      <th className="p-4 font-semibold">Slug</th>
+                      <th className="p-4 font-semibold">Category Badge</th>
+                      <th className="p-4 font-semibold w-24">Actions</th>
+                    </>
+                  )}
+                  {activeTab === "sexual-problems" && (
+                    <>
+                      <th className="p-4 font-semibold">Title</th>
+                      <th className="p-4 font-semibold">Slug</th>
+                      <th className="p-4 font-semibold">Category Badge</th>
                       <th className="p-4 font-semibold w-24">Actions</th>
                     </>
                   )}
@@ -228,16 +281,6 @@ export default function ContentPage() {
                     </td>
                   </tr>
                 ))}
-                {activeTab === "categories" && categories.map(cat => (
-                  <tr key={cat._id} className="hover:bg-muted/20">
-                    <td className="p-4 font-medium">{cat.name}</td>
-                    <td className="p-4 text-muted-foreground">{cat.slug}</td>
-                    <td className="p-4 flex gap-2">
-                      <button onClick={() => openModal("categories", cat)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete("categories", cat._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
-                    </td>
-                  </tr>
-                ))}
                 {activeTab === "faqs" && faqs.map(faq => (
                   <tr key={faq._id} className="hover:bg-muted/20">
                     <td className="p-4 font-medium max-w-xs truncate">{faq.question}</td>
@@ -248,7 +291,29 @@ export default function ContentPage() {
                     </td>
                   </tr>
                 ))}
-                {(!loading && ((activeTab === "pages" && pages.length === 0) || (activeTab === "posts" && posts.length === 0) || (activeTab === "categories" && categories.length === 0) || (activeTab === "faqs" && faqs.length === 0))) && (
+                {activeTab === "treatments" && treatments.map(treatment => (
+                  <tr key={treatment._id} className="hover:bg-muted/20">
+                    <td className="p-4 font-medium">{treatment.title}</td>
+                    <td className="p-4 text-muted-foreground">{treatment.slug}</td>
+                    <td className="p-4 text-muted-foreground">{treatment.badge}</td>
+                    <td className="p-4 flex gap-2">
+                      <button onClick={() => openModal("treatments", treatment)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete("treatments", treatment._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    </td>
+                  </tr>
+                ))}
+                {activeTab === "sexual-problems" && sexualProblems.map(problem => (
+                  <tr key={problem._id} className="hover:bg-muted/20">
+                    <td className="p-4 font-medium">{problem.title}</td>
+                    <td className="p-4 text-muted-foreground">{problem.slug}</td>
+                    <td className="p-4 text-muted-foreground">{problem.badge}</td>
+                    <td className="p-4 flex gap-2">
+                      <button onClick={() => openModal("sexual-problems", problem)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete("sexual-problems", problem._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    </td>
+                  </tr>
+                ))}
+                {(!loading && ((activeTab === "pages" && pages.length === 0) || (activeTab === "posts" && posts.length === 0) || (activeTab === "categories" && categories.length === 0) || (activeTab === "faqs" && faqs.length === 0) || (activeTab === "treatments" && treatments.length === 0) || (activeTab === "sexual-problems" && sexualProblems.length === 0))) && (
                   <tr>
                     <td colSpan={4} className="p-8 text-center text-muted-foreground">No {activeTab} found.</td>
                   </tr>
@@ -258,6 +323,49 @@ export default function ContentPage() {
           </div>
         )}
       </div>
+
+      {activeTab === "posts" && (
+        <div className="bg-card border border-border shadow-sm rounded-3xl overflow-hidden">
+          <div className="p-4 md:p-6 border-b border-border flex justify-between items-center">
+            <h2 className="text-xl font-bold capitalize">Categories</h2>
+            <Button onClick={() => openModal("categories")} className="rounded-xl h-10 px-4 font-bold text-xs gap-2">
+              <Plus className="w-4 h-4" /> Add Category
+            </Button>
+          </div>
+          {loading ? (
+            <div className="p-10 flex justify-center text-muted-foreground">Loading...</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted/50 border-b border-border">
+                  <tr>
+                    <th className="p-4 font-semibold">Name</th>
+                    <th className="p-4 font-semibold">Slug</th>
+                    <th className="p-4 font-semibold w-24">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {categories.map(cat => (
+                    <tr key={cat._id} className="hover:bg-muted/20">
+                      <td className="p-4 font-medium">{cat.name}</td>
+                      <td className="p-4 text-muted-foreground">{cat.slug}</td>
+                      <td className="p-4 flex gap-2">
+                        <button onClick={() => openModal("categories", cat)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => handleDelete("categories", cat._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                      </td>
+                    </tr>
+                  ))}
+                  {(!loading && categories.length === 0) && (
+                    <tr>
+                      <td colSpan={3} className="p-8 text-center text-muted-foreground">No categories found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal */}
       <AnimatePresence>
@@ -437,9 +545,95 @@ export default function ContentPage() {
                                 <textarea rows={2} value={aboutData.expertsDescription || ""} onChange={e => updateField("expertsDescription", e.target.value)} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
                               </div>
                             </div>
+                            
+                            <div className="space-y-4 mt-6">
+                              <div className="flex items-center justify-between">
+                                <label className="text-sm font-bold text-foreground">Medical Experts</label>
+                                <Button type="button" variant="outline" size="sm" onClick={() => {
+                                  const experts = aboutData.experts || [];
+                                  updateField("experts", [...experts, { img: "", name: "", role: "", spec: "" }]);
+                                }}>
+                                  <Plus className="w-4 h-4 mr-2" /> Add Expert
+                                </Button>
+                              </div>
+                              
+                              {(aboutData.experts || []).map((expert: any, idx: number) => (
+                                <div key={idx} className="p-4 bg-background border border-border rounded-xl relative space-y-4">
+                                  <button type="button" onClick={() => {
+                                    const experts = aboutData.experts || [];
+                                    updateField("experts", experts.filter((_: any, i: number) => i !== idx));
+                                  }} className="absolute top-2 right-2 p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                  
+                                  <div className="flex gap-4">
+                                    <div className="flex-shrink-0 w-24 h-24 bg-muted rounded-xl border border-border overflow-hidden relative">
+                                      {expert.img ? (
+                                        <img src={expert.img} alt="Expert" className="w-full h-full object-cover" />
+                                      ) : (
+                                        <div className="flex items-center justify-center w-full h-full text-xs text-muted-foreground">No Image</div>
+                                      )}
+                                      <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        onChange={async (e) => {
+                                          const file = e.target.files?.[0];
+                                          if (!file) return;
+                                          setUploadingImage(true);
+                                          try {
+                                            const form = new FormData();
+                                            form.append("file", file);
+                                            const res = await fetch("/api/upload", { method: "POST", body: form });
+                                            const json = await res.json();
+                                            if (json.success) {
+                                              const newExperts = [...(aboutData.experts || [])];
+                                              newExperts[idx] = { ...newExperts[idx], img: json.url };
+                                              updateField("experts", newExperts);
+                                            }
+                                          } catch (err) {
+                                            console.error(err);
+                                          } finally {
+                                            setUploadingImage(false);
+                                          }
+                                        }}
+                                      />
+                                    </div>
+                                    <div className="flex-1 space-y-3">
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-bold text-muted-foreground">Name</label>
+                                          <input type="text" value={expert.name || ""} onChange={(e) => {
+                                            const newExperts = [...(aboutData.experts || [])];
+                                            newExperts[idx] = { ...newExperts[idx], name: e.target.value };
+                                            updateField("experts", newExperts);
+                                          }} className="w-full h-8 px-2 rounded-lg border border-border bg-background outline-none text-sm" />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-bold text-muted-foreground">Degree</label>
+                                          <input type="text" value={expert.role || ""} onChange={(e) => {
+                                            const newExperts = [...(aboutData.experts || [])];
+                                            newExperts[idx] = { ...newExperts[idx], role: e.target.value };
+                                            updateField("experts", newExperts);
+                                          }} className="w-full h-8 px-2 rounded-lg border border-border bg-background outline-none text-sm" />
+                                        </div>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="text-xs font-bold text-muted-foreground">Specialization</label>
+                                        <input type="text" value={expert.spec || ""} onChange={(e) => {
+                                          const newExperts = [...(aboutData.experts || [])];
+                                          newExperts[idx] = { ...newExperts[idx], spec: e.target.value };
+                                          updateField("experts", newExperts);
+                                        }} className="w-full h-8 px-2 rounded-lg border border-border bg-background outline-none text-sm" />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                           
-                          <p className="text-xs text-muted-foreground italic">Note: The arrays for Values and Experts can be edited via raw JSON or advanced setup later.</p>
+                          <p className="text-xs text-muted-foreground italic">Note: The arrays for Values can be edited via raw JSON or advanced setup later.</p>
                         </div>
                       );
                     })() : formData.slug === "contact" ? (() => {
@@ -636,6 +830,147 @@ export default function ContentPage() {
                         <textarea required rows={6} value={formData.content || ""} onChange={e => setFormData({...formData, content: e.target.value})} className="w-full p-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none resize-y" />
                       </div>
                     )}
+                  </>
+                )}
+
+                {/* Treatments Form */}
+                {(modalType === "treatments" || modalType === "sexual-problems") && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold">Title</label>
+                        <input required type="text" value={formData.title || ""} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold">Slug (URL)</label>
+                        <input required type="text" value={formData.slug || ""} onChange={e => setFormData({...formData, slug: e.target.value})} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold">Badge / Category Name</label>
+                      <input type="text" value={formData.badge || ""} onChange={e => setFormData({...formData, badge: e.target.value})} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold">Doctor/Team Label</label>
+                        <input type="text" value={formData.doctor || "Clinical Team"} onChange={e => setFormData({...formData, doctor: e.target.value})} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold">Lead Doctor Role</label>
+                        <input type="text" value={formData.leadDoctorRole || "Specialists"} onChange={e => setFormData({...formData, leadDoctorRole: e.target.value})} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border mt-4">
+                      <h4 className="font-semibold text-sm">Hero Section</h4>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-muted-foreground">Hero Image Upload (Optional)</label>
+                        <div className="flex items-center gap-4">
+                          {formData.heroImage && (
+                            <img src={formData.heroImage} alt="Hero Preview" className="h-16 w-16 object-cover rounded-xl border border-border bg-background" />
+                          )}
+                          <div className="relative">
+                            <input 
+                              type="file" 
+                              accept="image/*"
+                              onChange={handleImageUpload}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              disabled={uploadingImage}
+                            />
+                            <button type="button" disabled={uploadingImage} className="px-4 py-2 bg-background border border-border rounded-lg text-sm font-semibold hover:bg-muted/50 transition-colors">
+                              {uploadingImage ? "Uploading..." : "Choose Image"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-muted-foreground">Hero Headline</label>
+                        <input type="text" value={formData.heroHeadline || ""} onChange={e => setFormData({...formData, heroHeadline: e.target.value})} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-muted-foreground">Hero Subtext</label>
+                        <textarea rows={2} value={formData.heroSubtext || ""} onChange={e => setFormData({...formData, heroSubtext: e.target.value})} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-muted-foreground">Main Description (Below Hero)</label>
+                        <textarea rows={3} value={formData.description || ""} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border mt-4">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-semibold text-sm">Causes / Symptoms Sections</h4>
+                        <button type="button" onClick={() => setFormData({...formData, causes: [...(formData.causes || []), {}]})} className="text-xs text-primary font-bold bg-primary/10 px-2 py-1 rounded">Add Section</button>
+                      </div>
+                      {(formData.causes || []).map((cause: any, index: number) => (
+                        <div key={index} className="p-4 border border-border rounded-lg bg-background relative mt-2">
+                          <button type="button" onClick={() => {
+                            const newCauses = [...formData.causes];
+                            newCauses.splice(index, 1);
+                            setFormData({...formData, causes: newCauses});
+                          }} className="absolute top-2 right-2 text-red-500"><X className="w-4 h-4" /></button>
+                          
+                          <div className="grid grid-cols-2 gap-2 mb-2 mt-4">
+                            <input type="text" placeholder="Title" value={cause.title || ""} onChange={e => {
+                              const newCauses = [...formData.causes];
+                              newCauses[index] = {...cause, title: e.target.value};
+                              setFormData({...formData, causes: newCauses});
+                            }} className="w-full h-10 px-3 rounded-lg border border-border outline-none text-sm" />
+                            <input type="text" placeholder="Icon (e.g. BrainCircuit)" value={cause.icon || ""} onChange={e => {
+                              const newCauses = [...formData.causes];
+                              newCauses[index] = {...cause, icon: e.target.value};
+                              setFormData({...formData, causes: newCauses});
+                            }} className="w-full h-10 px-3 rounded-lg border border-border outline-none text-sm" />
+                          </div>
+                          <textarea rows={2} placeholder="Optional Description" value={cause.description || ""} onChange={e => {
+                            const newCauses = [...formData.causes];
+                            newCauses[index] = {...cause, description: e.target.value};
+                            setFormData({...formData, causes: newCauses});
+                          }} className="w-full p-3 rounded-lg border border-border outline-none text-sm resize-y mb-2" />
+                          <textarea rows={3} placeholder="Points (one per line)" value={(cause.points || []).join('\n')} onChange={e => {
+                            const newCauses = [...formData.causes];
+                            newCauses[index] = {...cause, points: e.target.value.split('\n').filter(Boolean)};
+                            setFormData({...formData, causes: newCauses});
+                          }} className="w-full p-3 rounded-lg border border-border outline-none text-sm resize-y" />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border mt-4">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-semibold text-sm">Treatment Options</h4>
+                        <button type="button" onClick={() => setFormData({...formData, treatments: [...(formData.treatments || []), {}]})} className="text-xs text-primary font-bold bg-primary/10 px-2 py-1 rounded">Add Treatment</button>
+                      </div>
+                      {(formData.treatments || []).map((t: any, index: number) => (
+                        <div key={index} className="p-4 border border-border rounded-lg bg-background relative mt-2">
+                          <button type="button" onClick={() => {
+                            const newTs = [...formData.treatments];
+                            newTs.splice(index, 1);
+                            setFormData({...formData, treatments: newTs});
+                          }} className="absolute top-2 right-2 text-red-500"><X className="w-4 h-4" /></button>
+                          
+                          <input type="text" placeholder="Treatment Title" value={t.title || ""} onChange={e => {
+                            const newTs = [...formData.treatments];
+                            newTs[index] = {...t, title: e.target.value};
+                            setFormData({...formData, treatments: newTs});
+                          }} className="w-full h-10 px-3 mt-4 mb-2 rounded-lg border border-border outline-none text-sm" />
+                          <textarea rows={2} placeholder="Description" value={t.description || ""} onChange={e => {
+                            const newTs = [...formData.treatments];
+                            newTs[index] = {...t, description: e.target.value};
+                            setFormData({...formData, treatments: newTs});
+                          }} className="w-full p-3 rounded-lg border border-border outline-none text-sm resize-y" />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border mt-4">
+                      <h4 className="font-semibold text-sm">Call to Action (CTA)</h4>
+                      <div className="space-y-2">
+                        <input type="text" placeholder="Headline" value={formData.cta?.headline || ""} onChange={e => setFormData({...formData, cta: {...(formData.cta || {}), headline: e.target.value}})} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none text-sm" />
+                        <input type="text" placeholder="Subtext" value={formData.cta?.subtext || ""} onChange={e => setFormData({...formData, cta: {...(formData.cta || {}), subtext: e.target.value}})} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none text-sm" />
+                        <input type="text" placeholder="Button Text (e.g. Book an Appointment)" value={formData.cta?.buttonText || ""} onChange={e => setFormData({...formData, cta: {...(formData.cta || {}), buttonText: e.target.value}})} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none text-sm" />
+                      </div>
+                    </div>
                   </>
                 )}
 

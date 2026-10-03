@@ -12,7 +12,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/store/useCart";
 import { ShoppingBag, Menu, X, ChevronDown } from "lucide-react";
@@ -54,6 +54,49 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const cartItemCount = items.reduce((total, item) => total + item.quantity, 0);
   const [isCheckingCartAuth, setIsCheckingCartAuth] = useState(false);
+  const [navItems, setNavItems] = useState(NAV_ITEMS);
+
+  useEffect(() => {
+    const fetchDynamicNav = async () => {
+      try {
+        const [treatmentsRes, sexualRes] = await Promise.all([
+          fetch("/api/admin/content/treatments?type=treatment"),
+          fetch("/api/admin/content/treatments?type=sexual-problem")
+        ]);
+        
+        const treatmentsJson = await treatmentsRes.json();
+        const sexualJson = await sexualRes.json();
+        
+        if (treatmentsJson.success && sexualJson.success) {
+          setNavItems(prev => prev.map(group => {
+            if (group.title === "Treatments") {
+              const dynamicItems = treatmentsJson.data.map((t: any) => ({
+                title: t.title,
+                href: `/treatments/${t.slug}`,
+                description: t.heroSubtext || t.badge || "Clinical treatment care."
+              }));
+              const footerItems = group.items?.filter(i => i.isFooterLink) || [];
+              return { ...group, items: [...dynamicItems, ...footerItems] };
+            }
+            if (group.title === "Sexual Problems") {
+              const dynamicItems = sexualJson.data.map((t: any) => ({
+                title: t.title,
+                href: `/sexual-problems/${t.slug}`,
+                description: t.heroSubtext || t.badge || "Medical advice and guidance."
+              }));
+              const footerItems = group.items?.filter(i => i.isFooterLink) || [];
+              return { ...group, items: [...dynamicItems, ...footerItems] };
+            }
+            return group;
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch dynamic navigation", error);
+      }
+    };
+    
+    fetchDynamicNav();
+  }, []);
 
   return (
     <>
@@ -66,7 +109,7 @@ export function Header() {
 
             <NavigationMenu className="hidden xl:flex">
               <NavigationMenuList className="gap-1">
-                {NAV_ITEMS.map((group) => {
+                {navItems.map((group) => {
                   if (!group.items || group.items.length === 0) {
                     return (
                       <NavigationMenuItem key={group.title}>
@@ -212,7 +255,7 @@ export function Header() {
 
               <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-2">
                 <nav className="flex flex-col text-lg font-medium">
-                  {NAV_ITEMS.map((group) => {
+                  {navItems.map((group) => {
                     if (!group.items || group.items.length === 0) {
                       return (
                         <div key={group.title} className="border-b border-border/50">

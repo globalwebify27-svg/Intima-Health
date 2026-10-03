@@ -112,47 +112,47 @@ export const NAV_ITEMS: NavGroupItem[] = [
     items: [
       {
         title: "Erectile Dysfunction",
-        href: "/treatments/erectile-dysfunction",
+        href: "/sexual-problems/erectile-dysfunction",
         description: "Clinical treatment & recovery plans.",
       },
       {
         title: "Premature Ejaculation",
-        href: "/treatments/premature-ejaculation",
+        href: "/sexual-problems/premature-ejaculation",
         description: "Stamina, control & medical therapy.",
       },
       {
         title: "Performance Anxiety",
-        href: "/treatments/sexual-performance-anxiety",
+        href: "/sexual-problems/sexual-performance-anxiety",
         description: "Counseling to build sexual confidence.",
       },
       {
         title: "STIs",
-        href: "/treatments/sexually-transmitted-infections",
+        href: "/sexual-problems/sexually-transmitted-infections",
         description: "Diagnosis and medical treatment.",
       },
       {
         title: "Precum",
-        href: "/treatments/precum",
+        href: "/sexual-problems/precum",
         description: "Medical advice and guidance.",
       },
       {
         title: "Nocturnal Emissions",
-        href: "/treatments/nocturnal-emissions",
+        href: "/sexual-problems/nocturnal-emissions",
         description: "Management of nightfall.",
       },
       {
         title: "Masturbation Habit",
-        href: "/treatments/masturbation-habit",
+        href: "/sexual-problems/masturbation-habit",
         description: "Myths, guidance & behavioral counseling.",
       },
       {
         title: "Infertility",
-        href: "/treatments/infertility",
+        href: "/sexual-problems/infertility",
         description: "Diagnostic evaluation and support.",
       },
       {
         title: "Homosexuality Counseling",
-        href: "/treatments/homosexuality-counseling",
+        href: "/sexual-problems/homosexuality-counseling",
         description: "Confidential care & awareness support.",
       },
     ],

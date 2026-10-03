@@ -19,6 +19,11 @@ interface Consultation {
     specialization: string;
     clinicId?: string;
   };
+  appointmentId?: {
+    clinicId?: {
+      _id: string;
+    } | string;
+  };
   prescriptionSummary?: string;
   prescribedTherapies?: string;
   createdAt: string;
@@ -69,7 +74,9 @@ export default function PatientPrescriptionsPage() {
       const meds: Medicine[] = JSON.parse(consultation.prescriptionSummary);
       if (meds.length === 0) return;
 
-      const clinicId = consultation.doctorId?.clinicId;
+      const clinicId = consultation.doctorId?.clinicId || 
+        (typeof consultation.appointmentId?.clinicId === 'object' ? consultation.appointmentId?.clinicId?._id : consultation.appointmentId?.clinicId);
+      
       if (!clinicId) {
         alert("This prescription is not linked to a clinic pharmacy.");
         return;
