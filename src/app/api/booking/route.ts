@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   try {
     await connectDB();
     const rawBody = await req.json();
-    
+
     const parsed = bookingSchema.safeParse(rawBody);
     if (!parsed.success) {
       return NextResponse.json(
@@ -38,10 +38,10 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    
+
     const body = parsed.data;
-    let { 
-      service, city, clinic, doctorId, date, time, 
+    let {
+      service, city, clinic, doctorId, date, time,
       firstName, lastName, email: providedEmail, phone, dob,
       paymentMethod, isExistingPatient
     } = body;
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
 
       const last10 = phone.replace(/\D/g, "").slice(-10);
       let existingPatientByPhone = await PatientModel.findOne({ phone: new RegExp(last10 + '$') }).exec();
-      
+
       if (existingPatientByPhone) {
         // If it was auto-created by OTP, update it.
         if (existingPatientByPhone.name.startsWith("Patient ") || (existingPatientByPhone.email && existingPatientByPhone.email.endsWith("@intima.app"))) {
@@ -190,9 +190,9 @@ export async function POST(req: Request) {
       type: isVideo ? "Video" : "Walk-in",
       serviceName: serviceNameStr,
       notes: "Booked directly through public website booking form.",
-      skipNotification: true,
+      skipNotification: false,
       paymentMethod: paymentMethod || "Online",
-      paymentStatus: "Pending"
+      paymentStatus: isVideo ? "Paid" : "Pending"
     }, email);
 
     // 5. Generate JWT & sign in automatically

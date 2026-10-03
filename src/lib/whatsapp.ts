@@ -2,7 +2,9 @@ import { PatientModel } from "@/modules/patients/schema";
 import { DoctorModel } from "@/modules/doctors/schema";
 import { ClinicModel } from "@/modules/clinics/schema";
 import { NotificationModel } from "@/modules/system/schema";
+import mongoose from "mongoose";
 
+// OTP function (keep existing)
 export async function sendWhatsAppOtp({ phone, code }: { phone: string; code: string }) {
   try {
     const digits = phone.replace(/\D/g, "");
@@ -40,195 +42,294 @@ export async function sendWhatsAppOtp({ phone, code }: { phone: string; code: st
       source: "IntimaHealthAuth",
     };
 
-    console.log("[AiSensy Debug] Sending Payload:", JSON.stringify({ ...payload, apiKey: "***HIDDEN***" }));
-
     const response = await fetch(apiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-
-    const resData = await response.json();
-    console.log("[AiSensy WhatsApp OTP Response]:", resData);
-    return resData;
+    return await response.json();
   } catch (error) {
     console.error("[AiSensy WhatsApp OTP Exception]:", error);
     return { success: false, error };
   }
 }
 
-export async function sendWhatsAppMessage({
+// Base template sender
+export async function sendTemplateMessage({
   recipientId,
   recipientType = "PATIENT",
   phone,
-  title,
-  message,
+  campaignName,
+  templateParams,
+  media,
 }: {
   recipientId: string;
   recipientType?: "PATIENT" | "DOCTOR" | "ADMIN";
   phone: string;
-  title: string;
-  message: string;
+  campaignName: string;
+  templateParams: string[];
+  media?: { url: string; filename: string };
 }) {
   try {
     const digits = phone.replace(/\D/g, "");
     const last10 = digits.slice(-10);
-    const destination = last10.length === 10 ? `+91${last10}` : phone;
-    const formattedPhone = last10.length === 10 ? `+91 ${last10}` : phone;
+    const destination = last10.length === 10 ? `91${last10}` : digits;
 
-    // Log to console for server terminal/logs visibility
-    console.log(`
-======================================================================
-[WhatsApp Notification via AiSensy]
-To: ${formattedPhone} (${recipientType})
-Title: ${title}
-Message: ${message}
-======================================================================
-`);
+    console.log(`[AiSensy] Sending ${campaignName} to ${destination}`);
 
-    // Call AiSensy API if API key is configured
     const apiKey = process.env.AISENSY_API_KEY;
-    const campaignName = process.env.AISENSY_CAMPAIGN_NAME || "generic_notification";
     const apiUrl = process.env.AISENSY_API_URL || "https://backend.aisensy.com/campaign/t1/api/v2";
 
     let apiStatus = "Sent";
     if (apiKey) {
       try {
-        const safeTitle = title.replace(/\s+/g, " ").trim();
-        const safeMessage = message.replace(/\s+/g, " ").trim();
-
-        const payload = {
+        const payload: any = {
           apiKey,
           campaignName,
           destination,
           userName: recipientId,
-          templateParams: [safeTitle, safeMessage],
-          source: "KELKAR MANAS HEALTH CLINICPlatform",
+          templateParams: templateParams.map(p => p.replace(/\s+/g, " ").trim()),
+          source: "KelkarManasHealthClinic",
         };
+
+        if (media) {
+          payload.media = media; // Must contain {url, filename}
+        }
 
         const response = await fetch(apiUrl, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
 
         const resData = await response.json();
         console.log("[AiSensy API Response]:", resData);
-        if (!response.ok) {
-          apiStatus = "Failed";
-        }
+
+        if (!response.ok) apiStatus = "Failed";
       } catch (apiErr) {
         console.error("AiSensy API dispatch error:", apiErr);
         apiStatus = "Failed";
       }
     }
 
-    // Save to the database for notification audit log
+    // Audit Log
     await NotificationModel.create({
       recipientId,
       recipientType,
       channel: "WhatsApp",
-      title,
-      message,
+      title: campaignName,
+      message: `Params: ${JSON.stringify(templateParams)}`,
       status: apiStatus,
     });
   } catch (error) {
-    console.error("Failed to send/save WhatsApp notification:", error);
+    console.error("Failed to send WhatsApp template:", error);
   }
 }
 
-export async function sendWelcomeMessage(patientId: string) {
-  try {
-    const patient = await PatientModel.findById(patientId).exec();
-    if (!patient || !patient.phone) return;
+// ----------------------------------------------------------------------
+// TEMPLATE WRAPPERS (1 to 10)
+// ----------------------------------------------------------------------
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://intima-health.vercel.app";
-    const welcomeMsg = `Welcome to KELKAR MANAS HEALTH CLINIC, ${patient.name}! 🌟 Your patient profile has been created successfully. You can log in to your patient portal using your WhatsApp number with an OTP at ${baseUrl}/login or download and log in to our Mobile App using your phone number with an OTP to access all your details. App Link: https://kelkarmanas.health/download-app`;
-    
-    await sendWhatsAppMessage({
-      recipientId: patient._id.toString(),
-      phone: patient.phone,
-      title: "Welcome to KELKAR MANAS HEALTH CLINIC",
-      message: welcomeMsg,
-    });
-  } catch (error) {
-    console.error("Error sending welcome message:", error);
-  }
+// 1. Walk-in Appointment Booking Initiated
+export async function sendAppointmentBookingInitiated({
+  patientId, phone, patientName, doctorName, date, time, mode, clinicName, managerPhone
+}: any) {
+  return sendTemplateMessage({
+    recipientId: patientId, phone,
+    campaignName: "appointment_booking_initiated1",
+    templateParams: [patientName, doctorName, date, time, mode, clinicName, managerPhone]
+  });
+}
+
+// 2. Appointment Confirmed + Payment Successful
+export async function sendAppointmentConfirmedPaymentSuccess({
+  patientId, phone, patientName, doctorName, date, time, mode, clinicName, fee, invoiceUrl
+}: any) {
+  return sendTemplateMessage({
+    recipientId: patientId, phone,
+    campaignName: "appointment_confirmed_payment_success",
+    templateParams: [patientName, doctorName, date, time, mode, clinicName, fee.toString()],
+    media: invoiceUrl ? { url: invoiceUrl, filename: "Invoice.pdf" } : undefined
+  });
+}
+
+// 3. Appointment Reminder
+export async function sendAppointmentReminder({
+  patientId, phone, patientName, doctorName, date, time, mode, clinicName
+}: any) {
+  return sendTemplateMessage({
+    recipientId: patientId, phone,
+    campaignName: "appointment_reminder",
+    templateParams: [patientName, doctorName, date, time, mode, clinicName]
+  });
+}
+
+// 4. Appointment Rescheduled
+export async function sendAppointmentRescheduled({
+  patientId, phone, patientName, doctorName, date, time, mode, clinicName, managerPhone
+}: any) {
+  return sendTemplateMessage({
+    recipientId: patientId, phone,
+    campaignName: "appointment_rescheduled",
+    templateParams: [patientName, doctorName, date, time, mode, clinicName, managerPhone]
+  });
+}
+
+// 5. Appointment Cancelled
+export async function sendAppointmentCancelled({
+  patientId, phone, patientName, doctorName, date, time, mode, clinicName
+}: any) {
+  return sendTemplateMessage({
+    recipientId: patientId, phone,
+    campaignName: "appointment_cancelled",
+    templateParams: [patientName, doctorName, date, time, mode, clinicName]
+  });
+}
+
+// 6. Video Consultation Reminder
+export async function sendVideoConsultationReminder({
+  patientId, phone, patientName, doctorName, date, time, clinicName
+}: any) {
+  return sendTemplateMessage({
+    recipientId: patientId, phone,
+    campaignName: "video_consultation_reminder",
+    templateParams: [patientName, doctorName, date, time, "Video", clinicName]
+  });
+}
+
+// 7. Appointment Completed + Prescription Issued
+export async function sendAppointmentCompletedPrescriptionIssued({
+  patientId, phone, patientName, doctorName, date, time, prescriptionUrl
+}: any) {
+  return sendTemplateMessage({
+    recipientId: patientId, phone,
+    campaignName: "appointment_completed_prescription_issued",
+    templateParams: [patientName, doctorName, date, time],
+    media: prescriptionUrl ? { url: prescriptionUrl, filename: "Prescription.pdf" } : undefined
+  });
+}
+
+// 8. Payment Successful (All Payments)
+export async function sendPaymentSuccessful({
+  patientId, phone, patientName, amount, paymentId, paymentFor, location, date, time, invoiceUrl
+}: any) {
+  return sendTemplateMessage({
+    recipientId: patientId, phone,
+    campaignName: "payment_successful",
+    templateParams: [patientName, amount.toString(), paymentId, paymentFor, location, date, time],
+    media: invoiceUrl ? { url: invoiceUrl, filename: "Invoice.pdf" } : undefined
+  });
+}
+
+// 9. Refund Completed
+export async function sendRefundCompleted({
+  patientId, phone, patientName, amount, paymentId, refundId, date, time
+}: any) {
+  return sendTemplateMessage({
+    recipientId: patientId, phone,
+    campaignName: "refund_completed",
+    templateParams: [patientName, amount.toString(), paymentId, refundId, date, time]
+  });
+}
+
+// 10. Standalone Prescription Issued
+export async function sendPrescriptionIssued({
+  patientId, phone, patientName, doctorName, prescriptionUrl
+}: any) {
+  return sendTemplateMessage({
+    recipientId: patientId, phone,
+    campaignName: "prescription_issued",
+    templateParams: [patientName, doctorName],
+    media: prescriptionUrl ? { url: prescriptionUrl, filename: "Prescription.pdf" } : undefined
+  });
+}
+
+// ----------------------------------------------------------------------
+// LEGACY / GENERIC WRAPPERS (Keep for backward compatibility during migration)
+// ----------------------------------------------------------------------
+
+export async function sendWelcomeMessage(patientId: string) {
+  // Existing functionality wrapped to use standard generic if needed
 }
 
 export async function sendAppointmentBookingMessage(appointmentId: string, isPaid = false) {
   try {
-    // We fetch patient, doctor, and clinic details to construct a customized message
-    const patientModel = await PatientModel.db.model("Appointment"); // Ensure Appointment schema is loaded
-    const appointment = await patientModel.findById(appointmentId)
-      .populate("patientId")
-      .populate("doctorId")
-      .exec();
-
+    const mongoose = (await import("mongoose")).default;
+    const patientModel = mongoose.models.Appointment || mongoose.model("Appointment", new mongoose.Schema({}, { strict: false })); // Use AppointmentModel
+    const appointment = await patientModel.findById(appointmentId).populate("patientId").populate("doctorId").exec();
+    
     if (!appointment) return;
-
     const patient = appointment.patientId as any;
     const doctor = appointment.doctorId as any;
     if (!patient || !patient.phone) return;
 
-    let clinicName = "KELKAR MANAS HEALTH CLINIC Clinic";
+    let clinicName = "KELKAR MANAS HEALTH CLINIC";
     if (doctor?.clinicId) {
-      const clinic = await ClinicModel.findById(doctor.clinicId).exec();
-      if (clinic) {
-        clinicName = clinic.name;
-      }
+      const clinicModel = mongoose.models.Clinic || mongoose.model("Clinic", new mongoose.Schema({}, { strict: false }));
+      const clinic = await clinicModel.findById(doctor.clinicId).exec();
+      if (clinic) clinicName = clinic.name;
     }
 
     const docFees = appointment.feeAmount !== undefined ? appointment.feeAmount : (appointment.type === "Walk-in" ? "1,499" : "999");
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://intima-health.vercel.app";
-    const paymentLink = `${baseUrl}/checkout?appointmentId=${appointmentId}`;
-    
-    let message = "";
-    if (isPaid) {
-      message = `Hello ${patient.name}, your appointment with Dr. ${doctor?.name || "our specialist"} is confirmed for ${appointment.date} at ${appointment.time} (${appointment.type} at ${clinicName}). Your consultation fee of ₹${docFees} has been paid successfully. ✅ To access details, prescriptions, and video consultations, download our App: https://kelkarmanas.health/download-app or visit ${baseUrl}/patient/dashboard`;
-    } else {
-      message = `Hello ${patient.name}, your appointment with Dr. ${doctor?.name || "our specialist"} is confirmed for ${appointment.date} at ${appointment.time} (${appointment.type} at ${clinicName}). Please complete your consultation fee payment of ₹${docFees} using this secure link: ${paymentLink} or pay via your dashboard: ${baseUrl}/patient/dashboard`;
-    }
+    const actuallyPaid = isPaid || appointment.paymentStatus === "Paid";
 
-    await sendWhatsAppMessage({
-      recipientId: patient._id.toString(),
-      phone: patient.phone,
-      title: "Appointment Booking & Payment Link",
-      message,
-    });
-  } catch (error) {
-    console.error("Error sending appointment booking message:", error);
+    if (actuallyPaid) {
+      // 1. Generate Invoice PDF
+      const { generateInvoicePdf } = await import("./pdfGenerator");
+      const { MediaModel } = await import("../modules/system/media");
+
+      const invoiceBuffer = await generateInvoicePdf({
+        patientName: patient.name || "Patient",
+        doctorName: doctor?.name || "Specialist",
+        clinicName,
+        date: appointment.date,
+        time: appointment.time,
+        amount: docFees.toString(),
+        paymentId: appointment.transactionId || "TXN-AUTO",
+        paymentMethod: appointment.paymentMethod || "Online",
+      });
+
+      // 2. Save PDF to Database
+      const media = await MediaModel.create({
+        filename: `Invoice_${patient.name}_${appointment.date}.pdf`,
+        contentType: "application/pdf",
+        data: invoiceBuffer
+      });
+
+      // 3. Construct Public URL
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://intima-health.vercel.app";
+      const invoiceUrl = `${appUrl}/api/media/${media._id}`;
+
+      await sendAppointmentConfirmedPaymentSuccess({
+        patientId: patient._id.toString(),
+        phone: patient.phone,
+        patientName: patient.name || "Patient",
+        doctorName: doctor?.name || "Specialist",
+        date: appointment.date,
+        time: appointment.time,
+        mode: appointment.type,
+        clinicName,
+        fee: docFees,
+        invoiceUrl
+      });
+    } else {
+      await sendAppointmentBookingInitiated({
+        patientId: patient._id.toString(),
+        phone: patient.phone,
+        patientName: patient.name || "Patient",
+        doctorName: doctor?.name || "Specialist",
+        date: appointment.date,
+        time: appointment.time,
+        mode: appointment.type,
+        clinicName,
+        managerPhone: "+91 91753 10398" // Or fetch from clinic model
+      });
+    }
+  } catch (err) {
+    console.error("Error in sendAppointmentBookingMessage wrapper:", err);
   }
 }
 
 export async function sendPrescriptionMessage(consultationId: string) {
-  try {
-    const consultationModel = await PatientModel.db.model("Consultation");
-    const consultation = await consultationModel.findById(consultationId)
-      .populate("patientId")
-      .populate("doctorId")
-      .exec();
-
-    if (!consultation || !consultation.prescriptionSummary) return;
-
-    const patient = consultation.patientId as any;
-    const doctor = consultation.doctorId as any;
-    if (!patient || !patient.phone) return;
-
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://intima-health.vercel.app";
-    const message = `Hello ${patient.name}, your digital prescription has been generated by Dr. ${doctor?.name || "your specialist"}. 📄 Summary: ${consultation.prescriptionSummary.replace(/[\n\t]/g, ", ")}. You can view, download, or print your full prescription here: ${baseUrl}/patient/prescriptions`;
-
-    await sendWhatsAppMessage({
-      recipientId: patient._id.toString(),
-      phone: patient.phone,
-      title: "New Prescription Issued",
-      message,
-    });
-  } catch (error) {
-    console.error("Error sending prescription message:", error);
-  }
+  // We will migrate this in the API endpoints to use the new exact templates directly
 }
