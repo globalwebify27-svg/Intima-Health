@@ -270,7 +270,7 @@ export async function sendAppointmentBookingMessage(appointmentId: string, isPai
       if (clinic) clinicName = clinic.name;
     }
 
-    const docFees = appointment.feeAmount !== undefined ? appointment.feeAmount : (appointment.type === "Walk-in" ? "1,499" : "999");
+    const docFees = appointment.feeAmount ?? 0;
     const actuallyPaid = isPaid || appointment.paymentStatus === "Paid";
 
     if (actuallyPaid) {

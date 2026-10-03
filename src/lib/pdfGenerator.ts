@@ -10,6 +10,9 @@ export interface InvoiceData {
   amount: string;
   paymentId: string;
   paymentMethod: string;
+  receiptId?: string;
+  status?: string;
+  collectedBy?: string;
 }
 
 export function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
@@ -25,19 +28,18 @@ export function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
       try {
         doc.image(logoPath, 50, 45, { width: 120 });
       } catch (e) {
-        // Fallback if logo not found
         doc.fontSize(20).text(data.clinicName, 50, 45);
       }
-      
+
       doc.fillColor('#444444')
          .fontSize(20)
          .text('INVOICE', 50, 150)
          .fontSize(10)
-         .text(`Invoice Number: INV-${Math.floor(Math.random() * 100000)}`, 50, 175)
+         .text(`Invoice Number: INV-${data.receiptId || data.paymentId.slice(-6).toUpperCase()}`, 50, 175)
          .text(`Date: ${new Date().toLocaleDateString()}`, 50, 190)
          .text(`Payment ID: ${data.paymentId}`, 50, 205);
 
-      // Add a line
+      // Line
       doc.moveTo(50, 230).lineTo(550, 230).stroke();
 
       // Patient details
@@ -54,14 +56,14 @@ export function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
          .text(`Time: ${data.time}`, 300, 280)
          .text(`Method: ${data.paymentMethod}`, 300, 295);
 
-      // Add a line
+      // Line
       doc.moveTo(50, 330).lineTo(550, 330).stroke();
 
       // Itemized
       doc.fontSize(12).fillColor('#000000')
          .text('Description', 50, 350)
          .text('Amount', 450, 350, { width: 100, align: 'right' });
-         
+
       doc.moveTo(50, 370).lineTo(550, 370).stroke();
 
       doc.fontSize(10).fillColor('#444444')

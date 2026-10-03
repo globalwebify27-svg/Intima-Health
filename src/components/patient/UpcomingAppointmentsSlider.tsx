@@ -17,6 +17,7 @@ interface Appointment {
   status: string;
   paymentStatus?: string;
   serviceName?: string;
+  feeAmount?: number;
 }
 
 interface UpcomingAppointmentsSliderProps {
@@ -161,7 +162,7 @@ export function UpcomingAppointmentsSlider({
                   onClick={() => handlePayAppointment(upcomingApt._id)} 
                   className="w-full rounded-xl h-11 font-bold mt-6 bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-500/10"
                 >
-                  Pay Consultation Fee (₹{upcomingApt.type === "Walk-in" ? "1,499" : "999"})
+                  Pay Consultation Fee (₹{typeof upcomingApt.feeAmount === 'number' ? upcomingApt.feeAmount.toLocaleString() : "Error - Missing Fee"})
                 </Button>
               )}
             </motion.div>

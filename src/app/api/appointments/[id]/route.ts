@@ -25,12 +25,66 @@ export async function GET(request: Request, { params }: RouteParams) {
 
 export async function PUT(request: Request, { params }: RouteParams) {
   const { id } = await params;
-  return await handleReschedule(id, request);
+  const response = await handleReschedule(id, request);
+  const data = await response.json();
+
+  if (data.success && data.data) {
+    try {
+      const { sendAppointmentRescheduled } = await import("@/lib/whatsapp");
+      const apt = data.data;
+      const patient = apt.patientId as any;
+      const doctor = apt.doctorId as any;
+      if (patient?.phone) {
+        await sendAppointmentRescheduled({
+          patientId: patient._id?.toString() || id,
+          phone: patient.phone,
+          patientName: patient.name || "Patient",
+          doctorName: doctor?.name || "Doctor",
+          date: apt.date,
+          time: apt.time,
+          mode: apt.type,
+          clinicName: "Kelkar Manas Health Clinic",
+          managerPhone: "+91 91753 10398",
+        });
+      }
+    } catch (err) {
+      console.error("WhatsApp reschedule notification failed:", err);
+    }
+  }
+
+  return NextResponse.json(data);
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
   const { id } = await params;
-  return await handleCancel(id);
+  const response = await handleCancel(id);
+  const data = await response.json();
+
+  if (data.success && data.data) {
+    try {
+      const { sendAppointmentCancelled } = await import("@/lib/whatsapp");
+      const apt = data.data;
+      const patient = apt.patientId as any;
+      const doctor = apt.doctorId as any;
+      
+      if (patient?.phone) {
+        await sendAppointmentCancelled({
+          patientId: patient._id?.toString() || id,
+          phone: patient.phone,
+          patientName: patient.name || "Patient",
+          doctorName: doctor?.name || "Doctor",
+          date: apt.date,
+          time: apt.time,
+          mode: apt.type,
+          clinicName: "Kelkar Manas Health Clinic"
+        });
+      }
+    } catch (err) {
+      console.error("WhatsApp cancellation notification failed:", err);
+    }
+  }
+
+  return NextResponse.json(data);
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {

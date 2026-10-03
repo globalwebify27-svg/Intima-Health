@@ -23,6 +23,7 @@ interface Appointment {
   status: string;
   paymentStatus?: string;
   serviceName?: string;
+  feeAmount?: number;
 }
 
 const columns: ColumnDef<Appointment>[] = [
@@ -68,9 +69,7 @@ const columns: ColumnDef<Appointment>[] = [
     header: "Payment",
     cell: ({ row }) => {
       const pStatus = row.original.paymentStatus || "Pending";
-      const price = 500; // Will be dynamically mapped from service later
-      const type = row.original.type as string;
-      const appointmentId = row.original._id;
+      const feeAmount = row.original.feeAmount;
 
       const handleDownloadReceipt = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -91,7 +90,7 @@ const columns: ColumnDef<Appointment>[] = [
       }
       return (
         <Badge variant="destructive">
-          Pending (₹{price})
+          Pending{feeAmount ? ` (₹${feeAmount.toLocaleString()})` : ""}
         </Badge>
       );
     }

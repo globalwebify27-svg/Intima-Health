@@ -16,7 +16,7 @@ export class AppointmentRepository {
       id,
       { $set: data },
       { new: true, runValidators: true }
-    ).exec();
+    ).populate("patientId doctorId clinicId").exec();
   }
 
   static async findBookedAppointments(doctorId: string, date: string): Promise<IAppointment[]> {

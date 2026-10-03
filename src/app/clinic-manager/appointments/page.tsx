@@ -408,29 +408,56 @@ export default function AppointmentsPage() {
                           </select>
                         </div>
                         {apt.status === "Scheduled" && (
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 h-9 rounded-xl font-bold flex items-center justify-center gap-1.5 border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
-                              onClick={() => {
-                                setRescheduleApt(apt);
-                                setShowRescheduleModal(true);
-                              }}
-                            >
-                              <CalendarDays className="w-4 h-4" />
-                              Reschedule
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="flex-1 h-9 rounded-xl font-bold flex items-center justify-center gap-1.5"
-                              disabled={actionLoading === apt._id}
-                              onClick={() => handleCancel(apt._id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              {actionLoading === apt._id ? "..." : "Cancel"}
-                            </Button>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1 h-9 rounded-xl font-bold flex items-center justify-center gap-1.5 border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                                onClick={() => {
+                                  setRescheduleApt(apt);
+                                  setShowRescheduleModal(true);
+                                }}
+                              >
+                                <CalendarDays className="w-4 h-4" />
+                                Reschedule
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="flex-1 h-9 rounded-xl font-bold flex items-center justify-center gap-1.5"
+                                disabled={actionLoading === apt._id}
+                                onClick={() => handleCancel(apt._id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                {actionLoading === apt._id ? "..." : "Cancel"}
+                              </Button>
+                            </div>
+                            
+                            {apt.type === "Video" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full h-9 rounded-xl font-bold flex items-center justify-center gap-1.5 border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10"
+                                disabled={actionLoading === apt._id}
+                                onClick={async () => {
+                                  setActionLoading(apt._id);
+                                  try {
+                                    const res = await fetch(`/api/appointments/${apt._id}/remind-video`, { method: "POST" });
+                                    const json = await res.json();
+                                    if (json.success) alert("Video reminder sent via WhatsApp!");
+                                    else alert("Failed to send reminder: " + json.message);
+                                  } catch (err) {
+                                    alert("Error sending reminder.");
+                                  } finally {
+                                    setActionLoading(null);
+                                  }
+                                }}
+                              >
+                                <Video className="w-4 h-4" />
+                                Send Video Reminder
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>

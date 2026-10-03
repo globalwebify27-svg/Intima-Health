@@ -4,6 +4,7 @@ import { IAppointment } from "./schema";
 import { ISlot, IBookAppointmentInput, IRescheduleInput } from "./types";
 import { BookAppointmentSchema, RescheduleAppointmentSchema } from "./validators";
 import { sendAppointmentBookingMessage } from "@/lib/whatsapp";
+import { PlatformServiceModel } from "@/modules/services/schema";
 
 export class AppointmentService {
   // Helper to split availability blocks into custom-min slots
@@ -140,6 +141,15 @@ export class AppointmentService {
       throw new Error("The selected time slot is already booked.");
     }
 
+    let calculatedFee = (doctor as any).consultationFee || (validated.type === "Walk-in" ? 1499 : 999);
+    if (validated.serviceName) {
+      const serviceRecord = await PlatformServiceModel.findOne({ name: validated.serviceName });
+      if (serviceRecord && serviceRecord.price) {
+        calculatedFee = serviceRecord.price;
+      }
+    }
+
+
     const created = await AppointmentRepository.create({
       patientId: validated.patientId as any,
       doctorId: validated.doctorId as any,
@@ -152,6 +162,7 @@ export class AppointmentService {
       status: "Scheduled",
       paymentMethod: validated.paymentMethod || "Online",
       paymentStatus: validated.paymentStatus || "Pending",
+      feeAmount: calculatedFee,
       createdBy,
     });
 
@@ -244,6 +255,18 @@ export class AppointmentService {
           updatedBy: "system"
         });
         apt.status = "Cancelled";
+      }
+    }
+
+    // Backfill feeAmount for old appointments that don't have it stored
+    const missingFee = list.filter(apt => !(apt as any).feeAmount && (apt as any).serviceName);
+    if (missingFee.length > 0) {
+      const serviceNames = [...new Set(missingFee.map(apt => (apt as any).serviceName))];
+      const services = await PlatformServiceModel.find({ name: { $in: serviceNames } });
+      const priceMap = new Map(services.map(s => [s.name, s.price]));
+      for (const apt of missingFee) {
+        const price = priceMap.get((apt as any).serviceName);
+        if (price) (apt as any).feeAmount = price;
       }
     }
 
