@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { LayoutDashboard, Users, Building2, Calendar, ShoppingBag, Settings, FileText, BarChart3, Activity, Mail } from "lucide-react";
+import { LayoutDashboard, Users, Building2, Calendar, ShoppingBag, Settings, FileText, BarChart3, Activity, Mail, MessageSquare } from "lucide-react";
 
 const adminLinks = [
   { title: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -12,6 +12,7 @@ const adminLinks = [
   { title: "Content", href: "/admin/content", icon: FileText },
   { title: "Reports", href: "/admin/reports", icon: BarChart3 },
   { title: "Newsletter", href: "/admin/newsletter", icon: Mail },
+  { title: "Contact Form", href: "/admin/contact", icon: MessageSquare },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

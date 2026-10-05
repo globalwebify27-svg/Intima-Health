@@ -116,7 +116,7 @@ export default function LoginPage() {
                 +10k
               </div>
             </div>
-            <p className="text-sm font-medium text-foreground/80">Trusted by over 10,000 men</p>
+            <p className="text-sm font-medium text-foreground/80">Trusted by over 10,000 patient</p>
           </div>
         </div>
       </div>

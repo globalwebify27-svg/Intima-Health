@@ -102,7 +102,7 @@ export default function AboutPage() {
             >
               <div className="flex items-center gap-4 mb-6">
                 <div className="h-px w-12 bg-primary"></div>
-                <span className="text-sm font-bold tracking-widest text-primary uppercase">About Dr. Kelkar Manas Hospital</span>
+                <span className="text-sm font-bold tracking-widest text-primary uppercase">About Kelkar Manas Hospital</span>
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium text-foreground leading-[1.1] mb-6">
                 {data.heroTitle1} <br/>
@@ -113,7 +113,7 @@ export default function AboutPage() {
               </p>
               
               <div className="flex flex-wrap gap-4">
-                <Link href="/services" className="group inline-flex items-center justify-center px-8 py-4 text-sm font-bold uppercase tracking-wider text-primary-foreground bg-foreground rounded-none hover:bg-primary transition-colors">
+                <Link href="/treatments" className="group inline-flex items-center justify-center px-8 py-4 text-sm font-bold uppercase tracking-wider text-primary-foreground bg-foreground rounded-none hover:bg-primary transition-colors">
                   Explore Services
                   <ArrowRight className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>

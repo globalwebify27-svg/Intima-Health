@@ -95,12 +95,22 @@ export default function ContactPage() {
     }
 
     setLoading(true);
-    // Simulate API call for contact form
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send message");
+      
       setSuccess("Your message has been sent successfully. We will get back to you shortly.");
       setFormData({ firstName: "", lastName: "", email: "", subject: "", message: "" });
-    }, 1000);
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

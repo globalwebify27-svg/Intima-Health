@@ -667,7 +667,7 @@ export default function ClinicDashboardPage({ params }: { params: Promise<{ id: 
                       {patientConsults.map((c: any) => (
                         <div key={c._id} className="p-2.5 bg-muted/40 border border-border rounded-xl text-xs space-y-1">
                           <div className="flex justify-between font-semibold">
-                            <span>Dr. {c.doctorId?.name}</span>
+                            <span>{c.doctorId?.name}</span>
                             <span className="text-muted-foreground">{new Date(c.createdAt).toLocaleDateString()}</span>
                           </div>
                           {c.prescriptionSummary ? (

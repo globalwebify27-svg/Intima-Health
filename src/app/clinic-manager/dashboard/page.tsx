@@ -656,7 +656,7 @@ export default function ClinicManagerDashboardPage() {
                       {d.name.split(" ").filter(n => n.toLowerCase() !== "dr.").map(n => n[0]).join("")}
                     </div>
                     <div>
-                      <h4 className="font-bold text-sm text-foreground">Dr. {d.name}</h4>
+                      <h4 className="font-bold text-sm text-foreground">{d.name}</h4>
                       <p className="text-xs text-muted-foreground">{d.specialization}</p>
                     </div>
                   </div>
@@ -800,7 +800,7 @@ export default function ClinicManagerDashboardPage() {
                   >
                     <option value="">-- Choose Specialist --</option>
                     {doctors.map((d) => (
-                      <option key={d._id} value={d._id}>Dr. {d.name} ({d.specialization})</option>
+                      <option key={d._id} value={d._id}>{d.name} ({d.specialization})</option>
                     ))}
                   </select>
                 </div>
@@ -958,7 +958,7 @@ export default function ClinicManagerDashboardPage() {
                       >
                         <option value="">-- Select Specialist --</option>
                         {doctors.map((d) => (
-                          <option key={d._id} value={d._id}>Dr. {d.name} ({d.specialization})</option>
+                          <option key={d._id} value={d._id}>{d.name} ({d.specialization})</option>
                         ))}
                       </select>
                     </div>

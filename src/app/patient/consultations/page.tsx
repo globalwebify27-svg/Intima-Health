@@ -136,7 +136,7 @@ function ConsultationRoomContent() {
           Dr
         </div>
         <div>
-          <h4 className="text-white text-sm font-bold">Dr. {activeConsultation.doctorId?.name || "Specialist"}</h4>
+          <h4 className="text-white text-sm font-bold">{activeConsultation.doctorId?.name || "Specialist"}</h4>
           <p className="text-[10px] text-primary font-semibold">{activeConsultation.doctorId?.specialization || "Clinician Practitioner"}</p>
         </div>
       </div>

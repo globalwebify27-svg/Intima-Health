@@ -70,7 +70,7 @@ export default function ClinicAppointmentsPage({ params }: { params: Promise<{ i
     {
       accessorKey: "doctorId.name",
       header: "Specialist",
-      cell: ({ row }) => <span>Dr. {row.original.doctorId?.name || "Unassigned"}</span>,
+      cell: ({ row }) => <span>{row.original.doctorId?.name || "Unassigned"}</span>,
     },
     {
       accessorKey: "date",

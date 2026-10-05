@@ -81,7 +81,7 @@ export default function PatientRecordsPage() {
                     <Calendar className="w-4 h-4" /> <span>{new Date(record.createdAt).toLocaleDateString()}</span>
                   </div>
                   <p className="text-sm text-foreground/80 mt-2 font-medium">"{record.notes}"</p>
-                  <p className="text-xs text-muted-foreground mt-1">Ordered & Documented by Dr. {record.doctorId?.name || "Practitioner"}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Ordered & Documented by {record.doctorId?.name || "Practitioner"}</p>
                 </div>
               </div>
               <Button variant="outline" className="rounded-xl self-start sm:self-auto" onClick={() => handleDownloadRecord(record)}>

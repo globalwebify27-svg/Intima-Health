@@ -369,7 +369,7 @@ export default function ReportsPage() {
                     {i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">Dr. {doc.name}</p>
+                    <p className="text-sm font-semibold truncate">{doc.name}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{doc.specialization}</p>
                   </div>
                   <Badge variant="secondary" className="text-[10px] h-6 shrink-0">

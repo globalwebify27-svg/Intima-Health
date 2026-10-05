@@ -251,7 +251,7 @@ export default function ManageClinicServicesPage() {
                           <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
                             Dr
                           </div>
-                          <span className="font-semibold text-xs text-foreground">Dr. {service.doctorId.name}</span>
+                          <span className="font-semibold text-xs text-foreground">{service.doctorId.name}</span>
                         </div>
                       ) : (
                         <span className="text-xs text-muted-foreground font-medium">General (All Specialists)</span>
@@ -370,7 +370,7 @@ export default function ManageClinicServicesPage() {
                   >
                     <option value="">-- General Clinic Therapy (Any Specialist) --</option>
                     {doctors.map((d) => (
-                      <option key={d._id} value={d._id}>Dr. {d.name} ({d.specialization})</option>
+                      <option key={d._id} value={d._id}>{d.name} ({d.specialization})</option>
                     ))}
                   </select>
                 </div>

@@ -357,7 +357,7 @@ export default function PrescriptionsPage() {
                       <div className="text-xs text-muted-foreground mt-0.5">{c.patientId?.phone || "No phone"}</div>
                     </td>
                     <td className="p-4 text-muted-foreground font-medium">
-                      Dr. {c.doctorId?.name || "Doctor"}
+                      {c.doctorId?.name || "Doctor"}
                       <div className="text-[10px] text-muted-foreground mt-0.5">{c.doctorId?.specialization}</div>
                     </td>
                     <td className="p-4 text-muted-foreground text-xs">
@@ -448,7 +448,7 @@ export default function PrescriptionsPage() {
                 {renderPrescriptionSummary(dispenseConsultation.prescriptionSummary, true)}
               </div>
               <div className="text-[10px] text-muted-foreground border-t border-border/30 pt-2 mt-2">
-                Patient: <strong className="text-foreground">{dispenseConsultation.patientId?.name}</strong> | Doctor: <strong className="text-foreground">Dr. {dispenseConsultation.doctorId?.name}</strong>
+                Patient: <strong className="text-foreground">{dispenseConsultation.patientId?.name}</strong> | Doctor: <strong className="text-foreground">{dispenseConsultation.doctorId?.name}</strong>
               </div>
             </div>
 

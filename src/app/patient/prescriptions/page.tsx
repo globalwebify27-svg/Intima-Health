@@ -196,7 +196,7 @@ export default function PatientPrescriptionsPage() {
                   </div>
 
                   <div className="text-sm border-t border-border/40 pt-2">
-                    <p><strong>Prescribed by:</strong> Dr. {consult.doctorId?.name || "Sarah Jenkins"}</p>
+                    <p><strong>Prescribed by:</strong> {consult.doctorId?.name || "Sarah Jenkins"}</p>
                     <p className="text-xs text-muted-foreground">Date: {new Date(consult.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>

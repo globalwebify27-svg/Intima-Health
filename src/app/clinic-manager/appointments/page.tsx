@@ -364,7 +364,7 @@ export default function AppointmentsPage() {
                           <span>Type: {apt.type}</span>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1 font-bold flex justify-between items-center">
-                          <span>Doctor: Dr. {apt.doctorId?.name || "Unassigned"}</span>
+                          <span>Doctor: {apt.doctorId?.name || "Unassigned"}</span>
                           {apt.paymentStatus === "Paid" && (
                             <div className="flex gap-1">
                               <button className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-full hover:bg-muted" onClick={() => alert("Invoice downloaded!")} title="Download PDF Invoice">

@@ -315,7 +315,7 @@ export default function PharmacyPrescriptionsPage() {
                   <div>
                     <h3 className="font-semibold text-lg">Rx #${record._id.substring(18).toUpperCase()} for {record.patientId?.name || "Patient"}</h3>
                     <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-sm text-muted-foreground mt-1">
-                      <span>Prescriber: Dr. {record.doctorId?.name || "Clinician"}</span>
+                      <span>Prescriber: {record.doctorId?.name || "Clinician"}</span>
                       <span className="hidden md:inline">•</span>
                       <span>Issued: {new Date(record.createdAt).toLocaleDateString()}</span>
                     </div>
@@ -396,7 +396,7 @@ export default function PharmacyPrescriptionsPage() {
                 {renderPrescriptionSummary(dispenseConsultation.prescriptionSummary, true)}
               </div>
               <div className="text-[10px] text-muted-foreground border-t border-border/30 pt-2 mt-2">
-                Patient: <strong className="text-foreground">{dispenseConsultation.patientId?.name}</strong> | Doctor: <strong className="text-foreground">Dr. {dispenseConsultation.doctorId?.name}</strong>
+                Patient: <strong className="text-foreground">{dispenseConsultation.patientId?.name}</strong> | Doctor: <strong className="text-foreground">{dispenseConsultation.doctorId?.name}</strong>
               </div>
             </div>
 

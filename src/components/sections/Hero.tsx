@@ -167,7 +167,7 @@ export function Hero() {
                     </motion.div>
                   ))}
                 </div>
-                <span className="text-sm font-semibold text-foreground">Serving 50,000+ men across India</span>
+                <span className="text-sm font-semibold text-foreground">Trusted by 10,000+ patients across India</span>
               </motion.div>
             </motion.div>
           </motion.div>
