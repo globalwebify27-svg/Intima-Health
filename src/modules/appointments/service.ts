@@ -141,7 +141,7 @@ export class AppointmentService {
       throw new Error("The selected time slot is already booked.");
     }
 
-    let calculatedFee = (doctor as any).consultationFee || (validated.type === "Walk-in" ? 1499 : 999);
+    let calculatedFee = (doctor as any).consultationFee || 0;
     if (validated.serviceName) {
       const serviceRecord = await PlatformServiceModel.findOne({ name: validated.serviceName });
       if (serviceRecord && serviceRecord.price) {
@@ -162,6 +162,7 @@ export class AppointmentService {
       status: "Scheduled",
       paymentMethod: validated.paymentMethod || "Online",
       paymentStatus: validated.paymentStatus || "Pending",
+      transactionId: validated.transactionId,
       feeAmount: calculatedFee,
       createdBy,
     });

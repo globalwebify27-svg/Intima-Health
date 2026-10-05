@@ -9,6 +9,7 @@ const adminLinks = [
   { title: "Staff Directory", href: "/admin/staff", icon: Users },
   { title: "Platform Services", href: "/admin/services", icon: Activity },
   // { title: "Pharmacy Store", href: "/admin/store", icon: ShoppingBag },
+  { title: "Payments", href: "/admin/payments", icon: Activity },
   { title: "Content", href: "/admin/content", icon: FileText },
   { title: "Reports", href: "/admin/reports", icon: BarChart3 },
   { title: "Newsletter", href: "/admin/newsletter", icon: Mail },

@@ -284,21 +284,70 @@ export default function PatientDashboard() {
     }
   };
 
-  const handlePayAppointment = async (appointmentId: string) => {
+  const handlePayAppointment = async (appointmentId: string, amountToPay: number) => {
     try {
-      const res = await fetch(`/api/appointments/${appointmentId}/pay`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
+      setPaymentProcessing(true);
+      
+      const orderRes = await fetch("/api/payments/razorpay/order", {
+          method: "POST",
+          body: JSON.stringify({ amount: amountToPay }),
+          headers: { "Content-Type": "application/json" }
       });
-      const data = await res.json();
-      if (data.success && patientId) {
-        alert("Consultation fee paid successfully! You can now join the consultation room.");
-        window.location.reload();
-      } else {
-        alert(data.message || "Payment failed.");
+      const orderData = await orderRes.json();
+
+      if (!orderData.success) {
+         throw new Error(orderData.error || "Failed to initialize payment");
       }
-    } catch (err) {
+
+      const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
+          amount: orderData.order.amount,
+          currency: orderData.order.currency,
+          name: "Kelkar Manas Health Clinic",
+          description: "Consultation Fee",
+          order_id: orderData.order.id,
+          handler: async function (response: any) {
+              try {
+                const verifyRes = await fetch("/api/payments/razorpay/verify", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature,
+                        amount: amountToPay,
+                        patientId: patientId, 
+                        appointmentId: appointmentId
+                    }),
+                    headers: { "Content-Type": "application/json" }
+                });
+                const verifyData = await verifyRes.json();
+                
+                if (verifyData.success) {
+                    alert("Consultation fee paid successfully! You can now join the consultation room.");
+                    window.location.reload();
+                } else {
+                    alert("Payment Failed Verification. Please contact support.");
+                }
+              } catch (err: any) {
+                alert(err.message || "Error processing payment.");
+              }
+          },
+          theme: {
+              color: "#6b21a8" // primary color
+          }
+      };
+      
+      const rzp1 = new (window as any).Razorpay(options);
+      rzp1.on('payment.failed', function (response: any){
+        alert("Payment failed: " + response.error.description);
+      });
+      rzp1.open();
+
+    } catch (err: any) {
       console.error("Payment error:", err);
+      alert(err.message || "Error initiating payment.");
+    } finally {
+      setPaymentProcessing(false);
     }
   };
 

@@ -74,6 +74,7 @@ const OrderSchema = new Schema<IOrder>({
 // --- PAYMENT ---
 export interface IPayment {
   orderId?: Schema.Types.ObjectId;
+  appointmentId?: Schema.Types.ObjectId;
   patientId: Schema.Types.ObjectId;
   gatewayProvider: string; // e.g. "Razorpay"
   gatewayTransactionId: string;
@@ -87,6 +88,7 @@ export interface IPayment {
 
 const PaymentSchema = new Schema<IPayment>({
   orderId: { type: Schema.Types.ObjectId, ref: "Order" },
+  appointmentId: { type: Schema.Types.ObjectId, ref: "Appointment" },
   patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
   gatewayProvider: { type: String, required: true, default: "Razorpay" },
   gatewayTransactionId: { type: String, required: true, unique: true },

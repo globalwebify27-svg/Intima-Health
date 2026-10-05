@@ -31,6 +31,9 @@ interface AppointmentData {
   type: string;
   status?: string;
   paymentStatus: "Pending" | "Paid";
+  collectedBy?: string;
+  paymentMethod?: string;
+  feeAmount?: number;
 }
 
 interface TherapySessionData {
@@ -116,12 +119,11 @@ export default function PaymentsPage() {
           setPharmacyOrders(pharmacyJson.data);
         }
 
-        // Fetch Consultation Appointments (Pending and Paid Cash payments)
+        // Fetch All Consultation Appointments
         const aptRes = await fetch(`/api/appointments?clinicId=${cId}`);
         const aptJson = await aptRes.json();
         if (aptJson.success) {
-          // Filter to only Walk-in/Cash types since Video is online
-          setConsultations(aptJson.data.filter((a: any) => a.type === "Walk-in"));
+          setConsultations(aptJson.data);
         }
       }
     } catch (err) {
@@ -378,6 +380,7 @@ export default function PaymentsPage() {
                     <th className="px-6 py-4">Patient</th>
                     <th className="px-6 py-4">Doctor & Appt Time</th>
                     <th className="px-6 py-4">Type</th>
+                    <th className="px-6 py-4">Payment Method</th>
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4">Amount</th>
                     <th className="px-6 py-4 text-right">Action</th>
@@ -398,6 +401,15 @@ export default function PaymentsPage() {
                         <Badge variant="outline" className="font-medium bg-background">{apt.type}</Badge>
                       </td>
                       <td className="px-6 py-4">
+                        {apt.paymentStatus === "Paid" ? (
+                          <Badge variant="outline" className="font-medium bg-indigo-50 text-indigo-700 border-indigo-200">
+                            {apt.collectedBy === "Clinic Manager" || apt.paymentMethod === "Cash" ? "Counter (Cash/QR)" : "Razorpay Online"}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
                         <Badge 
                           className={
                             apt.status === "Cancelled" ? "bg-rose-100 text-rose-700 hover:bg-rose-100 border-none shadow-none font-bold"
@@ -405,11 +417,11 @@ export default function PaymentsPage() {
                             : "bg-amber-100 text-amber-700 hover:bg-amber-100 border-none shadow-none font-bold"
                           }
                         >
-                          {apt.status === "Cancelled" ? "Appointment Cancelled" : apt.paymentStatus}
+                          {apt.status === "Cancelled" ? "Cancelled" : apt.paymentStatus}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 font-bold">
-                        ₹1499
+                        ₹{apt.feeAmount || 1499}
                       </td>
                       <td className="px-6 py-4 text-right">
                         {apt.status === "Cancelled" ? (

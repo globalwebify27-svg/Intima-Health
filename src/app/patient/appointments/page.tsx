@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { formatTime12Hour } from "@/lib/utils";
 import { useBookingModal } from "@/store/useBookingModal";
 import { Video, MapPin, ExternalLink, Download } from "lucide-react";
-import { printReceipt } from "@/lib/print-receipt";
 
 interface Appointment {
   _id: string;
@@ -73,7 +72,7 @@ const columns: ColumnDef<Appointment>[] = [
 
       const handleDownloadReceipt = (e: React.MouseEvent) => {
         e.stopPropagation();
-        printReceipt(row.original, "Payment Receipt");
+        window.open(`/api/appointments/${row.original._id}/invoice`, "_blank");
       };
 
       if (pStatus === "Paid") {

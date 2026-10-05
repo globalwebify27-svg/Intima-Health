@@ -29,18 +29,18 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
   const { openBooking } = useBookingModal();
 
   const SidebarContent = () => (
-    <div className="flex h-full flex-col bg-card">
-      <div className="flex py-6 items-center justify-center border-b border-border">
+    <div className="flex h-full flex-col bg-card overflow-hidden">
+      <div className="flex py-6 items-center justify-center border-b border-border shrink-0">
         <Link href="/" className="flex items-center">
           <Image src="/logo.png" alt="Kelkar Manas Health Clinic" width={180} height={50} className="object-contain" priority />
         </Link>
       </div>
-      <div className="px-6 py-4">
+      <div className="px-6 py-4 shrink-0">
         <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">
           {roleName} Portal
         </div>
       </div>
-      <ScrollArea className="flex-1 px-4">
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 pb-8">
         <nav className="flex flex-col gap-2">
           {links.map((link) => {
             const Icon = link.icon;
@@ -66,9 +66,8 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
             );
           })}
         </nav>
-      </ScrollArea>
-      <div className="p-4 mt-auto border-t border-border">
-        <div className="flex flex-col gap-2">
+        
+        <div className="mt-8 pt-4 border-t border-border flex flex-col gap-2">
           {roleName === "Patient" && (
             <Button onClick={() => openBooking()} className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-sm h-11 mb-2">
               Book Appointment

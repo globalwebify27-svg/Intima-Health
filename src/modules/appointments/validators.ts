@@ -14,6 +14,7 @@ export const BookAppointmentSchema = z.object({
   notes: z.string().optional(),
   paymentMethod: z.enum(["Online", "Cash"]).optional(),
   paymentStatus: z.enum(["Pending", "Paid"]).optional(),
+  transactionId: z.string().optional(),
 });
 
 export const RescheduleAppointmentSchema = z.object({

@@ -23,6 +23,7 @@ const bookingSchema = z.object({
   phone: z.string().regex(/^[6-9]\d{9}$/, "Must be a valid 10-digit phone number starting with 6-9"),
   dob: z.string().optional(),
   paymentMethod: z.string().optional(),
+  transactionId: z.string().optional(),
   isExistingPatient: z.boolean().optional(),
 });
 
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
     let {
       service, city, clinic, doctorId, date, time,
       firstName, lastName, email: providedEmail, phone, dob,
-      paymentMethod, isExistingPatient
+      paymentMethod, transactionId, isExistingPatient
     } = body;
 
     let email = providedEmail;
@@ -165,20 +166,17 @@ export async function POST(req: Request) {
       formattedTime = `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
     }
 
-    // Get service name
+    // Get service name dynamically
     let serviceNameStr = "Consultation";
     let isVideo = false;
-    if (service === "consultation") {
-      serviceNameStr = "Initial Consultation";
-      isVideo = true;
-    } else {
-      const svc = await PlatformServiceModel.findById(service).exec();
-      if (svc) {
-        serviceNameStr = svc.name;
-        if (svc.name.toLowerCase().includes('online') || svc.name.toLowerCase().includes('video')) {
-          isVideo = true;
-        }
+    const svc = await PlatformServiceModel.findById(service).exec();
+    if (svc) {
+      serviceNameStr = svc.name;
+      if (svc.name.toLowerCase().includes('online') || svc.name.toLowerCase().includes('video')) {
+        isVideo = true;
       }
+    } else {
+      return NextResponse.json({ success: false, message: "Invalid service selected." }, { status: 400 });
     }
 
     // 4. Book the appointment
@@ -192,7 +190,8 @@ export async function POST(req: Request) {
       notes: "Booked directly through public website booking form.",
       skipNotification: false,
       paymentMethod: paymentMethod || "Online",
-      paymentStatus: isVideo ? "Paid" : "Pending"
+      paymentStatus: (isVideo || paymentMethod === "Online") ? "Paid" : "Pending",
+      transactionId: transactionId
     }, email);
 
     // 5. Generate JWT & sign in automatically
