@@ -3,13 +3,13 @@ import { connectDB } from "@/db/connect";
 import { PaymentModel } from "@/modules/pharmacy/schema";
 import Razorpay from "razorpay";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
-
 export async function POST(req: Request) {
   try {
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID!,
+      key_secret: process.env.RAZORPAY_KEY_SECRET!,
+    });
+
     await connectDB();
     const { amount, currency = "INR", receipt } = await req.json();
 
