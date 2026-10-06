@@ -438,82 +438,25 @@ export function BookingModal() {
         if (!selectedService || !selectedService.price) {
           throw new Error("Could not determine service price. Please try selecting the service again.");
         }
-        const amountToPay = selectedService.price;
+        
+        // Mock a transaction id
+        const mockTransactionId = "MOCK_TXN_ONLINE_" + Date.now();
 
-        // 1. Create Razorpay Order
-        const orderRes = await fetch("/api/payments/razorpay/order", {
-            method: "POST",
-            body: JSON.stringify({ amount: amountToPay }),
-            headers: { "Content-Type": "application/json" }
+        // Book the appointment directly
+        const res = await fetch("/api/booking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...formData, transactionId: mockTransactionId })
         });
-        const orderData = await orderRes.json();
-        setSubmitting(false);
-
-        if (!orderData.success) {
-           throw new Error(orderData.error || "Failed to initialize payment");
+        const bookingData = await res.json();
+        
+        if (!bookingData.success) {
+          throw new Error(bookingData.message || "Failed to submit booking.");
         }
 
-        // 2. Open Razorpay Checkout Modal
-        const options = {
-            key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
-            amount: orderData.order.amount,
-            currency: orderData.order.currency,
-            name: "Intima Health",
-            description: "Consultation Booking",
-            order_id: orderData.order.id,
-            handler: async function (response: any) {
-                setSubmitting(true);
-                try {
-                  // 3. Book the appointment
-                  const res = await fetch("/api/booking", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ ...formData, transactionId: response.razorpay_payment_id })
-                  });
-                  const bookingData = await res.json();
-                  if (!bookingData.success) {
-                    throw new Error(bookingData.message || "Failed to submit booking after payment.");
-                  }
-
-                  const appointmentId = bookingData.data._id;
-
-                  // 4. Verify Payment
-                  const verifyRes = await fetch("/api/payments/razorpay/verify", {
-                      method: "POST",
-                      body: JSON.stringify({
-                          razorpay_order_id: response.razorpay_order_id,
-                          razorpay_payment_id: response.razorpay_payment_id,
-                          razorpay_signature: response.razorpay_signature,
-                          amount: amountToPay,
-                          patientId: bookingData.data.patientId, // Patient ID returned by booking api ideally, but we'll let verify handle it or use the backend logic
-                          appointmentId: appointmentId
-                      }),
-                      headers: { "Content-Type": "application/json" }
-                  });
-                  const verifyData = await verifyRes.json();
-                  
-                  if (verifyData.success) {
-                      setSuccessMsg("Appointment booked and paid successfully!");
-                      setWhatsappMsg("Your appointment has been scheduled and confirmed.");
-                  } else {
-                      setErrorMsg("Payment Failed Verification but booking was created. Please contact support.");
-                  }
-                } catch (err: any) {
-                  setErrorMsg(err.message || "Error processing booking.");
-                } finally {
-                  setSubmitting(false);
-                }
-            },
-            theme: {
-                color: "#3399cc"
-            }
-        };
-        
-        const rzp1 = new (window as any).Razorpay(options);
-        rzp1.on('payment.failed', function (response: any){
-          setErrorMsg("Payment failed: " + response.error.description);
-        });
-        rzp1.open();
+        setSuccessMsg("Appointment booked and paid successfully!");
+        setWhatsappMsg("Your appointment has been scheduled and confirmed.");
+        setSubmitting(false);
       }
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred.");
