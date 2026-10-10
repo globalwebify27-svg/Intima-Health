@@ -6,6 +6,9 @@ import { DoctorModel } from "@/modules/doctors/schema";
 import { ClinicModel } from "@/modules/clinics/schema";
 import { generateInvoicePdf } from "@/lib/pdfGenerator";
 
+export const dynamic = 'force-dynamic';
+
+
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
     await connectDB();

@@ -3,6 +3,9 @@ import { connectDB } from "@/db/connect";
 import { FaqModel, PageModel } from "@/modules/cms/schema";
 import mongoose from "mongoose";
 
+export const dynamic = 'force-dynamic';
+
+
 const hardcodedFaqs = [
   {
     category: "Consultations & Appointments",
@@ -57,16 +60,27 @@ const hardcodedFaqs = [
   }
 ];
 
-const aboutContent = `
-<h2>Our Story</h2>
-<p>Founded by a team of visionary gynecologists, urologists, and wellness experts, KELKAR MANAS HEALTH CLINIC was born out of a simple observation: intimate health is too often ignored, misunderstood, or stigmatized.</p>
-<p>We recognized the need for a sanctuary—a place where clinical excellence meets compassionate care. Since our inception, we have been dedicated to researching, developing, and providing solutions that are not only effective but beautifully designed and seamlessly integrated into your daily life.</p>
-<ul>
-  <li>Evidence-based clinical formulations</li>
-  <li>Discreet, personalized care journeys</li>
-  <li>Holistic approach to intimate wellness</li>
-</ul>
-`;
+const aboutContent = JSON.stringify({
+  heroTitle1: "Leading Psychiatric &",
+  heroTitle2: "Mental Health Care.",
+  heroSubtitle: "Founded by Dr. Deepak Kelkar, Dr. Kelkar Hospital in Akola & Nagpur provides pioneer psychiatric treatment, de-addiction rehabilitation, and the Happiness 20 – Mind Gym program.",
+  valuesTitle: "What Drives Us Forward",
+  valuesDescription: "Everything we do at Kelkar Hospital is guided by four core principles that ensure we deliver the best possible care.",
+  values: [
+    { icon: "Shield", title: "Clinical Excellence", description: "Backed by rigorous research and leading medical professionals." },
+    { icon: "Heart", title: "Compassionate Care", description: "Empathy and understanding at the heart of every interaction." },
+    { icon: "Sparkles", title: "Innovation", description: "Continuously pushing boundaries in intimate health solutions." },
+    { icon: "Users", title: "Inclusivity", description: "Accessible, judgment-free care designed for every body." }
+  ],
+  expertsTitle: "Meet Our Medical Experts",
+  expertsDescription: "Our products and protocols are developed by leading specialists in psychiatry and de-addiction.",
+  experts: [
+    { img: "/images/dr_kelkar_hero_nobg.png", name: "Dr. Deepak Kelkar", role: "Senior Psychiatrist & Founder", spec: "MD Psychiatry, Mind Gym Pioneer" },
+    { img: "/images/doctor_2.png", name: "Dr. Amol Kelkar", role: "Consultant Psychiatrist", spec: "De-Addiction Specialist" },
+    { img: "/images/doctor_3.png", name: "Dr. Radhika Kelkar", role: "Specialist in Child Psychiatry", spec: "DPM, Child Development" }
+  ],
+  aboutContent: "Kelkar Hospital, Akola, has been providing comprehensive treatment for all types of mental health and psychiatric disorders in Akola for the past 44 years.<br/><br/>The hospital is led by qualified and experienced psychiatrists, offering scientific and compassionate care for a wide range of mental health conditions.<br/><br/>Associated with Kelkar Hospital is Sanmitra Hospital, where treatment for various mental health conditions is provided free of cost to eligible patients under government health schemes.<br/><br/>Patients who come with the PM-JAY (Ayushman Bharat) Card or are eligible under the Mahatma Jyotiba Phule Jan Arogya Yojana (MJPJAY) can receive treatment free of cost, as per scheme eligibility and approved packages.<br/><br/>The covered services may include psychiatric consultation, medicines, hospitalization, food and accommodation, and ECT (electroconvulsive therapy/shock treatment), as applicable under the government scheme.<br/><br/>Our aim is to ensure that financial difficulties do not become a barrier to receiving appropriate and timely mental healthcare."
+});
 
 export async function GET() {
   try {

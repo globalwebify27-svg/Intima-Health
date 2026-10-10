@@ -4,6 +4,9 @@ import { connectDB } from "@/db/connect";
 import { verifyJwt } from "@/lib/jwt";
 import { ConsultationService } from "@/modules/consultations/service";
 
+export const dynamic = 'force-dynamic';
+
+
 interface RouteParams {
   params: Promise<{
     id: string;

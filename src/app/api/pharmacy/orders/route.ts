@@ -3,6 +3,9 @@ import { connectDB } from "@/db/connect";
 import { OrderModel, ProductModel } from "@/modules/pharmacy/schema";
 import { PatientModel } from "@/modules/patients/schema"; // <-- Added to register Schema for populate
 
+export const dynamic = 'force-dynamic';
+
+
 export async function GET(request: Request) {
   try {
     await connectDB();

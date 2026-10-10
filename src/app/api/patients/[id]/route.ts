@@ -4,6 +4,9 @@ import { connectDB } from "@/db/connect";
 import { verifyJwt } from "@/lib/jwt";
 import { PatientModel } from "@/modules/patients/schema";
 
+export const dynamic = 'force-dynamic';
+
+
 interface RouteParams {
   params: Promise<{
     id: string;

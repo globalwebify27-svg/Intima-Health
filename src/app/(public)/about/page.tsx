@@ -75,7 +75,13 @@ export default function AboutPage() {
     aboutContent: "Kelkar Hospital, Akola, has been providing comprehensive treatment for all types of mental health and psychiatric disorders in Akola for the past 44 years.<br/><br/>The hospital is led by qualified and experienced psychiatrists, offering scientific and compassionate care for a wide range of mental health conditions.<br/><br/>Associated with Kelkar Hospital is Sanmitra Hospital, where treatment for various mental health conditions is provided free of cost to eligible patients under government health schemes.<br/><br/>Patients who come with the PM-JAY (Ayushman Bharat) Card or are eligible under the Mahatma Jyotiba Phule Jan Arogya Yojana (MJPJAY) can receive treatment free of cost, as per scheme eligibility and approved packages.<br/><br/>The covered services may include psychiatric consultation, medicines, hospitalization, food and accommodation, and ECT (electroconvulsive therapy/shock treatment), as applicable under the government scheme.<br/><br/>Our aim is to ensure that financial difficulties do not become a barrier to receiving appropriate and timely mental healthcare."
   };
 
-  const data = aboutData || defaultData;
+  const data = {
+    ...defaultData,
+    ...(aboutData || {}),
+    aboutContent: (aboutData?.aboutContent && aboutData.aboutContent.trim()) ? aboutData.aboutContent : defaultData.aboutContent,
+    values: (aboutData?.values && aboutData.values.length > 0) ? aboutData.values : defaultData.values,
+    experts: (aboutData?.experts && aboutData.experts.length > 0) ? aboutData.experts : defaultData.experts,
+  };
   const aboutContent = data.aboutContent;
 
   const getIcon = (name: string) => {

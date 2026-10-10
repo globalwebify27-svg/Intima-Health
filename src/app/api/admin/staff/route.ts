@@ -5,6 +5,9 @@ import { DoctorModel } from "@/modules/doctors/schema";
 import { cookies } from "next/headers";
 import { verifyJwt } from "@/lib/jwt";
 
+export const dynamic = 'force-dynamic';
+
+
 // GET all staff (Clinic Managers, Doctors, Pharmacy Staff)
 export async function GET() {
   try {

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { MediaModel } from "@/modules/system/media";
 
+export const dynamic = 'force-dynamic';
+
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }

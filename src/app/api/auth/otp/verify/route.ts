@@ -5,6 +5,9 @@ import { OtpModel } from "@/modules/auth/otp";
 import { UserModel } from "@/modules/auth/schema";
 import { signJwt } from "@/lib/jwt";
 
+export const dynamic = 'force-dynamic';
+
+
 export async function POST(req: Request) {
   try {
     await connectDB();

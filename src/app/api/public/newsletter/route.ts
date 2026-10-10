@@ -3,6 +3,9 @@ import { connectDB } from "@/db/connect";
 import { NewsletterSubscriberModel } from "@/modules/newsletter/schema";
 import { z } from "zod";
 
+export const dynamic = 'force-dynamic';
+
+
 const newsletterSchema = z.object({
   email: z.string().email("Please provide a valid email address."),
 });

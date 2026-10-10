@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { ClinicServiceModel } from "@/modules/clinics/schema";
 
+export const dynamic = 'force-dynamic';
+
+
 export async function GET(request: Request) {
   try {
     await connectDB();

@@ -6,6 +6,9 @@ import { PatientModel } from "@/modules/patients/schema";
 import { DoctorRepository } from "@/modules/doctors/repository";
 import { UserModel } from "@/modules/auth/schema";
 
+export const dynamic = 'force-dynamic';
+
+
 export async function GET(req: Request) {
   try {
     const token = await getAuthToken(req);

@@ -1,5 +1,8 @@
 import { handleGetSlots } from "@/modules/appointments/routes";
 
+export const dynamic = 'force-dynamic';
+
+
 interface RouteParams {
   params: Promise<{
     id: string;

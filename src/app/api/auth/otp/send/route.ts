@@ -4,6 +4,9 @@ import { PatientModel } from "@/modules/patients/schema";
 import { OtpModel } from "@/modules/auth/otp";
 import { sendWhatsAppOtp } from "@/lib/whatsapp";
 
+export const dynamic = 'force-dynamic';
+
+
 export async function POST(req: Request) {
   try {
     await connectDB();

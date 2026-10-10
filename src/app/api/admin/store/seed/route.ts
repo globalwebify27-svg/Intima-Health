@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { ProductModel } from "@/modules/store/schema";
 
+export const dynamic = 'force-dynamic';
+
+
 const hardcodedProducts = [
   {
     name: "Daily Tadalafil (Cialis)",

@@ -6,6 +6,9 @@ import { ConsultationService } from "@/modules/consultations/service";
 import { DoctorRepository } from "@/modules/doctors/repository";
 import { PatientModel } from "@/modules/patients/schema";
 
+export const dynamic = 'force-dynamic';
+
+
 export async function GET(req: Request) {
   try {
     await connectDB();

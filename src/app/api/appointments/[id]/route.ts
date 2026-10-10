@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { AppointmentRepository } from "@/modules/appointments/repository";
 
+export const dynamic = 'force-dynamic';
+
+
 interface RouteParams {
   params: Promise<{
     id: string;

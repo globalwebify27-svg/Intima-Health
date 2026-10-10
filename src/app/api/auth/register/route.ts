@@ -6,6 +6,9 @@ import { signJwt } from "@/lib/jwt";
 import { sendWelcomeMessage } from "@/lib/whatsapp";
 import { z } from "zod";
 
+export const dynamic = 'force-dynamic';
+
+
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").regex(/^[A-Za-z\s]+$/, "Name can only contain letters"),
   email: z.string().email("Invalid email address"),

@@ -4,6 +4,9 @@ import { PaymentModel } from "@/modules/pharmacy/schema";
 import { AppointmentModel } from "@/modules/appointments/schema";
 import crypto from "crypto";
 
+export const dynamic = 'force-dynamic';
+
+
 export async function POST(req: Request) {
   try {
     await connectDB();

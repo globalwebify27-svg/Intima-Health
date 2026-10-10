@@ -7,6 +7,9 @@ import { UserModel } from "@/modules/auth/schema";
 import { AppointmentService } from "@/modules/appointments/service";
 import { sendWelcomeMessage } from "@/lib/whatsapp";
 
+export const dynamic = 'force-dynamic';
+
+
 export async function POST(req: Request) {
   try {
     await connectDB();

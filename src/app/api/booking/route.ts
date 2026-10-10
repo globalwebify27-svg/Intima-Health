@@ -10,6 +10,9 @@ import { ClinicServiceModel } from "@/modules/clinics/schema";
 import { PlatformServiceModel } from "@/modules/services/schema";
 import { z } from "zod";
 
+export const dynamic = 'force-dynamic';
+
+
 const bookingSchema = z.object({
   service: z.string().min(1, "Service is required"),
   city: z.string().optional(),

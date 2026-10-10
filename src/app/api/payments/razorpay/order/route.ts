@@ -3,6 +3,9 @@ import { connectDB } from "@/db/connect";
 import { PaymentModel } from "@/modules/pharmacy/schema";
 import Razorpay from "razorpay";
 
+export const dynamic = 'force-dynamic';
+
+
 export async function POST(req: Request) {
   try {
     const razorpay = new Razorpay({

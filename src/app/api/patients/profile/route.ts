@@ -5,6 +5,9 @@ import { verifyJwt } from "@/lib/jwt";
 import { PatientModel } from "@/modules/patients/schema";
 import { UserModel } from "@/modules/auth/schema";
 
+export const dynamic = 'force-dynamic';
+
+
 // GET — fetch full patient profile
 export async function GET() {
   try {

@@ -520,6 +520,20 @@ export default function ContentPage() {
                           </div>
 
                           <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
+                            <h4 className="font-semibold text-sm">Our Story / About Content</h4>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground">About Description (HTML supported, e.g. &lt;br/&gt;)</label>
+                              <textarea 
+                                rows={6} 
+                                value={aboutData.aboutContent || ""} 
+                                onChange={e => updateField("aboutContent", e.target.value)} 
+                                className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" 
+                                placeholder="Enter content about the clinic/hospital..."
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border">
                             <h4 className="font-semibold text-sm">Values Section</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="space-y-2">

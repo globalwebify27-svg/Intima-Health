@@ -8,6 +8,9 @@ import { ConsultationModel } from "@/modules/consultations/schema";
 
 import { AppointmentModel } from "@/modules/appointments/schema";
 
+export const dynamic = 'force-dynamic';
+
+
 // GET /api/prescriptions?search=<name or phone>
 // Returns matching patients scoped to the doctor's clinic only
 export async function GET(req: Request) {

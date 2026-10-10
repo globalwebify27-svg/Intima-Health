@@ -1,5 +1,8 @@
 import { handleGetDoctorById, handleUpdateDoctor, handleDeleteDoctor } from "@/modules/doctors/routes";
 
+export const dynamic = 'force-dynamic';
+
+
 interface RouteParams {
   params: Promise<{
     id: string;

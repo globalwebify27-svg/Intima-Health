@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { sendAppointmentBookingMessage } from "@/lib/whatsapp";
 
+export const dynamic = 'force-dynamic';
+
+
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
     await connectDB();

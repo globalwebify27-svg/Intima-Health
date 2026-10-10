@@ -4,6 +4,9 @@ import { UserModel, hashPassword, verifyPassword } from "@/modules/auth/schema";
 import { signJwt } from "@/lib/jwt";
 import { z } from "zod";
 
+export const dynamic = 'force-dynamic';
+
+
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),

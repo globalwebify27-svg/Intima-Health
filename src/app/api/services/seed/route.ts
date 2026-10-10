@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { PlatformServiceModel } from "@/modules/services/schema";
 
+export const dynamic = 'force-dynamic';
+
+
 const seedData = [
   { name: "Online Consultation", icon: "Video", description: "15-min video call with a specialist", price: 999, type: "Consultation" },
   { name: "Sex Therapy", icon: "HeartHandshake", description: "30-min psychological counseling", price: 2499, type: "Therapy" },
