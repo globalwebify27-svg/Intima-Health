@@ -4,6 +4,8 @@ import { TreatmentModel } from "@/modules/cms/schema";
 import ClientPage from "./ClientPage";
 import { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   await connectDB();
   const resolvedParams = await params;

@@ -57,9 +57,10 @@ export default function ClientPage({ data }: { data: any }) {
               <div className="relative w-full aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border border-border bg-white flex items-center justify-center p-8">
                 <Image
                   src={data.heroImage || "/images/doctor_1.png"}
-                  alt={data.title}
+                  alt={data.title || "Treatment"}
                   fill
                   className="object-cover"
+                  unoptimized={Boolean(data.heroImage?.startsWith("data:") || data.heroImage?.startsWith("http"))}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
               </div>
