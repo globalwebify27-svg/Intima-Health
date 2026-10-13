@@ -111,11 +111,6 @@ export function Hero() {
             animate="visible"
             className="lg:col-span-7 z-10 max-w-3xl"
           >
-            <motion.div variants={itemVariants} className="inline-flex items-center rounded-full border border-border/50 bg-white/50 backdrop-blur-md px-4 py-1.5 text-sm font-semibold text-foreground shadow-sm mb-8">
-              <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse shadow-[0_0_8px_rgba(131,24,67,0.8)]"></span>
-              India's #1 Premium Sexual Health Provider
-            </motion.div>
-            
             <motion.h1 variants={itemVariants} className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-[-0.04em] text-foreground leading-[1.05] mb-8">
               Clinical expertise for <br/>
               <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] bg-clip-text text-transparent animate-gradient">
@@ -184,15 +179,22 @@ export function Hero() {
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
               className="relative aspect-[4/5] w-full max-w-md mx-auto lg:ml-auto cursor-pointer"
             >
-              <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-tr from-primary/20 to-secondary/10 transform rotate-3 scale-105 transition-transform duration-700 ease-out blur-[2px]"></div>
-              <div className="absolute inset-0 rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(122,46,122,0.15)] border border-border/50 bg-white">
-                <Image
-                  src="/images/hero_doctor.png"
-                  alt="Expert Healthcare Professional"
-                  fill
-                  className="object-cover object-top"
-                  priority
-                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
+              {/* Decorative block behind image matching About page style */}
+              <div className="absolute -bottom-6 -right-6 w-2/3 h-2/3 bg-secondary/25 rounded-[2rem] -z-10" />
+              <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-tr from-primary/20 to-secondary/15 transform rotate-3 scale-105 transition-transform duration-700 ease-out blur-[2px] -z-10" />
+
+              <div className="absolute inset-0 rounded-[2rem] overflow-hidden shadow-2xl border-4 border-background z-10 bg-gradient-to-t from-primary/20 via-primary/5 to-background">
+                <div className="absolute inset-x-0 bottom-0 top-6">
+                  <Image
+                    src="/images/dr.kelkar-home.png"
+                    alt="Dr. Deepak Kelkar - Expert Healthcare Specialist"
+                    fill
+                    className="object-contain object-bottom"
+                    priority
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" 
+                  />
+                </div>
+                <div className="absolute inset-0 bg-primary/10 mix-blend-color-burn pointer-events-none" />
               </div>
               
               {/* Glassmorphism Floating Badge - Still gently floats on its own */}

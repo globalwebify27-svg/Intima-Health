@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Stethoscope, ArrowRight, CheckCircle2, UserCheck } from "lucide-react";
+import { Stethoscope, ArrowRight, CheckCircle2 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { BookNowButton } from "@/components/ui/book-now-button";
@@ -44,16 +44,6 @@ export default function ClientPage({ data }: { data: any }) {
               <p className="text-lg text-muted-foreground mb-8 leading-relaxed max-w-xl">
                 {data.heroSubtext}
               </p>
-
-              <div className="p-4 rounded-2xl bg-background border border-border/80 mb-8 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                  <UserCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-foreground">{data.doctor}</h4>
-                  <p className="text-xs text-muted-foreground">{data.leadDoctorRole}</p>
-                </div>
-              </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <BookNowButton className={cn(buttonVariants({ size: "lg" }), "rounded-full px-8 text-base font-semibold shadow-xl group")}>

@@ -44,12 +44,16 @@ export function Footer() {
                 Holistic wellness & psychotherapy
               </p>
               <p className="text-sm text-white/70 leading-relaxed max-w-xs font-medium mb-4">
-                P294+H8J, Ramdas Peth, Akola, Maharashtra 444001
+                26, Ground Floor<br />
+                C Building<br />
+                Gera Imperium Gateway<br />
+                Nashik Phata Metro Station<br />
+                Bhosari, Pune
               </p>
               <p className="text-sm text-white/70 font-medium mb-6">
                 Mobile: <a href="tel:918484931874" className="underline hover:text-white">+91 8484931874</a><br />
                 Mobile: <a href="tel:917028088838" className="underline hover:text-white">+91 7028088838</a><br />
-                Email: kelkarhospitalpvt@gmail.com
+                Email: <a href="mailto:dkdeepakkelkar736@gmail.com" className="underline hover:text-white">dkdeepakkelkar736@gmail.com</a>
               </p>
               
               <div className="flex gap-4">
@@ -59,7 +63,7 @@ export function Footer() {
                 <a href="https://api.whatsapp.com/send?phone=918484931874" target="_blank" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
                   <MessageCircle className="w-4 h-4" />
                 </a>
-                <a href="mailto:kelkarhospitalpvt@gmail.com" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
+                <a href="mailto:dkdeepakkelkar736@gmail.com" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all hover:-translate-y-1">
                   <Mail className="w-4 h-4" />
                 </a>
               </div>
@@ -69,10 +73,7 @@ export function Footer() {
               <h4 className="mb-6 text-xs font-bold uppercase tracking-widest text-white/40">Treatments</h4>
               <ul className="space-y-4 text-sm font-semibold text-white/80">
                 <li><Link href="/treatments" className="hover:text-white transition-colors">All Treatments</Link></li>
-                <li><Link href="/conditions" className="hover:text-white transition-colors">Conditions</Link></li>
-                <li><Link href="/consultations" className="hover:text-white transition-colors">Consultations</Link></li>
-                {/* <li><Link href="/products" className="hover:text-white transition-colors">Pharmacy</Link></li> */}
-                <li><Link href="/doctors" className="hover:text-white transition-colors">Our Doctors</Link></li>
+                <li><Link href="/sexual-problems" className="hover:text-white transition-colors">Sexual Problems</Link></li>
               </ul>
             </div>
             
@@ -80,7 +81,6 @@ export function Footer() {
               <h4 className="mb-6 text-xs font-bold uppercase tracking-widest text-white/40">Company</h4>
               <ul className="space-y-4 text-sm font-semibold text-white/80">
                 <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
-                <li><Link href="/blog" className="hover:text-white transition-colors">Journal</Link></li>
                 <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
                 <li><Link href="/faq" className="hover:text-white transition-colors">FAQ</Link></li>
               </ul>
