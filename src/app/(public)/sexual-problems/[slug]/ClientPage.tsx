@@ -6,6 +6,7 @@ import { Stethoscope, ArrowRight, CheckCircle2 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { BookNowButton } from "@/components/ui/book-now-button";
+import { TopicFaqSection } from "@/components/sections/TopicFaqSection";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -135,6 +136,9 @@ export default function ClientPage({ data }: { data: any }) {
           </div>
         </div>
       </section>
+
+      {/* Topic-Specific FAQs Section */}
+      <TopicFaqSection slug={data.slug} title={data.title} faqs={data.faqs} />
 
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground text-center">

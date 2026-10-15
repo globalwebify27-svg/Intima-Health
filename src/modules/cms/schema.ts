@@ -139,6 +139,10 @@ export interface ITreatment {
     title: string;
     description: string;
   }[];
+  faqs?: {
+    question: string;
+    answer: string;
+  }[];
   cta?: {
     headline: string;
     subtext: string;
@@ -169,6 +173,10 @@ const TreatmentSchema = new Schema<ITreatment>({
   treatments: [{
     title: { type: String },
     description: { type: String }
+  }],
+  faqs: [{
+    question: { type: String },
+    answer: { type: String }
   }],
   cta: {
     headline: { type: String },

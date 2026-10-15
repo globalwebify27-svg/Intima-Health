@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Star, Activity, HeartPulse, Shield, Zap, Brain, Stethoscope, Sparkles, Smile } from "lucide-react";
+import { ArrowRight, Star, Activity, HeartPulse, Shield, Zap, Brain, Stethoscope, Sparkles, Smile, Video, Building2 } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { useBookingModal } from "@/store/useBookingModal";
 
@@ -122,10 +122,29 @@ export function Hero() {
               Skip the awkward waiting rooms. Get confidential, physician-guided treatments for erectile dysfunction, premature ejaculation, and complete reproductive wellness—shipped directly to your door.
             </motion.p>
             
-            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
-                <Button size="lg" onClick={() => openBooking()} className="rounded-2xl px-8 py-7 text-base font-bold shadow-float hover:shadow-lg transition-all w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-none">
-                  Book Appointment <ArrowRight className="ml-2 h-5 w-5" />
+            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
+                <Button 
+                  size="lg" 
+                  onClick={() => openBooking({ appointmentType: "online" })} 
+                  className="rounded-2xl px-7 py-7 text-base font-bold shadow-float hover:shadow-xl transition-all w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-none flex items-center justify-center gap-2 group cursor-pointer"
+                >
+                  <Video className="h-5 w-5 shrink-0 text-white/90 group-hover:scale-110 transition-transform" />
+                  <span>Online Appointment</span>
+                  <ArrowRight className="ml-1 h-5 w-5 shrink-0 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </motion.div>
+
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={() => openBooking({ appointmentType: "walk-in" })} 
+                  className="rounded-2xl px-7 py-7 text-base font-bold transition-all w-full sm:w-auto bg-card/90 hover:bg-primary/10 text-foreground border-2 border-primary/25 hover:border-primary shadow-sm hover:shadow-md flex items-center justify-center gap-2 group cursor-pointer backdrop-blur-sm"
+                >
+                  <Building2 className="h-5 w-5 shrink-0 text-primary group-hover:scale-110 transition-transform" />
+                  <span>Walk-in(Physical) Appointment</span>
+                  <ArrowRight className="ml-1 h-5 w-5 shrink-0 text-primary group-hover:translate-x-1 transition-transform" />
                 </Button>
               </motion.div>
             </motion.div>

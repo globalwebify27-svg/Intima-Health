@@ -166,50 +166,7 @@ export const NAV_ITEMS: NavGroupItem[] = [
     href: "/contact",
   },
   {
-    title: "Our Experts",
-    widthClass: "w-[300px]",
-    gridCols: "grid-cols-1",
-    items: [
-      {
-        title: "Meet the Team",
-        href: "/doctors",
-        description: "View our board-certified experts.",
-      },
-      {
-        title: "Book Appointment",
-        href: "#",
-        description: "Schedule a secure video consultation.",
-        actionKey: "openBooking",
-      },
-    ],
-  },
-  {
-    title: "Resources",
-    widthClass: "w-[300px]",
-    gridCols: "grid-cols-1",
-    items: [
-      {
-        title: "Clinical Journal",
-        href: "/blog",
-        description: "Articles on longevity and intimacy.",
-      },
-      {
-        title: "Research Library",
-        href: "/research",
-        description: "Our clinical studies and findings.",
-      },
-      {
-        title: "FAQ & Support",
-        href: "/faq",
-        description: "Answers to common questions.",
-      },
-      {
-        title: "Provider Login",
-        href: "/staff-login",
-        description: "Secure access for KELKAR MANAS HEALTH CLINIC staff.",
-        isFooterLink: true,
-        className: "bg-muted/30",
-      },
-    ],
+    title: "FAQ",
+    href: "/faq",
   },
 ];

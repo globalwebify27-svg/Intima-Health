@@ -150,6 +150,7 @@ export function BookingModal() {
           city: prefilledData.city?.toLowerCase() || "",
           clinic: prefilledData.clinic || "",
           doctorId: prefilledData.doctorId || "",
+          service: prefilledData.service || "",
         }));
       }
 
@@ -177,6 +178,33 @@ export function BookingModal() {
         .catch(err => console.error("Error fetching user:", err));
     }
   }, [isOpen]);
+
+  // Auto-match and select service based on prefilledData (service ID or appointmentType)
+  useEffect(() => {
+    if (!isOpen || services.length === 0) return;
+
+    if (prefilledData?.service) {
+      const match = services.find(
+        s => s._id === prefilledData.service || s.name.toLowerCase() === prefilledData.service?.toLowerCase()
+      );
+      if (match) {
+        setFormData(prev => ({ ...prev, service: match._id }));
+        setStep(prev => (prev === 1 ? 2 : prev));
+      }
+    } else if (prefilledData?.appointmentType) {
+      const isOnlineType = prefilledData.appointmentType === "online";
+      const match = services.find(s => {
+        const name = s.name.toLowerCase();
+        return isOnlineType
+          ? name.includes("online") || name.includes("video")
+          : name.includes("walk-in") || name.includes("walk in") || name.includes("physical") || name.includes("clinic");
+      });
+      if (match) {
+        setFormData(prev => ({ ...prev, service: match._id }));
+      }
+      setStep(1); // Online starts on Clinics (Step 1), Walk-in starts on City (Step 1)
+    }
+  }, [isOpen, services, prefilledData]);
 
   // Fetch clinics list when modal opens
   useEffect(() => {
@@ -244,7 +272,26 @@ export function BookingModal() {
     }
   }, [clinicsList, formData.clinic, formData.city]);
 
-  const nextStep = () => setStep((s) => Math.min(s + 1, 6));
+  const selectedService = services.find(s => s._id === formData.service);
+  const isOnlineFlow = prefilledData?.appointmentType === 'online' || (selectedService?.name?.toLowerCase().includes('online') && prefilledData?.appointmentType !== 'walk-in');
+  const isWalkInFlow = prefilledData?.appointmentType === 'walk-in' || (selectedService?.name?.toLowerCase().includes('walk-in') && prefilledData?.appointmentType !== 'online');
+  const isWalkIn = isWalkInFlow;
+  const isOnline = isOnlineFlow;
+
+  const currentView = isOnlineFlow
+    ? (step === 1 ? 'clinics' : step === 2 ? 'doctor' : step === 3 ? 'schedule' : 'payment')
+    : isWalkInFlow
+      ? (step === 1 ? 'city' : step === 2 ? 'clinics' : step === 3 ? 'doctor' : step === 4 ? 'schedule' : 'payment')
+      : (step === 1 ? 'services' : step === 2 ? 'city' : step === 3 ? 'clinics' : step === 4 ? 'doctor' : step === 5 ? 'schedule' : 'payment');
+
+  const stepsList = isOnlineFlow
+    ? ["Clinics", "Doctor", "Schedule", "Payment"]
+    : isWalkInFlow
+      ? ["City", "Clinics", "Doctor", "Schedule", "Payment"]
+      : ["Services", "City", "Clinics", "Doctor", "Schedule", "Payment"];
+  const totalSteps = stepsList.length;
+
+  const nextStep = () => setStep((s) => Math.min(s + 1, totalSteps));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
   const updateForm = (key: string, value: string | boolean) => {
@@ -262,12 +309,12 @@ export function BookingModal() {
   };
 
   const isStepValid = () => {
-    if (step === 1) return !!formData.service;
-    if (step === 2) return !!formData.city;
-    if (step === 3) return !!formData.clinic;
-    if (step === 4) return !!formData.doctorId;
-    if (step === 5) return !!formData.date && !!formData.time;
-    if (step === 6) {
+    if (currentView === 'services') return !!formData.service;
+    if (currentView === 'city') return !!formData.city;
+    if (currentView === 'clinics') return !!formData.clinic;
+    if (currentView === 'doctor') return !!formData.doctorId;
+    if (currentView === 'schedule') return !!formData.date && !!formData.time;
+    if (currentView === 'payment') {
       if (formData.isExistingPatient) {
         return !!formData.phone && otpStep === 'verified';
       }
@@ -317,9 +364,8 @@ export function BookingModal() {
   }));
 
   const filteredClinics = clinicsList.filter(c => c.city && c.city.toLowerCase() === formData.city);
+  const displayedClinics = isOnlineFlow ? clinicsList : filteredClinics;
   const displayDoctors = doctorsList;
-
-  const isWalkIn = services.find(s => s._id === formData.service)?.name?.toLowerCase().includes('walk-in');
 
   const handleSendOtp = async () => {
     const phoneRegex = /^[6-9]\d{9}$/;
@@ -488,12 +534,36 @@ export function BookingModal() {
             {/* Header */}
             <div className="flex items-center justify-between p-5 md:p-6 border-b border-border">
               <div>
-                <h2 className="text-xl md:text-2xl font-bold font-serif text-foreground">Book Appointment</h2>
-                <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Multi-step clinic checkout wizard</p>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl md:text-2xl font-bold font-serif text-foreground">
+                    {isWalkIn 
+                      ? "Book Walk-in Appointment" 
+                      : isOnline 
+                        ? "Book Online Appointment" 
+                        : "Book Appointment"}
+                  </h2>
+                  {isWalkIn && (
+                    <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                      <Building2 className="w-3 h-3" /> Clinic Visit
+                    </span>
+                  )}
+                  {isOnline && !isWalkIn && (
+                    <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30">
+                      <Video className="w-3 h-3" /> Video Call
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
+                  {isWalkIn 
+                    ? "Schedule an in-person physical consultation at our clinic" 
+                    : isOnline 
+                      ? "Confidential, 15-min video consultation with a verified specialist" 
+                      : "Multi-step clinic checkout wizard"}
+                </p>
               </div>
               <button 
                 onClick={closeBooking}
-                className="p-2 md:p-2.5 rounded-full bg-muted/60 text-muted-foreground hover:bg-muted transition-colors"
+                className="p-2 md:p-2.5 rounded-full bg-muted/60 text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4 md:w-5 md:h-5" />
               </button>
@@ -501,7 +571,7 @@ export function BookingModal() {
 
             {/* Progress indicators - Desktop */}
             <div className="hidden md:flex px-6 pt-4 pb-2 gap-1 items-center justify-between text-[10px] font-semibold text-muted-foreground border-b border-border/50">
-              {["Services", "City", "Clinics", "Doctor", "Schedule", "Payment"].map((name, index) => {
+              {stepsList.map((name, index) => {
                 const isActive = step >= index + 1;
                 return (
                   <div key={name} className="flex items-center gap-1.5 shrink-0">
@@ -511,7 +581,7 @@ export function BookingModal() {
                       {index + 1}
                     </span>
                     <span className={isActive ? "text-primary" : ""}>{name}</span>
-                    {index < 5 && <span className="text-border">/</span>}
+                    {index < stepsList.length - 1 && <span className="text-border">/</span>}
                   </div>
                 );
               })}
@@ -520,11 +590,11 @@ export function BookingModal() {
             {/* Progress indicators - Mobile */}
             <div className="md:hidden px-5 py-3 flex items-center justify-between border-b border-border/50 bg-muted/20">
                <div className="text-xs font-bold text-foreground">
-                 Step {step} of 6: <span className="text-primary">{["Services", "City", "Clinics", "Doctor", "Schedule", "Payment"][step - 1]}</span>
+                 Step {step} of {stepsList.length}: <span className="text-primary">{stepsList[step - 1]}</span>
                </div>
                <div className="flex gap-1">
-                 {[1,2,3,4,5,6].map(i => (
-                   <div key={i} className={`h-1.5 w-1.5 rounded-full ${step >= i ? "bg-primary" : "bg-muted-foreground/30"}`} />
+                 {stepsList.map((_, i) => (
+                   <div key={i} className={`h-1.5 w-1.5 rounded-full ${step >= i + 1 ? "bg-primary" : "bg-muted-foreground/30"}`} />
                  ))}
                </div>
             </div>
@@ -533,15 +603,22 @@ export function BookingModal() {
             <div className="flex-1 overflow-y-auto p-6 md:p-8 min-h-[350px]">
               <AnimatePresence mode="wait">
                 {/* Step 1: Services */}
-                {step === 1 && (
+                {currentView === 'services' && (
                   <motion.div
-                    key="step1"
+                    key="services"
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
                     className="space-y-4"
                   >
-                    <h3 className="text-lg font-bold font-serif mb-4">Select Service Type</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold font-serif">Select Service Type</h3>
+                      {prefilledData?.appointmentType && (
+                        <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                          {prefilledData.appointmentType === "online" ? "Online Consultation" : "Walk-in Consultation"}
+                        </span>
+                      )}
+                    </div>
                     {loadingServices ? (
                       <div className="py-8 text-center text-xs text-muted-foreground">Loading services...</div>
                     ) : services.filter(s => s.status === "Active" && s.type !== "Therapy").length === 0 ? (
@@ -577,15 +654,22 @@ export function BookingModal() {
                 )}
 
                 {/* Step 2: City */}
-                {step === 2 && (
+                {currentView === 'city' && (
                   <motion.div
-                    key="step2"
+                    key="city"
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
                     className="space-y-4"
                   >
-                    <h3 className="text-lg font-bold font-serif mb-4">Choose Your City</h3>
+                    <div>
+                      <h3 className="text-lg font-bold font-serif mb-1">Choose Your City</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {isWalkIn
+                          ? "Select your city to locate our physical clinic branches for your walk-in visit."
+                          : "Select your city to connect with licensed regional specialists."}
+                      </p>
+                    </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {loadingClinics ? (
                         <div className="col-span-2 sm:col-span-3 py-8 text-center text-xs text-muted-foreground">Loading cities...</div>
@@ -618,25 +702,45 @@ export function BookingModal() {
                   </motion.div>
                 )}
 
-                {/* Step 3: Clinics */}
-                {step === 3 && (
+                {/* Step: Clinics */}
+                {currentView === 'clinics' && (
                   <motion.div
-                    key="step3"
+                    key="clinics"
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
                     className="space-y-4"
                   >
-                    <h3 className="text-lg font-bold font-serif mb-4">Select Clinic Location</h3>
-                    {filteredClinics.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No clinics registered in this city.</p>
+                    <div>
+                      <h3 className="text-lg font-bold font-serif mb-1">
+                        {isOnlineFlow ? "Select Clinic" : "Select Clinic Location"}
+                      </h3>
+                      {isOnlineFlow && (
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Choose any of our clinic centers to connect with their specialized doctors for your online video consultation.
+                        </p>
+                      )}
+                    </div>
+                    {loadingClinics ? (
+                      <div className="py-8 text-center text-xs text-muted-foreground">Loading clinics...</div>
+                    ) : displayedClinics.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {isOnlineFlow ? "No clinics currently available." : "No clinics registered in this city."}
+                      </p>
                     ) : (
-                      filteredClinics.map((clinic) => {
+                      displayedClinics.map((clinic) => {
                         const isLocked = prefilledData?.clinic && prefilledData.clinic !== clinic._id;
                         return (
                           <button
                             key={clinic._id}
-                            onClick={() => !isLocked && updateForm('clinic', clinic._id)}
+                            onClick={() => {
+                              if (!isLocked) {
+                                updateForm('clinic', clinic._id);
+                                if (clinic.city) {
+                                  setFormData(prev => ({ ...prev, clinic: clinic._id, city: clinic.city.toLowerCase() }));
+                                }
+                              }
+                            }}
                             disabled={!!isLocked}
                             className={`w-full flex items-center p-4 rounded-2xl border text-left transition-all ${
                               formData.clinic === clinic._id 
@@ -646,10 +750,17 @@ export function BookingModal() {
                                   : "border-border hover:border-primary/40 hover:bg-muted"
                             }`}
                           >
-                            <Building2 className={`w-5 h-5 mr-4 ${formData.clinic === clinic._id ? "text-primary" : "text-muted-foreground"}`} />
-                            <div className="flex-1">
-                              <h4 className="text-sm font-bold">{clinic.name}</h4>
-                              <p className="text-muted-foreground text-xs mt-0.5">{clinic.address}</p>
+                            <Building2 className={`w-5 h-5 mr-4 shrink-0 ${formData.clinic === clinic._id ? "text-primary" : "text-muted-foreground"}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-bold truncate">{clinic.name}</h4>
+                                {clinic.city && (
+                                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-muted text-foreground/80 border border-border shrink-0">
+                                    {clinic.city}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-muted-foreground text-xs mt-0.5 line-clamp-1">{clinic.address}</p>
                             </div>
                           </button>
                         );
@@ -658,10 +769,10 @@ export function BookingModal() {
                   </motion.div>
                 )}
 
-                {/* Step 4: Doctor List */}
-                {step === 4 && (
+                {/* Doctor List */}
+                {currentView === 'doctor' && (
                   <motion.div
-                    key="step4"
+                    key="doctor"
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
@@ -718,10 +829,10 @@ export function BookingModal() {
                   </motion.div>
                 )}
 
-                {/* Step 5: Date & Time */}
-                {step === 5 && (
+                {/* Date & Time */}
+                {currentView === 'schedule' && (
                   <motion.div
-                    key="step5"
+                    key="schedule"
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
@@ -775,10 +886,10 @@ export function BookingModal() {
                   </motion.div>
                 )}
 
-                {/* Step 6: Patient Details & Payment */}
-                {step === 6 && (
+                {/* Patient Details & Payment */}
+                {currentView === 'payment' && (
                   <motion.div
-                    key="step6"
+                    key="payment"
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
@@ -1209,7 +1320,7 @@ export function BookingModal() {
                 >
                   Go to Dashboard
                 </Button>
-              ) : step < 6 ? (
+              ) : step < totalSteps ? (
                 <Button 
                   onClick={nextStep} 
                   disabled={!isStepValid()}

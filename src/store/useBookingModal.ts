@@ -1,14 +1,19 @@
 import { create } from 'zustand';
 
+export type AppointmentBookingType = 'online' | 'walk-in';
+
+export interface BookingModalPrefilledData {
+  city?: string;
+  clinic?: string;
+  doctorId?: string;
+  service?: string;
+  appointmentType?: AppointmentBookingType;
+}
+
 interface BookingModalState {
   isOpen: boolean;
-  prefilledData?: {
-    city?: string;
-    clinic?: string;
-    doctorId?: string;
-    service?: string;
-  };
-  openBooking: (data?: BookingModalState['prefilledData']) => void;
+  prefilledData?: BookingModalPrefilledData;
+  openBooking: (data?: BookingModalPrefilledData) => void;
   closeBooking: () => void;
 }
 

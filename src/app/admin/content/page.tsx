@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Rss, List, HelpCircle, Plus, Edit2, Trash2, X, Activity } from "lucide-react";
+import { FileText, Rss, List, HelpCircle, Plus, Edit2, Trash2, X, Activity, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Tab = "pages" | "posts" | "categories" | "faqs" | "treatments" | "sexual-problems";
@@ -16,6 +16,9 @@ export default function ContentPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [faqs, setFaqs] = useState<any[]>([]);
+  const [faqTopics, setFaqTopics] = useState<any[]>([]);
+  const [faqSearch, setFaqSearch] = useState("");
+  const [faqCategoryFilter, setFaqCategoryFilter] = useState("ALL");
   const [treatments, setTreatments] = useState<any[]>([]);
   const [sexualProblems, setSexualProblems] = useState<any[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -52,7 +55,10 @@ export default function ContentPage() {
           if (catJson.success) setCategories(catJson.data);
         }
         if (activeTab === "categories") setCategories(json.data);
-        if (activeTab === "faqs") setFaqs(json.data);
+        if (activeTab === "faqs") {
+          setFaqs(json.data);
+          if (json.topics) setFaqTopics(json.topics);
+        }
         if (activeTab === "treatments") setTreatments(json.data);
         if (activeTab === "sexual-problems") setSexualProblems(json.data);
       }
@@ -63,10 +69,40 @@ export default function ContentPage() {
     }
   };
 
+  const filteredFaqs = useMemo(() => {
+    return faqs.filter((faq) => {
+      // Keyword search
+      if (faqSearch.trim()) {
+        const query = faqSearch.toLowerCase();
+        const qMatch = (faq.question || "").toLowerCase().includes(query);
+        const aMatch = (faq.answer || "").toLowerCase().includes(query);
+        const catMatch = (faq.category || "").toLowerCase().includes(query);
+        if (!qMatch && !aMatch && !catMatch) return false;
+      }
+
+      // Filter by selection
+      if (faqCategoryFilter === "ALL") return true;
+      if (faqCategoryFilter === "GENERAL") return faq.source === "general" || faq.topicType === "General";
+      if (faqCategoryFilter === "TREATMENTS") return faq.topicType === "Treatment";
+      if (faqCategoryFilter === "SEXUAL_PROBLEMS") return faq.topicType === "Sexual Problem";
+      if (faqCategoryFilter.startsWith("topic:")) {
+        const targetSlug = faqCategoryFilter.replace("topic:", "");
+        return faq.treatmentSlug === targetSlug;
+      }
+      return faq.category === faqCategoryFilter;
+    });
+  }, [faqs, faqSearch, faqCategoryFilter]);
+
   const openModal = (type: Tab, item: any = null) => {
     setModalType(type);
     setEditingItem(item);
-    setFormData(item || {});
+    if (type === "faqs" && !item && faqCategoryFilter.startsWith("topic:")) {
+      const slug = faqCategoryFilter.replace("topic:", "");
+      const matchingTopic = faqTopics.find((t) => t.slug === slug);
+      setFormData(matchingTopic ? { treatmentId: matchingTopic.id } : {});
+    } else {
+      setFormData(item || {});
+    }
     setIsModalOpen(true);
   };
 
@@ -200,11 +236,75 @@ export default function ContentPage() {
       {/* Main Content Area */}
       <div className="bg-card border border-border shadow-sm rounded-3xl overflow-hidden">
         <div className="p-4 md:p-6 border-b border-border flex justify-between items-center">
-          <h2 className="text-xl font-bold capitalize">{activeTab}</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold capitalize">{activeTab}</h2>
+            {activeTab === "faqs" && (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary">
+                {filteredFaqs.length} FAQs
+              </span>
+            )}
+          </div>
           <Button onClick={() => openModal(activeTab)} className="rounded-xl h-10 px-4 font-bold text-xs gap-2">
             <Plus className="w-4 h-4" /> Add New
           </Button>
         </div>
+
+        {activeTab === "faqs" && (
+          <div className="px-4 md:px-6 py-3 bg-muted/20 border-b border-border flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+            <div className="flex-1 relative max-w-md">
+              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search questions, answers, or topics..."
+                value={faqSearch}
+                onChange={(e) => setFaqSearch(e.target.value)}
+                className="w-full h-9 pl-9 pr-3 rounded-xl border border-border bg-background text-xs outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={faqCategoryFilter}
+                onChange={(e) => setFaqCategoryFilter(e.target.value)}
+                className="h-9 px-3 rounded-xl border border-border bg-background text-xs font-medium outline-none focus:ring-2 focus:ring-primary/20 max-w-[260px] truncate"
+              >
+                <option value="ALL">All FAQs ({faqs.length})</option>
+                <option value="GENERAL">General Hospital FAQs ({faqs.filter(f => f.topicType === "General" || f.source === "general").length})</option>
+                <option value="TREATMENTS">All Treatment FAQs ({faqs.filter(f => f.topicType === "Treatment").length})</option>
+                <option value="SEXUAL_PROBLEMS">All Sexual Problem FAQs ({faqs.filter(f => f.topicType === "Sexual Problem").length})</option>
+                
+                {faqTopics.filter(t => t.type === "Treatment").length > 0 && (
+                  <optgroup label="── Treatments ──">
+                    {faqTopics.filter(t => t.type === "Treatment").map(t => (
+                      <option key={t.id} value={`topic:${t.slug}`}>
+                        {t.title} ({t.faqCount})
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+
+                {faqTopics.filter(t => t.type === "Sexual Problem").length > 0 && (
+                  <optgroup label="── Sexual Problems ──">
+                    {faqTopics.filter(t => t.type === "Sexual Problem").map(t => (
+                      <option key={t.id} value={`topic:${t.slug}`}>
+                        {t.title} ({t.faqCount})
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+
+              {(faqSearch || faqCategoryFilter !== "ALL") && (
+                <button
+                  onClick={() => { setFaqSearch(""); setFaqCategoryFilter("ALL"); }}
+                  className="h-9 px-3 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-muted border border-border"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="p-10 flex justify-center text-muted-foreground">Loading...</div>
@@ -231,8 +331,8 @@ export default function ContentPage() {
                   )}
                   {activeTab === "faqs" && (
                     <>
-                      <th className="p-4 font-semibold">Question</th>
-                      <th className="p-4 font-semibold">Category</th>
+                      <th className="p-4 font-semibold">Question & Answer Preview</th>
+                      <th className="p-4 font-semibold whitespace-nowrap">Category / Topic</th>
                       <th className="p-4 font-semibold w-24">Actions</th>
                     </>
                   )}
@@ -281,10 +381,30 @@ export default function ContentPage() {
                     </td>
                   </tr>
                 ))}
-                {activeTab === "faqs" && faqs.map(faq => (
+                {activeTab === "faqs" && filteredFaqs.map(faq => (
                   <tr key={faq._id} className="hover:bg-muted/20">
-                    <td className="p-4 font-medium max-w-xs truncate">{faq.question}</td>
-                    <td className="p-4 text-muted-foreground">{faq.category}</td>
+                    <td className="p-4 font-medium max-w-lg">
+                      <div className="font-semibold text-foreground line-clamp-2">{faq.question}</div>
+                      <div className="text-xs text-muted-foreground mt-1 line-clamp-1">{faq.answer}</div>
+                    </td>
+                    <td className="p-4 whitespace-nowrap">
+                      {faq.topicType === "Sexual Problem" ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                          Sexual Problem: {faq.category}
+                        </span>
+                      ) : faq.topicType === "Treatment" ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          Treatment: {faq.category}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                          General: {faq.category}
+                        </span>
+                      )}
+                    </td>
                     <td className="p-4 flex gap-2">
                       <button onClick={() => openModal("faqs", faq)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 className="w-4 h-4" /></button>
                       <button onClick={() => handleDelete("faqs", faq._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
@@ -313,9 +433,11 @@ export default function ContentPage() {
                     </td>
                   </tr>
                 ))}
-                {(!loading && ((activeTab === "pages" && pages.length === 0) || (activeTab === "posts" && posts.length === 0) || (activeTab === "categories" && categories.length === 0) || (activeTab === "faqs" && faqs.length === 0) || (activeTab === "treatments" && treatments.length === 0) || (activeTab === "sexual-problems" && sexualProblems.length === 0))) && (
+                {(!loading && ((activeTab === "pages" && pages.length === 0) || (activeTab === "posts" && posts.length === 0) || (activeTab === "categories" && categories.length === 0) || (activeTab === "faqs" && filteredFaqs.length === 0) || (activeTab === "treatments" && treatments.length === 0) || (activeTab === "sexual-problems" && sexualProblems.length === 0))) && (
                   <tr>
-                    <td colSpan={4} className="p-8 text-center text-muted-foreground">No {activeTab} found.</td>
+                    <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                      {activeTab === "faqs" && faqs.length > 0 ? "No FAQs match your search or filter." : `No ${activeTab} found.`}
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -529,6 +651,16 @@ export default function ContentPage() {
                                 onChange={e => updateField("aboutContent", e.target.value)} 
                                 className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" 
                                 placeholder="Enter content about the clinic/hospital..."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground">Story / Hospital Image URL</label>
+                              <input 
+                                type="text" 
+                                value={aboutData.storyImage || "/images/kelkar_hospital.jpeg"} 
+                                onChange={e => updateField("storyImage", e.target.value)} 
+                                placeholder="/images/kelkar_hospital.jpeg"
+                                className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none text-sm" 
                               />
                             </div>
                           </div>
@@ -978,6 +1110,33 @@ export default function ContentPage() {
                     </div>
 
                     <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border mt-4">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-semibold text-sm">Frequently Asked Questions (Topic FAQs)</h4>
+                        <button type="button" onClick={() => setFormData({...formData, faqs: [...(formData.faqs || []), { question: "", answer: "" }]})} className="text-xs text-primary font-bold bg-primary/10 px-2 py-1 rounded">Add Question</button>
+                      </div>
+                      {(formData.faqs || []).map((faq: any, index: number) => (
+                        <div key={index} className="p-4 border border-border rounded-lg bg-background relative mt-2">
+                          <button type="button" onClick={() => {
+                            const newFaqs = [...formData.faqs];
+                            newFaqs.splice(index, 1);
+                            setFormData({...formData, faqs: newFaqs});
+                          }} className="absolute top-2 right-2 text-red-500"><X className="w-4 h-4" /></button>
+                          
+                          <input type="text" placeholder="Question" value={faq.question || ""} onChange={e => {
+                            const newFaqs = [...formData.faqs];
+                            newFaqs[index] = {...faq, question: e.target.value};
+                            setFormData({...formData, faqs: newFaqs});
+                          }} className="w-full h-10 px-3 mt-4 mb-2 rounded-lg border border-border outline-none text-sm" />
+                          <textarea rows={2} placeholder="Answer" value={faq.answer || ""} onChange={e => {
+                            const newFaqs = [...formData.faqs];
+                            newFaqs[index] = {...faq, answer: e.target.value};
+                            setFormData({...formData, faqs: newFaqs});
+                          }} className="w-full p-3 rounded-lg border border-border outline-none text-sm resize-y" />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border mt-4">
                       <h4 className="font-semibold text-sm">Call to Action (CTA)</h4>
                       <div className="space-y-2">
                         <input type="text" placeholder="Headline" value={formData.cta?.headline || ""} onChange={e => setFormData({...formData, cta: {...(formData.cta || {}), headline: e.target.value}})} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none text-sm" />
@@ -1057,17 +1216,79 @@ export default function ContentPage() {
                 {/* FAQs Form */}
                 {modalType === "faqs" && (
                   <>
+                    {editingItem ? (
+                      <div className="p-3 bg-muted/40 rounded-xl border border-border text-xs flex items-center justify-between">
+                        <span className="text-muted-foreground font-medium">Destination:</span>
+                        <span className="font-bold text-foreground">
+                          {editingItem.topicTitle || editingItem.category || "General Hospital FAQ"}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold">Target Topic / Section</label>
+                        <select
+                          value={formData.treatmentId || ""}
+                          onChange={(e) => setFormData({ ...formData, treatmentId: e.target.value })}
+                          className="w-full h-10 px-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none text-sm"
+                        >
+                          <option value="">General Hospital FAQ (Shown on /faq)</option>
+                          {faqTopics.filter(t => t.type === "Treatment").length > 0 && (
+                            <optgroup label="── Treatments ──">
+                              {faqTopics.filter(t => t.type === "Treatment").map(t => (
+                                <option key={t.id} value={t.id}>
+                                  Treatment: {t.title}
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                          {faqTopics.filter(t => t.type === "Sexual Problem").length > 0 && (
+                            <optgroup label="── Sexual Problems ──">
+                              {faqTopics.filter(t => t.type === "Sexual Problem").map(t => (
+                                <option key={t.id} value={t.id}>
+                                  Sexual Problem: {t.title}
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </select>
+                      </div>
+                    )}
+
+                    {(!editingItem || (!editingItem.treatmentId && editingItem.source !== "treatment")) && !formData.treatmentId && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold">Category</label>
+                        <input
+                          type="text"
+                          value={formData.category || "General"}
+                          onChange={e => setFormData({...formData, category: e.target.value})}
+                          placeholder="e.g. Hospital & Consultations, Fees, Privacy & Policies"
+                          className="w-full h-10 px-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                        />
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <label className="text-sm font-bold">Question</label>
-                      <input required type="text" value={formData.question || ""} onChange={e => setFormData({...formData, question: e.target.value})} className="w-full h-10 px-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none" />
+                      <input
+                        required
+                        type="text"
+                        value={formData.question || ""}
+                        onChange={e => setFormData({...formData, question: e.target.value})}
+                        placeholder="Enter the FAQ question..."
+                        className="w-full h-10 px-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                      />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold">Category</label>
-                      <input type="text" value={formData.category || "General"} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 px-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none" />
-                    </div>
+
                     <div className="space-y-2">
                       <label className="text-sm font-bold">Answer</label>
-                      <textarea required rows={4} value={formData.answer || ""} onChange={e => setFormData({...formData, answer: e.target.value})} className="w-full p-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none resize-y" />
+                      <textarea
+                        required
+                        rows={5}
+                        value={formData.answer || ""}
+                        onChange={e => setFormData({...formData, answer: e.target.value})}
+                        placeholder="Enter the detailed answer..."
+                        className="w-full p-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none resize-y text-sm"
+                      />
                     </div>
                   </>
                 )}

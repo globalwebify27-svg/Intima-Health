@@ -2,9 +2,20 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Heart, Shield, Sparkles, Users, ArrowRight, CheckCircle2, Star } from "lucide-react";
+import { 
+  Heart, 
+  Shield, 
+  Sparkles, 
+  Users, 
+  Award, 
+  ShieldCheck, 
+  Stethoscope,
+  ArrowRight 
+} from "lucide-react";
 import Link from "next/link";
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { IDoctor } from "@/modules/doctors/types";
+import { BookNowButton } from "@/components/ui/book-now-button";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -16,7 +27,7 @@ const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.2
+      staggerChildren: 0.15
     }
   }
 };
@@ -31,10 +42,19 @@ const floatAnimation = {
 };
 
 export default function AboutPage() {
-  const [aboutData, setAboutData] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [aboutData, setAboutData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
+  // Doctors & Filters State - Exact implementation from Meet Experts page
+  const [doctors, setDoctors] = useState<IDoctor[]>([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(true);
+  const [clinics, setClinics] = useState<any[]>([]);
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedClinic, setSelectedClinic] = useState("");
+
+  // Fetch about content
+  useEffect(() => {
     fetch("/api/public/content/pages/about")
       .then(async (res) => {
         if (!res.ok) throw new Error("Failed to fetch");
@@ -53,6 +73,57 @@ export default function AboutPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Fetch clinics on mount
+  useEffect(() => {
+    fetch("/api/clinics")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setClinics(data.data);
+        }
+      })
+      .catch(err => console.error("Failed to load clinics:", err));
+  }, []);
+
+  // Fetch doctors when filters change
+  useEffect(() => {
+    setDoctorsLoading(true);
+    let url = "/api/doctors?status=Active";
+    if (selectedState) url += `&state=${encodeURIComponent(selectedState)}`;
+    if (selectedCity) url += `&city=${encodeURIComponent(selectedCity)}`;
+    if (selectedClinic) url += `&clinicId=${selectedClinic}`;
+
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setDoctors(data.data);
+        }
+      })
+      .catch(err => console.error("Failed to load doctors:", err))
+      .finally(() => setDoctorsLoading(false));
+  }, [selectedState, selectedCity, selectedClinic]);
+
+  // Derived filter options
+  const availableStates = Array.from(new Set(clinics.map(c => c.state).filter(Boolean))).sort();
+  const availableCities = Array.from(new Set(clinics.filter(c => !selectedState || c.state === selectedState).map(c => c.city).filter(Boolean))).sort();
+  const availableClinics = clinics.filter(c => 
+    (!selectedState || c.state === selectedState) && 
+    (!selectedCity || c.city === selectedCity)
+  ).sort((a, b) => a.name.localeCompare(b.name));
+
+  // Reset dependent filters when parent changes
+  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedState(e.target.value);
+    setSelectedCity("");
+    setSelectedClinic("");
+  };
+
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCity(e.target.value);
+    setSelectedClinic("");
+  };
+
   const defaultData = {
     heroTitle1: "Leading Psychiatric &",
     heroTitle2: "Mental Health Care.",
@@ -66,13 +137,9 @@ export default function AboutPage() {
       { icon: "Users", title: "Inclusivity", description: "Accessible, judgment-free care designed for every body." }
     ],
     expertsTitle: "Meet Our Medical Experts",
-    expertsDescription: "Our products and protocols are developed by leading specialists in psychiatry and de-addiction.",
-    experts: [
-      { img: "/images/dr_kelkar_hero_nobg.png", name: "Dr. Deepak Kelkar", role: "Senior Psychiatrist & Founder", spec: "MD Psychiatry, Mind Gym Pioneer" },
-      { img: "/images/doctor_2.png", name: "Dr. Amol Kelkar", role: "Consultant Psychiatrist", spec: "De-Addiction Specialist" },
-      { img: "/images/doctor_3.png", name: "Dr. Radhika Kelkar", role: "Specialist in Child Psychiatry", spec: "DPM, Child Development" }
-    ],
-    aboutContent: "Kelkar Hospital, Akola, has been providing comprehensive treatment for all types of mental health and psychiatric disorders in Akola for the past 44 years.<br/><br/>The hospital is led by qualified and experienced psychiatrists, offering scientific and compassionate care for a wide range of mental health conditions.<br/><br/>Associated with Kelkar Hospital is Sanmitra Hospital, where treatment for various mental health conditions is provided free of cost to eligible patients under government health schemes.<br/><br/>Patients who come with the PM-JAY (Ayushman Bharat) Card or are eligible under the Mahatma Jyotiba Phule Jan Arogya Yojana (MJPJAY) can receive treatment free of cost, as per scheme eligibility and approved packages.<br/><br/>The covered services may include psychiatric consultation, medicines, hospitalization, food and accommodation, and ECT (electroconvulsive therapy/shock treatment), as applicable under the government scheme.<br/><br/>Our aim is to ensure that financial difficulties do not become a barrier to receiving appropriate and timely mental healthcare."
+    expertsDescription: "Our clinical protocols and treatments are developed by leading specialists in psychiatry, sexual medicine, and holistic rehabilitation.",
+    aboutContent: "Kelkar Hospital, Akola, has been providing comprehensive treatment for all types of mental health and psychiatric disorders in Akola for the past 44 years.<br/><br/>The hospital is led by qualified and experienced psychiatrists, offering scientific and compassionate care for a wide range of mental health conditions.<br/><br/>Associated with Kelkar Hospital is Sanmitra Hospital, where treatment for various mental health conditions is provided free of cost to eligible patients under government health schemes.<br/><br/>Patients who come with the PM-JAY (Ayushman Bharat) Card or are eligible under the Mahatma Jyotiba Phule Jan Arogya Yojana (MJPJAY) can receive treatment free of cost, as per scheme eligibility and approved packages.<br/><br/>The covered services may include psychiatric consultation, medicines, hospitalization, food and accommodation, and ECT (electroconvulsive therapy/shock treatment), as applicable under the government scheme.<br/><br/>Our aim is to ensure that financial difficulties do not become a barrier to receiving appropriate and timely mental healthcare.",
+    storyImage: "/images/kelkar_hospital.jpeg"
   };
 
   const data = {
@@ -80,7 +147,6 @@ export default function AboutPage() {
     ...(aboutData || {}),
     aboutContent: (aboutData?.aboutContent && aboutData.aboutContent.trim()) ? aboutData.aboutContent : defaultData.aboutContent,
     values: (aboutData?.values && aboutData.values.length > 0) ? aboutData.values : defaultData.values,
-    experts: (aboutData?.experts && aboutData.experts.length > 0) ? aboutData.experts : defaultData.experts,
   };
   const aboutContent = data.aboutContent;
 
@@ -160,11 +226,11 @@ export default function AboutPage() {
               whileInView="visible"
               viewport={{ once: true }}
               variants={fadeIn}
-              className="order-2 lg:order-1 relative rounded-[2rem] overflow-hidden aspect-[4/3] shadow-xl border border-border"
+              className="order-2 lg:order-1 relative rounded-[2rem] overflow-hidden aspect-video shadow-xl border border-border"
             >
               <Image
-                src="/images/clinical_abstract.png"
-                alt="KELKAR MANAS HEALTH CLINIC Clinical Research"
+                src={data.storyImage || "/images/kelkar_hospital.jpeg"}
+                alt="Kelkar Hospital Akola"
                 fill
                 className="object-cover"
                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
@@ -253,73 +319,125 @@ export default function AboutPage() {
             </p>
           </motion.div>
 
+          {/* Filters */}
+          <div className="mb-10 bg-card rounded-2xl p-6 border border-border shadow-sm flex flex-col md:flex-row gap-4 items-center">
+            <div className="w-full md:w-1/3">
+              <label className="block text-sm font-medium text-foreground mb-2">State</label>
+              <select 
+                className="w-full h-11 rounded-xl border border-input bg-transparent px-3 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                value={selectedState}
+                onChange={handleStateChange}
+              >
+                <option value="">All States</option>
+                {availableStates.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="w-full md:w-1/3">
+              <label className="block text-sm font-medium text-foreground mb-2">City</label>
+              <select 
+                className="w-full h-11 rounded-xl border border-input bg-transparent px-3 text-sm outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                value={selectedCity}
+                onChange={handleCityChange}
+                disabled={availableCities.length === 0}
+              >
+                <option value="">All Cities</option>
+                {availableCities.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="w-full md:w-1/3">
+              <label className="block text-sm font-medium text-foreground mb-2">Clinic</label>
+              <select 
+                className="w-full h-11 rounded-xl border border-input bg-transparent px-3 text-sm outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                value={selectedClinic}
+                onChange={(e) => setSelectedClinic(e.target.value)}
+                disabled={availableClinics.length === 0}
+              >
+                <option value="">All Clinics</option>
+                {availableClinics.map(clinic => (
+                  <option key={clinic._id} value={clinic._id}>{clinic.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <motion.div 
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
+            animate="visible"
             variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12"
           >
-            {data.experts.map((doc: any, idx: number) => (
-              <motion.div key={idx} variants={fadeIn} className="group cursor-pointer">
-                <div className="relative w-full aspect-[4/5] rounded-[2rem] overflow-hidden mb-6 bg-muted/50 border border-border">
-                  <Image
-                    src={doc.img}
-                    alt={doc.name}
-                    fill
-                    className={`object-cover group-hover:scale-105 transition-transform duration-700 ease-out ${doc.name === 'Dr. Deepak Kelkar' ? 'object-top' : ''}`}
-                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
-                  {/* Subtle overlay gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            {doctorsLoading ? (
+              <div className="col-span-full py-20 flex justify-center text-muted-foreground font-medium">Loading clinical experts...</div>
+            ) : doctors.length === 0 ? (
+              <div className="col-span-full py-20 flex justify-center text-muted-foreground font-medium">No active doctors found.</div>
+            ) : doctors.map((doctor, idx) => (
+              <motion.div 
+                key={doctor._id || idx} 
+                variants={fadeIn}
+                className="bg-white rounded-[2.5rem] overflow-hidden border border-border/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(122,46,122,0.12)] hover:-translate-y-2 transition-all duration-500 group flex flex-col items-center text-center p-10 lg:p-12 relative"
+              >
+                
+                {/* Decorative top blur */}
+                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-primary/[0.03] to-transparent pointer-events-none" />
+                
+                <div className="relative w-40 h-40 rounded-full mb-8 shadow-xl ring-4 ring-white group-hover:scale-105 transition-transform duration-500 z-10 bg-slate-100 flex items-center justify-center overflow-hidden">
+                  {doctor.avatar ? (
+                    <Image 
+                      src={doctor.avatar}
+                      alt={doctor.name}
+                      fill
+                      sizes="160px"
+                      className="object-cover rounded-full"
+                    />
+                  ) : (
+                    <Stethoscope className="w-16 h-16 text-slate-300" />
+                  )}
                 </div>
-                <h4 className="text-2xl font-serif text-foreground mb-1">{doc.name}</h4>
-                <p className="text-primary font-medium mb-2">{doc.role}</p>
-                <p className="text-muted-foreground text-sm">{doc.spec}</p>
+                
+                <div className="flex items-center justify-center gap-2 mb-4 bg-primary/5 px-4 py-1.5 rounded-full z-10">
+                  <ShieldCheck className="w-4 h-4 text-primary" strokeWidth={2.5} />
+                  <span className="text-xs font-bold uppercase tracking-widest text-primary">Medical Board</span>
+                </div>
+                
+                <h3 className="text-2xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors z-10">{doctor.name}</h3>
+                <p className="text-muted-foreground font-semibold mb-8 text-lg z-10">{doctor.specialization}</p>
+                
+                  <div className="flex flex-col gap-4 mt-auto w-full bg-slate-50 border border-slate-100 rounded-3xl p-5 z-10 mb-4">
+                    <div className="text-center text-sm font-medium text-foreground/80 leading-snug">
+                      <Award className="w-4 h-4 mr-1.5 inline-block text-primary align-text-bottom" strokeWidth={2.5} />
+                      <span>{doctor.qualifications?.join(", ") || "Certified Professional"}</span>
+                    </div>
+                    <div className="flex items-center justify-center text-sm font-medium text-foreground/80">
+                      <span className="w-4 h-4 mr-2 flex items-center justify-center text-primary font-black text-lg">+</span>
+                      {doctor.experience || 0} Years Practice
+                    </div>
+                  </div>
+
+                  <div className="w-full z-10 mt-auto">
+                    <BookNowButton 
+                      prefilledData={{
+                        doctorId: doctor._id,
+                        clinic: doctor.clinicId,
+                        city: clinics.find(c => c._id === doctor.clinicId)?.city
+                      }}
+                      className="w-full h-12 rounded-full font-bold bg-primary hover:bg-primary/90 text-white transition-all shadow-md hover:shadow-lg"
+                    >
+                      Book Consultation
+                    </BookNowButton>
+                  </div>
+                
               </motion.div>
             ))}
           </motion.div>
         </div>
       </section>
 
-      {/* Lifestyle Section */}
-      <section className="py-24 bg-foreground text-background overflow-hidden">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div 
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeIn}
-              className="max-w-xl"
-            >
-              <h2 className="text-3xl md:text-5xl font-serif mb-6 leading-tight">
-                Embrace Life with Confidence
-              </h2>
-              <p className="text-lg text-background/80 mb-8 leading-relaxed">
-                Intimate health is not just about avoiding discomfort; it's about embracing vitality, pleasure, and confidence in every stage of life. Our clinic is dedicated to providing compassionate, personalized care to help you thrive.
-              </p>
-              <Link href="/doctors" className="inline-flex items-center text-primary-foreground font-medium hover:text-primary-foreground/80 transition-colors">
-                Meet our experts
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-            </motion.div>
-            <motion.div 
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="relative w-full aspect-video lg:aspect-square rounded-[2rem] overflow-hidden shadow-2xl border border-background/10"
-            >
-              <Image
-                src="/images/lifestyle_couple.png"
-                alt="Confident lifestyle"
-                fill
-                className="object-cover"
-               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
-            </motion.div>
-          </div>
-        </div>
-      </section>
 
       {/* Final CTA */}
       <section className="relative py-32 bg-muted/50 overflow-hidden">
