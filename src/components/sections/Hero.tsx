@@ -196,11 +196,11 @@ export function Hero() {
             <motion.div 
               whileHover={{ y: -15, scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className="relative aspect-[4/5] w-full max-w-md mx-auto lg:ml-auto cursor-pointer"
+              className="relative aspect-[4/5] w-full max-w-md mx-auto lg:ml-auto cursor-pointer isolate"
             >
               {/* Decorative block behind image matching About page style */}
-              <div className="absolute -bottom-6 -right-6 w-2/3 h-2/3 bg-secondary/25 rounded-[2rem] -z-10" />
-              <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-tr from-primary/20 to-secondary/15 transform rotate-3 scale-105 transition-transform duration-700 ease-out blur-[2px] -z-10" />
+              <div className="absolute -bottom-6 -right-6 w-2/3 h-2/3 bg-secondary/30 rounded-[2rem] z-0 pointer-events-none" />
+              <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-tr from-primary/20 to-secondary/15 transform rotate-3 scale-105 transition-transform duration-700 ease-out blur-[2px] z-0 pointer-events-none" />
 
               <div className="absolute inset-0 rounded-[2rem] overflow-hidden shadow-2xl border-4 border-background z-10 bg-gradient-to-t from-primary/20 via-primary/5 to-background">
                 <div className="absolute inset-x-0 bottom-0 top-6">

@@ -63,19 +63,9 @@ export const NAV_ITEMS: NavGroupItem[] = [
         description: "Memory care and late-life depression.",
       },
       {
-        title: "Cognitive Behavioural Therapy",
-        href: "/treatments/cognitive-behavioural-therapy",
-        description: "Structured evidence-based psychotherapy.",
-      },
-      {
         title: "Alcohol Addiction",
         href: "/treatments/treatment-of-alcohol-addiction",
         description: "Inpatient rehabilitation & detox programs.",
-      },
-      {
-        title: "Nicotine De-Addiction",
-        href: "/treatments/nicotine-de-addiction",
-        description: "Structured tobacco cessation protocols.",
       },
       {
         title: "Brown Sugar De-Addiction",

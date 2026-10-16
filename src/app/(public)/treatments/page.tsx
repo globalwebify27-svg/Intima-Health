@@ -133,22 +133,6 @@ export default function ServicesPage() {
         slug: "geriatric-psychiatry"
       },
       {
-        icon: "Activity",
-        title: "Cognitive Behavioural Therapy",
-        description: "Evidence-based psychotherapy focusing on negative thinking patterns and behaviors.",
-        features: ["Structured Therapy", "Stress Management", "Resilience Building"],
-        color: "bg-chart-4",
-        slug: "cognitive-behavioural-therapy"
-      },
-      {
-        icon: "Pill",
-        title: "Nicotine De-Addiction",
-        description: "Structured medical and psychological protocols to help you quit tobacco permanently.",
-        features: ["Craving Management", "Behavioral Support", "Relapse Prevention"],
-        color: "bg-chart-5",
-        slug: "nicotine-de-addiction"
-      },
-      {
         icon: "FlaskConical",
         title: "Brown Sugar De-Addiction",
         description: "Dedicated residential rehabilitation for severe opioid and brown sugar dependence.",

@@ -1,22 +1,33 @@
 "use client";
 
-import { motion } from "framer-motion";
+import React, { useState, useMemo, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { MessageCircleQuestion, HelpCircle, Mail, MessageSquare } from "lucide-react";
+import { 
+  MessageCircleQuestion, 
+  HelpCircle, 
+  Mail, 
+  Search, 
+  X,
+  Sparkles,
+  Building2,
+  ShieldCheck,
+  Stethoscope
+} from "lucide-react";
 import Link from "next/link";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import React from "react";
 
-const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
-};
+interface FaqItem {
+  q: string;
+  a: string;
+  category: string;
+}
 
 const DEFAULT_GENERAL_FAQS: { category: string; questions: { q: string; a: string }[] }[] = [
   {
@@ -117,127 +128,280 @@ const DEFAULT_GENERAL_FAQS: { category: string; questions: { q: string; a: strin
 ];
 
 export default function FAQPage() {
-  const [groupedFaqs, setGroupedFaqs] = React.useState<{category: string, questions: {q: string, a: string}[]}[]>(DEFAULT_GENERAL_FAQS);
-  const [loading, setLoading] = React.useState(false);
+  const [faqs, setFaqs] = useState<FaqItem[]>(() => {
+    return DEFAULT_GENERAL_FAQS.flatMap(cat => 
+      cat.questions.map(q => ({ q: q.q, a: q.a, category: cat.category }))
+    );
+  });
+  const [activeCategory, setActiveCategory] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetch("/api/public/content/faqs")
       .then(res => res.json())
       .then(json => {
-        if (json.success && json.data && json.data.length > 0) {
-          const map = new Map<string, {q: string, a: string}[]>();
-          json.data.forEach((faq: any) => {
-            const cat = faq.category || "General";
-            if (!map.has(cat)) map.set(cat, []);
-            map.get(cat)?.push({ q: faq.question, a: faq.answer });
-          });
-          const grouped = Array.from(map.entries()).map(([category, questions]) => ({ category, questions }));
-          setGroupedFaqs(grouped);
-        } else {
-          setGroupedFaqs(DEFAULT_GENERAL_FAQS);
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          const loaded: FaqItem[] = json.data.map((item: any) => ({
+            q: item.question,
+            a: item.answer,
+            category: item.category || "General"
+          }));
+          setFaqs(loaded);
         }
       })
       .catch(() => {
-        setGroupedFaqs(DEFAULT_GENERAL_FAQS);
+        // Fallback to initial state
       })
       .finally(() => setLoading(false));
   }, []);
 
+  // Distinct categories with counts
+  const categoriesWithCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    faqs.forEach(f => {
+      counts[f.category] = (counts[f.category] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  }, [faqs]);
+
+  // Filtered FAQs based on category and live search
+  const filteredFaqs = useMemo(() => {
+    return faqs.filter(faq => {
+      if (activeCategory !== "ALL" && faq.category !== activeCategory) {
+        return false;
+      }
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const qMatch = faq.q.toLowerCase().includes(query);
+        const aMatch = faq.a.toLowerCase().includes(query);
+        const catMatch = faq.category.toLowerCase().includes(query);
+        if (!qMatch && !aMatch && !catMatch) return false;
+      }
+      return true;
+    });
+  }, [faqs, activeCategory, searchQuery]);
+
+  // Split into 2 columns for compact, side-by-side display without huge vertical scroll
+  const [leftColFaqs, rightColFaqs] = useMemo(() => {
+    const left: FaqItem[] = [];
+    const right: FaqItem[] = [];
+    filteredFaqs.forEach((faq, index) => {
+      if (index % 2 === 0) {
+        left.push(faq);
+      } else {
+        right.push(faq);
+      }
+    });
+    return [left, right];
+  }, [filteredFaqs]);
+
+  const getCategoryIcon = (category: string) => {
+    if (category.includes("Hospital") || category.includes("Consultation")) {
+      return <Building2 className="w-3.5 h-3.5" />;
+    }
+    if (category.includes("Fees") || category.includes("Privacy") || category.includes("Policy")) {
+      return <ShieldCheck className="w-3.5 h-3.5" />;
+    }
+    return <Stethoscope className="w-3.5 h-3.5" />;
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       
-      {/* Hero Section */}
-      <section className="relative pt-12 pb-16 lg:pt-16 lg:pb-24 bg-muted/30 overflow-hidden">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+      {/* Compact, Modern Hero Section */}
+      <section className="relative pt-12 pb-12 lg:pt-16 lg:pb-16 bg-muted/30 border-b border-border/50 overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[300px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 max-w-4xl">
           <motion.div 
-            initial="hidden"
-            animate="visible"
-            variants={fadeIn}
-            className="max-w-3xl mx-auto"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
           >
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-6">
-              <MessageCircleQuestion className="w-8 h-8" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary font-semibold text-xs tracking-wide uppercase mb-4 border border-primary/20">
+              <MessageCircleQuestion className="w-3.5 h-3.5" />
+              Kelkar Manas Knowledge Base
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium mb-6">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-medium mb-4 leading-tight">
               Frequently Asked <span className="text-primary italic">Questions</span>
             </h1>
             
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              Find answers to common questions about our clinical process, privacy standards, and treatment plans.
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto mb-8">
+              Find fast, verified answers to questions about hospital timings, consultations, privacy standards, and medical services.
             </p>
+
+            {/* Live Search Input */}
+            <div className="relative max-w-xl mx-auto">
+              <Search className="w-4 h-4 text-muted-foreground absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search by keyword (e.g., fees, timings, appointment, privacy)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-12 pl-11 pr-10 rounded-full border border-border bg-card shadow-sm text-sm outline-none focus:ring-2 focus:ring-primary/25 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* FAQ Accordion Section */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto">
-            {loading ? (
-              <div className="text-center py-12 text-muted-foreground">Loading FAQs...</div>
-            ) : groupedFaqs.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">No FAQs available yet.</div>
-            ) : (
-              groupedFaqs.map((category, index) => (
-                <motion.div 
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="mb-12"
-                >
-                  <h2 className="text-2xl font-serif font-medium text-foreground mb-6 flex items-center">
-                    {category.category}
-                  </h2>
-                  
-                  <Accordion className="w-full space-y-4">
-                    {category.questions.map((faq, i) => (
-                      <AccordionItem 
-                        key={i} 
-                        value={`item-${index}-${i}`}
-                        className="border border-border bg-card rounded-2xl px-6 data-[state=open]:shadow-md transition-all"
-                      >
-                        <AccordionTrigger className="text-left font-semibold text-lg hover:no-underline py-6">
-                          {faq.q}
-                        </AccordionTrigger>
-                        <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6 pr-8">
-                          {faq.a}
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                </motion.div>
-              ))
+      {/* Main Content: Category Filter Bar & Dual-Column Compact FAQ Grid */}
+      <section className="py-12 lg:py-16 bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+          
+          {/* Quick-Filter Pills */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
+            <button
+              onClick={() => setActiveCategory("ALL")}
+              className={cn(
+                "px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 border",
+                activeCategory === "ALL"
+                  ? "bg-primary text-white border-primary shadow-sm"
+                  : "bg-card text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground"
+              )}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              All Questions ({faqs.length})
+            </button>
+
+            {categoriesWithCounts.map(cat => (
+              <button
+                key={cat.name}
+                onClick={() => setActiveCategory(cat.name)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 border",
+                  activeCategory === cat.name
+                    ? "bg-primary text-white border-primary shadow-sm"
+                    : "bg-card text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground"
+                )}
+              >
+                {getCategoryIcon(cat.name)}
+                {cat.name} ({cat.count})
+              </button>
+            ))}
+          </div>
+
+          {/* Search Result Counter & Clear */}
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-6 px-1">
+            <span>
+              Showing <strong className="text-foreground">{filteredFaqs.length}</strong> of {faqs.length} questions
+              {activeCategory !== "ALL" && ` in ${activeCategory}`}
+              {searchQuery && ` matching "${searchQuery}"`}
+            </span>
+            {(activeCategory !== "ALL" || searchQuery) && (
+              <button
+                onClick={() => { setActiveCategory("ALL"); setSearchQuery(""); }}
+                className="text-primary font-bold hover:underline"
+              >
+                Reset Filters
+              </button>
             )}
           </div>
+
+          {/* Compact 2-Column Grid to Prevent Excessive Scrolling */}
+          {loading ? (
+            <div className="text-center py-16 text-muted-foreground">Loading FAQs...</div>
+          ) : filteredFaqs.length === 0 ? (
+            <div className="text-center py-16 bg-muted/20 border border-border rounded-2xl p-8 max-w-md mx-auto">
+              <HelpCircle className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-60" />
+              <h3 className="font-semibold text-foreground mb-1">No questions found</h3>
+              <p className="text-xs text-muted-foreground mb-4">Try searching with a different keyword or view all categories.</p>
+              <button
+                onClick={() => { setActiveCategory("ALL"); setSearchQuery(""); }}
+                className="px-4 py-2 rounded-full bg-primary text-white text-xs font-bold"
+              >
+                Clear Search & Filter
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+              {/* Left Column */}
+              <Accordion className="space-y-4">
+                {leftColFaqs.map((faq, idx) => (
+                  <AccordionItem 
+                    key={`left-${idx}`} 
+                    value={`left-${idx}`}
+                    className="border border-border/80 bg-card rounded-2xl px-5 py-1 data-[state=open]:shadow-md data-[state=open]:border-primary/30 transition-all"
+                  >
+                    <AccordionTrigger className="text-left font-semibold text-base hover:no-underline py-4 gap-3">
+                      <span className="flex-1 leading-snug">{faq.q}</span>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground text-sm leading-relaxed pb-4 pt-1 border-t border-border/40">
+                      <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-primary mb-2">
+                        {getCategoryIcon(faq.category)}
+                        {faq.category}
+                      </div>
+                      <p>{faq.a}</p>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+
+              {/* Right Column */}
+              <Accordion className="space-y-4">
+                {rightColFaqs.map((faq, idx) => (
+                  <AccordionItem 
+                    key={`right-${idx}`} 
+                    value={`right-${idx}`}
+                    className="border border-border/80 bg-card rounded-2xl px-5 py-1 data-[state=open]:shadow-md data-[state=open]:border-primary/30 transition-all"
+                  >
+                    <AccordionTrigger className="text-left font-semibold text-base hover:no-underline py-4 gap-3">
+                      <span className="flex-1 leading-snug">{faq.q}</span>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground text-sm leading-relaxed pb-4 pt-1 border-t border-border/40">
+                      <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-primary mb-2">
+                        {getCategoryIcon(faq.category)}
+                        {faq.category}
+                      </div>
+                      <p>{faq.a}</p>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          )}
+
         </div>
       </section>
 
-      {/* Contact Support Banner */}
-      <section className="py-20 bg-primary/5 border-t border-border">
+      {/* Redesigned Clean Contact Card - Only Contact Us */}
+      <section className="py-16 bg-muted/20 border-t border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="max-w-2xl mx-auto bg-card p-10 md:p-12 rounded-[2.5rem] shadow-xl border border-border"
+            className="max-w-xl mx-auto bg-card p-8 sm:p-10 rounded-3xl shadow-lg border border-border"
           >
-            <HelpCircle className="w-12 h-12 text-primary mx-auto mb-6" />
-            <h3 className="text-3xl font-serif mb-4">Still have questions?</h3>
-            <p className="text-muted-foreground mb-8 text-lg">
-              Our patient support team is available to help clarify any doubts regarding our services, platform, or your privacy.
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+              <HelpCircle className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-2xl sm:text-3xl font-serif font-medium mb-3">Still have questions?</h3>
+            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed mb-6 max-w-md mx-auto">
+              Our team is available to assist you with any questions regarding our hospital services, appointments, or medical care.
             </p>
             
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/contact" className={cn(buttonVariants({ size: "lg" }), "rounded-full px-8")}>
-                <Mail className="w-4 h-4 mr-2" />
+            <div className="flex justify-center">
+              <Link
+                href="/contact"
+                className={cn(
+                  buttonVariants({ size: "lg" }),
+                  "rounded-full px-8 py-6 text-sm sm:text-base font-semibold shadow-md hover:shadow-xl hover:scale-[1.02] transition-all gap-2"
+                )}
+              >
+                <Mail className="w-4 h-4" />
                 Contact Us
-              </Link>
-              <Link href="/contact" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full px-8")}>
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Chat with Support
               </Link>
             </div>
           </motion.div>
