@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Package, ShieldCheck, Truck, RefreshCcw, ArrowRight, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 const fadeIn = {
@@ -73,13 +74,19 @@ export default function PharmacyPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="rounded-full px-8 text-base font-semibold shadow-xl group">
-                  Explore Treatments
+                <Link
+                  href="/products"
+                  className={cn(buttonVariants({ size: "lg" }), "rounded-full px-8 text-base font-semibold shadow-xl group")}
+                >
+                  Explore Medicines
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                <Button variant="outline" size="lg" className="rounded-full px-8 text-base font-semibold bg-transparent">
+                </Link>
+                <Link
+                  href="/contact"
+                  className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full px-8 text-base font-semibold bg-transparent")}
+                >
                   Transfer Prescription
-                </Button>
+                </Link>
               </div>
               
               <div className="mt-8 flex items-center gap-6">

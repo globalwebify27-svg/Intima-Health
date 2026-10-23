@@ -50,6 +50,27 @@ export async function POST(req: Request) {
          });
       }
 
+      // If medicine order payment, update Order record
+      if (orderId) {
+        const { OrderModel } = await import("@/modules/pharmacy/schema");
+        const order = await OrderModel.findById(orderId);
+        if (order) {
+          order.paymentId = payment._id;
+          order.paymentStatus = "Paid";
+          if (order.status === "Placed") {
+            order.status = "Payment_Confirmed";
+          }
+          if (!order.statusHistory) order.statusHistory = [];
+          order.statusHistory.push({
+            status: "Payment_Confirmed",
+            timestamp: new Date(),
+            comment: `Online payment of ₹${amount} confirmed (Razorpay: ${razorpay_payment_id}).`,
+            updatedBy: "Payment Gateway",
+          });
+          await order.save();
+        }
+      }
+
       return NextResponse.json({ success: true, message: "Payment verified successfully", payment });
     } else {
       // Create a failed payment record
@@ -65,8 +86,9 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({ error: "Invalid signature sent!" }, { status: 400 });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Razorpay verification error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -8,6 +8,8 @@ export interface CartItem {
   image: string;
   quantity: number;
   type: 'diagnostic' | 'medication' | 'supplement';
+  isPrescription?: boolean;
+  dosage?: string;
 }
 
 interface CartState {

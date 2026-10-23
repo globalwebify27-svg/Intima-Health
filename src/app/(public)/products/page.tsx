@@ -3,10 +3,28 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ArrowRight, Filter, Activity, ShieldCheck, HeartPulse, X } from "lucide-react";
+import { ShoppingBag, Filter, ShieldCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useCart } from "@/store/useCart";
+
+interface Product {
+  id: string;
+  _id?: string;
+  slug?: string;
+  name: string;
+  category: string;
+  price: number;
+  mrp?: number;
+  image?: string;
+  type?: "medication" | "diagnostic" | "supplement";
+  description?: string;
+  isPrescription?: boolean;
+  dosageForm?: string;
+  packSize?: string;
+  composition?: string;
+  stock?: number;
+}
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -24,7 +42,7 @@ const staggerContainer = {
 export default function ProductsPage() {
   const { addItem } = useCart();
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,8 +50,12 @@ export default function ProductsPage() {
       .then(res => res.json())
       .then(json => {
         if (json.success) {
-          // Normalize _id to id for the UI compatibility
-          const mapped = json.data.map((p: any) => ({ ...p, id: p._id }));
+          // Normalize _id to id and ensure valid slug
+          const mapped = json.data.map((p: any) => ({
+            ...p,
+            id: p._id || p.id,
+            slug: p.slug || p._id || p.id,
+          }));
           setProducts(mapped);
         }
       })
@@ -195,43 +217,45 @@ export default function ProductsPage() {
               >
                 {loading ? (
                   <div className="col-span-full py-12 text-center text-muted-foreground">Loading products...</div>
-                ) : products.map((product, index) => (
-                  <motion.div 
-                    key={product.id}
-                    variants={fadeIn}
-                    className="group flex flex-col bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl transition-all duration-300"
-                  >
-                    {/* Product Image Area */}
-                    <Link href={`/products/${product.slug}`} className="relative aspect-square bg-muted/50 p-6 flex items-center justify-center overflow-hidden">
-                      {product.isPrescription && (
-                        <div className="absolute top-4 left-4 bg-background/80 backdrop-blur text-xs font-bold px-2 py-1 rounded border border-border z-10 flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3 text-primary" />
-                          Rx
-                        </div>
-                      )}
-                      <Image
-                        src={product.image || "/images/product_kit_1.png"}
-                        alt={product.name || "Product"}
-                        width={300}
-                        height={300}
-                        priority={index < 4}
-                        className="object-contain group-hover:scale-105 transition-transform duration-500"
-                      />
-                    </Link>
-
-                    {/* Product Details */}
-                    <div className="p-6 flex flex-col flex-1">
-                      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                        {product.category}
-                      </div>
-                      <Link href={`/products/${product.slug}`}>
-                        <h3 className="font-serif text-xl font-medium mb-2 group-hover:text-primary transition-colors line-clamp-1">
-                          {product.name}
-                        </h3>
+                ) : products.map((product, index) => {
+                  const productSlug = product.slug || product.id || product._id;
+                  return (
+                    <motion.div 
+                      key={product.id}
+                      variants={fadeIn}
+                      className="group flex flex-col bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl transition-all duration-300"
+                    >
+                      {/* Product Image Area */}
+                      <Link href={`/products/${productSlug}`} className="relative aspect-square bg-muted/50 p-6 flex items-center justify-center overflow-hidden">
+                        {product.isPrescription && (
+                          <div className="absolute top-4 left-4 bg-background/80 backdrop-blur text-xs font-bold px-2 py-1 rounded border border-border z-10 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-primary" />
+                            Rx
+                          </div>
+                        )}
+                        <Image
+                          src={product.image || "/images/product_kit_1.png"}
+                          alt={product.name || "Product"}
+                          width={300}
+                          height={300}
+                          priority={index < 4}
+                          className="object-contain group-hover:scale-105 transition-transform duration-500"
+                        />
                       </Link>
-                      <p className="text-muted-foreground text-sm line-clamp-2 mb-6 flex-1">
-                        {product.description}
-                      </p>
+
+                      {/* Product Details */}
+                      <div className="p-6 flex flex-col flex-1">
+                        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                          {product.category}
+                        </div>
+                        <Link href={`/products/${productSlug}`}>
+                          <h3 className="font-serif text-xl font-medium mb-2 group-hover:text-primary transition-colors line-clamp-1">
+                            {product.name}
+                          </h3>
+                        </Link>
+                        <p className="text-muted-foreground text-sm line-clamp-2 mb-6 flex-1">
+                          {product.description}
+                        </p>
                       
                       <div className="flex items-center justify-between mt-auto">
                         <span className="font-semibold text-lg">
@@ -242,8 +266,9 @@ export default function ProductsPage() {
                             id: product.id,
                             name: product.name,
                             price: product.price,
-                            image: product.image,
-                            type: product.type
+                            image: product.image || "/images/product_kit_1.png",
+                            type: product.type || "medication",
+                            isPrescription: product.isPrescription,
                           })}
                           size="sm" 
                           className="rounded-full gap-2"
@@ -254,7 +279,8 @@ export default function ProductsPage() {
                       </div>
                     </div>
                   </motion.div>
-                ))}
+                );
+              })}
               </motion.div>
             </div>
 

@@ -240,6 +240,19 @@ export function Header() {
 
           <div className="flex items-center gap-4 shrink-0">
             <button
+              onClick={() => openCart()}
+              className="relative p-2 text-foreground/80 hover:text-primary transition-colors cursor-pointer"
+              aria-label="Shopping Cart"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              {cartItemCount > 0 && (
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-primary rounded-full">
+                  {cartItemCount}
+                </span>
+              )}
+            </button>
+
+            <button
               className="xl:hidden p-2 text-foreground/80 hover:text-primary transition-colors"
               onClick={() => setIsMobileMenuOpen(true)}
             >
