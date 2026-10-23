@@ -63,7 +63,7 @@ const hardcodedFaqs = [
 const aboutContent = JSON.stringify({
   heroTitle1: "Leading Psychiatric &",
   heroTitle2: "Mental Health Care.",
-  heroSubtitle: "Founded by Dr. Deepak Kelkar, Dr. Kelkar Hospital in Akola & Nagpur provides pioneer psychiatric treatment, de-addiction rehabilitation, and the Happiness 20 – Mind Gym program.",
+  heroSubtitle: "Founded by Dr. Deepak Kelkar, Dr. Kelkar Hospital in Akola & Nagpur provides pioneer psychiatric treatment and de-addiction rehabilitation.",
   valuesTitle: "What Drives Us Forward",
   valuesDescription: "Everything we do at Kelkar Hospital is guided by four core principles that ensure we deliver the best possible care.",
   values: [
@@ -75,7 +75,7 @@ const aboutContent = JSON.stringify({
   expertsTitle: "Meet Our Medical Experts",
   expertsDescription: "Our products and protocols are developed by leading specialists in psychiatry and de-addiction.",
   experts: [
-    { img: "/images/dr_kelkar_hero_nobg.png", name: "Dr. Deepak Kelkar", role: "Senior Psychiatrist & Founder", spec: "MD Psychiatry, Mind Gym Pioneer" },
+    { img: "/images/dr_kelkar_hero_nobg.png", name: "Dr. Deepak Kelkar", role: "Senior Psychiatrist & Founder", spec: "MD Psychiatry, Senior Consultant" },
     { img: "/images/doctor_2.png", name: "Dr. Amol Kelkar", role: "Consultant Psychiatrist", spec: "De-Addiction Specialist" },
     { img: "/images/doctor_3.png", name: "Dr. Radhika Kelkar", role: "Specialist in Child Psychiatry", spec: "DPM, Child Development" }
   ],

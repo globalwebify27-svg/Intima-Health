@@ -101,32 +101,40 @@ export function Hero() {
       >
         <Smile size={56} strokeWidth={1.5} />
       </motion.div>
-      
+
       <div className="container mx-auto px-6 lg:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-          
-          <motion.div 
+
+          <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
             className="lg:col-span-7 z-10 max-w-3xl"
           >
-            <motion.h1 variants={itemVariants} className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-[-0.04em] text-foreground leading-[1.05] mb-8">
-              Clinical expertise for <br/>
+            <motion.h1 variants={itemVariants} className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-[-0.03em] text-foreground leading-[1.12] mb-5">
+              Expert Mental Health &amp; Psychiatric Care at <br />
               <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] bg-clip-text text-transparent animate-gradient">
-                your most private life.
+                KELKAR MANAS HEALTH CARE
               </span>
             </motion.h1>
-            
-            <motion.p variants={itemVariants} className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl font-medium leading-relaxed">
-              Skip the awkward waiting rooms. Get confidential, physician-guided treatments for erectile dysfunction, premature ejaculation, and complete reproductive wellness—shipped directly to your door.
+            {/* 
+            <motion.p variants={itemVariants} className="text-lg sm:text-xl font-bold text-primary mb-6 leading-snug">
+              Expert Care for Mental Health, Emotional Well-being &amp; Addiction Recovery
+            </motion.p> */}
+
+            <motion.p variants={itemVariants} className="text-sm sm:text-lg text-muted-foreground mb-10 max-w-xl font-medium leading-relaxed">
+              At KELKAR MANAS HEALTH CARE, we believe that mental health is an essential
+              part of overall well-being. Our goal is to provide compassionate, confidential
+              and professional care to individuals and families experiencing mental health
+              challenges, emotional difficulties, addiction-related concerns and selected
+              sexual health problems.
             </motion.p>
-            
+
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
               <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
-                <Button 
-                  size="lg" 
-                  onClick={() => openBooking({ appointmentType: "online" })} 
+                <Button
+                  size="lg"
+                  onClick={() => openBooking({ appointmentType: "online" })}
                   className="rounded-2xl px-7 py-7 text-base font-bold shadow-float hover:shadow-xl transition-all w-full sm:w-auto bg-primary hover:bg-primary/90 text-white border-none flex items-center justify-center gap-2 group cursor-pointer"
                 >
                   <Video className="h-5 w-5 shrink-0 text-white/90 group-hover:scale-110 transition-transform" />
@@ -136,10 +144,10 @@ export function Hero() {
               </motion.div>
 
               <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   variant="outline"
-                  onClick={() => openBooking({ appointmentType: "walk-in" })} 
+                  onClick={() => openBooking({ appointmentType: "walk-in" })}
                   className="rounded-2xl px-7 py-7 text-base font-bold transition-all w-full sm:w-auto bg-card/90 hover:bg-primary/10 text-foreground border-2 border-primary/25 hover:border-primary shadow-sm hover:shadow-md flex items-center justify-center gap-2 group cursor-pointer backdrop-blur-sm"
                 >
                   <Building2 className="h-5 w-5 shrink-0 text-primary group-hover:scale-110 transition-transform" />
@@ -148,7 +156,7 @@ export function Hero() {
                 </Button>
               </motion.div>
             </motion.div>
-            
+
             <motion.div variants={itemVariants} className="mt-12 flex items-center gap-4">
               <div className="flex -space-x-3">
                 {[
@@ -157,18 +165,18 @@ export function Hero() {
                   "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100&h=100&fit=crop",
                   "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop"
                 ].map((src, i) => (
-                  <motion.div 
+                  <motion.div
                     key={i}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.8 + (i * 0.1) }}
-                    className="inline-block h-12 w-12 rounded-full border-2 border-background bg-muted overflow-hidden shadow-sm" 
+                    className="inline-block h-12 w-12 rounded-full border-2 border-background bg-muted overflow-hidden shadow-sm"
                   >
                     <img src={src} alt="Happy patient" className="w-full h-full object-cover" />
                   </motion.div>
                 ))}
               </div>
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.2 }}
@@ -185,15 +193,15 @@ export function Hero() {
               </motion.div>
             </motion.div>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="lg:col-span-5 relative"
           >
             {/* Main Image Card - Static by default, floats on hover */}
-            <motion.div 
+            <motion.div
               whileHover={{ y: -15, scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
               className="relative aspect-[4/5] w-full max-w-md mx-auto lg:ml-auto cursor-pointer isolate"
@@ -210,21 +218,21 @@ export function Hero() {
                     fill
                     className="object-contain object-bottom"
                     priority
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" 
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
                 </div>
                 <div className="absolute inset-0 bg-primary/10 mix-blend-color-burn pointer-events-none" />
               </div>
-              
+
               {/* Glassmorphism Floating Badge - Still gently floats on its own */}
-              <motion.div 
+              <motion.div
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                 className="absolute -left-6 sm:-left-10 bottom-12 z-20"
               >
                 <div className="bg-white/80 backdrop-blur-xl border border-white/60 p-4 rounded-2xl shadow-card max-w-[240px]">
                   <div className="flex items-center gap-3 mb-2">
-                    <motion.div 
+                    <motion.div
                       animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
                       transition={{ duration: 2, repeat: Infinity }}
                       className="h-2.5 w-2.5 rounded-full bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.6)]"
@@ -236,7 +244,7 @@ export function Hero() {
               </motion.div>
             </motion.div>
           </motion.div>
-          
+
         </div>
       </div>
     </section>

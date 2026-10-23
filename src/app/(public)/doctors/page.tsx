@@ -86,6 +86,25 @@ export default function DoctorsPage() {
     setSelectedClinic("");
   };
 
+  // Priority sorting & safety filter for doctors
+  const DOCTOR_ORDER_KEYS = ["deepak", "amol", "radhika", "anuja", "mahajan", "vishwas"];
+  const getDoctorRank = (name: string): number => {
+    const lower = (name || "").toLowerCase();
+    const idx = DOCTOR_ORDER_KEYS.findIndex(key => lower.includes(key));
+    return idx === -1 ? 99 : idx;
+  };
+  const isAllowedDoctor = (doc: IDoctor): boolean => {
+    const lower = (doc.name || "").toLowerCase();
+    if (lower.includes("sheetal")) return false;
+    if (lower.includes("tiwari") || lower.includes("tivari")) return false;
+    if (lower.includes("amarjeet")) return false;
+    return true;
+  };
+
+  const sortedDoctors = [...doctors]
+    .filter(isAllowedDoctor)
+    .sort((a, b) => getDoctorRank(a.name) - getDoctorRank(b.name));
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       
@@ -187,63 +206,67 @@ export default function DoctorsPage() {
           >
             {loading ? (
               <div className="col-span-full py-20 flex justify-center text-muted-foreground font-medium">Loading clinical experts...</div>
-            ) : doctors.length === 0 ? (
+            ) : sortedDoctors.length === 0 ? (
               <div className="col-span-full py-20 flex justify-center text-muted-foreground font-medium">No active doctors found.</div>
-            ) : doctors.map((doctor, idx) => (
+            ) : sortedDoctors.map((doctor, idx) => (
               <motion.div 
                 key={doctor._id || idx} 
                 variants={fadeIn}
-                className="bg-white rounded-[2.5rem] overflow-hidden border border-border/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(122,46,122,0.12)] hover:-translate-y-2 transition-all duration-500 group flex flex-col items-center text-center p-10 lg:p-12 relative"
+                className="bg-white rounded-[2.5rem] overflow-hidden border border-border/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(122,46,122,0.12)] hover:-translate-y-2 transition-all duration-500 group flex flex-col items-center text-center p-6 sm:p-8 relative"
               >
                 
                 {/* Decorative top blur */}
                 <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-primary/[0.03] to-transparent pointer-events-none" />
                 
-                <div className="relative w-40 h-40 rounded-full mb-8 shadow-xl ring-4 ring-white group-hover:scale-105 transition-transform duration-500 z-10 bg-slate-100 flex items-center justify-center overflow-hidden">
+                {/* Bigger Square Doctor Image */}
+                <div className="relative w-full aspect-square rounded-[2rem] overflow-hidden mb-6 shadow-md border-2 border-border/40 bg-gradient-to-t from-primary/10 via-primary/5 to-slate-100 flex items-center justify-center z-10 group-hover:shadow-xl transition-all duration-500">
                   {doctor.avatar ? (
                     <Image 
                       src={doctor.avatar}
                       alt={doctor.name}
                       fill
-                      sizes="160px"
-                      className="object-cover rounded-full"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className={`object-cover group-hover:scale-105 transition-transform duration-700 ease-out ${
+                        doctor.name.toLowerCase().includes("deepak") ? "object-top" : "object-cover"
+                      }`}
                     />
                   ) : (
-                    <Stethoscope className="w-16 h-16 text-slate-300" />
+                    <Stethoscope className="w-20 h-20 text-slate-300" />
                   )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                 </div>
                 
-                <div className="flex items-center justify-center gap-2 mb-4 bg-primary/5 px-4 py-1.5 rounded-full z-10">
+                <div className="flex items-center justify-center gap-2 mb-3 bg-primary/5 px-4 py-1.5 rounded-full z-10">
                   <ShieldCheck className="w-4 h-4 text-primary" strokeWidth={2.5} />
                   <span className="text-xs font-bold uppercase tracking-widest text-primary">Medical Board</span>
                 </div>
                 
                 <h3 className="text-2xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors z-10">{doctor.name}</h3>
-                <p className="text-muted-foreground font-semibold mb-8 text-lg z-10">{doctor.specialization}</p>
+                <p className="text-muted-foreground font-semibold mb-6 text-base sm:text-lg z-10 leading-snug">{doctor.specialization}</p>
                 
-                  <div className="flex flex-col gap-4 mt-auto w-full bg-slate-50 border border-slate-100 rounded-3xl p-5 z-10 mb-4">
-                    <div className="text-center text-sm font-medium text-foreground/80 leading-snug">
-                      <Award className="w-4 h-4 mr-1.5 inline-block text-primary align-text-bottom" strokeWidth={2.5} />
-                      <span>{doctor.qualifications?.join(", ") || "Certified Professional"}</span>
-                    </div>
-                    <div className="flex items-center justify-center text-sm font-medium text-foreground/80">
-                      <span className="w-4 h-4 mr-2 flex items-center justify-center text-primary font-black text-lg">+</span>
-                      {doctor.experience} Years Practice
-                    </div>
+                <div className="flex flex-col gap-3 mt-auto w-full bg-slate-50 border border-slate-100 rounded-3xl p-5 z-10 mb-6">
+                  <div className="text-center text-sm font-medium text-foreground/80 leading-snug">
+                    <Award className="w-4 h-4 mr-1.5 inline-block text-primary align-text-bottom" strokeWidth={2.5} />
+                    <span>{doctor.qualifications?.join(", ") || "Certified Professional"}</span>
                   </div>
+                  <div className="flex items-center justify-center text-sm font-medium text-foreground/80">
+                    <span className="w-4 h-4 mr-2 flex items-center justify-center text-primary font-black text-lg">+</span>
+                    {doctor.experience} Years Practice
+                  </div>
+                </div>
 
-                  <div className="w-full z-10 mt-auto">
-                    <BookNowButton 
-                      prefilledData={{
-                        doctorId: doctor._id,
-                        clinic: doctor.clinicId,
-                        city: clinics.find(c => c._id === doctor.clinicId)?.city
-                      }}
-                      className="w-full h-12 rounded-full font-bold bg-primary hover:bg-primary/90 text-white transition-all shadow-md hover:shadow-lg"
-                    >
-                      Book Consultation
-                    </BookNowButton>
-                  </div>
+                <div className="w-full z-10 mt-auto">
+                  <BookNowButton 
+                    prefilledData={{
+                      doctorId: doctor._id,
+                      clinic: doctor.clinicId,
+                      city: clinics.find(c => c._id === doctor.clinicId)?.city
+                    }}
+                    className="w-full h-12 rounded-full font-bold bg-primary hover:bg-primary/90 text-white transition-all shadow-md hover:shadow-lg"
+                  >
+                    Book Consultation
+                  </BookNowButton>
+                </div>
                 
               </motion.div>
             ))}

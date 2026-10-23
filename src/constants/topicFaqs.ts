@@ -1061,6 +1061,38 @@ export const TOPIC_FAQS: Record<string, TopicFaqItem[]> = {
       question: "How can I enquire about supportive counselling at Kelkar Manas Health Care Clinic?",
       answer: "Contact Kelkar Manas Health Care Clinic to ask about available counselling services and whether a suitable, non-judgmental service is available for your concerns."
     }
+  ],
+
+  // 26. Couple Therapy & Relationship Counselling
+  "couple-therapy": [
+    {
+      question: "What is Couple Therapy & Relationship Counselling?",
+      answer: "Couple therapy is a structured form of psychological counselling designed to help partners navigate relationship distress, communication barriers, emotional disconnection, and psychosexual concerns."
+    },
+    {
+      question: "How can couple counselling help with sexual and intimacy issues?",
+      answer: "Intimacy concerns such as performance anxiety, differing desire levels, or sexual difficulties often involve relationship stress. Couple counselling helps partners discuss concerns openly, reduce mutual pressure, and rebuild emotional and physical closeness."
+    },
+    {
+      question: "What common challenges can be addressed in couple therapy?",
+      answer: "Common concerns include communication breakdown, unresolved conflicts, discrepancies in sexual desire, stress from major life changes, trust issues, and rebuilding intimacy."
+    },
+    {
+      question: "What happens during a couple therapy session?",
+      answer: "Sessions are guided by a qualified counsellor who facilitates constructive dialogue. Partners explore relationship patterns, learn active listening and conflict resolution tools, and receive guidance on nurturing emotional connection."
+    },
+    {
+      question: "Can couple therapy help if only one partner attends initially?",
+      answer: "While joint participation is most effective, individual consultations can still provide valuable insights into relationship dynamics, personal emotional wellbeing, and constructive ways to engage your partner."
+    },
+    {
+      question: "Is couple therapy and relationship counselling confidential?",
+      answer: "Yes. All discussions are handled with the highest standards of medical and psychological confidentiality, providing a safe and judgment-free space."
+    },
+    {
+      question: "How can we book an appointment for Couple Therapy at KELKAR MANAS HEALTH CARE?",
+      answer: "You can reach out through the appointment booking options or contact details on our website to schedule a confidential consultation with our counselling team."
+    }
   ]
 };
 

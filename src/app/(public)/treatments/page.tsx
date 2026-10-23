@@ -1,27 +1,32 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { 
-  Video, 
-  Pill, 
-  ClipboardList, 
   HeartHandshake, 
+  Activity, 
+  ShieldCheck, 
+  ClipboardList, 
+  Stethoscope, 
+  Clock, 
   FlaskConical, 
+  ShieldAlert, 
+  Pill, 
+  Zap, 
+  HeartPulse, 
+  Heart, 
+  Beaker, 
   ArrowRight, 
-  CheckCircle2,
-  Stethoscope,
-  Clock,
-  ShieldCheck,
-  Activity
+  CheckCircle2 
 } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import React, { useState } from "react";
+import { useBookingModal } from "@/store/useBookingModal";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
 };
 
 const staggerContainer = {
@@ -29,357 +34,436 @@ const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.15
+      staggerChildren: 0.08
     }
   }
 };
 
-import React from "react";
-
-export default function ServicesPage() {
-  const [servicesData, setServicesData] = React.useState<any>(null);
-
-  React.useEffect(() => {
-    // Temporarily disabled fetching from DB so we show the new treatments
-    // fetch("/api/public/content/pages/treatments")
-    // ...
-  }, []);
-
-  const data = servicesData || {
-    heroTitle1: "Expert care for your most",
-    heroTitle2: "private needs.",
-    heroSubtitle: "From online consultations to doorstep medication delivery, we provide an end-to-end clinical ecosystem designed around your privacy and comfort.",
-    servicesTitle: "Our Specialties",
-    servicesDescription: "Explore our specialized treatment options tailored to your specific needs.",
-    services: [
-      {
-        icon: "ShieldCheck",
-        title: "Treatment of Phobia",
-        description: "Overcome irrational fears and anxiety through targeted therapy.",
-        features: ["Exposure Therapy", "Cognitive Restructuring", "Anxiety Management"],
-        color: "bg-chart-1",
-        slug: "treatment-of-phobia"
-      },
-      {
-        icon: "Activity",
-        title: "Treatment of Panic Attacks",
-        description: "Manage and reduce sudden panic episodes with clinical interventions.",
-        features: ["Symptom Management", "Coping Strategies", "Therapeutic Support"],
-        color: "bg-chart-2",
-        slug: "treatment-of-panic-attacks"
-      },
-      {
-        icon: "ClipboardList",
-        title: "Treatment of OCD",
-        description: "Specialized ERP (Exposure & Response Prevention) therapy and clinical care for Obsessive-Compulsive Disorder.",
-        features: ["Behavioral Therapy", "ERP Protocols", "Long-term Maintenance"],
-        color: "bg-chart-4",
-        slug: "treatment-of-ocd"
-      },
-      {
-        icon: "HeartHandshake",
-        title: "Treatment of Hysteria",
-        description: "Therapeutic interventions for conversion disorders and severe emotional dysregulation.",
-        features: ["Psychotherapy", "Emotional Stabilization", "Holistic Support"],
-        color: "bg-primary",
-        slug: "treatment-of-hysteria"
-      },
-      {
-        icon: "Stethoscope",
-        title: "Treatment of Depression",
-        description: "Clinical diagnostic care, psychotherapy, and individual medication management to restore emotional balance.",
-        features: ["Clinical Assessment", "Individualized Treatment", "Mind Gym Integration"],
-        color: "bg-secondary",
-        slug: "treatment-of-depression"
-      },
-      {
-        icon: "Pill",
-        title: "Treatment of Anxiety",
-        description: "Evidence-based therapy and care plans for generalized anxiety and social anxiety.",
-        features: ["Cognitive Restructuring", "Stress Management", "Pharmacotherapy"],
-        color: "bg-chart-3",
-        slug: "treatment-of-anxiety"
-      },
-      {
-        icon: "FlaskConical",
-        title: "Treatment of Alcohol Addiction",
-        description: "Inpatient and outpatient detoxification, counseling, and relapse prevention.",
-        features: ["Medical Detoxification", "Relapse Prevention", "Family Counseling"],
-        color: "bg-chart-5",
-        slug: "treatment-of-alcohol-addiction"
-      },
-      {
-        icon: "HeartHandshake",
-        title: "Treatment Available for Sexual Health Problems",
-        description: "Confidential care and specialized solutions for various sexual health concerns.",
-        features: ["Clinical Assessment", "Personalized Care Plans", "Discreet Consultations"],
-        color: "bg-chart-1",
-        slug: "sexual-health-problems"
-      },
-      {
-        icon: "Stethoscope",
-        title: "Child & Adolescent Psychiatry",
-        description: "Specialized care for children and teens experiencing emotional and behavioral challenges.",
-        features: ["ADHD & Autism", "Behavioral Therapy", "Parental Guidance"],
-        color: "bg-chart-2",
-        slug: "child-and-adolescent-psychiatry"
-      },
-      {
-        icon: "BrainCircuit",
-        title: "Geriatric Psychiatry",
-        description: "Compassionate mental healthcare for older adults, including dementia and memory care.",
-        features: ["Memory Assessments", "Dementia Care", "Caregiver Support"],
-        color: "bg-chart-3",
-        slug: "geriatric-psychiatry"
-      },
-      {
-        icon: "FlaskConical",
-        title: "Brown Sugar De-Addiction",
-        description: "Dedicated residential rehabilitation for severe opioid and brown sugar dependence.",
-        features: ["Medical Detox", "Residential Rehab", "Long-term Aftercare"],
-        color: "bg-primary",
-        slug: "brown-sugar-de-addiction"
-      },
-      {
-        icon: "BrainCircuit",
-        title: "Schizophrenia Treatment",
-        description: "Management of thoughts, perceptions, and behaviors through modern psychiatric care.",
-        features: ["Antipsychotic Care", "ECT Support", "Family Support"],
-        color: "bg-secondary",
-        slug: "schizophrenia"
-      },
-      {
-        icon: "Activity",
-        title: "Irritable Bowel Syndrome (IBS)",
-        description: "Gut-brain care to manage recurring abdominal pain and bowel habit changes.",
-        features: ["Symptom Relief", "Gut-directed CBT", "Dietary Guidance"],
-        color: "bg-chart-1",
-        slug: "ibs"
-      },
-      {
-        icon: "Activity",
-        title: "Mania (Bipolar Disorder)",
-        description: "Management of abnormally elevated mood, energy, and severe bipolar symptoms.",
-        features: ["Mood Stabilisers", "Hospital Care", "Maintenance Planning"],
-        color: "bg-chart-2",
-        slug: "mania"
-      }
-    ]
-  };
-
-  const getIcon = (name: string) => {
-    switch(name) {
-      case "Video": return Video;
-      case "Pill": return Pill;
-      case "ClipboardList": return ClipboardList;
-      case "HeartHandshake": return HeartHandshake;
-      case "FlaskConical": return FlaskConical;
-      case "Stethoscope": return Stethoscope;
-      case "Clock": return Clock;
-      case "ShieldCheck": return ShieldCheck;
-      case "Activity": return Activity;
-      default: return HeartHandshake;
-    }
-  };
-
-const steps = [
+export const MENTAL_HEALTH_TREATMENTS = [
   {
-    number: "01",
+    title: "Treatment of Depression",
+    slug: "treatment-of-depression",
+    description: "Clinical diagnostic care, evidence-based psychotherapy, and personalized medical management to restore emotional balance.",
+    features: ["Clinical Assessment", "Individualized Care", "Relapse Prevention"],
+    icon: HeartHandshake,
+    color: "bg-teal-600 text-white"
+  },
+  {
+    title: "Mania (Bipolar Disorder)",
+    slug: "mania",
+    description: "Specialized clinical stabilization and long-term mood regulation for elevated mood, hyperactivity, and bipolar disorder.",
+    features: ["Mood Stabilization", "Clinical Assessment", "Maintenance Planning"],
+    icon: Activity,
+    color: "bg-blue-600 text-white"
+  },
+  {
+    title: "Treatment of Anxiety",
+    slug: "treatment-of-anxiety",
+    description: "Targeted therapy and evidence-based care plans for generalized anxiety, excessive worry, and persistent tension.",
+    features: ["Cognitive Restructuring", "Stress Management", "Pharmacotherapy Options"],
+    icon: ShieldCheck,
+    color: "bg-indigo-600 text-white"
+  },
+  {
+    title: "Treatment of OCD (Obsessive-Compulsive Disorder)",
+    slug: "treatment-of-ocd",
+    description: "Specialized ERP (Exposure & Response Prevention) therapy and clinical psychiatric management for obsessive thoughts and compulsions.",
+    features: ["ERP Protocols", "Behavioral Therapy", "Long-term Maintenance"],
     icon: ClipboardList,
-    title: "Complete Assessment",
-    description: "Fill out a quick, secure medical intake form detailing your symptoms and medical history."
+    color: "bg-purple-600 text-white"
   },
   {
-    number: "02",
+    title: "Treatment of Phobia",
+    slug: "treatment-of-phobia",
+    description: "Overcome irrational, debilitating fears and avoidance behaviors through structured desensitization and targeted therapy.",
+    features: ["Exposure Therapy", "Cognitive Restructuring", "Anxiety Reduction"],
+    icon: ShieldCheck,
+    color: "bg-cyan-600 text-white"
+  },
+  {
+    title: "Treatment of Panic Attacks",
+    slug: "treatment-of-panic-attacks",
+    description: "Effective medical and cognitive interventions to manage sudden intense panic episodes and distressing physical symptoms.",
+    features: ["Symptom Management", "Emergency Coping Strategies", "Therapeutic Support"],
+    icon: Activity,
+    color: "bg-rose-600 text-white"
+  },
+  {
+    title: "Treatment of Hysteria",
+    slug: "treatment-of-hysteria",
+    description: "Compassionate therapeutic interventions for conversion disorders, somatic symptoms, and severe emotional dysregulation.",
+    features: ["Psychotherapy", "Emotional Stabilization", "Supportive Care"],
+    icon: HeartHandshake,
+    color: "bg-teal-600 text-white"
+  },
+  {
+    title: "Child & Adolescent Psychiatry",
+    slug: "child-and-adolescent-psychiatry",
+    description: "Comprehensive developmental and behavioral care for children and teens facing ADHD, autism, or emotional stress.",
+    features: ["ADHD & Autism Support", "Behavioral Guidance", "Parental Guidance"],
     icon: Stethoscope,
-    title: "Consult an Expert",
-    description: "Connect with a specialized doctor via a secure video call or text-based consultation."
+    color: "bg-amber-600 text-white"
   },
   {
-    number: "03",
+    title: "Geriatric Psychiatry",
+    slug: "geriatric-psychiatry",
+    description: "Compassionate mental healthcare and memory care tailored for senior citizens, dementia, and late-life depression.",
+    features: ["Memory Assessment", "Dementia Care", "Family Support"],
+    icon: Clock,
+    color: "bg-emerald-600 text-white"
+  },
+  {
+    title: "Schizophrenia Treatment",
+    slug: "schizophrenia",
+    description: "Comprehensive psychiatric care and family counseling to manage altered perceptions, thoughts, and behaviors.",
+    features: ["Antipsychotic Management", "Rehabilitation Support", "Family Counseling"],
+    icon: Activity,
+    color: "bg-violet-600 text-white"
+  },
+  {
+    title: "Irritable Bowel Syndrome (IBS)",
+    slug: "ibs",
+    description: "Gut-brain interaction therapies and medical support to alleviate recurring abdominal distress and anxiety-linked bowel habits.",
+    features: ["Gut-Brain Care", "Stress Reduction", "Lifestyle Guidance"],
+    icon: Activity,
+    color: "bg-sky-600 text-white"
+  },
+  {
+    title: "Cognitive Behavioural Therapy",
+    slug: "cognitive-behavioural-therapy",
+    description: "Structured, time-tested psychotherapy to identify and reframe negative thoughts and unhealthy behavioral patterns.",
+    features: ["Thought Restructuring", "Behavioral Activation", "Practical Coping Skills"],
+    icon: ClipboardList,
+    color: "bg-indigo-600 text-white"
+  },
+  {
+    title: "Treatment of Alcohol Addiction",
+    slug: "treatment-of-alcohol-addiction",
+    description: "Medically supervised detoxification, inpatient rehabilitation at Ashakiran Centre & Sanmitra Hospital, and relapse prevention.",
+    features: ["Inpatient Rehabilitation", "Ashakiran & Sanmitra Centres", "Ayushman Card Eligible"],
+    icon: FlaskConical,
+    color: "bg-orange-600 text-white"
+  },
+  {
+    title: "Nicotine De-Addiction",
+    slug: "nicotine-de-addiction",
+    description: "Structured cessation programs, craving management, and behavioral counseling to overcome smoking and tobacco dependence.",
+    features: ["Craving Control Protocols", "Nicotine Replacement Advice", "Habit Cessation"],
+    icon: ShieldAlert,
+    color: "bg-red-600 text-white"
+  },
+  {
+    title: "Brown Sugar De-Addiction",
+    slug: "brown-sugar-de-addiction",
+    description: "Dedicated residential and medical rehabilitation for severe opioid and brown sugar dependence.",
+    features: ["Supervised Medical Detox", "Residential Care", "Relapse Aftercare"],
     icon: Pill,
-    title: "Receive Treatment",
-    description: "Your personalized treatment plan and discreetly packaged medications are shipped to your door."
+    color: "bg-slate-700 text-white"
+  },
+  {
+    title: "Treatment Available for Sexual Health Problems",
+    slug: "sexual-health-problems",
+    description: "Confidential evaluation and clinical care for intimacy, psychosexual, and reproductive health concerns.",
+    features: ["Confidential Consultations", "Personalized Plans", "Couples Guidance"],
+    icon: HeartHandshake,
+    color: "bg-pink-600 text-white",
+    customHref: "/sexual-problems"
   }
 ];
 
+export const SEXUAL_HEALTH_PROBLEMS = [
+  {
+    title: "Premature Ejaculation",
+    slug: "premature-ejaculation",
+    description: "Clinical and psychological treatment protocols to improve endurance, control, and sexual confidence.",
+    features: ["Medical Therapy", "Behavioral Exercises", "Sensitivity Control"],
+    icon: Activity,
+    color: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400"
+  },
+  {
+    title: "Erectile Dysfunction",
+    slug: "erectile-dysfunction",
+    description: "Advanced medical evaluation and personalized treatment plans for physical vascular and psychosexual causes.",
+    features: ["Pharmacotherapy", "Vascular Assessment", "Psychological Counseling"],
+    icon: Zap,
+    color: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+  },
+  {
+    title: "Performance Anxiety",
+    slug: "sexual-performance-anxiety",
+    description: "Holistic psychosexual counseling to overcome performance pressure, nervousness, and intimacy fears.",
+    features: ["Intimacy Counseling", "CBT Techniques", "Confidence Building"],
+    icon: HeartPulse,
+    color: "bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400"
+  },
+  {
+    title: "STIs (Sexually Transmitted Infections)",
+    slug: "sexually-transmitted-infections",
+    description: "Confidential screening, rapid diagnosis, and evidence-based antibiotic or antiviral treatments.",
+    features: ["Diagnostic Testing", "Medical Treatment", "Prevention Counseling"],
+    icon: ShieldAlert,
+    color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
+  },
+  {
+    title: "Precum Concerns",
+    slug: "precum",
+    description: "Medical reassurance, counseling, and guidance to understand physiological pre-ejaculatory fluid and resolve anxiety.",
+    features: ["Medical Evaluation", "Psychoeducation", "Anxiety Reassurance"],
+    icon: Beaker,
+    color: "bg-cyan-50 text-cyan-600 dark:bg-cyan-950 dark:text-cyan-400"
+  },
+  {
+    title: "Nocturnal Emissions",
+    slug: "nocturnal-emissions",
+    description: "Clinical reassurance, scientific myth clarification, and counseling for nightfall and associated emotional distress.",
+    features: ["Psychoeducation", "Lifestyle Counseling", "Anxiety Reduction"],
+    icon: Heart,
+    color: "bg-sky-50 text-sky-600 dark:bg-sky-950 dark:text-sky-400"
+  },
+  {
+    title: "Masturbation Habit",
+    slug: "masturbation-habit",
+    description: "Confidential behavioral guidance, scientific myth-busting, and counseling for guilt or compulsive habits.",
+    features: ["Behavioral Therapy", "Psychoeducation", "Guilt Alleviation"],
+    icon: ShieldCheck,
+    color: "bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400"
+  },
+  {
+    title: "Infertility",
+    slug: "infertility",
+    description: "Comprehensive diagnostic testing, semen analysis, and supportive medical treatments for couples.",
+    features: ["Medical Testing", "Fertility Counseling", "Specialist Referral"],
+    icon: Activity,
+    color: "bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400"
+  },
+  {
+    title: "Homosexuality Counseling",
+    slug: "homosexuality-counseling",
+    description: "Private, affirmative psychological support and non-judgmental guidance for identity and emotional wellness.",
+    features: ["Affirmative Therapy", "Stress Management", "Confidential Guidance"],
+    icon: ShieldCheck,
+    color: "bg-teal-50 text-teal-600 dark:bg-teal-950 dark:text-teal-400"
+  },
+  {
+    title: "Couple Therapy & Relationship Counselling",
+    slug: "couple-therapy",
+    description: "Compassionate, confidential joint therapy to overcome intimacy barriers, communication conflicts, and psychosexual concerns together.",
+    features: ["Joint Intimacy Counseling", "Sensate Focus Exercises", "Conflict Resolution"],
+    icon: HeartHandshake,
+    color: "bg-pink-50 text-pink-600 dark:bg-pink-950 dark:text-pink-400"
+  }
+];
+
+export default function TreatmentsPage() {
+  const [activeTab, setActiveTab] = useState<"mental-health" | "sexual-problems">("mental-health");
+  const { openBooking } = useBookingModal();
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      
-      {/* Services Hero Section */}
-      <section className="relative pt-12 pb-20 lg:pt-16 lg:pb-32 overflow-hidden bg-muted/30">
-        <div className="absolute inset-0 bg-[url('/images/cta_bg.png')] opacity-5 mix-blend-multiply pointer-events-none" />
-        
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <motion.div 
-            initial="hidden"
-            animate="visible"
-            variants={fadeIn}
-            className="max-w-3xl mx-auto"
-          >
+      {/* Hero Header */}
+      <section className="relative pt-12 pb-16 lg:pt-16 lg:pb-24 overflow-hidden bg-muted/30 border-b border-border/40">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center max-w-4xl">
+          <motion.div initial="hidden" animate="visible" variants={fadeIn}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm mb-6 border border-primary/20">
-              <ShieldCheck className="w-4 h-4" />
-              Comprehensive Care
+              <Stethoscope className="w-4 h-4" />
+              KELKAR MANAS HEALTH CARE
             </div>
-            
-            <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-serif font-medium leading-[1.1] mb-6">
-              {data.heroTitle1} <br className="hidden md:block"/> 
-              <span className="text-primary italic">{data.heroTitle2}</span>
+
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium leading-[1.15] mb-6">
+              Specialized Treatments & <br className="hidden sm:inline" />
+              <span className="text-primary italic">Clinical Services</span>
             </h1>
-            
-            <p className="text-lg md:text-xl text-muted-foreground mb-10 leading-relaxed max-w-2xl mx-auto">
-              {data.heroSubtitle}
+
+            <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed max-w-2xl mx-auto">
+              Comprehensive psychiatric care, psychotherapy, addiction recovery, and confidential sexual health support delivered by qualified medical specialists.
             </p>
+
+            {/* Separate Tabs for Mental Health and Sexual Problems */}
+            <div className="inline-flex p-1.5 rounded-full bg-background border border-border shadow-sm max-w-full overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setActiveTab("mental-health")}
+                className={cn(
+                  "px-6 sm:px-8 py-3 rounded-full text-sm sm:text-base font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap",
+                  activeTab === "mental-health"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                Mental Health Treatments ({MENTAL_HEALTH_TREATMENTS.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("sexual-problems")}
+                className={cn(
+                  "px-6 sm:px-8 py-3 rounded-full text-sm sm:text-base font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap",
+                  activeTab === "sexual-problems"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                Sexual Problems ({SEXUAL_HEALTH_PROBLEMS.length})
+              </button>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Services Grid Section */}
-      <section className="py-24 bg-background relative">
+      {/* Main Tabbed Content */}
+      <section className="py-16 lg:py-24 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
-            {data.services.map((service: any, idx: number) => {
-              const IconComp = getIcon(service.icon);
-              return (
-                <motion.div 
-                  key={service.title}
-                  variants={fadeIn}
-                  className="bg-card rounded-3xl p-8 border border-border shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className={`w-12 h-12 rounded-2xl ${service.color} flex items-center justify-center text-white font-bold`}>
-                        <IconComp className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-xl font-serif font-medium">{service.title}</h3>
-                    </div>
-                    
-                    <p className="text-muted-foreground mb-6 leading-relaxed">
-                      {service.description}
-                    </p>
-                    
-                    <div className="space-y-3 mb-8">
-                      {service.features.map((feature: any, fIdx: number) => (
-                        <div key={fIdx} className="flex items-center gap-2 text-sm text-foreground font-medium">
-                          <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                          <span>{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Link 
-                      href={`/treatments/${service.slug}`}
-                      className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full rounded-full group font-semibold")}
-                    >
-                      Learn More
-                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-24 bg-muted/50 border-y border-border">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeIn}
-            className="text-center max-w-3xl mx-auto mb-16"
-          >
-            <h2 className="text-3xl md:text-5xl font-serif text-foreground mb-6">Seamless, Discreet, Effective</h2>
-            <p className="text-lg text-muted-foreground">
-              We've simplified the process of getting clinical care so you can focus entirely on your wellness.
-            </p>
-          </motion.div>
-
-          <div className="relative">
-            {/* Connecting line for desktop */}
-            <div className="hidden md:block absolute top-12 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-border to-transparent -z-10" />
-            
-            <motion.div 
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={staggerContainer}
-              className="grid grid-cols-1 md:grid-cols-3 gap-12"
-            >
-              {steps.map((step, idx) => (
-                <motion.div key={idx} variants={fadeIn} className="relative bg-background p-8 rounded-[2rem] border border-border text-center shadow-sm hover:-translate-y-2 transition-transform duration-300">
-                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-lg shadow-lg">
-                    {step.number}
-                  </div>
-                  <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mt-4">
-                    <step.icon className="w-8 h-8" />
-                  </div>
-                  <h4 className="text-xl font-bold text-foreground mb-3">{step.title}</h4>
-                  <p className="text-muted-foreground">{step.description}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Conditions We Treat Banner */}
-      <section className="py-24 bg-background">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-foreground text-background rounded-[3rem] p-10 md:p-16 lg:p-20 relative overflow-hidden flex flex-col lg:flex-row items-center gap-12 shadow-2xl">
-            {/* Decorative BG */}
-            <div className="absolute -right-20 -bottom-20 w-[400px] h-[400px] bg-primary/20 rounded-full blur-[80px] pointer-events-none" />
-            
-            <div className="w-full lg:w-1/2 relative z-10">
-              <h2 className="text-3xl md:text-5xl font-serif mb-6">Conditions We Treat</h2>
-              <p className="text-lg text-background/80 mb-8 max-w-lg">
-                Our specialists are equipped to diagnose and treat a wide range of sexual and reproductive health conditions for all genders.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {[
-                  { name: 'Erectile Dysfunction', slug: 'erectile-dysfunction' },
-                  { name: 'Premature Ejaculation', slug: 'premature-ejaculation' },
-                  { name: 'Performance Anxiety', slug: 'sexual-performance-anxiety' },
-                  { name: 'STIs', slug: 'sexually-transmitted-infections' },
-                  { name: 'Precum', slug: 'precum-concerns' },
-                  { name: 'Nocturnal Emissions', slug: 'nocturnal-emissions' },
-                  { name: 'Masturbation Habit', slug: 'masturbation-habit' },
-                  { name: 'Infertility', slug: 'infertility' },
-                  { name: 'Homosexuality Counseling', slug: 'homosexuality-counseling' }
-                ].map((condition, i) => (
-                  <Link href={`/treatments/${condition.slug}`} key={i} className="px-4 py-2 rounded-full border border-background/20 bg-background/10 backdrop-blur-sm text-sm font-medium hover:bg-background/20 transition-colors">
-                    {condition.name}
-                  </Link>
-                ))}
+          {activeTab === "mental-health" && (
+            <div>
+              <div className="max-w-3xl mb-12">
+                <span className="text-xs font-bold uppercase tracking-wider text-primary">Department of Psychiatry & Psychology</span>
+                <h2 className="text-3xl md:text-4xl font-serif mt-2 mb-4">Mental Health Treatments</h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  Evidence-based psychiatric assessments, medical management, psychotherapy, and de-addiction programs tailored to individual clinical requirements.
+                </p>
               </div>
+
+              <motion.div
+                key="mental-health-grid"
+                initial="hidden"
+                animate="visible"
+                variants={staggerContainer}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              >
+                {MENTAL_HEALTH_TREATMENTS.map((item, idx) => {
+                  const Icon = item.icon;
+                  const targetHref = item.customHref || `/treatments/${item.slug}`;
+                  return (
+                    <motion.div
+                      key={item.title}
+                      variants={fadeIn}
+                      className="bg-card rounded-3xl p-8 border border-border shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1"
+                    >
+                      <div>
+                        <div className="flex items-center gap-4 mb-6">
+                          <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center font-bold shadow-sm", item.color)}>
+                            <Icon className="w-6 h-6" />
+                          </div>
+                          <div className="flex-1">
+                            <span className="text-xs font-semibold text-muted-foreground">Topic {idx + 1}</span>
+                            <h3 className="text-xl font-serif font-medium leading-snug">{item.title}</h3>
+                          </div>
+                        </div>
+
+                        <p className="text-muted-foreground mb-6 leading-relaxed text-sm">
+                          {item.description}
+                        </p>
+
+                        <div className="space-y-2.5 mb-8">
+                          {item.features.map((feature, fIdx) => (
+                            <div key={fIdx} className="flex items-center gap-2 text-xs font-medium text-foreground/90">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                              <span>{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-border/50">
+                        <Link
+                          href={targetHref}
+                          className={cn(buttonVariants({ variant: "outline", size: "default" }), "w-full rounded-full group font-semibold text-sm justify-between")}
+                        >
+                          <span>Learn More</span>
+                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
             </div>
-            
-            <div className="w-full lg:w-1/2 relative z-10 flex justify-center lg:justify-end">
-              <Link href="/sexual-problems" className="group flex items-center justify-between w-full max-w-sm bg-primary text-primary-foreground p-6 rounded-3xl hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-xl">
-                <div>
-                  <span className="block text-sm font-bold uppercase tracking-wider mb-1 opacity-80">Explore Catalog</span>
-                  <span className="block text-2xl font-serif">View All Sexual Problems</span>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-background/20 flex items-center justify-center group-hover:bg-background/30 transition-colors">
-                  <ArrowRight className="w-6 h-6" />
-                </div>
-              </Link>
+          )}
+
+          {activeTab === "sexual-problems" && (
+            <div>
+              <div className="max-w-3xl mb-12">
+                <span className="text-xs font-bold uppercase tracking-wider text-primary">Department of Psychosexual Medicine</span>
+                <h2 className="text-3xl md:text-4xl font-serif mt-2 mb-4">Sexual Health Problems</h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  Confidential consultations, medical evaluations, and psychosexual counselling for intimacy, performance, and reproductive health concerns.
+                </p>
+              </div>
+
+              <motion.div
+                key="sexual-problems-grid"
+                initial="hidden"
+                animate="visible"
+                variants={staggerContainer}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              >
+                {SEXUAL_HEALTH_PROBLEMS.map((item, idx) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.div
+                      key={item.title}
+                      variants={fadeIn}
+                      className="bg-card rounded-3xl p-8 border border-border shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1"
+                    >
+                      <div>
+                        <div className="flex items-center gap-4 mb-6">
+                          <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center font-bold shadow-sm", item.color)}>
+                            <Icon className="w-6 h-6" />
+                          </div>
+                          <div className="flex-1">
+                            <span className="text-xs font-semibold text-muted-foreground">Topic {idx + 1}</span>
+                            <h3 className="text-xl font-serif font-medium leading-snug">{item.title}</h3>
+                          </div>
+                        </div>
+
+                        <p className="text-muted-foreground mb-6 leading-relaxed text-sm">
+                          {item.description}
+                        </p>
+
+                        <div className="space-y-2.5 mb-8">
+                          <span className="text-xs font-bold uppercase tracking-wider text-primary">Treatment Modalities</span>
+                          {item.features.map((feature, fIdx) => (
+                            <div key={fIdx} className="flex items-center gap-2 text-xs font-medium text-foreground/90">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                              <span>{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-border/50">
+                        <Link
+                          href={`/sexual-problems/${item.slug}`}
+                          className={cn(buttonVariants({ variant: "outline", size: "default" }), "w-full rounded-full group font-semibold text-sm justify-between")}
+                        >
+                          <span>Learn More</span>
+                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
             </div>
-          </div>
+          )}
         </div>
       </section>
-      
+
+      {/* Booking CTA Section */}
+      <section className="py-20 bg-muted/40 border-t border-border/50">
+        <div className="container mx-auto px-4 text-center max-w-2xl">
+          <h2 className="text-3xl md:text-4xl font-serif mb-4">Need Confidential Guidance?</h2>
+          <p className="text-muted-foreground mb-8 text-base">
+            Consultations are handled with complete medical confidentiality. Contact KELKAR MANAS HEALTH CARE to discuss your concerns with an experienced clinician.
+          </p>
+          <button
+            type="button"
+            onClick={() => openBooking()}
+            className={cn(buttonVariants({ size: "lg" }), "rounded-full px-8 font-semibold shadow-lg")}
+          >
+            Book a Consultation
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

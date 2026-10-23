@@ -40,7 +40,10 @@ export class DoctorRepository {
     page?: number;
     limit?: number;
   }): Promise<{ doctors: IDoctor[]; total: number }> {
-    const query: Record<string, any> = { deletedAt: null };
+    const query: Record<string, any> = { 
+      deletedAt: null,
+      name: { $not: { $regex: /Tiwari|Tivari|Sheetal|Amarjeet/i } }
+    };
 
     if (filters.specialization) {
       query.specialization = { $regex: filters.specialization, $options: "i" };
@@ -80,6 +83,15 @@ export class DoctorRepository {
       DoctorModel.find(query).skip(skip).limit(limit).exec(),
       DoctorModel.countDocuments(query).exec(),
     ]);
+
+    // Priority sorting order for doctors
+    const DOCTOR_ORDER_KEYS = ["deepak", "amol", "radhika", "anuja", "mahajan", "vishwas"];
+    const getRank = (name: string) => {
+      const lower = (name || "").toLowerCase();
+      const idx = DOCTOR_ORDER_KEYS.findIndex(key => lower.includes(key));
+      return idx === -1 ? 99 : idx;
+    };
+    doctors.sort((a, b) => getRank(a.name) - getRank(b.name));
 
     return { doctors, total };
   }

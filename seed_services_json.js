@@ -13,7 +13,7 @@ const Page = mongoose.model("Page", PageSchema);
 const servicesData = {
   heroTitle1: "Comprehensive",
   heroTitle2: "Care Options",
-  heroSubtitle: "From expert clinical psychiatry and de-addiction programs to innovative mind gym therapy, we provide complete mental healthcare under one roof.",
+  heroSubtitle: "From expert clinical psychiatry and de-addiction programs to compassionate therapy, we provide complete mental healthcare under one roof.",
   servicesTitle: "Our Specialties",
   servicesDescription: "Explore our specialized treatment options tailored to your specific needs.",
   services: [
@@ -21,7 +21,7 @@ const servicesData = {
       icon: "HeartHandshake",
       title: "Treatment of Depression",
       description: "Clinical diagnostic care, psychotherapy, and individual medication management to restore emotional balance.",
-      features: ["Clinical Assessment", "Individualized Treatment", "Mind Gym Integration"],
+      features: ["Clinical Assessment", "Individualized Treatment", "Relapse Prevention"],
       color: "bg-chart-1",
       slug: "treatment-of-depression"
     },

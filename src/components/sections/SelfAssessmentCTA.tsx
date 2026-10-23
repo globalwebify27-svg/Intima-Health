@@ -1,99 +1,79 @@
 "use client";
 
-import { ArrowRight, Calendar, ShieldCheck, UserCheck } from "lucide-react";
-import Image from "next/image";
 import { motion } from "framer-motion";
+import { ArrowRight, PhoneCall, Calendar } from "lucide-react";
 import { useBookingModal } from "@/store/useBookingModal";
+import { Button } from "@/components/ui/button";
 
 export function SelfAssessmentCTA() {
   const { openBooking } = useBookingModal();
 
   return (
-    <section className="py-24 lg:py-32 bg-background px-6 lg:px-12 relative">
+    <section className="py-20 lg:py-28 bg-background px-6 lg:px-12 relative overflow-hidden">
       <div className="container mx-auto">
-        <motion.div 
-          initial={{ opacity: 0, y: 40 }}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative rounded-[3rem] overflow-hidden shadow-[0_20px_60px_rgb(0,0,0,0.06)] border border-border/60 group min-h-[500px] flex items-center"
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="relative rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden bg-gradient-to-br from-[#4A154B] via-[#5c1a5d] to-[#3d113e] text-white p-8 sm:p-14 lg:p-18 shadow-2xl shadow-primary/20 border border-white/10"
         >
-          
-          {/* Background Image */}
-          <div className="absolute inset-0 z-0">
-            <Image 
-              src="/images/cta_bg.png" 
-              alt="Premium Clinic Interior" 
-              fill 
-              className="object-cover transform group-hover:scale-105 transition-transform duration-[1.5s] ease-out"
-             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
-          </div>
+          {/* Subtle glowing ambient lights */}
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/10 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-400/10 rounded-full blur-[100px] pointer-events-none" />
 
-          {/* Frosted Glass Overlay */}
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10" />
-          
-          {/* Content */}
-          <div className="relative z-20 flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-24 px-8 py-16 sm:px-16 w-full">
-            
-            <div className="max-w-2xl text-center lg:text-left">
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/80 text-primary mb-8 shadow-sm border border-white relative"
-              >
-                <Calendar className="w-8 h-8 relative z-10" />
-              </motion.div>
-              
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 leading-tight">
-                Book your <br className="hidden sm:block"/>
-                <span className="text-primary">
-                  private consultation.
-                </span>
-              </h2>
-              
-              <p className="text-lg sm:text-xl text-foreground/80 font-medium leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0">
-                Schedule a secure, confidential consultation with our expert medical team. Get a personalized clinical protocol combining diagnostics, therapy, and medical care.
-              </p>
-
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-sm font-bold text-primary/70">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5" />
-                  <span>CONFIDENTIAL</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <UserCheck className="w-5 h-5" />
-                  <span>EXPERT CARE</span>
-                </div>
-              </div>
-            </div>
-            
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
+          <div className="relative z-10 max-w-4xl mx-auto text-center">
+            {/* Eyebrow badge */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="relative z-20 shrink-0 w-full lg:w-auto flex flex-col items-center"
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-white text-xs font-bold tracking-wider uppercase mb-6 backdrop-blur-md border border-white/15"
             >
-              {/* Glowing Orbs (Static for performance) */}
-              <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] -z-10 pointer-events-none" />
-              <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-secondary/20 rounded-full blur-[80px] -z-10 pointer-events-none" />
-              {/* Premium Button */}
-              <button onClick={() => openBooking()} className="group relative w-full sm:w-auto inline-flex items-center justify-center px-10 py-6 text-lg font-bold text-white transition-all duration-300 ease-in-out bg-primary rounded-[2rem] hover:bg-primary/90 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgb(122,46,122,0.3)] overflow-hidden">
-                <span className="relative z-10 flex items-center">
-                  Book Appointment
-                  <ArrowRight className="ml-3 h-5 w-5 transform group-hover:translate-x-1 transition-transform" />
-                </span>
-              </button>
-              
-              <p className="mt-6 text-sm font-bold text-foreground/60 text-center">
-                Secure & Confidential. <br className="sm:hidden" /> Book your slot instantly.
-              </p>
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Support &amp; Recovery</span>
             </motion.div>
-            
+
+            {/* Heading */}
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white mb-6 leading-[1.15]">
+              Take the First Step Towards <br />
+              <span className="text-purple-200">Better Well-being</span>
+            </h2>
+
+            {/* Paragraph 1 */}
+            <p className="text-base sm:text-lg lg:text-xl text-white/90 font-medium leading-relaxed max-w-2xl mx-auto mb-4">
+              You do not have to navigate mental health challenges alone. Understanding your concerns and seeking appropriate professional support can be an important step towards recovery.
+            </p>
+
+            {/* Paragraph 2 */}
+            <p className="text-sm sm:text-base text-white/75 font-medium leading-relaxed max-w-xl mx-auto mb-10">
+              Contact KELKAR MANAS HEALTH CARE to learn about available services and appointment options.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button
+                size="lg"
+                onClick={() => openBooking()}
+                className="rounded-2xl px-8 py-7 text-base font-bold bg-white text-[#4A154B] hover:bg-white/95 shadow-xl hover:shadow-2xl transition-all cursor-pointer w-full sm:w-auto flex items-center justify-center gap-2 group border-none"
+              >
+                <span>Book an Appointment</span>
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
+
+              <a href="tel:+917030414140" className="w-full sm:w-auto">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="rounded-2xl px-8 py-7 text-base font-bold bg-white/10 text-white hover:bg-white/20 border-2 border-white/25 hover:border-white shadow-xs transition-all cursor-pointer w-full sm:w-auto flex items-center justify-center gap-2 backdrop-blur-md"
+                >
+                  <PhoneCall className="h-4 w-4" />
+                  <span>Call the Hospital</span>
+                </Button>
+              </a>
+            </div>
           </div>
-          
         </motion.div>
       </div>
     </section>

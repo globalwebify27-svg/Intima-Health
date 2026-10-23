@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { BookNowButton } from "@/components/ui/book-now-button";
 import { TopicFaqSection } from "@/components/sections/TopicFaqSection";
+import { RehabCentresSection } from "@/components/sections/RehabCentresSection";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -136,6 +137,11 @@ export default function ClientPage({ data }: { data: any }) {
           </div>
         </div>
       </section>
+
+      {/* Alcohol & Drug De-addiction Subsection (Ashakiran Rehabilitation Centre & Sanmitra Manas Hospital) */}
+      {(data.slug === "treatment-of-alcohol-addiction" || data.slug === "brown-sugar-de-addiction") && (
+        <RehabCentresSection />
+      )}
 
       {/* Topic-Specific FAQs Section */}
       <TopicFaqSection slug={data.slug} title={data.title} faqs={data.faqs} />

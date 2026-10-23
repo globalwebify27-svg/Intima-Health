@@ -70,22 +70,58 @@ export function Header() {
         if (treatmentsJson.success && sexualJson.success) {
           setNavItems(prev => prev.map(group => {
             if (group.title === "Treatments") {
-              const dynamicItems = treatmentsJson.data.map((t: any) => ({
-                title: t.title,
-                href: `/treatments/${t.slug}`,
-                description: t.heroSubtext || t.badge || "Clinical treatment care."
-              }));
-              const footerItems = group.items?.filter(i => i.isFooterLink) || [];
-              return { ...group, items: [...dynamicItems, ...footerItems] };
+              const defaultItems = NAV_ITEMS.find(g => g.title === "Treatments")?.items || [];
+              const orderMap = new Map(defaultItems.map((item, idx) => [item.href, idx]));
+              const dynamicMap = new Map(treatmentsJson.data.map((t: any) => [`/treatments/${t.slug}`, t]));
+              
+              const mergedItems = defaultItems.map(item => {
+                const dynamic = dynamicMap.get(item.href) as any;
+                if (dynamic) {
+                  return {
+                    ...item,
+                    title: dynamic.title || item.title,
+                    description: dynamic.heroSubtext || item.description
+                  };
+                }
+                return item;
+              });
+
+              const extraItems = treatmentsJson.data
+                .filter((t: any) => !orderMap.has(`/treatments/${t.slug}`))
+                .map((t: any) => ({
+                  title: t.title,
+                  href: `/treatments/${t.slug}`,
+                  description: t.heroSubtext || t.badge || "Clinical treatment care."
+                }));
+
+              return { ...group, items: [...mergedItems, ...extraItems] };
             }
             if (group.title === "Sexual Problems") {
-              const dynamicItems = sexualJson.data.map((t: any) => ({
-                title: t.title,
-                href: `/sexual-problems/${t.slug}`,
-                description: t.heroSubtext || t.badge || "Medical advice and guidance."
-              }));
-              const footerItems = group.items?.filter(i => i.isFooterLink) || [];
-              return { ...group, items: [...dynamicItems, ...footerItems] };
+              const defaultItems = NAV_ITEMS.find(g => g.title === "Sexual Problems")?.items || [];
+              const orderMap = new Map(defaultItems.map((item, idx) => [item.href, idx]));
+              const dynamicMap = new Map(sexualJson.data.map((t: any) => [`/sexual-problems/${t.slug}`, t]));
+
+              const mergedItems = defaultItems.map(item => {
+                const dynamic = dynamicMap.get(item.href) as any;
+                if (dynamic) {
+                  return {
+                    ...item,
+                    title: dynamic.title || item.title,
+                    description: dynamic.heroSubtext || item.description
+                  };
+                }
+                return item;
+              });
+
+              const extraItems = sexualJson.data
+                .filter((t: any) => !orderMap.has(`/sexual-problems/${t.slug}`))
+                .map((t: any) => ({
+                  title: t.title,
+                  href: `/sexual-problems/${t.slug}`,
+                  description: t.heroSubtext || t.badge || "Medical advice and guidance."
+                }));
+
+              return { ...group, items: [...mergedItems, ...extraItems] };
             }
             return group;
           }));

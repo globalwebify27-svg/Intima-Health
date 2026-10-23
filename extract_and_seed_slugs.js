@@ -48,7 +48,7 @@ const serviceData = {
     treatments: [
       { title: "Individualized Pharmacotherapy", description: "Targeted medication management monitored by Dr. Kelkar." },
       { title: "Cognitive Behavioral Therapy (CBT)", description: "Structured sessions to reframe negative thought patterns." },
-      { title: "Mind Gym & Lifestyle Integration", description: "Exercise and wellness protocols to support neurochemical recovery." }
+      { title: "Psychological Support & Lifestyle Integration", description: "Evidence-based wellness protocols to support neurochemical recovery." }
     ]
 };
 
