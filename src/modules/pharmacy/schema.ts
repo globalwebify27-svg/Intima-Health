@@ -312,27 +312,67 @@ const PaymentSchema = new Schema<IPayment>({
 });
 
 // --- THERAPY SESSION ---
+export interface ITherapySessionAssignment {
+  assignedBy?: Schema.Types.ObjectId;
+  therapistId?: Schema.Types.ObjectId;
+  assignedAt: Date;
+  reason?: string;
+}
+
 export interface ITherapySession {
   patientId: Schema.Types.ObjectId;
+  doctorId?: Schema.Types.ObjectId;
+  therapistId?: Schema.Types.ObjectId;
   clinicId: Schema.Types.ObjectId;
+  consultationId?: Schema.Types.ObjectId;
   name: string;
   price: number;
-  status: "Recommended" | "Booked" | "Paid";
+  recommendedMode?: "Online" | "Offline" | "Both";
+  selectedMode?: "Online" | "Offline";
+  doctorNotes?: string;
   date?: string;
   time?: string;
-  consultationId: Schema.Types.ObjectId;
+  status: "Recommended" | "Scheduled" | "Booked" | "Paid" | "In_Progress" | "Completed" | "Cancelled" | "Reassignment_Requested";
+  paymentStatus?: "Pending" | "Paid";
+  paymentMethod?: "Online" | "Cash";
+  transactionId?: string;
+  videoChannelName?: string;
+  therapistNotes?: string;
+  assignmentHistory?: ITherapySessionAssignment[];
   deletedAt?: Date | null;
 }
 
+const TherapyAssignmentSchema = new Schema({
+  assignedBy: { type: Schema.Types.ObjectId, ref: "Doctor" },
+  therapistId: { type: Schema.Types.ObjectId, ref: "Therapist" },
+  assignedAt: { type: Date, default: Date.now },
+  reason: { type: String },
+}, { _id: false });
+
 const TherapySessionSchema = new Schema<ITherapySession>({
   patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
+  doctorId: { type: Schema.Types.ObjectId, ref: "Doctor" },
+  therapistId: { type: Schema.Types.ObjectId, ref: "Therapist" },
   clinicId: { type: Schema.Types.ObjectId, ref: "Clinic", required: true },
+  consultationId: { type: Schema.Types.ObjectId, ref: "Consultation" },
   name: { type: String, required: true },
   price: { type: Number, required: true },
-  status: { type: String, enum: ["Recommended", "Booked", "Paid"], default: "Recommended" },
+  recommendedMode: { type: String, enum: ["Online", "Offline", "Both"], default: "Online" },
+  selectedMode: { type: String, enum: ["Online", "Offline"] },
+  doctorNotes: { type: String },
   date: { type: String },
   time: { type: String },
-  consultationId: { type: Schema.Types.ObjectId, ref: "Consultation", required: true },
+  status: { 
+    type: String, 
+    enum: ["Recommended", "Scheduled", "Booked", "Paid", "In_Progress", "Completed", "Cancelled", "Reassignment_Requested"], 
+    default: "Recommended" 
+  },
+  paymentStatus: { type: String, enum: ["Pending", "Paid"], default: "Pending" },
+  paymentMethod: { type: String, enum: ["Online", "Cash"], default: "Online" },
+  transactionId: { type: String },
+  videoChannelName: { type: String },
+  therapistNotes: { type: String },
+  assignmentHistory: [TherapyAssignmentSchema],
   deletedAt: { type: Date, default: null },
 }, {
   timestamps: true,
@@ -359,4 +399,5 @@ if (!mongoose.models.PharmacyProduct) {
 
 export const OrderModel = mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);
 export const PaymentModel = mongoose.models.Payment || mongoose.model<IPayment>("Payment", PaymentSchema);
+delete (mongoose.models as any).TherapySession;
 export const TherapySessionModel = mongoose.models.TherapySession || mongoose.model<ITherapySession>("TherapySession", TherapySessionSchema);

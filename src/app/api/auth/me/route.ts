@@ -45,6 +45,13 @@ export async function GET(req: Request) {
       if (doctorProfile && doctorProfile.clinicId) {
         resolvedClinicId = doctorProfile.clinicId;
       }
+    } else if (dbUser.role === "THERAPIST") {
+      const { TherapistModel } = await import("@/modules/therapists/schema");
+      const therapistProfile = await TherapistModel.findOne({ email: dbUser.email }).exec();
+      profileId = therapistProfile ? therapistProfile._id : undefined;
+      if (therapistProfile && therapistProfile.clinicId) {
+        resolvedClinicId = therapistProfile.clinicId;
+      }
     } else if (dbUser.role === "PATIENT") {
       if (dbUser.patientId) {
         profileId = dbUser.patientId;
@@ -70,6 +77,7 @@ export async function GET(req: Request) {
         role: dbUser.role,
         clinicId: resolvedClinicId,
         doctorId: dbUser.role === "DOCTOR" ? profileId : undefined,
+        therapistId: dbUser.role === "THERAPIST" ? profileId : undefined,
         patientId: dbUser.role === "PATIENT" ? profileId : undefined,
       },
     });

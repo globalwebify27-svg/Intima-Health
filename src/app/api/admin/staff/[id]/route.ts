@@ -75,7 +75,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
           } else if (doctorDetails.experience !== undefined) {
             doctor.experience = Number(doctorDetails.experience);
           }
-                    if (doctorDetails.bio !== undefined) doctor.bio = doctorDetails.bio;
+          if (doctorDetails.bio !== undefined) doctor.bio = doctorDetails.bio;
           
           if (doctorDetails.rating === "") {
             doctor.rating = undefined as any;
@@ -94,6 +94,31 @@ export async function PUT(req: Request, { params }: RouteParams) {
           if (doctorDetails.showOnHomepage !== undefined) doctor.showOnHomepage = doctorDetails.showOnHomepage;
         }
         await doctor.save();
+      }
+    } else if (user.role === "THERAPIST") {
+      const { TherapistModel } = await import("@/modules/therapists/schema");
+      const therapist = await TherapistModel.findOne({ email: oldEmail }).exec();
+      const details = body.therapistDetails || doctorDetails;
+
+      if (therapist) {
+        if (name) therapist.name = name;
+        if (email) therapist.email = email;
+        therapist.clinicId = clinicId ? clinicId : undefined;
+        if (status) therapist.status = status;
+
+        if (details) {
+          if (details.phone) therapist.phone = details.phone;
+          if (details.specialization !== undefined) therapist.specialization = details.specialization;
+          if (details.registrationNumber) therapist.registrationNumber = details.registrationNumber;
+          if (details.experience !== undefined) therapist.experience = details.experience === "" ? 0 : Number(details.experience);
+          if (details.bio !== undefined) therapist.bio = details.bio;
+          if (details.rating !== undefined) therapist.rating = details.rating === "" ? 5.0 : Number(details.rating);
+          if (details.salary !== undefined) therapist.fees = details.salary === "" ? 1500 : Number(details.salary);
+          if (details.qualifications) therapist.qualifications = details.qualifications;
+          if (details.availability) therapist.availability = details.availability;
+          if (details.showOnHomepage !== undefined) therapist.showOnHomepage = details.showOnHomepage;
+        }
+        await therapist.save();
       }
     }
 
@@ -137,6 +162,9 @@ export async function DELETE(req: Request, { params }: RouteParams) {
     // Delete Doctor profile if user is a doctor
     if (user.role === "DOCTOR") {
       await DoctorModel.deleteOne({ email }).exec();
+    } else if (user.role === "THERAPIST") {
+      const { TherapistModel } = await import("@/modules/therapists/schema");
+      await TherapistModel.deleteOne({ email }).exec();
     }
 
     // Delete User credentials

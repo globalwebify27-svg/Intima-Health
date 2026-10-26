@@ -56,6 +56,8 @@ export default function StaffLoginPage() {
         router.push("/pharmacy/dashboard");
       } else if (role === "CLINIC_MANAGER") {
         router.push("/clinic-manager/dashboard");
+      } else if (role === "THERAPIST") {
+        router.push("/therapist/dashboard");
       } else {
         router.push("/");
       }

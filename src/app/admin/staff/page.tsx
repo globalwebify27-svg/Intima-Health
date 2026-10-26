@@ -21,10 +21,11 @@ interface StaffData {
   id: string;
   name: string;
   email: string;
-  role: "CLINIC_MANAGER" | "DOCTOR" | "PHARMACY_STAFF";
+  role: "CLINIC_MANAGER" | "DOCTOR" | "PHARMACY_STAFF" | "THERAPIST";
   clinicId?: ClinicData;
   status: "Active" | "Inactive" | "Pending";
   doctorId?: string;
+  therapistId?: string;
   specialization?: string;
   registrationNumber?: string;
   phone?: string;
@@ -45,7 +46,7 @@ export default function StaffDirectoryPage() {
   const [staff, setStaff] = useState<StaffData[]>([]);
   const [clinics, setClinics] = useState<ClinicData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"CLINIC_MANAGER" | "DOCTOR" | "PHARMACY_STAFF">("CLINIC_MANAGER");
+  const [activeTab, setActiveTab] = useState<"CLINIC_MANAGER" | "DOCTOR" | "PHARMACY_STAFF" | "THERAPIST">("CLINIC_MANAGER");
 
   // Modal control
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -185,6 +186,19 @@ export default function StaffDirectoryPage() {
         showOnHomepage,
         availability,
       };
+    } else if (activeTab === "THERAPIST") {
+      body.therapistDetails = {
+        phone: phone || undefined,
+        specialization: specialization || "Clinical Psychology & Sex Therapy",
+        registrationNumber: registrationNumber || undefined,
+        experience: experience !== "" ? Number(experience) : 0,
+        bio: bio !== "" ? bio : "",
+        salary: salary !== "" ? Number(salary) : 1500,
+        rating: rating !== "" ? Number(rating) : 5.0,
+        qualifications: qualificationsText ? qualificationsText.split(",").map(q => q.trim()).filter(Boolean) : [],
+        showOnHomepage,
+        availability,
+      };
     }
 
     try {
@@ -224,7 +238,7 @@ export default function StaffDirectoryPage() {
     setClinicAssignment(member.clinicId?._id || "");
     setStatus(member.status);
 
-    if (member.role === "DOCTOR") {
+    if (member.role === "DOCTOR" || member.role === "THERAPIST") {
       setPhone(member.phone || "");
       setSpecialization(member.specialization || "");
       setRegistrationNumber(member.registrationNumber || "");
@@ -297,14 +311,16 @@ export default function StaffDirectoryPage() {
         );
       },
     },
-    ...(activeTab === "DOCTOR" ? [
+    ...((activeTab === "DOCTOR" || activeTab === "THERAPIST") ? [
       {
         accessorKey: "specialization",
         header: "Specialization",
         cell: ({ row }: { row: any }) => (
           <div>
-            <div className="font-bold text-sm text-foreground">{row.getValue("specialization")}</div>
-            <div className="text-xs text-muted-foreground mt-0.5">Salary: ₹{row.original.salary}</div>
+            <div className="font-bold text-sm text-foreground">{row.getValue("specialization") || "Licensed Specialist"}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {activeTab === "THERAPIST" ? `Fee: ₹${row.original.salary || 1500}/session` : `Salary: ₹${row.original.salary || 0}`}
+            </div>
           </div>
         ),
       },
@@ -359,7 +375,7 @@ export default function StaffDirectoryPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 bg-card border border-border p-2 rounded-2xl shadow-sm self-start inline-flex">
+      <div className="flex flex-wrap gap-2 bg-card border border-border p-2 rounded-2xl shadow-sm self-start inline-flex">
         <button
           onClick={() => setActiveTab("CLINIC_MANAGER")}
           className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
@@ -375,6 +391,14 @@ export default function StaffDirectoryPage() {
           }`}
         >
           Doctors
+        </button>
+        <button
+          onClick={() => setActiveTab("THERAPIST")}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
+            activeTab === "THERAPIST" ? "bg-primary text-white" : "hover:bg-muted text-muted-foreground"
+          }`}
+        >
+          Therapists
         </button>
         <button
           onClick={() => setActiveTab("PHARMACY_STAFF")}
@@ -512,10 +536,12 @@ export default function StaffDirectoryPage() {
                   </div>
                 </div>
 
-                {/* --- Doctor Specific Details form fields --- */}
-                {activeTab === "DOCTOR" && (
+                {/* --- Doctor / Therapist Specific Details form fields --- */}
+                {(activeTab === "DOCTOR" || activeTab === "THERAPIST") && (
                   <div className="border-t border-border pt-4 space-y-4">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Doctor Profile Information</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary">
+                      {activeTab === "THERAPIST" ? "Therapist Profile & Clinical Credentials" : "Doctor Profile Information"}
+                    </h4>
                     
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1">
@@ -536,19 +562,21 @@ export default function StaffDirectoryPage() {
                           type="text"
                           value={specialization}
                           onChange={(e) => setSpecialization(e.target.value)}
-                          placeholder="Sexual Medicine"
+                          placeholder={activeTab === "THERAPIST" ? "Clinical Psychology & Sex Therapy" : "Sexual Medicine"}
                           className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                         />
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Registration Number *</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          {activeTab === "THERAPIST" ? "RCI / License Reg Number *" : "Registration Number *"}
+                        </label>
                         <input
                           type="text"
                           required
                           value={registrationNumber}
                           onChange={(e) => setRegistrationNumber(e.target.value)}
-                          placeholder="MCI-123456"
+                          placeholder={activeTab === "THERAPIST" ? "RCI-CR-2021-8841" : "MCI-123456"}
                           className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                         />
                       </div>
@@ -565,18 +593,22 @@ export default function StaffDirectoryPage() {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Doctor's Salary (₹)</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          {activeTab === "THERAPIST" ? "Session Fee (₹)" : "Doctor's Salary (₹)"}
+                        </label>
                         <input
                           type="number"
                           value={salary}
                           onChange={(e) => setSalary(e.target.value)}
-                          placeholder="50000"
+                          placeholder={activeTab === "THERAPIST" ? "1500" : "50000"}
                           className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                         />
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Doctor's Rating</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          {activeTab === "THERAPIST" ? "Therapist's Rating" : "Doctor's Rating"}
+                        </label>
                         <input
                           type="number"
                           step="0.1"

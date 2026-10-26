@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pill, Activity, Hospital, CreditCard, Calendar, Clock, Video, FileText, CheckCircle2, ChevronRight, AlertCircle, X, Download } from "lucide-react";
+import Link from "next/link";
+import { 
+  Pill, Activity, Hospital, CreditCard, Calendar, Clock, Video, FileText, CheckCircle2, 
+  ChevronRight, AlertCircle, X, Download, MapPin, User, Sparkles, Building2, RefreshCw, MessageSquare 
+} from "lucide-react";
 import { formatTime12Hour } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -48,17 +52,45 @@ interface Medicine {
   duration: string;
 }
 
+interface TherapistProfile {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  avatar?: string;
+  specialization?: string;
+  registrationNumber?: string;
+  qualifications?: string[];
+  experience?: number;
+  bio?: string;
+  rating?: number;
+  fees?: number;
+}
+
 interface TherapySession {
   _id: string;
   name: string;
   price: number;
-  status: "Recommended" | "Booked" | "Paid" | string;
+  status: "Recommended" | "Scheduled" | "Booked" | "Paid" | "In_Progress" | "Completed" | "Cancelled" | "Reassignment_Requested" | string;
+  recommendedMode?: "Online" | "Offline" | "Both";
+  selectedMode?: "Online" | "Offline";
+  doctorNotes?: string;
   date?: string;
   time?: string;
+  videoChannelName?: string;
   clinicId?: {
     _id: string;
     name: string;
+    address?: string;
+    city?: string;
+    phone?: string;
   };
+  doctorId?: {
+    _id: string;
+    name: string;
+    specialization?: string;
+  };
+  therapistId?: TherapistProfile;
   createdAt?: string;
 }
 
@@ -80,72 +112,84 @@ export default function PatientDashboard() {
   const [pharmacyOrders, setPharmacyOrders] = useState<PharmacyOrder[]>([]);
   const [products, setProducts] = useState<any[]>([]);
 
+  // Therapy Booking Flow States
   const [therapyToBook, setTherapyToBook] = useState<TherapySession | null>(null);
-  const [therapyStep, setTherapyStep] = useState(1);
-  const [therapyDoctor, setTherapyDoctor] = useState<any>(null);
-  const [doctorsList, setDoctorsList] = useState<any[]>([]);
-  const [loadingDocs, setLoadingDocs] = useState(false);
-  const [realSlots, setRealSlots] = useState<any[]>([]);
+  const [therapyStep, setTherapyStep] = useState(1); // 1: Mode Selection, 2: Slot Picker, 3: Prepaid Payment
+  const [selectedTherapyMode, setSelectedTherapyMode] = useState<"Online" | "Offline">("Online");
+  const [realSlots, setRealSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [therapyDate, setTherapyDate] = useState("");
   const [therapyTime, setTherapyTime] = useState("");
   const [isTherapyListModalOpen, setIsTherapyListModalOpen] = useState(false);
 
-  const closeTherapyModal = () => {
-    setTherapyToBook(null);
+  // Reassignment Modal States
+  const [reassigningSession, setReassigningSession] = useState<TherapySession | null>(null);
+  const [reassignmentReason, setReassignmentReason] = useState("");
+  const [submittingReassignment, setSubmittingReassignment] = useState(false);
+
+  const openTherapyBooking = (session: TherapySession) => {
+    setTherapyToBook(session);
     setTherapyStep(1);
-    setTherapyDoctor(null);
+    setSelectedTherapyMode(session.recommendedMode === "Offline" ? "Offline" : "Online");
     setTherapyDate("");
     setTherapyTime("");
     setRealSlots([]);
   };
 
-  useEffect(() => {
-    if (therapyToBook && therapyStep === 1) {
-      setLoadingDocs(true);
-      const clinicId = therapyToBook.clinicId?._id || "";
-      fetch(`/api/doctors?clinicId=${clinicId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.data) {
-            setDoctorsList(data.data);
-          }
-        })
-        .catch((err) => console.error(err))
-        .finally(() => setLoadingDocs(false));
-    }
-  }, [therapyToBook, therapyStep]);
+  const closeTherapyModal = () => {
+    setTherapyToBook(null);
+    setTherapyStep(1);
+    setTherapyDate("");
+    setTherapyTime("");
+    setRealSlots([]);
+  };
 
+  // Fetch real availability dynamically from assigned therapist's actual schedule
   useEffect(() => {
-    if (therapyToBook && therapyStep === 2 && therapyDoctor && therapyDate) {
-      setLoadingSlots(true);
-      fetch(`/api/doctors/${therapyDoctor._id}/slots?date=${therapyDate}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.data) {
-            setRealSlots(data.data);
-          } else {
+    if (therapyToBook && therapyDate) {
+      const therapistId = therapyToBook.therapistId?._id;
+      if (therapistId) {
+        setLoadingSlots(true);
+        fetch(`/api/therapists/${therapistId}/slots?date=${therapyDate}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success && Array.isArray(data.data)) {
+              setRealSlots(data.data);
+            } else {
+              setRealSlots([]);
+            }
+          })
+          .catch((err) => {
+            console.error("Error loading therapist slots:", err);
             setRealSlots([]);
-          }
-        })
-        .catch((err) => console.error(err))
-        .finally(() => setLoadingSlots(false));
+          })
+          .finally(() => setLoadingSlots(false));
+      } else {
+        setRealSlots(["10:00 AM", "11:30 AM", "02:00 PM", "04:00 PM"]);
+      }
     }
-  }, [therapyDoctor, therapyDate, therapyStep, therapyToBook]);
+  }, [therapyToBook, therapyDate]);
 
   const formatSlotTime = (time24: string) => {
     if (!time24) return "";
+    if (time24.includes("AM") || time24.includes("PM")) return time24;
     let [hoursStr, minutesStr] = time24.split(":");
     let hours = parseInt(hoursStr, 10);
+    if (isNaN(hours)) return time24;
     const ampm = hours >= 12 ? "PM" : "AM";
     hours = hours % 12;
     if (hours === 0) hours = 12;
-    return `${String(hours).padStart(2, "0")}:${minutesStr} ${ampm}`;
+    return `${String(hours).padStart(2, "0")}:${minutesStr || "00"} ${ampm}`;
   };
 
   const getAvailableTimeSlots = () => {
-    return realSlots.filter(s => s.available).map(s => formatSlotTime(s.start));
+    return realSlots
+      .map((s: any) => {
+        const raw = typeof s === "string" ? s : s?.start || "";
+        return formatSlotTime(raw);
+      })
+      .filter(Boolean);
   };
 
   const fetchDashboardData = (pId: string) => {
@@ -353,38 +397,65 @@ export default function PatientDashboard() {
   };
 
   const handlePayAndBookTherapy = async () => {
-    if (!therapyToBook || !therapyDate || !therapyTime || !therapyDoctor) return;
+    if (!therapyToBook || !therapyDate || !therapyTime) return;
     setPaymentProcessing(true);
-    
-    // Simulate payment delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     try {
       const res = await fetch(`/api/therapy-sessions/${therapyToBook._id}/book`, {
-        method: "PUT",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: therapyDate, time: therapyTime, doctorId: therapyDoctor._id })
+        body: JSON.stringify({
+          date: therapyDate,
+          time: therapyTime,
+          selectedMode: selectedTherapyMode,
+          paymentMethod: "Online",
+          transactionId: `TXN-${Date.now()}`
+        })
       });
       const data = await res.json();
       if (data.success) {
-        // Process payment directly since it's online
-        await fetch("/api/therapy-sessions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "pay", sessionId: therapyToBook._id })
-        });
-        
-        alert("Payment successful & Therapy booked online!");
+        alert("Prepaid payment completed & therapy session scheduled successfully!");
         closeTherapyModal();
         if (patientId) fetchDashboardData(patientId);
       } else {
-        alert(data.message || "Failed to book therapy");
+        alert(data.message || "Failed to book therapy session.");
       }
     } catch (err) {
       console.error(err);
-      alert("An error occurred");
+      alert("An error occurred during booking.");
     } finally {
       setPaymentProcessing(false);
+    }
+  };
+
+  const handleRequestReassignment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reassigningSession) return;
+    setSubmittingReassignment(true);
+    try {
+      const res = await fetch("/api/therapy-sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "request_reassignment",
+          sessionId: reassigningSession._id,
+          reason: reassignmentReason || "Patient requested reassignment due to schedule unavailability.",
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Reassignment request submitted. Your prescribing doctor has been notified.");
+        setReassigningSession(null);
+        setReassignmentReason("");
+        if (patientId) fetchDashboardData(patientId);
+      } else {
+        alert(data.message || "Failed to submit request.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit reassignment request.");
+    } finally {
+      setSubmittingReassignment(false);
     }
   };
 
@@ -474,65 +545,201 @@ export default function PatientDashboard() {
 
           {/* Therapy Sessions Section */}
           {therapySessions.length > 0 && (
-            <div className="p-6 bg-card rounded-3xl border border-border/60 shadow-sm space-y-4" id="recommended-therapies">
-              <h3 className="text-lg font-bold flex items-center gap-2 border-b border-border/50 pb-3">
-                <Hospital className="w-4 h-4 text-primary" /> Prescribed Therapy Sessions
-              </h3>
+            <div className="p-6 bg-card rounded-3xl border border-border/60 shadow-sm space-y-6" id="recommended-therapies">
+              <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Hospital className="w-5 h-5 text-primary" /> Prescribed Therapy & Counseling
+                </h3>
+                <Badge variant="outline" className="text-xs font-semibold text-primary border-primary/20 bg-primary/5">
+                  Personally Doctor-Assigned
+                </Badge>
+              </div>
 
-              <div className="space-y-3">
-                {therapySessions.filter(s => (s.status as string) === "Recommended" || (s.status as string) === "Unpaid").length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">Recommended by Doctor</h4>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {therapySessions.filter(s => (s.status as string) === "Recommended" || (s.status as string) === "Unpaid").map((session) => (
-                        <div key={session._id} className="flex items-center justify-between p-4 rounded-2xl border border-amber-200 bg-amber-50/50">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 font-bold">Th</div>
-                            <div>
-                              <h4 className="font-bold text-sm text-amber-900">{session.name}</h4>
-                              <p className="text-[10px] text-amber-700 font-medium">Estimated Cost: ₹{session.price}</p>
-                              {session.createdAt && (
-                                <p className="text-[10px] text-amber-700/80 mt-0.5">Advised by doc on {new Date(session.createdAt).toLocaleDateString()}</p>
-                              )}
+              {/* 1. Recommended / Ready to Schedule */}
+              {therapySessions.filter(s => (s.status as string) === "Recommended" || (s.status as string) === "Unpaid").length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-500" /> Action Required: Doctor-Prescribed Therapy
+                    </h4>
+                    <span className="text-xs text-muted-foreground font-medium">Prepaid confirmation required</span>
+                  </div>
+
+                  <div className="grid gap-4">
+                    {therapySessions.filter(s => (s.status as string) === "Recommended" || (s.status as string) === "Unpaid").map((session) => (
+                      <div key={session._id} className="p-5 rounded-2xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/60 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/10 space-y-4 shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-200/60 dark:border-amber-900/40 pb-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-base text-foreground">{session.name}</h4>
+                              <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-[10px] font-bold">
+                                Assigned – Ready to Book
+                              </Badge>
                             </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Session Fee: <span className="font-bold text-primary">₹{session.price}</span>
+                              {session.recommendedMode && (
+                                <span className="ml-2 px-2 py-0.5 rounded-md bg-muted text-[10px] font-semibold text-foreground/80">
+                                  Doctor Recommended: {session.recommendedMode === "Online" ? "Online Video" : session.recommendedMode === "Offline" ? "In-Person Clinic" : "Flexible"}
+                                </span>
+                              )}
+                            </p>
                           </div>
                           <Button
-                            size="sm"
-                            onClick={() => setTherapyToBook(session)}
-                            className="rounded-xl h-9 text-xs font-bold gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shadow-none"
+                            onClick={() => openTherapyBooking(session)}
+                            className="rounded-xl h-10 px-5 text-xs font-bold gap-2 bg-primary hover:bg-primary/90 text-white shadow-md self-start sm:self-auto"
                           >
-                            <Calendar className="w-3.5 h-3.5" /> Book Therapy
+                            <Calendar className="w-4 h-4" /> Book Session
                           </Button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
-                {therapySessions.filter(s => s.status === "Booked" || s.status === "Paid").length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">My Booked Therapies</h4>
-                    <div className="space-y-3">
-                      {therapySessions.filter(s => s.status === "Booked" || s.status === "Paid").map((session) => (
-                        <div key={session._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-border bg-muted/20 gap-4">
+                        {/* Doctor Referral Notes */}
+                        {session.doctorNotes && (
+                          <div className="p-3 bg-background/80 rounded-xl border border-border/60 text-xs">
+                            <span className="font-bold text-primary text-[11px] uppercase tracking-wider block mb-1">Doctor's Guidance Notes:</span>
+                            <p className="text-muted-foreground italic leading-relaxed">"{session.doctorNotes}"</p>
+                          </div>
+                        )}
+
+                        {/* Assigned Therapist Details Card */}
+                        <div className="p-3.5 rounded-xl bg-background/90 border border-border/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 font-bold">Th</div>
+                            <div className="w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0 border border-primary/20">
+                              {session.therapistId?.avatar ? (
+                                <img src={session.therapistId.avatar} alt={session.therapistId.name} className="w-full h-full rounded-full object-cover" />
+                              ) : (
+                                (session.therapistId?.name || "Dr").slice(0, 2).toUpperCase()
+                              )}
+                            </div>
                             <div>
-                              <h4 className="font-bold text-sm">{session.name}</h4>
-                              <p className="text-[10px] text-muted-foreground mt-0.5">{session.date} at {session.time ? formatTime12Hour(session.time) : ""}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-foreground">
+                                  {session.therapistId?.name || "Assigned Licensed Specialist"}
+                                </span>
+                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 font-semibold">
+                                  Assigned by Doctor
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">
+                                {session.therapistId?.specialization || "Clinical Psychology & Sex Therapy"}
+                                {session.therapistId?.experience ? ` • ${session.therapistId.experience} yrs exp` : ""}
+                              </p>
                             </div>
                           </div>
-                          {session.status === "Booked" ? (
-                            <Badge variant="outline" className="text-xs text-amber-700 border-amber-200 bg-amber-50 self-start sm:self-center shrink-0">Unpaid - Pay at Clinic</Badge>
+
+                          <button
+                            onClick={() => setReassigningSession(session)}
+                            className="text-[11px] font-semibold text-muted-foreground hover:text-primary transition flex items-center gap-1 underline underline-offset-2 self-end sm:self-center"
+                          >
+                            <RefreshCw className="w-3 h-3" /> Schedule conflict? Request Reassignment
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. Reassignment Requested */}
+              {therapySessions.filter(s => s.status === "Reassignment_Requested").length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-muted-foreground">Pending Doctor Reassignment</h4>
+                  {therapySessions.filter(s => s.status === "Reassignment_Requested").map((session) => (
+                    <div key={session._id} className="p-4 rounded-2xl border border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-sm text-foreground">{session.name}</h4>
+                          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 text-[10px] font-bold">
+                            Reassignment In Review
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Your request was sent to your doctor. You will receive an updated therapist allotment shortly.
+                        </p>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">Under Review</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 3. Scheduled / Confirmed Sessions */}
+              {therapySessions.filter(s => s.status === "Scheduled" || s.status === "Booked" || s.status === "Paid" || s.status === "In_Progress").length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-foreground">Upcoming & Scheduled Sessions</h4>
+                  <div className="space-y-3">
+                    {therapySessions.filter(s => s.status === "Scheduled" || s.status === "Booked" || s.status === "Paid" || s.status === "In_Progress").map((session) => (
+                      <div key={session._id} className="p-5 rounded-2xl border border-border/80 bg-card hover:border-primary/40 transition shadow-sm space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-sm">{session.name}</h4>
+                              <Badge className={session.selectedMode === "Online" ? "bg-rose-50 text-rose-700 border-rose-200 text-[10px]" : "bg-sky-50 text-sky-700 border-sky-200 text-[10px]"}>
+                                {session.selectedMode === "Online" ? "Online Video Call" : "In-Person Clinic"}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs text-emerald-700 border-emerald-200 bg-emerald-50">
+                                Paid & Confirmed
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1 font-medium">
+                              <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-primary" /> {session.date}</span>
+                              <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-primary" /> {session.time ? formatTime12Hour(session.time) : ""}</span>
+                            </div>
+                          </div>
+
+                          {session.selectedMode === "Online" ? (
+                            <Link href={`/patient/therapy-session/${session._id}`}>
+                              <Button size="sm" className="rounded-xl h-10 px-4 text-xs font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+                                <Video className="w-4 h-4" /> Join Video Session
+                              </Button>
+                            </Link>
                           ) : (
-                            <Badge variant="outline" className="text-xs text-green-700 border-green-200 bg-green-50 self-start sm:self-center shrink-0">Paid</Badge>
+                            <Badge variant="outline" className="text-xs font-semibold px-3 py-1 bg-muted">
+                              In-Person Visit
+                            </Badge>
                           )}
                         </div>
-                      ))}
-                    </div>
+
+                        {/* Therapist details & clinic address */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-muted-foreground gap-2 pt-1">
+                          <div className="flex items-center gap-2">
+                            <User className="w-3.5 h-3.5 text-primary" />
+                            <span>Therapist: <strong className="text-foreground">{session.therapistId?.name || "Assigned Specialist"}</strong> ({session.therapistId?.specialization || "Psychologist"})</span>
+                          </div>
+                          {session.selectedMode === "Offline" && session.clinicId && (
+                            <div className="flex items-center gap-1 text-primary font-medium">
+                              <MapPin className="w-3.5 h-3.5" /> {session.clinicId.name} ({session.clinicId.city || "Clinic Location"})
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* 4. Completed Sessions */}
+              {therapySessions.filter(s => s.status === "Completed").length > 0 && (
+                <div className="space-y-3 pt-2 border-t border-border/50">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Past Completed Sessions</h4>
+                  <div className="space-y-2">
+                    {therapySessions.filter(s => s.status === "Completed").map((session) => (
+                      <div key={session._id} className="p-3.5 rounded-xl border border-border/50 bg-muted/20 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          <div>
+                            <span className="font-bold text-foreground">{session.name}</span>
+                            <span className="text-muted-foreground ml-2">with {session.therapistId?.name || "Therapist"}</span>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-200 bg-emerald-50">
+                          Completed on {session.date || "file"}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -629,67 +836,158 @@ export default function PatientDashboard() {
 
       {/* Therapy Booking Date/Time Modal Overlay */}
       {therapyToBook && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-background rounded-3xl max-w-md w-full p-6 shadow-xl border border-border">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">Book Therapy Session</h3>
-              <Badge variant="outline" className="text-xs bg-primary/5 text-primary border-primary/20">Online Therapy</Badge>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-border max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/60">
+              <div>
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" /> Book Therapy Session
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">{therapyToBook.name}</p>
+              </div>
+              <button 
+                onClick={closeTherapyModal} 
+                className="w-8 h-8 rounded-full bg-muted/40 hover:bg-muted flex items-center justify-center text-muted-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
             
             {/* Step Indicators */}
-            <div className="flex items-center justify-between mb-6 relative">
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-border/50 rounded-full z-0"></div>
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-primary rounded-full z-0 transition-all duration-300" style={{ width: `${(therapyStep - 1) * 50}%` }}></div>
+            <div className="flex items-center justify-between mb-6 relative px-2">
+              <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-1 bg-border/50 rounded-full z-0"></div>
+              <div 
+                className="absolute left-6 top-1/2 -translate-y-1/2 h-1 bg-primary rounded-full z-0 transition-all duration-300" 
+                style={{ width: `${(therapyStep - 1) * 45}%` }}
+              ></div>
               
-              <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${therapyStep >= 1 ? 'bg-primary border-primary text-white' : 'bg-card border-border text-muted-foreground'}`}>1</div>
-              <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${therapyStep >= 2 ? 'bg-primary border-primary text-white' : 'bg-card border-border text-muted-foreground'}`}>2</div>
-              <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${therapyStep >= 3 ? 'bg-primary border-primary text-white' : 'bg-card border-border text-muted-foreground'}`}>3</div>
+              <div className="flex flex-col items-center gap-1 relative z-10">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${therapyStep >= 1 ? 'bg-primary border-primary text-white shadow-md' : 'bg-card border-border text-muted-foreground'}`}>1</div>
+                <span className="text-[10px] font-semibold text-muted-foreground">Mode</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 relative z-10">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${therapyStep >= 2 ? 'bg-primary border-primary text-white shadow-md' : 'bg-card border-border text-muted-foreground'}`}>2</div>
+                <span className="text-[10px] font-semibold text-muted-foreground">Time Slot</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 relative z-10">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${therapyStep >= 3 ? 'bg-primary border-primary text-white shadow-md' : 'bg-card border-border text-muted-foreground'}`}>3</div>
+                <span className="text-[10px] font-semibold text-muted-foreground">Prepaid</span>
+              </div>
             </div>
 
+            {/* STEP 1: MODE SELECTION */}
             {therapyStep === 1 && (
               <div className="space-y-4">
-                <p className="text-sm font-bold text-foreground">Select a Specialist for {therapyToBook.name}</p>
-                {loadingDocs ? (
-                  <div className="text-sm text-center py-8 text-muted-foreground">Loading specialists...</div>
-                ) : doctorsList.length === 0 ? (
-                  <div className="text-sm text-center py-8 text-rose-500 font-medium">No specialists available right now.</div>
-                ) : (
-                  <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
-                    {doctorsList.map(doc => (
-                      <div 
-                        key={doc._id}
-                        onClick={() => setTherapyDoctor(doc)}
-                        className={`p-3 rounded-2xl border-2 cursor-pointer transition-all ${therapyDoctor?._id === doc._id ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/30'}`}
-                      >
-                        <div className="font-bold text-sm">{doc.name}</div>
-                        <div className="text-xs text-muted-foreground mt-1">{doc.specialization}</div>
+                <div>
+                  <h4 className="text-sm font-bold text-foreground">Select Session Mode</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Your doctor recommended: <strong className="text-primary">{therapyToBook.recommendedMode || "Flexible (Online or Offline)"}</strong>
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* Online Option */}
+                  <div
+                    onClick={() => setSelectedTherapyMode("Online")}
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                      selectedTherapyMode === "Online" 
+                        ? "border-primary bg-primary/5 shadow-sm" 
+                        : "border-border/60 hover:border-primary/40 bg-card"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${selectedTherapyMode === "Online" ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}>
+                          <Video className="w-5 h-5" />
+                        </div>
+                        {therapyToBook.recommendedMode === "Online" && (
+                          <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[9px]">Recommended</Badge>
+                        )}
                       </div>
-                    ))}
+                      <h5 className="font-bold text-sm text-foreground">Online Video Call</h5>
+                      <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                        Secure 1-on-1 encrypted video session inside your patient portal. Join from anywhere.
+                      </p>
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-border/50 text-[10px] font-semibold text-primary flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Direct Portal Room
+                    </div>
+                  </div>
+
+                  {/* Offline Option */}
+                  <div
+                    onClick={() => setSelectedTherapyMode("Offline")}
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                      selectedTherapyMode === "Offline" 
+                        ? "border-primary bg-primary/5 shadow-sm" 
+                        : "border-border/60 hover:border-primary/40 bg-card"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${selectedTherapyMode === "Offline" ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}>
+                          <Hospital className="w-5 h-5" />
+                        </div>
+                        {therapyToBook.recommendedMode === "Offline" && (
+                          <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[9px]">Recommended</Badge>
+                        )}
+                      </div>
+                      <h5 className="font-bold text-sm text-foreground">In-Person Clinic Visit</h5>
+                      <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                        Face-to-face consultation at {therapyToBook.clinicId?.name || "our clinic"}.
+                      </p>
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-border/50 text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-primary" /> {therapyToBook.clinicId?.city || "Physical Clinic"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Assigned Therapist Details Card */}
+                {therapyToBook.therapistId && (
+                  <div className="p-3.5 rounded-2xl bg-muted/30 border border-border/60 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-bold text-xs">
+                      {therapyToBook.therapistId.name.replace("Dr. ", "").substring(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-bold text-foreground truncate">{therapyToBook.therapistId.name}</p>
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-primary/30 text-primary">Allotted Therapist</Badge>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground truncate">{therapyToBook.therapistId.specialization}</p>
+                    </div>
                   </div>
                 )}
-                
+
                 <div className="flex gap-3 pt-4 border-t border-border mt-4">
-                  <Button variant="outline" className="flex-1 rounded-xl" onClick={closeTherapyModal}>Cancel</Button>
+                  <Button variant="outline" className="flex-1 rounded-xl" onClick={closeTherapyModal}>
+                    Cancel
+                  </Button>
                   <Button 
-                    className="flex-1 rounded-xl text-white font-bold" 
-                    disabled={!therapyDoctor}
+                    className="flex-1 rounded-xl text-white font-bold bg-primary hover:bg-primary/90" 
                     onClick={() => setTherapyStep(2)}
                   >
-                    Next Step
+                    Next: Choose Slot <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>
             )}
 
+            {/* STEP 2: SLOT PICKER */}
             {therapyStep === 2 && (
               <div className="space-y-4">
-                <p className="text-sm font-bold text-foreground mb-4">Select Date & Time with {therapyDoctor?.name}</p>
+                <div>
+                  <h4 className="text-sm font-bold text-foreground">Select Consultation Date & Time</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Live schedule for <strong>{therapyToBook.therapistId?.name || "Allotted Therapist"}</strong>
+                  </p>
+                </div>
                 
                 <div>
-                  <label className="block text-sm font-bold text-foreground mb-2">Select Date</label>
+                  <label className="block text-xs font-bold text-foreground mb-1.5">Select Date</label>
                   <input
                     type="date"
-                    className="w-full rounded-xl border border-border bg-transparent p-3 text-sm focus:outline-none focus:border-primary font-medium"
+                    className="w-full rounded-xl border border-border bg-background p-2.5 text-sm focus:outline-none focus:border-primary font-medium"
                     value={therapyDate}
                     onChange={(e) => {
                       setTherapyDate(e.target.value);
@@ -700,24 +998,50 @@ export default function PatientDashboard() {
                 </div>
                 
                 {therapyDate && (
-                  <div className="space-y-2 pt-2 min-h-[120px]">
-                    <label className="text-xs font-bold text-foreground flex items-center gap-2 mb-2">
-                      <Clock className="w-3.5 h-3.5 text-primary" /> Available Time Slots
-                    </label>
+                  <div className="space-y-2 pt-1 min-h-[140px]">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-primary" /> Available Slots
+                      </label>
+                      <span className="text-[10px] text-muted-foreground">{therapyDate}</span>
+                    </div>
+
                     {loadingSlots ? (
-                      <div className="text-xs text-center py-4 text-muted-foreground">Loading slots...</div>
+                      <div className="text-xs text-center py-8 text-muted-foreground animate-pulse">
+                        Checking therapist calendar...
+                      </div>
                     ) : getAvailableTimeSlots().length === 0 ? (
-                      <div className="text-xs text-center py-4 text-rose-500 font-medium">No slots available for this date.</div>
+                      <div className="text-center py-6 px-4 bg-rose-500/5 border border-rose-500/20 rounded-2xl">
+                        <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold mb-1">
+                          No available slots for this date.
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mb-3">
+                          The therapist has no open slots on this date.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setReassigningSession(therapyToBook);
+                            closeTherapyModal();
+                          }}
+                          className="text-xs rounded-xl border-rose-500/30 text-rose-600 hover:bg-rose-500/10"
+                        >
+                          Request Therapist Reassignment
+                        </Button>
+                      </div>
                     ) : (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {getAvailableTimeSlots().map((time, index) => (
                           <button
                             key={`${time}-${index}`}
+                            type="button"
                             onClick={() => setTherapyTime(time)}
-                            className={`py-2.5 px-4 rounded-xl border transition-all text-xs font-semibold ${
+                            className={`py-2 px-3 rounded-xl border transition-all text-xs font-semibold ${
                               therapyTime === time 
-                                ? "bg-primary text-white border-primary shadow-sm" 
-                                : "bg-background border-border hover:border-primary/50 text-foreground"
+                                ? "bg-primary text-white border-primary shadow-sm ring-2 ring-primary/30" 
+                                : "bg-card border-border hover:border-primary/50 text-foreground"
                             }`}
                           >
                             {time}
@@ -728,53 +1052,189 @@ export default function PatientDashboard() {
                   </div>
                 )}
 
+                {/* Conflict Reassignment Link */}
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReassigningSession(therapyToBook);
+                      closeTherapyModal();
+                    }}
+                    className="text-[11px] text-muted-foreground hover:text-primary transition-colors underline font-medium"
+                  >
+                    Schedule conflict or therapist unavailable? Request reassignment
+                  </button>
+                </div>
+
                 <div className="flex gap-3 pt-4 border-t border-border mt-4">
-                  <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setTherapyStep(1)}>Back</Button>
+                  <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setTherapyStep(1)}>
+                    Back
+                  </Button>
                   <Button 
-                    className="flex-1 rounded-xl text-white font-bold" 
+                    className="flex-1 rounded-xl text-white font-bold bg-primary hover:bg-primary/90" 
                     disabled={!therapyDate || !therapyTime}
                     onClick={() => setTherapyStep(3)}
                   >
-                    Next Step
+                    Review & Pay <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>
             )}
 
+            {/* STEP 3: PREPAID SUMMARY & PAYMENT */}
             {therapyStep === 3 && (
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
-                  <h4 className="font-bold text-sm border-b border-border pb-2">Booking Summary</h4>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Therapy:</span>
-                    <span className="font-semibold">{therapyToBook.name} (Online)</span>
+                <div className="p-4 rounded-2xl bg-muted/30 border border-border/80 space-y-3">
+                  <h4 className="font-bold text-sm border-b border-border/60 pb-2 flex items-center justify-between">
+                    <span>Prepaid Booking Summary</span>
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">
+                      {selectedTherapyMode} Session
+                    </Badge>
+                  </h4>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Therapy Service:</span>
+                    <span className="font-semibold text-foreground">{therapyToBook.name}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Specialist:</span>
-                    <span className="font-semibold">{therapyDoctor?.name}</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Allotted Therapist:</span>
+                    <span className="font-semibold text-foreground">{therapyToBook.therapistId?.name || "Licensed Specialist"}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Date & Time:</span>
-                    <span className="font-semibold">{therapyDate} at {therapyTime}</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Mode:</span>
+                    <span className="font-semibold text-primary">{selectedTherapyMode === "Online" ? "Online Video Room" : "In-Person Clinic Visit"}</span>
                   </div>
-                  <div className="flex justify-between text-sm pt-2 border-t border-border">
-                    <span className="font-bold">Total Amount:</span>
-                    <span className="font-bold text-primary">₹{therapyToBook.price}</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Scheduled Time:</span>
+                    <span className="font-semibold text-foreground">{therapyDate} at {therapyTime}</span>
                   </div>
+                  {selectedTherapyMode === "Offline" && therapyToBook.clinicId && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Clinic Address:</span>
+                      <span className="font-semibold text-foreground text-right">{therapyToBook.clinicId.name}, {therapyToBook.clinicId.city}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm pt-2.5 border-t border-border/60 font-bold">
+                    <span>Total Session Fee:</span>
+                    <span className="text-primary text-base">₹{therapyToBook.price}</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-[11px] text-muted-foreground leading-relaxed">
+                  <strong className="text-primary block font-semibold mb-0.5">Prepaid Guarantee</strong>
+                  Once payment is completed, your slot will be officially booked on the therapist's calendar. For online sessions, you can join the room directly from this dashboard.
                 </div>
 
                 <div className="flex gap-3 pt-4 border-t border-border mt-4">
-                  <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setTherapyStep(2)} disabled={paymentProcessing}>Back</Button>
+                  <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setTherapyStep(2)} disabled={paymentProcessing}>
+                    Back
+                  </Button>
                   <Button 
-                    className="flex-1 rounded-xl text-white font-bold bg-primary hover:bg-primary/90" 
+                    className="flex-1 rounded-xl text-white font-bold bg-primary hover:bg-primary/90 shadow-md" 
                     onClick={handlePayAndBookTherapy}
                     disabled={paymentProcessing}
                   >
-                    {paymentProcessing ? "Processing..." : "Pay & Book"}
+                    {paymentProcessing ? (
+                      <span className="flex items-center gap-1.5">
+                        <RefreshCw className="w-4 h-4 animate-spin" /> Processing...
+                      </span>
+                    ) : (
+                      `Pay ₹${therapyToBook.price} & Confirm`
+                    )}
                   </Button>
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Therapist Reassignment Request Modal */}
+      {reassigningSession && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background rounded-3xl max-w-md w-full p-6 shadow-2xl border border-border">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/60">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 text-primary" /> Request Reassignment
+              </h3>
+              <button 
+                onClick={() => setReassigningSession(null)}
+                className="w-7 h-7 rounded-full bg-muted/40 hover:bg-muted flex items-center justify-center text-muted-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+              If your assigned therapist is unavailable or their timings conflict with your schedule, submit a request to your prescribing doctor to allot an alternative therapist.
+            </p>
+
+            <div className="p-3 rounded-2xl bg-muted/30 border border-border/60 text-xs space-y-1.5 mb-4">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Session:</span>
+                <span className="font-semibold text-foreground">{reassigningSession.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Currently Allotted:</span>
+                <span className="font-semibold text-primary">{reassigningSession.therapistId?.name || "Assigned Therapist"}</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleRequestReassignment} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5">Reason for Change</label>
+                <select
+                  className="w-full rounded-xl border border-border bg-background p-2.5 text-xs focus:outline-none focus:border-primary font-medium"
+                  value={reassignmentReason.startsWith("Other:") ? "Other" : reassignmentReason}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "Other") {
+                      setReassignmentReason("Other: ");
+                    } else {
+                      setReassignmentReason(val);
+                    }
+                  }}
+                  required
+                >
+                  <option value="">Select a reason...</option>
+                  <option value="Schedule / time slots conflict">Schedule / time slots conflict</option>
+                  <option value="Need an earlier appointment date">Need an earlier appointment date</option>
+                  <option value="Prefer different therapist specialization">Prefer different therapist specialization</option>
+                  <option value="Prefer in-person clinic closer to my location">Prefer in-person clinic closer to my location</option>
+                  <option value="Other">Other reason</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5">Additional Notes for Doctor</label>
+                <textarea
+                  rows={3}
+                  className="w-full rounded-xl border border-border bg-background p-2.5 text-xs focus:outline-none focus:border-primary font-medium"
+                  placeholder="Mention preferred timing, preferred days, or specific concerns..."
+                  value={reassignmentReason.startsWith("Other: ") ? reassignmentReason.replace("Other: ", "") : reassignmentReason}
+                  onChange={(e) => setReassignmentReason(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 pt-3 border-t border-border">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="flex-1 rounded-xl text-xs" 
+                  onClick={() => setReassigningSession(null)}
+                  disabled={submittingReassignment}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="flex-1 rounded-xl text-white font-bold text-xs bg-primary hover:bg-primary/90"
+                  disabled={submittingReassignment || !reassignmentReason}
+                >
+                  {submittingReassignment ? "Submitting..." : "Submit to Doctor"}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

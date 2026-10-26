@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Calendar, Video, ArrowUpRight, Clock, FileSignature } from "lucide-react";
+import { Users, Calendar, Video, ArrowUpRight, Clock, FileSignature, AlertCircle, RefreshCw, Sparkles, X } from "lucide-react";
 import { formatTime12Hour } from "@/lib/utils";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface DoctorData {
   _id: string;
@@ -20,38 +21,62 @@ export default function DoctorDashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const meRes = await fetch("/api/auth/me");
-        const meJson = await meRes.json();
-        if (!meJson.success || meJson.user.role !== "DOCTOR") {
-          window.location.href = "/staff-login";
-          return;
-        }
+  // Therapist Reassignment States
+  const [reassignmentRequests, setReassignmentRequests] = useState<any[]>([]);
+  const [therapistsList, setTherapistsList] = useState<any[]>([]);
+  const [sessionToReassign, setSessionToReassign] = useState<any | null>(null);
+  const [selectedNewTherapist, setSelectedNewTherapist] = useState("");
+  const [reassignReason, setReassignReason] = useState("");
+  const [reassignDoctorNotes, setReassignDoctorNotes] = useState("");
+  const [isReassigning, setIsReassigning] = useState(false);
 
-        const dId = meJson.user.doctorId;
-        if (dId) {
-          // Fetch specific doctor profile
-          const docRes = await fetch(`/api/doctors/${dId}`);
-          const docJson = await docRes.json();
-          if (docJson.success) {
-            setDoctor(docJson.data);
-          }
-
-          // Fetch appointments for this doctor
-          const aptsRes = await fetch(`/api/appointments?doctorId=${dId}`);
-          const aptsJson = await aptsRes.json();
-          if (aptsJson.success) {
-            setAppointments(aptsJson.data);
-          }
-        }
-      } catch (err) {
-        console.error("Error loading doctor dashboard data:", err);
-      } finally {
-        setLoading(false);
+  const fetchDashboardData = async () => {
+    try {
+      const meRes = await fetch("/api/auth/me");
+      const meJson = await meRes.json();
+      if (!meJson.success || meJson.user.role !== "DOCTOR") {
+        window.location.href = "/staff-login";
+        return;
       }
-    };
+
+      const dId = meJson.user.doctorId;
+      if (dId) {
+        // Fetch specific doctor profile
+        const docRes = await fetch(`/api/doctors/${dId}`);
+        const docJson = await docRes.json();
+        if (docJson.success) {
+          setDoctor(docJson.data);
+        }
+
+        // Fetch appointments for this doctor
+        const aptsRes = await fetch(`/api/appointments?doctorId=${dId}`);
+        const aptsJson = await aptsRes.json();
+        if (aptsJson.success) {
+          setAppointments(aptsJson.data);
+        }
+
+        // Fetch therapist reassignment requests for this doctor
+        const reassignRes = await fetch(`/api/therapy-sessions?doctorId=${dId}&status=Reassignment_Requested&_t=${Date.now()}`);
+        const reassignJson = await reassignRes.json();
+        if (reassignJson.success && Array.isArray(reassignJson.data)) {
+          setReassignmentRequests(reassignJson.data);
+        }
+
+        // Fetch active therapists for allotment
+        const therapistsRes = await fetch("/api/therapists");
+        const therapistsJson = await therapistsRes.json();
+        if (therapistsJson.success && Array.isArray(therapistsJson.data)) {
+          setTherapistsList(therapistsJson.data);
+        }
+      }
+    } catch (err) {
+      console.error("Error loading doctor dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDashboardData();
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") fetchDashboardData();
@@ -60,6 +85,42 @@ export default function DoctorDashboard() {
     window.addEventListener("focus", onFocus);
     return () => { clearInterval(interval); window.removeEventListener("focus", onFocus); };
   }, []);
+
+  const handleConfirmReassign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sessionToReassign || !selectedNewTherapist || !doctor) return;
+    setIsReassigning(true);
+    try {
+      const res = await fetch("/api/therapy-sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reassign",
+          sessionId: sessionToReassign._id,
+          newTherapistId: selectedNewTherapist,
+          doctorId: doctor._id,
+          reason: reassignReason || "Reassigned by doctor upon patient schedule request",
+          doctorNotes: reassignDoctorNotes || sessionToReassign.doctorNotes,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("New therapist successfully allotted! The patient can now book slots with the new therapist.");
+        setSessionToReassign(null);
+        setSelectedNewTherapist("");
+        setReassignReason("");
+        setReassignDoctorNotes("");
+        fetchDashboardData();
+      } else {
+        alert(data.message || "Failed to reassign therapist.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error reassigning therapist.");
+    } finally {
+      setIsReassigning(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -136,6 +197,58 @@ export default function DoctorDashboard() {
           {doctor ? `${doctor.specialization} Specialist • ${doctor.experience} years experience` : "Here is your clinical schedule and overview for today."}
         </p>
       </div>
+
+      {/* Therapist Reassignment Alert Banner */}
+      {reassignmentRequests.length > 0 && (
+        <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center font-bold">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                Action Required: {reassignmentRequests.length} Therapist Reassignment Request(s)
+              </h4>
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                A patient under your care has flagged scheduling unavailability with their allotted therapist. Please reassign a licensed therapist.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-2.5 pt-1">
+            {reassignmentRequests.map((req) => (
+              <div 
+                key={req._id}
+                className="p-3 bg-card/90 rounded-xl border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-foreground">{req.patientId?.name || "Patient"}</span>
+                    <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-700 dark:text-amber-300">
+                      {req.name}
+                    </Badge>
+                  </div>
+                  <p className="text-muted-foreground text-[11px] mt-0.5">
+                    Current: <strong>{req.therapistId?.name || "Therapist"}</strong> • Reason: <span className="italic">"{req.assignmentHistory?.slice(-1)[0]?.reason || "Schedule conflict"}"</span>
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setSessionToReassign(req);
+                    setSelectedNewTherapist("");
+                    setReassignReason("");
+                    setReassignDoctorNotes(req.doctorNotes || "");
+                  }}
+                  className="rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shrink-0 h-8 gap-1.5"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Reassign Therapist
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-3">
         {stats.map((stat, index) => {
@@ -248,6 +361,110 @@ export default function DoctorDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Doctor Therapist Reassignment Modal */}
+      {sessionToReassign && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background rounded-3xl max-w-md w-full p-6 shadow-2xl border border-border">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-border/60">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 text-primary" /> Allot New Therapist
+              </h3>
+              <button
+                onClick={() => setSessionToReassign(null)}
+                className="w-7 h-7 rounded-full bg-muted/40 hover:bg-muted flex items-center justify-center text-muted-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-muted/30 border border-border/60 text-xs space-y-1.5 mb-4">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Patient:</span>
+                <span className="font-semibold text-foreground">{sessionToReassign.patientId?.name || "Patient"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Therapy:</span>
+                <span className="font-semibold text-foreground">{sessionToReassign.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Previous Therapist:</span>
+                <span className="font-semibold text-amber-700 dark:text-amber-300">
+                  {sessionToReassign.therapistId?.name || "Therapist"}
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handleConfirmReassign} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5">
+                  Select New Licensed Therapist <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  className="w-full rounded-xl border border-border bg-background p-2.5 text-xs focus:outline-none focus:border-primary font-medium"
+                  value={selectedNewTherapist}
+                  onChange={(e) => setSelectedNewTherapist(e.target.value)}
+                  required
+                >
+                  <option value="">Choose a therapist...</option>
+                  {therapistsList
+                    .filter((t) => t._id !== sessionToReassign.therapistId?._id)
+                    .map((t) => (
+                      <option key={t._id} value={t._id}>
+                        {t.name} — {t.specialization} (Fee: ₹{t.fees || 1500})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5">
+                  Reassignment Reason / Note for Audit Log
+                </label>
+                <input
+                  type="text"
+                  className="w-full rounded-xl border border-border bg-background p-2.5 text-xs focus:outline-none focus:border-primary font-medium"
+                  placeholder="e.g., Reassigned due to patient schedule conflict"
+                  value={reassignReason}
+                  onChange={(e) => setReassignReason(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5">
+                  Clinical Guidance Notes for New Therapist
+                </label>
+                <textarea
+                  rows={3}
+                  className="w-full rounded-xl border border-border bg-background p-2.5 text-xs focus:outline-none focus:border-primary font-medium"
+                  placeholder="Add any specific clinical observations for the newly allotted therapist..."
+                  value={reassignDoctorNotes}
+                  onChange={(e) => setReassignDoctorNotes(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2.5 pt-3 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 rounded-xl text-xs"
+                  onClick={() => setSessionToReassign(null)}
+                  disabled={isReassigning}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isReassigning || !selectedNewTherapist}
+                  className="flex-1 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-white shadow-sm"
+                >
+                  {isReassigning ? "Allotting..." : "Allot Therapist"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

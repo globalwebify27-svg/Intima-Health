@@ -54,6 +54,8 @@ export class ConsultationService {
         const patientId = (updated.patientId as any)?._id || updated.patientId;
         const consultationId = (updated as any)._id;
 
+        const doctorId = doctorDoc?._id || updated.doctorId;
+
         if (clinicId && patientId) {
           const therapies = JSON.parse(data.prescribedTherapies);
           if (Array.isArray(therapies)) {
@@ -63,17 +65,43 @@ export class ConsultationService {
               status: "Recommended",
             });
 
-            // Create fresh therapy session records
+            const { logAuditEvent } = await import("@/lib/audit");
+
+            // Create fresh therapy session records with doctor-assigned therapist
             for (const therapy of therapies) {
               if (therapy.name && therapy.name.trim() !== "") {
-                await TherapySessionModel.create({
+                const session = await TherapySessionModel.create({
                   patientId,
+                  doctorId,
+                  therapistId: therapy.therapistId || undefined,
                   clinicId,
                   name: therapy.name,
                   price: Number(therapy.price) || 0,
+                  recommendedMode: therapy.recommendedMode || "Online",
+                  doctorNotes: therapy.doctorNotes || "",
                   status: "Recommended",
                   consultationId,
+                  assignmentHistory: therapy.therapistId ? [{
+                    assignedBy: doctorId,
+                    therapistId: therapy.therapistId,
+                    assignedAt: new Date(),
+                    reason: "Initial clinical assignment by doctor",
+                  }] : [],
                 });
+
+                if (therapy.therapistId) {
+                  await logAuditEvent({
+                    userId: doctorId?.toString(),
+                    action: "THERAPIST_ASSIGNED",
+                    details: {
+                      consultationId: consultationId?.toString(),
+                      patientId: patientId?.toString(),
+                      therapistId: therapy.therapistId,
+                      sessionId: session._id?.toString(),
+                      recommendedMode: therapy.recommendedMode || "Online",
+                    },
+                  });
+                }
               }
             }
           }

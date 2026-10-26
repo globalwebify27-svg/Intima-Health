@@ -26,15 +26,23 @@ export async function GET() {
     
     // Find all users who are staff
     const users = await UserModel.find({
-      role: { $in: ["CLINIC_MANAGER", "DOCTOR", "PHARMACY_STAFF"] }
+      role: { $in: ["CLINIC_MANAGER", "DOCTOR", "PHARMACY_STAFF", "THERAPIST"] }
     }).populate("clinicId").exec();
 
     // Find all doctor profiles to combine metadata
     const doctors = await DoctorModel.find({}).exec();
     const doctorMap = new Map(doctors.map(d => [d.email, d]));
 
+    // Find all therapist profiles to combine metadata
+    const { TherapistModel } = await import("@/modules/therapists/schema");
+    const therapists = await TherapistModel.find({}).exec();
+    const therapistMap = new Map(therapists.map(t => [t.email, t]));
+
     const staffList = users.map(user => {
       const docProfile = user.role === "DOCTOR" ? doctorMap.get(user.email) : null;
+      const therapistProfile = user.role === "THERAPIST" ? therapistMap.get(user.email) : null;
+      const profile = docProfile || therapistProfile;
+
       return {
         id: user._id,
         name: user.name,
@@ -43,19 +51,20 @@ export async function GET() {
         clinicId: user.clinicId,
         status: user.status,
         createdAt: user.createdAt,
-        // Include doctor specific fields if present
+        // Include doctor / therapist specific fields if present
         doctorId: docProfile ? docProfile._id : undefined,
-        specialization: docProfile ? docProfile.specialization : undefined,
-        registrationNumber: docProfile ? docProfile.registrationNumber : undefined,
-        phone: docProfile ? docProfile.phone : undefined,
-        salary: docProfile ? docProfile.salary : undefined,
-        experience: docProfile ? docProfile.experience : undefined,
-        bio: docProfile ? docProfile.bio : undefined,
-        rating: docProfile ? docProfile.rating : undefined,
-        availability: docProfile ? docProfile.availability : undefined,
-        qualifications: docProfile ? docProfile.qualifications : undefined,
+        therapistId: therapistProfile ? therapistProfile._id : undefined,
+        specialization: profile ? profile.specialization : undefined,
+        registrationNumber: profile ? profile.registrationNumber : undefined,
+        phone: profile ? profile.phone : undefined,
+        salary: (docProfile?.salary ?? therapistProfile?.fees) !== undefined ? (docProfile?.salary ?? therapistProfile?.fees) : undefined,
+        experience: profile ? profile.experience : undefined,
+        bio: profile ? profile.bio : undefined,
+        rating: profile ? profile.rating : undefined,
+        availability: profile ? profile.availability : undefined,
+        qualifications: profile ? profile.qualifications : undefined,
         conditions: docProfile ? docProfile.conditions : undefined,
-        showOnHomepage: docProfile ? docProfile.showOnHomepage : undefined,
+        showOnHomepage: profile ? profile.showOnHomepage : undefined,
       };
     });
 
@@ -87,7 +96,7 @@ export async function POST(req: Request) {
 
     await connectDB();
     const body = await req.json();
-    const { name, email, password, role, clinicId, status, doctorDetails } = body;
+    const { name, email, password, role, clinicId, status, doctorDetails, therapistDetails } = body;
 
     if (!name || !email || !password || !role) {
       return NextResponse.json({ success: false, message: "Name, email, password, and role are required." }, { status: 400 });
@@ -146,6 +155,49 @@ export async function POST(req: Request) {
         success: true,
         message: "Doctor and login credentials created successfully.",
         data: newDoc
+      }, { status: 201 });
+    } else if (role === "THERAPIST") {
+      const details = therapistDetails || doctorDetails || {};
+      const { TherapistModel } = await import("@/modules/therapists/schema");
+
+      const newTherapist = await TherapistModel.create({
+        clinicId: clinicId || undefined,
+        name,
+        email,
+        phone: details.phone || "+91 90000 00000",
+        specialization: details.specialization || "Clinical Psychology & Sex Therapy",
+        registrationNumber: details.registrationNumber || `RCI-${Date.now().toString().slice(-6)}`,
+        experience: details.experience ? Number(details.experience) : 0,
+        bio: details.bio || "",
+        rating: details.rating ? Number(details.rating) : 5.0,
+        fees: details.salary ? Number(details.salary) : 1500,
+        qualifications: details.qualifications || [],
+        availability: details.availability || [],
+        showOnHomepage: details.showOnHomepage || false,
+        status: status || "Active",
+      });
+
+      await UserModel.create({
+        name,
+        email,
+        passwordHash,
+        role: "THERAPIST",
+        clinicId: clinicId || undefined,
+        therapistId: newTherapist._id,
+        status: status || "Active"
+      });
+
+      const { logAuditEvent } = await import("@/lib/audit");
+      await logAuditEvent({
+        userId: payload.userId,
+        action: "THERAPIST_CREATED",
+        details: { therapistId: newTherapist._id, name, email },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "Therapist and login credentials created successfully.",
+        data: newTherapist
       }, { status: 201 });
     } else {
       // Create Clinic Manager or Pharmacy Staff

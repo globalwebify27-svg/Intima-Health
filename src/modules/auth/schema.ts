@@ -8,11 +8,12 @@ const UserSchema = new Schema<IUser>({
   passwordHash: { type: String, required: true },
   role: { 
     type: String, 
-    enum: ["SUPER_ADMIN", "CLINIC_ADMIN", "DOCTOR", "PATIENT", "SUPPORT_AGENT", "PHARMACY_STAFF", "CLINIC_MANAGER"], 
+    enum: ["SUPER_ADMIN", "CLINIC_ADMIN", "DOCTOR", "PATIENT", "SUPPORT_AGENT", "PHARMACY_STAFF", "CLINIC_MANAGER", "THERAPIST"], 
     required: true 
   },
   clinicId: { type: Schema.Types.ObjectId, ref: "Clinic", required: false },
   patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: false },
+  therapistId: { type: Schema.Types.ObjectId, ref: "Therapist", required: false },
   status: { type: String, enum: ["Active", "Inactive", "Pending"], default: "Active" },
   deletedAt: { type: Date, default: null },
 }, {

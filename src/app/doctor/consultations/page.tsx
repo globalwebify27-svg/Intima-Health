@@ -53,6 +53,9 @@ interface PrescriptionItem {
 interface TherapyItem {
   name: string;
   price: number;
+  therapistId?: string;
+  recommendedMode?: "Online" | "Offline" | "Both";
+  doctorNotes?: string;
 }
 
 export default function DoctorConsultationsPage() {
@@ -87,13 +90,14 @@ function ConsultationsContent() {
     { drug: "", dosage: "", frequency: "", duration: "" }
   ]);
   const [therapyItems, setTherapyItems] = useState<TherapyItem[]>([
-    { name: "", price: 0 }
+    { name: "", price: 0, therapistId: "", recommendedMode: "Online", doctorNotes: "" }
   ]);
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<"patient" | "notes">("notes");
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
   const [availableServices, setAvailableServices] = useState<any[]>([]);
+  const [availableTherapists, setAvailableTherapists] = useState<any[]>([]);
 
   const fetchConsultations = () => {
     setLoading(true);
@@ -141,6 +145,15 @@ function ConsultationsContent() {
             }
           })
           .catch((err) => console.error("Error fetching global therapies:", err));
+
+        fetch(`/api/therapists`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              setAvailableTherapists(data.data || []);
+            }
+          })
+          .catch((err) => console.error("Error fetching therapists:", err));
       }
     } else {
       setAvailableProducts([]);
@@ -176,10 +189,10 @@ function ConsultationsContent() {
           try {
             setTherapyItems(JSON.parse(updatedConsult.prescribedTherapies));
           } catch {
-            setTherapyItems([{ name: "", price: 0 }]);
+            setTherapyItems([{ name: "", price: 0, therapistId: "", recommendedMode: "Online", doctorNotes: "" }]);
           }
         } else {
-          setTherapyItems([{ name: "", price: 0 }]);
+          setTherapyItems([{ name: "", price: 0, therapistId: "", recommendedMode: "Online", doctorNotes: "" }]);
         }
       }
     } catch (err) {
@@ -247,7 +260,7 @@ function ConsultationsContent() {
   const handleAddTherapyItem = () => {
     setTherapyItems([
       ...therapyItems,
-      { name: "", price: 0 }
+      { name: "", price: 0, therapistId: "", recommendedMode: "Online", doctorNotes: "" }
     ]);
   };
 
@@ -255,7 +268,7 @@ function ConsultationsContent() {
     setTherapyItems(therapyItems.filter((_, idx) => idx !== index));
   };
 
-  const handleTherapyChange = (index: number, field: keyof TherapyItem, value: string) => {
+  const handleTherapyChange = (index: number, field: keyof TherapyItem, value: any) => {
     setTherapyItems(
       therapyItems.map((item, idx) => {
         if (idx === index) {
@@ -264,6 +277,12 @@ function ConsultationsContent() {
             const matched = availableServices.find(s => s.name.toLowerCase() === value.toLowerCase());
             if (matched) {
               updated.price = matched.price;
+            }
+          }
+          if (field === "therapistId") {
+            const matchedTherapist = availableTherapists.find(t => t._id === value);
+            if (matchedTherapist && (!updated.price || updated.price === 0)) {
+              updated.price = matchedTherapist.fees || 1500;
             }
           }
           return updated;
@@ -279,6 +298,15 @@ function ConsultationsContent() {
 
     const filteredPrescription = prescriptionItems.filter((item) => item.drug.trim() !== "");
     const filteredTherapies = therapyItems.filter((item) => item.name.trim() !== "");
+
+    // Clinical rule: Doctor must personally select a licensed therapist for each recommended therapy
+    for (const th of filteredTherapies) {
+      if (!th.therapistId) {
+        alert(`Clinical Requirement: Please personally assign a licensed therapist for "${th.name}".`);
+        setCompleting(false);
+        return;
+      }
+    }
 
     try {
       const res = await fetch(`/api/consultations/${activeConsultation._id}`, {
@@ -545,9 +573,8 @@ function ConsultationsContent() {
                         </Button>
                       </div>
 
-                      <div className="space-y-4">
                         {therapyItems.map((item, index) => (
-                          <div key={index} className="p-3 bg-muted/40 border border-border/55 rounded-2xl space-y-2 relative">
+                          <div key={index} className="p-3.5 bg-muted/40 border border-border/55 rounded-2xl space-y-3 relative">
                             {therapyItems.length > 1 && (
                               <button
                                 onClick={() => handleRemoveTherapyItem(index)}
@@ -556,13 +583,14 @@ function ConsultationsContent() {
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             )}
+                            
                             <div className="space-y-1">
-                              <span className="text-[10px] uppercase font-bold text-muted-foreground">Therapy Name</span>
+                              <span className="text-[10px] uppercase font-bold text-muted-foreground">Therapy Service</span>
                               <Input
                                 value={item.name}
                                 onChange={(e) => handleTherapyChange(index, "name", e.target.value)}
                                 className="h-8 text-xs font-semibold rounded-lg bg-background"
-                                placeholder="Couples Therapy Session"
+                                placeholder="Couples Therapy Session / CBT"
                                 list={`therapy-suggestions-${index}`}
                                 autoComplete="off"
                               />
@@ -575,19 +603,68 @@ function ConsultationsContent() {
                                 }
                               </datalist>
                             </div>
+
+                            {/* Personally Assigned Therapist */}
                             <div className="space-y-1">
-                              <span className="text-[10px] uppercase font-bold text-muted-foreground">Price (₹)</span>
-                              <Input
-                                type="number"
-                                value={item.price || ""}
-                                readOnly
-                                className="h-8 text-xs rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
-                                placeholder="Price will auto-fill"
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                                  <User className="w-3 h-3 text-primary" /> Assign Licensed Therapist *
+                                </span>
+                                {item.therapistId && (
+                                  <span className="text-[10px] font-semibold text-emerald-600">Assigned</span>
+                                )}
+                              </div>
+                              <select
+                                value={item.therapistId || ""}
+                                onChange={(e) => handleTherapyChange(index, "therapistId", e.target.value)}
+                                className="w-full h-8 px-2 text-xs font-medium rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                              >
+                                <option value="">-- Choose Assigned Therapist --</option>
+                                {availableTherapists.map((t) => (
+                                  <option key={t._id} value={t._id}>
+                                    {t.name} ({t.specialization || "Licensed Psychologist"}) - ₹{t.fees || 1500}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground">Recommended Mode</span>
+                                <select
+                                  value={item.recommendedMode || "Online"}
+                                  onChange={(e) => handleTherapyChange(index, "recommendedMode", e.target.value)}
+                                  className="w-full h-8 px-2 text-xs font-medium rounded-lg border border-border bg-background focus:outline-none"
+                                >
+                                  <option value="Online">Online Video</option>
+                                  <option value="Offline">Offline Clinic</option>
+                                  <option value="Both">Flexible (Both)</option>
+                                </select>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground">Session Fee (₹)</span>
+                                <Input
+                                  type="number"
+                                  value={item.price || ""}
+                                  onChange={(e) => handleTherapyChange(index, "price", e.target.value)}
+                                  className="h-8 text-xs rounded-lg bg-background font-semibold"
+                                  placeholder="1500"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <span className="text-[10px] uppercase font-bold text-muted-foreground">Clinical Guidance / Doctor Notes</span>
+                              <textarea
+                                rows={2}
+                                value={item.doctorNotes || ""}
+                                onChange={(e) => handleTherapyChange(index, "doctorNotes", e.target.value)}
+                                placeholder="Guidance for assigned therapist (e.g. CBT focus, partner dynamics, anxiety triggers)..."
+                                className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-border bg-background focus:outline-none resize-none"
                               />
                             </div>
                           </div>
                         ))}
-                      </div>
                     </div>
                   </div>
                 ) : (

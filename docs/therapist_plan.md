@@ -215,12 +215,12 @@ flowchart TD
 
 ## 5. Summary Checklist for Future Execution
 
-- [ ] `src/modules/auth/schema.ts` (Add `THERAPIST` role)
-- [ ] `src/modules/therapists/schema.ts` (New Therapist model)
-- [ ] `src/app/api/admin/staff/route.ts` (Support therapist CRUD)
-- [ ] `src/app/admin/staff/page.tsx` (Add Therapists tab & availability scheduler)
-- [ ] `src/app/doctor/consultations/page.tsx` (Doctor assignment selector & guidance)
-- [ ] `src/app/patient/dashboard/page.tsx` (Assigned therapist card & booking modal)
-- [ ] `src/app/api/therapy-sessions/` (Upgraded assignment & booking endpoints)
-- [ ] `src/app/therapist/dashboard/` (Therapist portal, session room & notes)
-- [ ] `src/modules/system/schema.ts` (Audit trail for all therapist actions)
+- [x] `src/modules/auth/schema.ts` (Add `THERAPIST` role)
+- [x] `src/modules/therapists/schema.ts` (New Therapist model)
+- [x] `src/app/api/admin/staff/route.ts` (Support therapist CRUD)
+- [x] `src/app/admin/staff/page.tsx` (Add Therapists tab & availability scheduler)
+- [x] `src/app/doctor/consultations/page.tsx` (Doctor assignment selector & guidance)
+- [x] `src/app/patient/dashboard/page.tsx` (Assigned therapist card & booking modal)
+- [x] `src/app/api/therapy-sessions/` (Upgraded assignment & booking endpoints)
+- [x] `src/app/therapist/dashboard/` (Therapist portal, session room & notes)
+- [x] `src/modules/system/schema.ts` (Audit trail for all therapist actions)
