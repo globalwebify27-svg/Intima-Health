@@ -342,7 +342,7 @@ export default function StaffDirectoryPage() {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pr-4">
           <Button variant="outline" size="icon" onClick={() => handleEditClick(row.original)} className="rounded-lg h-9 w-9">
             <Edit2 className="w-4 h-4 text-muted-foreground" />
           </Button>
@@ -414,8 +414,12 @@ export default function StaffDirectoryPage() {
       {loading ? (
         <div className="py-12 text-center text-muted-foreground">Loading directory logs...</div>
       ) : (
-        <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
-          <DataTable columns={columns} data={filteredStaff} />
+        <div className="bg-card border border-border rounded-3xl shadow-sm overflow-hidden">
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-[950px]">
+              <DataTable columns={columns} data={filteredStaff} />
+            </div>
+          </div>
         </div>
       )}
 
