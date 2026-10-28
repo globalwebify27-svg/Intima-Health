@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
+import Image from "next/image";
 import { 
   Users, UserPlus, Trash2, Edit2, Shield, Building2, MapPin, 
-  Phone, Mail, Zap, X, Plus, Calendar, Clock, DollarSign, CheckCircle2, AlertCircle, Eye, EyeOff 
+  Phone, Mail, Zap, X, Plus, Calendar, Clock, DollarSign, CheckCircle2, AlertCircle, Eye, EyeOff, Upload, ImageIcon 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -40,6 +41,7 @@ interface StaffData {
   qualifications?: string[];
   conditions?: string[];
   showOnHomepage?: boolean;
+  avatar?: string;
 }
 
 export default function StaffDirectoryPage() {
@@ -61,6 +63,7 @@ export default function StaffDirectoryPage() {
   const [status, setStatus] = useState<"Active" | "Inactive" | "Pending">("Active");
 
   // Doctor Fields
+  const [avatar, setAvatar] = useState("");
   const [phone, setPhone] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [registrationNumber, setRegistrationNumber] = useState("");
@@ -82,6 +85,30 @@ export default function StaffDirectoryPage() {
   const [submitError, setSubmitError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload/avatar", { method: "POST", body: formData });
+      const json = await res.json();
+      if (json.success && json.url) {
+        setAvatar(json.url);
+      } else {
+        setSubmitError(json.message || "Avatar upload failed.");
+      }
+    } catch (err) {
+      setSubmitError("Failed to upload avatar.");
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -136,6 +163,7 @@ export default function StaffDirectoryPage() {
     setPassword("");
     setClinicAssignment("");
     setStatus("Active");
+    setAvatar("");
     setPhone("");
     setSpecialization("");
     setRegistrationNumber("");
@@ -174,6 +202,7 @@ export default function StaffDirectoryPage() {
 
     if (activeTab === "DOCTOR") {
       body.doctorDetails = {
+        avatar: avatar || undefined,
         phone: phone || undefined,
         specialization: specialization || "",
         registrationNumber: registrationNumber || undefined,
@@ -188,6 +217,7 @@ export default function StaffDirectoryPage() {
       };
     } else if (activeTab === "THERAPIST") {
       body.therapistDetails = {
+        avatar: avatar || undefined,
         phone: phone || undefined,
         specialization: specialization || "Clinical Psychology & Sex Therapy",
         registrationNumber: registrationNumber || undefined,
@@ -239,6 +269,7 @@ export default function StaffDirectoryPage() {
     setStatus(member.status);
 
     if (member.role === "DOCTOR" || member.role === "THERAPIST") {
+      setAvatar(member.avatar || "");
       setPhone(member.phone || "");
       setSpecialization(member.specialization || "");
       setRegistrationNumber(member.registrationNumber || "");
@@ -281,14 +312,27 @@ export default function StaffDirectoryPage() {
       accessorKey: "name",
       header: "Staff Name",
       cell: ({ row }) => (
-        <div>
-          <div className="font-bold text-foreground flex items-center gap-2">
-            {row.original.name}
-            {row.original.showOnHomepage && (
-              <Badge variant="outline" className="bg-primary/5 text-primary text-[10px] py-0 h-4 border-primary/20">Featured</Badge>
-            )}
+        <div className="flex items-center gap-3">
+          {row.original.avatar ? (
+            <img 
+              src={row.original.avatar} 
+              alt={row.original.name} 
+              className="w-10 h-10 rounded-full object-cover border border-border shadow-xs shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+              {row.original.name.replace(/^Dr\.\s*/i, "").charAt(0) || "U"}
+            </div>
+          )}
+          <div>
+            <div className="font-bold text-foreground flex items-center gap-2">
+              {row.original.name}
+              {row.original.showOnHomepage && (
+                <Badge variant="outline" className="bg-primary/5 text-primary text-[10px] py-0 h-4 border-primary/20">Featured</Badge>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground mt-0.5">{row.original.email}</div>
           </div>
-          <div className="text-xs text-muted-foreground mt-0.5">{row.original.email}</div>
         </div>
       ),
     },
@@ -548,6 +592,55 @@ export default function StaffDirectoryPage() {
                     </h4>
                     
                     <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2 sm:col-span-2">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Profile Photo</label>
+                        <div className="flex items-center gap-4">
+                          {/* Preview */}
+                          <div className="relative w-20 h-20 rounded-xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
+                            {avatar ? (
+                              <Image
+                                src={avatar}
+                                alt="Avatar preview"
+                                fill
+                                className="object-cover rounded-xl"
+                                unoptimized={avatar.startsWith("data:")}
+                              />
+                            ) : (
+                              <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
+                            )}
+                          </div>
+                          {/* Upload controls */}
+                          <div className="flex flex-col gap-2">
+                            <input
+                              ref={avatarInputRef}
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp,image/gif"
+                              onChange={handleAvatarUpload}
+                              className="hidden"
+                            />
+                            <button
+                              type="button"
+                              disabled={avatarUploading}
+                              onClick={() => avatarInputRef.current?.click()}
+                              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-border bg-card hover:bg-muted/60 transition-colors disabled:opacity-50"
+                            >
+                              <Upload className="w-4 h-4" />
+                              {avatarUploading ? "Uploading..." : avatar ? "Change Photo" : "Upload Photo"}
+                            </button>
+                            {avatar && (
+                              <button
+                                type="button"
+                                onClick={() => setAvatar("")}
+                                className="text-xs text-destructive hover:underline text-left"
+                              >
+                                Remove photo
+                              </button>
+                            )}
+                            <p className="text-[11px] text-muted-foreground">JPEG, PNG, WebP or GIF. Max 5MB.</p>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="space-y-1">
                         <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Contact Phone *</label>
                         <input

@@ -59,7 +59,13 @@ export async function PUT(req: Request, { params }: RouteParams) {
 
     // If role is DOCTOR, update Doctor collection
     if (user.role === "DOCTOR") {
-      const doctor = await DoctorModel.findOne({ email: oldEmail }).exec();
+      const doctor = await DoctorModel.findOne({
+        $or: [
+          { email: { $regex: new RegExp(`^${oldEmail.trim()}$`, "i") } },
+          ...(email ? [{ email: { $regex: new RegExp(`^${email.trim()}$`, "i") } }] : [])
+        ]
+      }).exec();
+
       if (doctor) {
         if (name) doctor.name = name;
         if (email) doctor.email = email;
@@ -67,6 +73,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
         if (status) doctor.status = status;
 
         if (doctorDetails) {
+          if (doctorDetails.avatar !== undefined) doctor.avatar = doctorDetails.avatar;
           if (doctorDetails.phone) doctor.phone = doctorDetails.phone;
           if (doctorDetails.specialization !== undefined) doctor.specialization = doctorDetails.specialization;
           if (doctorDetails.registrationNumber) doctor.registrationNumber = doctorDetails.registrationNumber;
@@ -97,7 +104,12 @@ export async function PUT(req: Request, { params }: RouteParams) {
       }
     } else if (user.role === "THERAPIST") {
       const { TherapistModel } = await import("@/modules/therapists/schema");
-      const therapist = await TherapistModel.findOne({ email: oldEmail }).exec();
+      const therapist = await TherapistModel.findOne({
+        $or: [
+          { email: { $regex: new RegExp(`^${oldEmail.trim()}$`, "i") } },
+          ...(email ? [{ email: { $regex: new RegExp(`^${email.trim()}$`, "i") } }] : [])
+        ]
+      }).exec();
       const details = body.therapistDetails || doctorDetails;
 
       if (therapist) {
@@ -161,10 +173,14 @@ export async function DELETE(req: Request, { params }: RouteParams) {
 
     // Delete Doctor profile if user is a doctor
     if (user.role === "DOCTOR") {
-      await DoctorModel.deleteOne({ email }).exec();
+      await DoctorModel.deleteOne({
+        email: { $regex: new RegExp(`^${email.trim()}$`, "i") }
+      }).exec();
     } else if (user.role === "THERAPIST") {
       const { TherapistModel } = await import("@/modules/therapists/schema");
-      await TherapistModel.deleteOne({ email }).exec();
+      await TherapistModel.deleteOne({
+        email: { $regex: new RegExp(`^${email.trim()}$`, "i") }
+      }).exec();
     }
 
     // Delete User credentials

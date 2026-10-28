@@ -88,7 +88,7 @@ export default function AboutPage() {
   // Fetch doctors when filters change
   useEffect(() => {
     setDoctorsLoading(true);
-    let url = "/api/doctors?status=Active";
+    let url = "/api/doctors?status=Active&limit=100";
     if (selectedState) url += `&state=${encodeURIComponent(selectedState)}`;
     if (selectedCity) url += `&city=${encodeURIComponent(selectedCity)}`;
     if (selectedClinic) url += `&clinicId=${selectedClinic}`;
@@ -124,24 +124,17 @@ export default function AboutPage() {
     setSelectedClinic("");
   };
 
-  // Priority sorting & safety filter for doctors
+  // Priority sorting for doctors (Founders first, then all active staff doctors)
   const DOCTOR_ORDER_KEYS = ["deepak", "amol", "radhika", "anuja", "mahajan", "vishwas"];
   const getDoctorRank = (name: string): number => {
     const lower = (name || "").toLowerCase();
     const idx = DOCTOR_ORDER_KEYS.findIndex(key => lower.includes(key));
     return idx === -1 ? 99 : idx;
   };
-  const isAllowedDoctor = (doc: IDoctor): boolean => {
-    const lower = (doc.name || "").toLowerCase();
-    if (lower.includes("sheetal")) return false;
-    if (lower.includes("tiwari") || lower.includes("tivari")) return false;
-    if (lower.includes("amarjeet")) return false;
-    return true;
-  };
 
-  const sortedDoctors = [...doctors]
-    .filter(isAllowedDoctor)
-    .sort((a, b) => getDoctorRank(a.name) - getDoctorRank(b.name));
+  const sortedDoctors = [...doctors].sort(
+    (a, b) => getDoctorRank(a.name) - getDoctorRank(b.name)
+  );
 
   const defaultData = {
     heroTitle1: "Leading Psychiatric &",

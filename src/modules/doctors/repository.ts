@@ -42,7 +42,6 @@ export class DoctorRepository {
   }): Promise<{ doctors: IDoctor[]; total: number }> {
     const query: Record<string, any> = { 
       deletedAt: null,
-      name: { $not: { $regex: /Tiwari|Tivari|Sheetal|Amarjeet/i } }
     };
 
     if (filters.specialization) {

@@ -30,22 +30,25 @@ export async function GET() {
     }).populate("clinicId").exec();
 
     // Find all doctor profiles to combine metadata
-    const doctors = await DoctorModel.find({}).exec();
-    const doctorMap = new Map(doctors.map(d => [d.email, d]));
+    const doctors = await DoctorModel.find({ deletedAt: null }).exec();
+    const doctorMap = new Map(doctors.map(d => [d.email ? d.email.toLowerCase().trim() : "", d]));
 
     // Find all therapist profiles to combine metadata
     const { TherapistModel } = await import("@/modules/therapists/schema");
     const therapists = await TherapistModel.find({}).exec();
-    const therapistMap = new Map(therapists.map(t => [t.email, t]));
+    const therapistMap = new Map(therapists.map(t => [t.email ? t.email.toLowerCase().trim() : "", t]));
+
+    const existingUserEmails = new Set(users.map(u => (u.email ? u.email.toLowerCase().trim() : "")));
 
     const staffList = users.map(user => {
-      const docProfile = user.role === "DOCTOR" ? doctorMap.get(user.email) : null;
-      const therapistProfile = user.role === "THERAPIST" ? therapistMap.get(user.email) : null;
+      const emailLower = user.email ? user.email.toLowerCase().trim() : "";
+      const docProfile = user.role === "DOCTOR" ? doctorMap.get(emailLower) : null;
+      const therapistProfile = user.role === "THERAPIST" ? therapistMap.get(emailLower) : null;
       const profile = docProfile || therapistProfile;
 
       return {
         id: user._id,
-        name: user.name,
+        name: docProfile?.name || user.name,
         email: user.email,
         role: user.role,
         clinicId: user.clinicId,
@@ -61,12 +64,55 @@ export async function GET() {
         experience: profile ? profile.experience : undefined,
         bio: profile ? profile.bio : undefined,
         rating: profile ? profile.rating : undefined,
+        avatar: profile ? profile.avatar : undefined,
         availability: profile ? profile.availability : undefined,
         qualifications: profile ? profile.qualifications : undefined,
         conditions: docProfile ? docProfile.conditions : undefined,
         showOnHomepage: profile ? profile.showOnHomepage : undefined,
       };
     });
+
+    // Auto-sync: Ensure any active doctor in DoctorModel without a user account gets provisioned
+    for (const doc of doctors) {
+      if (doc.status === "Active" && !doc.deletedAt && doc.email) {
+        const emailLower = doc.email.toLowerCase().trim();
+        if (!existingUserEmails.has(emailLower)) {
+          const newUser = await UserModel.create({
+            name: doc.name,
+            email: emailLower,
+            passwordHash: hashPassword("password123"),
+            role: "DOCTOR",
+            clinicId: doc.clinicId || undefined,
+            status: doc.status || "Active",
+            deletedAt: null,
+          });
+          existingUserEmails.add(emailLower);
+          staffList.push({
+            id: newUser._id,
+            name: doc.name,
+            email: doc.email,
+            role: "DOCTOR",
+            clinicId: doc.clinicId,
+            status: doc.status,
+            createdAt: newUser.createdAt,
+            doctorId: doc._id,
+            therapistId: undefined,
+            specialization: doc.specialization,
+            registrationNumber: doc.registrationNumber,
+            phone: doc.phone,
+            salary: doc.salary,
+            experience: doc.experience,
+            bio: doc.bio,
+            rating: doc.rating,
+            avatar: doc.avatar,
+            availability: doc.availability,
+            qualifications: doc.qualifications,
+            conditions: doc.conditions,
+            showOnHomepage: doc.showOnHomepage,
+          });
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -128,6 +174,7 @@ export async function POST(req: Request) {
         name,
         email,
         phone: doctorDetails.phone,
+        avatar: doctorDetails.avatar || undefined,
         specialization: doctorDetails.specialization || undefined,
         registrationNumber: doctorDetails.registrationNumber || undefined,
         experience: (doctorDetails.experience === "" || doctorDetails.experience === undefined) ? undefined : Number(doctorDetails.experience),
