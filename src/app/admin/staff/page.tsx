@@ -73,7 +73,7 @@ export default function StaffDirectoryPage() {
   const [bio, setBio] = useState("");
   const [qualificationsText, setQualificationsText] = useState("");
   const [conditionsText, setConditionsText] = useState("");
-  const [showOnHomepage, setShowOnHomepage] = useState(false);
+  const [showOnHomepage, setShowOnHomepage] = useState(true);
   const [availability, setAvailability] = useState<Array<{ day: string; slots: Array<{ start: string; end: string }> }>>([]);
 
   // Time Slot Builder Form state
@@ -173,7 +173,7 @@ export default function StaffDirectoryPage() {
     setBio("");
     setQualificationsText("");
     setConditionsText("");
-    setShowOnHomepage(false);
+    setShowOnHomepage(true);
     setAvailability([]);
     setSubmitError("");
     setSuccessMsg("");
@@ -328,7 +328,9 @@ export default function StaffDirectoryPage() {
             <div className="font-bold text-foreground flex items-center gap-2">
               {row.original.name}
               {row.original.showOnHomepage && (
-                <Badge variant="outline" className="bg-primary/5 text-primary text-[10px] py-0 h-4 border-primary/20">Featured</Badge>
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 text-[10px] py-0 h-4 border-emerald-200 dark:border-emerald-800">
+                  On About Us
+                </Badge>
               )}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">{row.original.email}</div>
@@ -349,8 +351,8 @@ export default function StaffDirectoryPage() {
             <span className="text-xs text-muted-foreground">{clinic.city}</span>
           </div>
         ) : (
-          <span className="text-xs font-bold text-rose-500 bg-rose-50 border border-rose-100 dark:bg-rose-950/20 dark:border-rose-950 px-2 py-0.5 rounded-full">
-            Not Assigned
+          <span className="text-xs font-medium text-muted-foreground bg-muted/60 border border-border px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+            Display Only
           </span>
         );
       },
@@ -557,17 +559,26 @@ export default function StaffDirectoryPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Clinic Assignment *</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      {activeTab === "DOCTOR" ? "Clinic Assignment (Optional - Display Only)" : "Clinic Assignment *"}
+                    </label>
                     <select
                       value={clinicAssignment}
                       onChange={(e) => setClinicAssignment(e.target.value)}
                       className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none"
                     >
-                      <option value="">-- Choose Assigned Location --</option>
+                      <option value="">
+                        {activeTab === "DOCTOR" ? "-- None / Not Assigned (Display Only) --" : "-- Choose Assigned Location --"}
+                      </option>
                       {clinics.map((c) => (
                         <option key={c._id} value={c._id}>{c.name} ({c.city})</option>
                       ))}
                     </select>
+                    {activeTab === "DOCTOR" && !clinicAssignment && (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        Doctor will be registered for display without tying to a specific clinic.
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-1 sm:col-span-2">
@@ -752,17 +763,22 @@ export default function StaffDirectoryPage() {
                         />
                       </div>
                       
-                      <div className="flex items-center space-x-2 sm:col-span-2 mt-2 bg-primary/5 border border-primary/10 p-3 rounded-lg">
+                      <div className="flex items-start gap-3 sm:col-span-2 mt-2 bg-primary/5 border border-primary/10 p-3.5 rounded-xl">
                         <input
                           type="checkbox"
                           id="showOnHomepage"
                           checked={showOnHomepage}
                           onChange={(e) => setShowOnHomepage(e.target.checked)}
-                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer mt-0.5"
                         />
-                        <label htmlFor="showOnHomepage" className="text-sm font-semibold cursor-pointer">
-                          Feature Doctor on Public Homepage
-                        </label>
+                        <div>
+                          <label htmlFor="showOnHomepage" className="text-sm font-semibold cursor-pointer text-foreground block">
+                            Display Doctor on About Us Page
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            When checked, this doctor will appear publicly in the Medical Experts section on the About Us page.
+                          </p>
+                        </div>
                       </div>
                     </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,10 +16,22 @@ import {
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { REHAB_CENTRES } from "@/constants/rehabCentres";
+import { REHAB_CENTRES, RehabCentre } from "@/constants/rehabCentres";
 
 export function RehabCentresSection() {
   const router = useRouter();
+  const [centres, setCentres] = useState<RehabCentre[]>(REHAB_CENTRES);
+
+  useEffect(() => {
+    fetch("/api/public/hospitals")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data && json.data.length > 0) {
+          setCentres(json.data);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch live hospitals:", err));
+  }, []);
 
   return (
     <section className="py-20 bg-muted/30 border-t border-border">
@@ -46,9 +59,9 @@ export function RehabCentresSection() {
 
         {/* Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
-          {REHAB_CENTRES.map((centre) => (
+          {centres.map((centre) => (
             <div
-              key={centre.id}
+              key={centre.id || centre.slug}
               onClick={() => router.push(`/hospitals/${centre.slug}`)}
               className="bg-card rounded-3xl border border-border p-6 sm:p-8 shadow-sm hover:shadow-2xl transition-all duration-300 flex flex-col justify-between cursor-pointer group hover:-translate-y-1 relative"
             >
@@ -67,13 +80,13 @@ export function RehabCentresSection() {
 
                 {/* Image & Title Header */}
                 <div className="flex flex-col sm:flex-row gap-5 mb-5 items-start">
-                  {!centre.hidePdf && centre.image ? (
-                    <div className="relative w-24 h-32 sm:w-28 sm:h-36 rounded-2xl overflow-hidden shrink-0 border border-border bg-muted/40 shadow-xs">
+                  {centre.image ? (
+                    <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden shrink-0 border border-border bg-muted/40 shadow-xs">
                       <Image
                         src={centre.image}
                         alt={centre.name}
                         fill
-                        className="object-contain p-1 group-hover:scale-105 transition-transform duration-300"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
                   ) : (

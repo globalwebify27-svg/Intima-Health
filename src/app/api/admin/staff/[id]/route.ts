@@ -48,7 +48,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
     // Update basic user details
     if (name) user.name = name;
     if (email) user.email = email;
-    user.clinicId = clinicId ? clinicId : undefined;
+    user.clinicId = clinicId ? clinicId : null;
     if (status) user.status = status;
 
     if (password) {
@@ -69,7 +69,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
       if (doctor) {
         if (name) doctor.name = name;
         if (email) doctor.email = email;
-        doctor.clinicId = clinicId ? clinicId : undefined;
+        doctor.clinicId = clinicId ? clinicId : null;
         if (status) doctor.status = status;
 
         if (doctorDetails) {
@@ -115,7 +115,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
       if (therapist) {
         if (name) therapist.name = name;
         if (email) therapist.email = email;
-        therapist.clinicId = clinicId ? clinicId : undefined;
+        therapist.clinicId = clinicId ? clinicId : null;
         if (status) therapist.status = status;
 
         if (details) {

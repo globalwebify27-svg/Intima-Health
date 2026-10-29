@@ -20,9 +20,20 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getRehabCentreBySlug, REHAB_CENTRES } from "@/constants/rehabCentres";
+import { HospitalService } from "@/modules/hospitals/service";
 import { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+async function getHospital(slug: string) {
+  try {
+    const live = await HospitalService.getBySlug(slug);
+    if (live) return live;
+  } catch (err) {
+    console.error("Failed to load live hospital, using fallback:", err);
+  }
+  return getRehabCentreBySlug(slug);
+}
 
 export async function generateMetadata({ 
   params 
@@ -30,7 +41,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }> 
 }): Promise<Metadata> {
   const resolved = await params;
-  const centre = getRehabCentreBySlug(resolved.slug);
+  const centre = await getHospital(resolved.slug);
   if (!centre) return { title: "Hospital Not Found" };
 
   return {
@@ -45,13 +56,16 @@ export default async function HospitalInfoPage({
   params: Promise<{ slug: string }> 
 }) {
   const resolved = await params;
-  const centre = getRehabCentreBySlug(resolved.slug);
+  const centre = await getHospital(resolved.slug);
 
   if (!centre) {
     notFound();
   }
 
-  const isSanmitra = centre.id === "sanmitra-manas-hospital";
+  const allCentres = (await HospitalService.listAll(false).catch(() => [])) || [];
+  const networkCentres = allCentres.length > 0 ? allCentres : REHAB_CENTRES;
+
+  const isSanmitra = centre.id === "sanmitra-manas-hospital" || centre.slug === "sanmitra-manas-hospital";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -80,47 +94,66 @@ export default async function HospitalInfoPage({
 
       {/* Hero Header */}
       <section className="relative pt-10 pb-16 lg:pt-14 lg:pb-20 bg-muted/20 border-b border-border/40">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary font-semibold text-xs sm:text-sm mb-4 border border-primary/20">
-            <Building2 className="w-4 h-4" />
-            {centre.cashlessSchemeBadge}
-          </div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary font-semibold text-xs sm:text-sm mb-4 border border-primary/20">
+                <Building2 className="w-4 h-4" />
+                {centre.cashlessSchemeBadge}
+              </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-medium leading-tight mb-4">
-            {centre.name}
-          </h1>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-medium leading-tight mb-4">
+                {centre.name}
+              </h1>
 
-          <p className="text-lg text-muted-foreground mb-8 max-w-3xl leading-relaxed">
-            {centre.tagline}
-          </p>
+              <p className="text-lg text-muted-foreground mb-8 max-w-3xl leading-relaxed">
+                {centre.tagline}
+              </p>
 
-          {/* Quick Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              href={`tel:${centre.phones[0].replace(/\s+/g, '')}`}
-              className={cn(buttonVariants({ size: "lg" }), "rounded-full font-semibold shadow-md gap-2")}
-            >
-              <Phone className="w-4 h-4" />
-              Call {centre.phones[0]}
-            </a>
-            {centre.phones[1] && (
-              <a
-                href={`tel:${centre.phones[1].replace(/\s+/g, '')}`}
-                className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full font-semibold gap-2")}
-              >
-                <Phone className="w-4 h-4" />
-                Call {centre.phones[1]}
-              </a>
+              {/* Quick Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3">
+                {centre.phones && centre.phones[0] && (
+                  <a
+                    href={`tel:${centre.phones[0].replace(/\s+/g, '')}`}
+                    className={cn(buttonVariants({ size: "lg" }), "rounded-full font-semibold shadow-md gap-2")}
+                  >
+                    <Phone className="w-4 h-4" />
+                    Call {centre.phones[0]}
+                  </a>
+                )}
+                {centre.phones && centre.phones[1] && (
+                  <a
+                    href={`tel:${centre.phones[1].replace(/\s+/g, '')}`}
+                    className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full font-semibold gap-2")}
+                  >
+                    <Phone className="w-4 h-4" />
+                    Call {centre.phones[1]}
+                  </a>
+                )}
+                {centre.googleMapDirectionUrl && (
+                  <a
+                    href={centre.googleMapDirectionUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full font-semibold gap-2")}
+                  >
+                    <Navigation className="w-4 h-4" />
+                    Get Directions
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {centre.image && (
+              <div className="relative w-full md:w-80 h-56 md:h-64 rounded-3xl overflow-hidden border border-border shadow-lg shrink-0 bg-muted/40">
+                <Image
+                  src={centre.image}
+                  alt={centre.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
             )}
-            <a
-              href={centre.googleMapDirectionUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full font-semibold gap-2")}
-            >
-              <Navigation className="w-4 h-4" />
-              Get Directions
-            </a>
           </div>
         </div>
       </section>
@@ -388,18 +421,18 @@ export default async function HospitalInfoPage({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {REHAB_CENTRES.map((other) => (
+            {networkCentres.map((other) => (
               <div 
-                key={other.id} 
+                key={other.id || other.slug} 
                 className={cn(
                   "bg-card rounded-2xl p-6 border transition-all duration-200 flex flex-col justify-between",
-                  other.id === centre.id ? "border-primary/50 shadow-md ring-1 ring-primary/20" : "border-border hover:shadow-lg"
+                  (other.id === centre.id || other.slug === centre.slug) ? "border-primary/50 shadow-md ring-1 ring-primary/20" : "border-border hover:shadow-lg"
                 )}
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-primary">{other.cashlessSchemeBadge}</span>
-                    {other.id === centre.id && (
+                    {(other.id === centre.id || other.slug === centre.slug) && (
                       <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-semibold">Currently Viewing</span>
                     )}
                   </div>
@@ -409,7 +442,7 @@ export default async function HospitalInfoPage({
 
                 <div className="pt-3 border-t border-border/40 flex items-center justify-between">
                   <span className="text-xs font-semibold text-muted-foreground">{other.address}</span>
-                  {other.id !== centre.id ? (
+                  {(other.id !== centre.id && other.slug !== centre.slug) ? (
                     <Link
                       href={`/hospitals/${other.slug}`}
                       className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"

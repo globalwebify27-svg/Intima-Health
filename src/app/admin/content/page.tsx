@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Rss, List, HelpCircle, Plus, Edit2, Trash2, X, Activity, Search } from "lucide-react";
+import { FileText, Rss, List, HelpCircle, Plus, Edit2, Trash2, X, Activity, Search, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Tab = "pages" | "posts" | "categories" | "faqs" | "treatments" | "sexual-problems";
@@ -211,6 +212,14 @@ export default function ContentPage() {
             </p>
           </div>
         </div>
+
+        <Link
+          href="/admin/hospitals"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-background hover:bg-muted font-semibold text-xs transition-colors shrink-0 shadow-xs"
+        >
+          <Building2 className="w-4 h-4 text-primary" />
+          Edit De-Addiction Hospitals
+        </Link>
       </div>
 
       {/* Tabs */}

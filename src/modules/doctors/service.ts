@@ -83,6 +83,7 @@ export class DoctorService {
     clinicId?: string;
     state?: string;
     city?: string;
+    showOnHomepage?: boolean;
     page?: number;
     limit?: number;
   }) {

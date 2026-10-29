@@ -37,6 +37,7 @@ export class DoctorRepository {
     clinicId?: string;
     state?: string;
     city?: string;
+    showOnHomepage?: boolean;
     page?: number;
     limit?: number;
   }): Promise<{ doctors: IDoctor[]; total: number }> {
@@ -50,6 +51,10 @@ export class DoctorRepository {
 
     if (filters.status) {
       query.status = filters.status;
+    }
+
+    if (filters.showOnHomepage !== undefined) {
+      query.showOnHomepage = filters.showOnHomepage;
     }
 
     if (filters.state || filters.city) {

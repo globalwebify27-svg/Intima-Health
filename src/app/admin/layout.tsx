@@ -6,6 +6,7 @@ import { LayoutDashboard, Users, Building2, ShoppingBag, Settings, FileText, Bar
 const adminLinks = [
   { title: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
   { title: "Clinics", href: "/admin/clinics", icon: Building2 },
+  { title: "De-Addiction Hospitals", href: "/admin/hospitals", icon: Building2 },
   { title: "Staff Directory", href: "/admin/staff", icon: Users },
   { title: "Platform Services", href: "/admin/services", icon: Activity },
   { title: "Medicine Orders", href: "/admin/orders", icon: ShoppingBag },

@@ -88,7 +88,7 @@ export default function AboutPage() {
   // Fetch doctors when filters change
   useEffect(() => {
     setDoctorsLoading(true);
-    let url = "/api/doctors?status=Active&limit=100";
+    let url = "/api/doctors?status=Active&showOnHomepage=true&limit=100";
     if (selectedState) url += `&state=${encodeURIComponent(selectedState)}`;
     if (selectedCity) url += `&city=${encodeURIComponent(selectedCity)}`;
     if (selectedClinic) url += `&clinicId=${selectedClinic}`;
@@ -124,7 +124,7 @@ export default function AboutPage() {
     setSelectedClinic("");
   };
 
-  // Priority sorting for doctors (Founders first, then all active staff doctors)
+  // Priority sorting for doctors (Founders first, then all active staff doctors marked for About Us)
   const DOCTOR_ORDER_KEYS = ["deepak", "amol", "radhika", "anuja", "mahajan", "vishwas"];
   const getDoctorRank = (name: string): number => {
     const lower = (name || "").toLowerCase();
@@ -132,9 +132,9 @@ export default function AboutPage() {
     return idx === -1 ? 99 : idx;
   };
 
-  const sortedDoctors = [...doctors].sort(
-    (a, b) => getDoctorRank(a.name) - getDoctorRank(b.name)
-  );
+  const sortedDoctors = [...doctors]
+    .filter(doc => doc.showOnHomepage !== false)
+    .sort((a, b) => getDoctorRank(a.name) - getDoctorRank(b.name));
 
   const defaultData = {
     heroTitle1: "Leading Psychiatric &",
@@ -439,8 +439,8 @@ export default function AboutPage() {
                   <BookNowButton 
                     prefilledData={{
                       doctorId: doctor._id,
-                      clinic: doctor.clinicId,
-                      city: clinics.find(c => c._id === doctor.clinicId)?.city
+                      clinic: doctor.clinicId || undefined,
+                      city: doctor.clinicId ? clinics.find(c => c._id === doctor.clinicId)?.city : undefined
                     }}
                     className="w-full h-12 rounded-full font-bold bg-primary hover:bg-primary/90 text-white transition-all shadow-md hover:shadow-lg"
                   >
