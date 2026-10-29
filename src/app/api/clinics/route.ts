@@ -9,11 +9,18 @@ export async function GET() {
   try {
     await connectDB();
     const clinics = await ClinicService.listClinics();
-    return NextResponse.json({
-      success: true,
-      message: "Clinics listed successfully.",
-      data: clinics,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Clinics listed successfully.",
+        data: clinics,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: error.message || "Failed to list clinics." },

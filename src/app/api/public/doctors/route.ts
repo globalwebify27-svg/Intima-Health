@@ -12,17 +12,24 @@ export async function GET() {
     let doctors = await DoctorModel.find({ 
       showOnHomepage: true,
       status: "Active" 
-    }).populate('clinicId').exec();
+    }).populate('clinicId').lean().exec();
 
     // Fallback: If no doctors are marked for the homepage, just fetch 3 active doctors
     if (doctors.length === 0) {
-      doctors = await DoctorModel.find({ status: "Active" }).limit(3).populate('clinicId').exec();
+      doctors = await DoctorModel.find({ status: "Active" }).limit(3).populate('clinicId').lean().exec();
     }
 
-    return NextResponse.json({
-      success: true,
-      data: doctors
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: doctors,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: error.message || "Failed to fetch doctors." },

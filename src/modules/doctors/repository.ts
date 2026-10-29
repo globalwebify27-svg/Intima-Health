@@ -84,7 +84,7 @@ export class DoctorRepository {
     const skip = (page - 1) * limit;
 
     const [doctors, total] = await Promise.all([
-      DoctorModel.find(query).skip(skip).limit(limit).exec(),
+      DoctorModel.find(query).skip(skip).limit(limit).lean().exec() as unknown as Promise<IDoctor[]>,
       DoctorModel.countDocuments(query).exec(),
     ]);
 

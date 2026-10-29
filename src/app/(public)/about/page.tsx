@@ -41,14 +41,19 @@ const floatAnimation = {
   }
 };
 
+// Module-level caches for instant client-side transitions
+let cachedAboutContent: any = null;
+let cachedClinics: any[] | null = null;
+let cachedDefaultDoctors: IDoctor[] | null = null;
+
 export default function AboutPage() {
-  const [aboutData, setAboutData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [aboutData, setAboutData] = useState<any>(() => cachedAboutContent);
+  const [loading, setLoading] = useState(() => !cachedAboutContent);
 
   // Doctors & Filters State - Exact implementation from Meet Experts page
-  const [doctors, setDoctors] = useState<IDoctor[]>([]);
-  const [doctorsLoading, setDoctorsLoading] = useState(true);
-  const [clinics, setClinics] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<IDoctor[]>(() => cachedDefaultDoctors || []);
+  const [doctorsLoading, setDoctorsLoading] = useState(() => !cachedDefaultDoctors);
+  const [clinics, setClinics] = useState<any[]>(() => cachedClinics || []);
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedClinic, setSelectedClinic] = useState("");
@@ -63,7 +68,9 @@ export default function AboutPage() {
       .then(json => {
         if (json && json.success && json.data && json.data.content) {
           try {
-            setAboutData(JSON.parse(json.data.content));
+            const parsed = JSON.parse(json.data.content);
+            cachedAboutContent = parsed;
+            setAboutData(parsed);
           } catch (e) {
             console.error("Failed to parse about content JSON");
           }
@@ -75,10 +82,12 @@ export default function AboutPage() {
 
   // Fetch clinics on mount
   useEffect(() => {
+    if (cachedClinics) return;
     fetch("/api/clinics")
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {
+          cachedClinics = data.data;
           setClinics(data.data);
         }
       })
@@ -87,7 +96,14 @@ export default function AboutPage() {
 
   // Fetch doctors when filters change
   useEffect(() => {
-    setDoctorsLoading(true);
+    const isDefault = !selectedState && !selectedCity && !selectedClinic;
+    if (isDefault && cachedDefaultDoctors) {
+      setDoctors(cachedDefaultDoctors);
+      setDoctorsLoading(false);
+    } else {
+      setDoctorsLoading(true);
+    }
+
     let url = "/api/doctors?status=Active&showOnHomepage=true&limit=100";
     if (selectedState) url += `&state=${encodeURIComponent(selectedState)}`;
     if (selectedCity) url += `&city=${encodeURIComponent(selectedCity)}`;
@@ -97,6 +113,7 @@ export default function AboutPage() {
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {
+          if (isDefault) cachedDefaultDoctors = data.data;
           setDoctors(data.data);
         }
       })

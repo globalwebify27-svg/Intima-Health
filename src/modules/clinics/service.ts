@@ -2,11 +2,11 @@ import { ClinicModel, IClinic } from "./schema";
 
 export class ClinicService {
   static async listClinics() {
-    return await ClinicModel.find().exec();
+    return await ClinicModel.find().lean().exec();
   }
 
   static async getClinicById(id: string) {
-    return await ClinicModel.findById(id).exec();
+    return await ClinicModel.findById(id).lean().exec();
   }
 
   static async createClinic(data: Partial<IClinic>) {

@@ -100,6 +100,11 @@ const FaqSchema = new Schema<IFaq>({
   timestamps: true,
 });
 
+PageSchema.index({ slug: 1, deletedAt: 1 });
+PostSchema.index({ slug: 1, status: 1, deletedAt: 1 });
+CategorySchema.index({ slug: 1, deletedAt: 1 });
+FaqSchema.index({ category: 1, deletedAt: 1 });
+
 PageSchema.pre("find", function(this: any) { this.where({ deletedAt: null }); });
 PageSchema.pre("findOne", function(this: any) { this.where({ deletedAt: null }); });
 
@@ -189,6 +194,9 @@ const TreatmentSchema = new Schema<ITreatment>({
 }, {
   timestamps: true,
 });
+
+TreatmentSchema.index({ slug: 1, deletedAt: 1 });
+TreatmentSchema.index({ type: 1, deletedAt: 1 });
 
 TreatmentSchema.pre("find", function(this: any) { this.where({ deletedAt: null }); });
 TreatmentSchema.pre("findOne", function(this: any) { this.where({ deletedAt: null }); });

@@ -24,8 +24,8 @@ const ClinicSchema = new Schema<IClinic>({
   timestamps: true
 });
 
-// Fix for Next.js HMR
-delete mongoose.models.Clinic;
+ClinicSchema.index({ status: 1, state: 1, city: 1 });
+
 export const ClinicModel = mongoose.models.Clinic || mongoose.model<IClinic>("Clinic", ClinicSchema);
 
 export interface IClinicService {

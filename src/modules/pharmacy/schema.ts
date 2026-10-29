@@ -56,6 +56,10 @@ const ProductSchema = new Schema<IProduct>({
   collection: "products"
 });
 
+ProductSchema.index({ slug: 1 });
+ProductSchema.index({ status: 1, deletedAt: 1 });
+ProductSchema.index({ category: 1, deletedAt: 1 });
+
 ProductSchema.pre("save", function () {
   if (!this.slug && this.name) {
     this.slug = this.name

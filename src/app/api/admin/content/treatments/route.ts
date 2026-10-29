@@ -18,11 +18,24 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const type = url.searchParams.get("type");
-    const query = type ? { type } : {};
+    const fields = url.searchParams.get("fields");
+    const query: any = { deletedAt: null };
+    if (type) query.type = type;
     
     await connectDB();
-    const items = await TreatmentModel.find(query).sort({ createdAt: -1 }).lean();
-    return NextResponse.json({ success: true, data: items });
+    let q = TreatmentModel.find(query).sort({ createdAt: -1 });
+    if (fields) {
+      q = q.select(fields.split(",").join(" "));
+    }
+    const items = await q.lean();
+    return NextResponse.json(
+      { success: true, data: items },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }

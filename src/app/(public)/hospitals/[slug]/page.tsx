@@ -22,10 +22,11 @@ import { cn } from "@/lib/utils";
 import { getRehabCentreBySlug, REHAB_CENTRES } from "@/constants/rehabCentres";
 import { HospitalService } from "@/modules/hospitals/service";
 import { Metadata } from "next";
+import { cache } from "react";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
-async function getHospital(slug: string) {
+const getHospital = cache(async (slug: string) => {
   try {
     const live = await HospitalService.getBySlug(slug);
     if (live) return live;
@@ -33,7 +34,7 @@ async function getHospital(slug: string) {
     console.error("Failed to load live hospital, using fallback:", err);
   }
   return getRehabCentreBySlug(slug);
-}
+});
 
 export async function generateMetadata({ 
   params 

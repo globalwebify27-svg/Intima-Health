@@ -31,8 +31,14 @@ export async function connectDB() {
   }
 
   if (!activeCache.promise) {
-    const opts = {
+    const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
+      heartbeatFrequencyMS: 10000,
     };
 
     activeCache.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {

@@ -38,6 +38,11 @@ const DoctorSchema = new Schema<IDoctor>({
   timestamps: true,
 });
 
+// Query performance indexes
+DoctorSchema.index({ status: 1, showOnHomepage: 1, deletedAt: 1 });
+DoctorSchema.index({ clinicId: 1, status: 1, deletedAt: 1 });
+DoctorSchema.index({ deletedAt: 1 });
+
 // Soft delete query helper
 DoctorSchema.pre("find", function() {
   this.where({ deletedAt: null });
@@ -47,6 +52,4 @@ DoctorSchema.pre("findOne", function() {
   this.where({ deletedAt: null });
 });
 
-// Fix for Next.js HMR
-delete mongoose.models.Doctor;
 export const DoctorModel = mongoose.models.Doctor || mongoose.model<IDoctor>("Doctor", DoctorSchema);

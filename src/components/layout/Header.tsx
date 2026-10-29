@@ -18,7 +18,7 @@ import { useCart } from "@/store/useCart";
 import { ShoppingBag, Menu, X, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBookingModal } from "@/store/useBookingModal";
-import { NAV_ITEMS } from "@/constants/navigation";
+import { NAV_ITEMS, NavSubItem } from "@/constants/navigation";
 
 const ListItem = React.forwardRef<
   React.ElementRef<typeof Link>,
@@ -47,6 +47,75 @@ const ListItem = React.forwardRef<
 });
 ListItem.displayName = "ListItem";
 
+// Client-side in-memory cache for dynamic navigation to avoid re-fetching on every page transition
+let cachedNavData: { treatments: any[]; sexualProblems: any[] } | null = null;
+let navFetchPromise: Promise<any> | null = null;
+
+function mergeNavItems(defaultNav: typeof NAV_ITEMS, data: { treatments: any[]; sexualProblems: any[] }) {
+  const treatments = data.treatments || [];
+  const sexualProblems = data.sexualProblems || [];
+
+  return defaultNav.map(group => {
+    if (group.title === "Treatments") {
+      const defaultItems = defaultNav.find(g => g.title === "Treatments")?.items || [];
+      const orderMap = new Map(defaultItems.map((item, idx) => [item.href, idx]));
+      const dynamicMap = new Map(treatments.map((t: any) => [`/treatments/${t.slug}`, t]));
+
+      const mergedItems: NavSubItem[] = defaultItems.map(item => {
+        const dynamic = dynamicMap.get(item.href) as any;
+        if (dynamic) {
+          return {
+            ...item,
+            title: dynamic.title || item.title,
+            description: dynamic.heroSubtext || item.description,
+          };
+        }
+        return item;
+      });
+
+      const extraItems: NavSubItem[] = treatments
+        .filter((t: any) => !orderMap.has(`/treatments/${t.slug}`))
+        .map((t: any) => ({
+          title: t.title,
+          href: `/treatments/${t.slug}`,
+          description: t.heroSubtext || t.badge || "Clinical treatment care.",
+        }));
+
+      return { ...group, items: [...mergedItems, ...extraItems] };
+    }
+
+    if (group.title === "Sexual Problems") {
+      const defaultItems = defaultNav.find(g => g.title === "Sexual Problems")?.items || [];
+      const orderMap = new Map(defaultItems.map((item, idx) => [item.href, idx]));
+      const dynamicMap = new Map(sexualProblems.map((t: any) => [`/sexual-problems/${t.slug}`, t]));
+
+      const mergedItems: NavSubItem[] = defaultItems.map(item => {
+        const dynamic = dynamicMap.get(item.href) as any;
+        if (dynamic) {
+          return {
+            ...item,
+            title: dynamic.title || item.title,
+            description: dynamic.heroSubtext || item.description,
+          };
+        }
+        return item;
+      });
+
+      const extraItems: NavSubItem[] = sexualProblems
+        .filter((t: any) => !orderMap.has(`/sexual-problems/${t.slug}`))
+        .map((t: any) => ({
+          title: t.title,
+          href: `/sexual-problems/${t.slug}`,
+          description: t.heroSubtext || t.badge || "Medical advice and guidance.",
+        }));
+
+      return { ...group, items: [...mergedItems, ...extraItems] };
+    }
+
+    return group;
+  });
+}
+
 export function Header() {
   const router = useRouter();
   const { openCart, items } = useCart();
@@ -54,84 +123,35 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const cartItemCount = items.reduce((total, item) => total + item.quantity, 0);
   const [isCheckingCartAuth, setIsCheckingCartAuth] = useState(false);
-  const [navItems, setNavItems] = useState(NAV_ITEMS);
+  const [navItems, setNavItems] = useState(() => {
+    return cachedNavData ? mergeNavItems(NAV_ITEMS, cachedNavData) : NAV_ITEMS;
+  });
 
   useEffect(() => {
-    const fetchDynamicNav = async () => {
-      try {
-        const [treatmentsRes, sexualRes] = await Promise.all([
-          fetch("/api/admin/content/treatments?type=treatment"),
-          fetch("/api/admin/content/treatments?type=sexual-problem")
-        ]);
-        
-        const treatmentsJson = await treatmentsRes.json();
-        const sexualJson = await sexualRes.json();
-        
-        if (treatmentsJson.success && sexualJson.success) {
-          setNavItems(prev => prev.map(group => {
-            if (group.title === "Treatments") {
-              const defaultItems = NAV_ITEMS.find(g => g.title === "Treatments")?.items || [];
-              const orderMap = new Map(defaultItems.map((item, idx) => [item.href, idx]));
-              const dynamicMap = new Map(treatmentsJson.data.map((t: any) => [`/treatments/${t.slug}`, t]));
-              
-              const mergedItems = defaultItems.map(item => {
-                const dynamic = dynamicMap.get(item.href) as any;
-                if (dynamic) {
-                  return {
-                    ...item,
-                    title: dynamic.title || item.title,
-                    description: dynamic.heroSubtext || item.description
-                  };
-                }
-                return item;
-              });
+    if (cachedNavData) return;
 
-              const extraItems = treatmentsJson.data
-                .filter((t: any) => !orderMap.has(`/treatments/${t.slug}`))
-                .map((t: any) => ({
-                  title: t.title,
-                  href: `/treatments/${t.slug}`,
-                  description: t.heroSubtext || t.badge || "Clinical treatment care."
-                }));
+    if (!navFetchPromise) {
+      navFetchPromise = fetch("/api/public/navigation")
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.success && json.data) {
+            cachedNavData = json.data;
+            return json.data;
+          }
+          return null;
+        })
+        .catch((error) => {
+          console.error("Failed to fetch dynamic navigation", error);
+          navFetchPromise = null;
+          return null;
+        });
+    }
 
-              return { ...group, items: [...mergedItems, ...extraItems] };
-            }
-            if (group.title === "Sexual Problems") {
-              const defaultItems = NAV_ITEMS.find(g => g.title === "Sexual Problems")?.items || [];
-              const orderMap = new Map(defaultItems.map((item, idx) => [item.href, idx]));
-              const dynamicMap = new Map(sexualJson.data.map((t: any) => [`/sexual-problems/${t.slug}`, t]));
-
-              const mergedItems = defaultItems.map(item => {
-                const dynamic = dynamicMap.get(item.href) as any;
-                if (dynamic) {
-                  return {
-                    ...item,
-                    title: dynamic.title || item.title,
-                    description: dynamic.heroSubtext || item.description
-                  };
-                }
-                return item;
-              });
-
-              const extraItems = sexualJson.data
-                .filter((t: any) => !orderMap.has(`/sexual-problems/${t.slug}`))
-                .map((t: any) => ({
-                  title: t.title,
-                  href: `/sexual-problems/${t.slug}`,
-                  description: t.heroSubtext || t.badge || "Medical advice and guidance."
-                }));
-
-              return { ...group, items: [...mergedItems, ...extraItems] };
-            }
-            return group;
-          }));
-        }
-      } catch (error) {
-        console.error("Failed to fetch dynamic navigation", error);
+    navFetchPromise.then((data) => {
+      if (data) {
+        setNavItems(mergeNavItems(NAV_ITEMS, data));
       }
-    };
-    
-    fetchDynamicNav();
+    });
   }, []);
 
   return (

@@ -18,7 +18,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       return NextResponse.json({ success: false, message: "Post not found" }, { status: 404 });
     }
       
-    return NextResponse.json({ success: true, data: post });
+    return NextResponse.json(
+      { success: true, data: post },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }

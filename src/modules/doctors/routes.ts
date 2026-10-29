@@ -17,16 +17,23 @@ export async function handleGetDoctors(req: Request) {
     const limit = parseInt(searchParams.get("limit") || "10", 10);
 
     const result = await DoctorService.getDoctorsList({ specialization, status, clinicId, state, city, showOnHomepage, page, limit });
-    return NextResponse.json({
-      success: true,
-      message: "Doctors listed successfully.",
-      data: result.doctors,
-      meta: {
-        total: result.total,
-        page,
-        limit,
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Doctors listed successfully.",
+        data: result.doctors,
+        meta: {
+          total: result.total,
+          page,
+          limit,
+        },
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+        },
       }
-    });
+    );
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: error.message || "Failed to list doctors." },

@@ -25,22 +25,28 @@ const staggerContainer = {
   }
 };
 
+// Module-level caches for instant client-side transitions
+let cachedDoctorsClinics: any[] | null = null;
+let cachedAllDoctors: IDoctor[] | null = null;
+
 export default function DoctorsPage() {
-  const [doctors, setDoctors] = useState<IDoctor[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [doctors, setDoctors] = useState<IDoctor[]>(() => cachedAllDoctors || []);
+  const [loading, setLoading] = useState(() => !cachedAllDoctors);
 
   // Filters State
-  const [clinics, setClinics] = useState<any[]>([]);
+  const [clinics, setClinics] = useState<any[]>(() => cachedDoctorsClinics || []);
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedClinic, setSelectedClinic] = useState("");
 
   // Fetch clinics on mount
   useEffect(() => {
+    if (cachedDoctorsClinics) return;
     fetch("/api/clinics")
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {
+          cachedDoctorsClinics = data.data;
           setClinics(data.data);
         }
       })
@@ -49,7 +55,14 @@ export default function DoctorsPage() {
 
   // Fetch doctors when filters change
   useEffect(() => {
-    setLoading(true);
+    const isDefault = !selectedState && !selectedCity && !selectedClinic;
+    if (isDefault && cachedAllDoctors) {
+      setDoctors(cachedAllDoctors);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     let url = "/api/doctors?status=Active&limit=100";
     if (selectedState) url += `&state=${encodeURIComponent(selectedState)}`;
     if (selectedCity) url += `&city=${encodeURIComponent(selectedCity)}`;
@@ -59,6 +72,7 @@ export default function DoctorsPage() {
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {
+          if (isDefault) cachedAllDoctors = data.data;
           setDoctors(data.data);
         }
       })

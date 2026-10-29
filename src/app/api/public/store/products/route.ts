@@ -8,7 +8,14 @@ export async function GET() {
   try {
     await connectDB();
     const products = await ProductModel.find({ deletedAt: null }).lean();
-    return NextResponse.json({ success: true, data: products });
+    return NextResponse.json(
+      { success: true, data: products },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }

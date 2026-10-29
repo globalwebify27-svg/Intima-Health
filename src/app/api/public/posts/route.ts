@@ -13,7 +13,14 @@ export async function GET() {
       .sort({ createdAt: -1 })
       .lean();
       
-    return NextResponse.json({ success: true, data: posts });
+    return NextResponse.json(
+      { success: true, data: posts },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
