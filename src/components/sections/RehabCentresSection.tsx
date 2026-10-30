@@ -18,11 +18,12 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { REHAB_CENTRES, RehabCentre } from "@/constants/rehabCentres";
 
-export function RehabCentresSection() {
+export function RehabCentresSection({ initialCentres }: { initialCentres?: RehabCentre[] } = {}) {
   const router = useRouter();
-  const [centres, setCentres] = useState<RehabCentre[]>(REHAB_CENTRES);
+  const [centres, setCentres] = useState<RehabCentre[]>(initialCentres || REHAB_CENTRES);
 
   useEffect(() => {
+    if (initialCentres && initialCentres.length > 0) return;
     fetch("/api/public/hospitals")
       .then((res) => res.json())
       .then((json) => {
@@ -31,7 +32,7 @@ export function RehabCentresSection() {
         }
       })
       .catch((err) => console.error("Failed to fetch live hospitals:", err));
-  }, []);
+  }, [initialCentres]);
 
   return (
     <section className="py-20 bg-muted/30 border-t border-border">
@@ -86,6 +87,7 @@ export function RehabCentresSection() {
                         src={centre.image}
                         alt={centre.name}
                         fill
+                        sizes="112px"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>

@@ -3,6 +3,8 @@ import { connectDB } from "@/db/connect";
 import { TreatmentModel } from "@/modules/cms/schema";
 import { verifyJwt } from "@/lib/jwt";
 import { cookies } from "next/headers";
+import { unlink } from "fs/promises";
+import path from "path";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +37,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const body = await req.json();
     await connectDB();
     
-    // Add updatedBy tracking here if needed
+    const oldItem = await TreatmentModel.findById(resolvedParams.id);
+    if (!oldItem) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+
+    // If image was cleared or changed, remove old uploaded file from disk if it was in /uploads/
+    if (oldItem.heroImage && oldItem.heroImage !== body.heroImage && oldItem.heroImage.startsWith("/uploads/")) {
+      try {
+        const filePath = path.join(process.cwd(), "public", oldItem.heroImage);
+        await unlink(filePath);
+      } catch {
+        // file might already be removed, safely ignore
+      }
+    }
+
     const updated = await TreatmentModel.findByIdAndUpdate(resolvedParams.id, body, { new: true });
-    if (!updated) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
     
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {

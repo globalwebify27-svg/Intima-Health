@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import sharp from "sharp";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +27,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validate file size (max 15MB before compression)
+    if (file.size > 15 * 1024 * 1024) {
       return NextResponse.json(
-        { success: false, message: "File size must be under 10MB." },
+        { success: false, message: "File size must be under 15MB." },
         { status: 400 }
       );
     }
@@ -37,14 +38,20 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
+    // Automatically optimize and convert to high-efficiency WebP
+    const optimizedBuffer = await sharp(buffer)
+      .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 82, effort: 4 })
+      .toBuffer();
+
     // Generate unique filename
-    const ext = file.type.split("/")[1] === "jpeg" ? "jpg" : file.type.split("/")[1];
     const hash = crypto.randomBytes(8).toString("hex");
     const sanitizedName = (file.name || "hospital")
       .toLowerCase()
+      .replace(/\.[^/.]+$/, "")
       .replace(/[^a-z0-9]/g, "_")
       .slice(0, 20);
-    const filename = `${sanitizedName}_${hash}.${ext}`;
+    const filename = `${sanitizedName}_${hash}.webp`;
 
     // Ensure upload directory exists
     const uploadDir = path.join(process.cwd(), "public", "uploads", "hospitals");
@@ -52,13 +59,13 @@ export async function POST(req: Request) {
 
     // Write file to disk
     const filePath = path.join(uploadDir, filename);
-    await writeFile(filePath, buffer);
+    await writeFile(filePath, optimizedBuffer);
 
     const url = `/uploads/hospitals/${filename}`;
 
     return NextResponse.json({
       success: true,
-      message: "Hospital image uploaded successfully.",
+      message: "Hospital image optimized and converted to WebP successfully.",
       url,
     });
   } catch (error: any) {

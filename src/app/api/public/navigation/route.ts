@@ -2,18 +2,17 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { TreatmentModel } from "@/modules/cms/schema";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // Cache for 5 minutes (ISR for API)
 
 export async function GET() {
   try {
     await connectDB();
     const items = await TreatmentModel.find({ deletedAt: null })
       .select("title slug heroSubtext badge type")
-      .sort({ createdAt: -1 })
       .lean();
 
-    const treatments = items.filter((item) => item.type !== "sexual-problem");
-    const sexualProblems = items.filter((item) => item.type === "sexual-problem");
+    const treatments = items.filter((item: any) => item.type !== "sexual-problem");
+    const sexualProblems = items.filter((item: any) => item.type === "sexual-problem");
 
     return NextResponse.json(
       {
@@ -30,9 +29,20 @@ export async function GET() {
       }
     );
   } catch (error: any) {
+    console.error("Failed to load navigation items from DB:", error);
     return NextResponse.json(
-      { success: false, message: error.message || "Failed to load navigation items." },
-      { status: 500 }
+      {
+        success: true,
+        data: {
+          treatments: [],
+          sexualProblems: [],
+        },
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+        },
+      }
     );
   }
 }

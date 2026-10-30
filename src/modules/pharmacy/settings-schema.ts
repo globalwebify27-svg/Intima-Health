@@ -24,6 +24,16 @@ export interface IPharmacyConfig {
   updatedBy?: string;
 }
 
+export const DEFAULT_AKOLA_PINCODES: IServiceablePincode[] = [
+  { pinCode: "444001", areaName: "Akola City / Old City / Gandhi Road", deliveryCharge: 50, estimatedHours: "Same Day (within 12-24 hrs)", isActive: true },
+  { pinCode: "444002", areaName: "Civil Lines / Ramdas Peth", deliveryCharge: 50, estimatedHours: "Same Day (within 12-24 hrs)", isActive: true },
+  { pinCode: "444003", areaName: "Malkapur / MIDC Phase 1 & 2", deliveryCharge: 50, estimatedHours: "24 to 48 Hours", isActive: true },
+  { pinCode: "444004", areaName: "Kaulkhed / Jatharpeth / Umri", deliveryCharge: 50, estimatedHours: "Same Day (within 12-24 hrs)", isActive: true },
+  { pinCode: "444005", areaName: "Akola Cantonment / Ratanlal Plot", deliveryCharge: 50, estimatedHours: "24 to 48 Hours", isActive: true },
+  { pinCode: "444006", areaName: "Shivaji Nagar / Toshniwal Layout", deliveryCharge: 50, estimatedHours: "Same Day (within 12-24 hrs)", isActive: true },
+  { pinCode: "444104", areaName: "Murtizapur Road / Akola Outskirts", deliveryCharge: 70, estimatedHours: "24 to 48 Hours", isActive: true },
+];
+
 const ServiceablePincodeSchema = new Schema<IServiceablePincode>({
   pinCode: { type: String, required: true },
   areaName: { type: String, required: true },

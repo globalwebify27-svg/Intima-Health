@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
-import { PharmacyConfigModel } from "@/modules/pharmacy/settings-schema";
+import { PharmacyConfigModel, DEFAULT_AKOLA_PINCODES } from "@/modules/pharmacy/settings-schema";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,11 @@ export async function GET(request: Request) {
       config = await PharmacyConfigModel.create({});
     }
 
-    const matchedPin = config.serviceablePincodes.find(
+    const pincodesList = (config.serviceablePincodes && config.serviceablePincodes.length > 0)
+      ? config.serviceablePincodes
+      : DEFAULT_AKOLA_PINCODES;
+
+    const matchedPin = pincodesList.find(
       (p: { pinCode: string; areaName?: string; deliveryCharge?: number; estimatedHours?: string; isActive?: boolean }) =>
         p.pinCode === pinCode && p.isActive !== false
     );
@@ -33,6 +37,7 @@ export async function GET(request: Request) {
         success: true,
         isServiceable: true,
         data: {
+          isServiceable: true,
           pinCode: matchedPin.pinCode,
           areaName: matchedPin.areaName,
           deliveryCharge: matchedPin.deliveryCharge ?? config.defaultDeliveryFee ?? 50,

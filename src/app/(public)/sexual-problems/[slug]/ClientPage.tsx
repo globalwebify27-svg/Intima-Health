@@ -60,6 +60,7 @@ export default function ClientPage({ data }: { data: any }) {
                   src={data.heroImage || "/images/doctor_1.png"}
                   alt={data.title || "Sexual Problem Treatment"}
                   fill
+                  priority
                   className="object-cover"
                   unoptimized={Boolean(data.heroImage?.startsWith("data:") || data.heroImage?.startsWith("http"))}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

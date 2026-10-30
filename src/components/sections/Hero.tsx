@@ -36,71 +36,28 @@ export function Hero() {
       <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
       <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/3 w-[600px] h-[600px] bg-secondary/5 rounded-full blur-[100px] -z-10 pointer-events-none" />
 
-      {/* Interactive Medical/Wellness SVGs */}
-      <motion.div
-        animate={{ y: [0, -20, 0], x: [0, 10, 0], rotate: [0, 10, 0] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        whileHover={{ scale: 1.3, rotate: 180, color: "var(--primary)" }}
-        className="absolute top-[5%] left-[8%] text-primary/30 z-0 cursor-pointer hidden sm:block"
-      >
-        <Activity size={64} strokeWidth={1.5} />
-      </motion.div>
-      <motion.div
-        animate={{ y: [0, 25, 0], x: [0, -10, 0], rotate: [0, -15, 0] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        whileHover={{ scale: 1.3, rotate: -180, color: "var(--secondary)" }}
-        className="absolute bottom-[20%] left-[50%] text-secondary/30 z-0 cursor-pointer hidden lg:block"
-      >
-        <HeartPulse size={80} strokeWidth={1.5} />
-      </motion.div>
-      <motion.div
-        animate={{ y: [0, -15, 0], rotate: [0, 5, 0] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-        whileHover={{ scale: 1.4, rotate: 45, color: "var(--primary)" }}
-        className="absolute top-[10%] left-[45%] text-primary/30 z-0 cursor-pointer hidden md:block"
-      >
-        <Shield size={48} strokeWidth={2} />
-      </motion.div>
-      <motion.div
-        animate={{ y: [0, 30, 0], rotate: [0, 20, 0] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-        whileHover={{ scale: 1.3, rotate: 90, color: "var(--secondary)" }}
-        className="absolute top-[45%] right-[8%] text-secondary/30 z-0 cursor-pointer hidden sm:block"
-      >
-        <Zap size={56} strokeWidth={1.5} />
-      </motion.div>
-      <motion.div
-        animate={{ y: [0, -30, 0], x: [0, 15, 0], rotate: [0, -10, 0] }}
-        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-        whileHover={{ scale: 1.3, rotate: -45, color: "var(--primary)" }}
-        className="absolute bottom-[5%] left-[35%] text-primary/20 z-0 cursor-pointer hidden lg:block"
-      >
-        <Brain size={72} strokeWidth={1.5} />
-      </motion.div>
-      <motion.div
-        animate={{ y: [0, 20, 0], rotate: [0, 30, 0] }}
-        transition={{ duration: 11, repeat: Infinity, ease: "easeInOut", delay: 2.5 }}
-        whileHover={{ scale: 1.4, rotate: 180, color: "var(--secondary)" }}
-        className="absolute bottom-[25%] right-[12%] text-secondary/20 z-0 cursor-pointer hidden md:block"
-      >
-        <Stethoscope size={64} strokeWidth={1.5} />
-      </motion.div>
-      <motion.div
-        animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        whileHover={{ scale: 1.5, color: "var(--primary)" }}
-        className="absolute top-[5%] right-[25%] text-primary/40 z-0 cursor-pointer"
-      >
-        <Sparkles size={40} strokeWidth={2} />
-      </motion.div>
-      <motion.div
-        animate={{ y: [0, -15, 0], rotate: [-10, 10, -10] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 3 }}
-        whileHover={{ scale: 1.3, color: "var(--secondary)" }}
-        className="absolute bottom-[10%] left-[15%] text-secondary/30 z-0 cursor-pointer hidden sm:block"
-      >
-        <Smile size={56} strokeWidth={1.5} />
-      </motion.div>
+      {/* Lightweight Decorative Medical Icons (GPU-accelerated, zero JS event loop overhead) */}
+      <div className="absolute top-[5%] left-[8%] text-primary/20 z-0 hidden sm:block transition-transform hover:scale-125 duration-500 pointer-events-none">
+        <Activity size={56} strokeWidth={1.5} />
+      </div>
+      <div className="absolute bottom-[20%] left-[50%] text-secondary/20 z-0 hidden lg:block transition-transform hover:scale-125 duration-500 pointer-events-none">
+        <HeartPulse size={64} strokeWidth={1.5} />
+      </div>
+      <div className="absolute top-[10%] left-[45%] text-primary/20 z-0 hidden md:block transition-transform hover:scale-125 duration-500 pointer-events-none">
+        <Shield size={44} strokeWidth={1.75} />
+      </div>
+      <div className="absolute top-[45%] right-[8%] text-secondary/20 z-0 hidden sm:block transition-transform hover:scale-125 duration-500 pointer-events-none">
+        <Zap size={48} strokeWidth={1.5} />
+      </div>
+      <div className="absolute bottom-[5%] left-[35%] text-primary/15 z-0 hidden lg:block transition-transform hover:scale-125 duration-500 pointer-events-none">
+        <Brain size={60} strokeWidth={1.5} />
+      </div>
+      <div className="absolute bottom-[25%] right-[12%] text-secondary/15 z-0 hidden md:block transition-transform hover:scale-125 duration-500 pointer-events-none">
+        <Stethoscope size={52} strokeWidth={1.5} />
+      </div>
+      <div className="absolute top-[5%] right-[25%] text-primary/30 z-0 transition-transform hover:scale-125 duration-500 pointer-events-none">
+        <Sparkles size={36} strokeWidth={1.75} />
+      </div>
 
       <div className="container mx-auto px-6 lg:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">

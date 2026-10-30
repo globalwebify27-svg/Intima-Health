@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { 
   Lock, ShieldCheck, ArrowRight, CreditCard, ShoppingBag, 
   CheckCircle2, AlertCircle, Upload, FileText, 
-  Truck, Building2, ExternalLink, Loader2
+  Truck, Building2, ExternalLink, Loader2, UserCheck
 } from "lucide-react";
 import { useCart } from "@/store/useCart";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,8 @@ interface ConfirmedOrder {
   status: string;
   totalAmount?: number;
   shippingDetails?: {
+    fullName?: string;
+    phone?: string;
     areaName?: string;
     pinCode?: string;
   };
@@ -80,8 +82,26 @@ export default function CheckoutPage() {
   const [street, setStreet] = useState("");
   const city = "Akola";
   const state = "Maharashtra";
-  const [pinCode, setPinCode] = useState("444001");
+  const [pinCode, setPinCode] = useState("");
   const [landmark, setLandmark] = useState("");
+
+  // Mobile verification states
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [otpSentMessage, setOtpSentMessage] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   // PIN code live validation
   const [checkingPin, setCheckingPin] = useState(false);
@@ -101,6 +121,10 @@ export default function CheckoutPage() {
         if (data.success && data.user) {
           setPatientId(data.user.patientId || data.user.id);
           setFullName(data.user.name || "");
+          if (data.user.phone) {
+            setPhone(data.user.phone);
+            setIsPhoneVerified(true);
+          }
 
           // If logged in, fetch their digital prescriptions
           if (data.user.patientId) {
@@ -128,12 +152,13 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (pinCode.length === 6 && /^\d{6}$/.test(pinCode)) {
       let ignore = false;
+      setCheckingPin(true);
       fetch(`/api/pharmacy/check-pincode?pincode=${pinCode}`)
         .then((res) => res.json())
         .then((data) => {
           if (!ignore) {
             if (data.isServiceable) {
-              setPinResult(data.data);
+              setPinResult({ isServiceable: true, ...data.data });
               setPinError("");
             } else {
               setPinResult(null);
@@ -154,6 +179,8 @@ export default function CheckoutPage() {
       return () => {
         ignore = true;
       };
+    } else {
+      setPinResult(null);
     }
   }, [pinCode]);
 
@@ -228,18 +255,119 @@ export default function CheckoutPage() {
     setStep("shipping");
   };
 
+  const handleSendOtp = async () => {
+    const cleanPhone = phone.replace(/\D/g, "").slice(-10);
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setPinError("Please enter a valid 10-digit mobile number first.");
+      return;
+    }
+    setSendingOtp(true);
+    setOtpError("");
+    setOtpSentMessage("");
+    try {
+      const res = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: cleanPhone, name: fullName }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowOtpInput(true);
+        setOtpSentMessage(data.message || `Verification code sent to WhatsApp +91 ${cleanPhone}`);
+        setCountdown(60);
+      } else {
+        setOtpError(data.message || "Failed to send OTP.");
+      }
+    } catch {
+      setOtpError("Failed to send OTP. Please check your network connection.");
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const cleanPhone = phone.replace(/\D/g, "").slice(-10);
+    if (!otp || otp.length < 4) {
+      setOtpError("Please enter the 6-digit verification code.");
+      return;
+    }
+    setVerifyingOtp(true);
+    setOtpError("");
+    try {
+      const res = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: cleanPhone, otp, name: fullName }),
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        setIsPhoneVerified(true);
+        const resolvedPatientId = data.user.patientId || data.user.id;
+        setPatientId(resolvedPatientId);
+        if (data.user.name && !fullName.trim()) {
+          setFullName(data.user.name);
+        }
+        setShowOtpInput(false);
+        setOtpSentMessage("");
+        setOtpError("");
+        setPinError("");
+
+        // If existing patient has prescriptions, fetch them automatically
+        if (resolvedPatientId) {
+          fetch(`/api/consultations?patientId=${resolvedPatientId}`)
+            .then((r) => r.json())
+            .then((consultJson) => {
+              if (consultJson.success && Array.isArray(consultJson.data)) {
+                const withRx = consultJson.data.filter(
+                  (c: { prescriptionSummary?: string; _id: string }) => c.prescriptionSummary && c.prescriptionSummary !== "[]"
+                );
+                setDigitalPrescriptions(withRx);
+                if (withRx.length > 0) {
+                  setSelectedDigitalRxId(withRx[0]._id);
+                }
+              }
+            })
+            .catch((err) => console.error("Error loading prescriptions:", err));
+        }
+      } else {
+        setOtpError(data.message || "Invalid OTP code. Please try again.");
+      }
+    } catch {
+      setOtpError("Failed to verify code. Please try again.");
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
   // Validate Shipping step
   const handleProceedFromShipping = () => {
+    setPinError("");
     if (!fullName.trim()) {
       setPinError("Full recipient name is required.");
       return;
     }
-    if (!phone.trim() || phone.length < 10) {
+    const cleanPhone = phone.replace(/\D/g, "").slice(-10);
+    if (!cleanPhone || cleanPhone.length < 10) {
       setPinError("A valid 10-digit mobile number is required for delivery coordination.");
+      return;
+    }
+    if (!isPhoneVerified) {
+      setPinError("Please verify your mobile number via WhatsApp OTP before continuing.");
+      if (!showOtpInput) {
+        handleSendOtp();
+      }
       return;
     }
     if (!street.trim()) {
       setPinError("Street address and house/flat number are required.");
+      return;
+    }
+    if (!pinCode || pinCode.length !== 6) {
+      setPinError("Please enter your 6-digit delivery PIN code.");
+      return;
+    }
+    if (checkingPin) {
+      setPinError("Verifying delivery PIN code, please wait a moment...");
       return;
     }
     if (!pinResult || !pinResult.isServiceable) {
@@ -253,9 +381,9 @@ export default function CheckoutPage() {
 
   // Final Order Placement & Payment Handler
   const handlePlaceOrder = async () => {
-    if (!patientId) {
-      setOrderError("Please sign in to complete your medicine order.");
-      router.push("/login?redirect=/checkout");
+    if (!patientId || !isPhoneVerified) {
+      setOrderError("Please verify your mobile number to complete your medicine order.");
+      setStep("shipping");
       return;
     }
 
@@ -404,6 +532,19 @@ export default function CheckoutPage() {
             <p className="text-muted-foreground text-sm">
               Your medicine delivery order has been received and forwarded to our licensed pharmacy partner.
             </p>
+          </div>
+
+          {/* Patient Account & Profile Linked Banner */}
+          <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-4 text-left flex items-start gap-3">
+            <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+              <UserCheck className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-emerald-900">Patient Profile Linked</h3>
+              <p className="text-xs text-emerald-800 leading-relaxed">
+                Your order is securely linked to your verified patient profile for <strong>+91 {phone}</strong>. You can log into your patient account anytime using this WhatsApp number to track live delivery, review doctor prescriptions, and book consultations.
+              </p>
+            </div>
           </div>
 
           <div className="bg-muted/40 border border-border/80 rounded-2xl p-6 text-left space-y-4">
@@ -674,17 +815,121 @@ export default function CheckoutPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Mobile Phone (for delivery coordination) *</Label>
-                      <Input
-                        id="phone"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="9876543210"
-                        className="rounded-xl h-11"
-                        required
-                      />
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="phone">Mobile Phone (WhatsApp Verified) *</Label>
+                        {isPhoneVerified && (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Verified
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-3.5 top-3 text-xs font-bold text-muted-foreground select-none">+91</span>
+                          <Input
+                            id="phone"
+                            type="tel"
+                            value={phone}
+                            maxLength={11}
+                            onChange={(e) => {
+                              let raw = e.target.value.replace(/\D/g, "");
+                              // Automatically remove leading 0 if entered
+                              if (raw.startsWith("0")) raw = raw.slice(1);
+                              if (raw.startsWith("91") && raw.length > 10) raw = raw.slice(2);
+                              raw = raw.slice(0, 10);
+                              setPhone(raw);
+                              if (isPhoneVerified) {
+                                setIsPhoneVerified(false);
+                                setShowOtpInput(false);
+                              }
+                            }}
+                            placeholder="98765 43210"
+                            className="rounded-xl h-11 pl-11 font-mono font-medium"
+                            required
+                          />
+                        </div>
+                        {!isPhoneVerified ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleSendOtp}
+                            disabled={sendingOtp || phone.replace(/\D/g, "").slice(-10).length < 10}
+                            className="rounded-xl h-11 px-4 text-xs font-semibold shrink-0 border-primary/40 text-primary hover:bg-primary/5"
+                          >
+                            {sendingOtp ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                                Sending...
+                              </>
+                            ) : (
+                              "Verify Mobile"
+                            )}
+                          </Button>
+                        ) : (
+                          <div className="h-11 px-3.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center gap-1.5 text-xs font-bold shrink-0">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            Verified
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
+
+                  {/* WhatsApp OTP Verification Box */}
+                  {!isPhoneVerified && showOtpInput && (
+                    <div className="p-4 bg-muted/40 border border-primary/30 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-primary" /> Enter 6-digit WhatsApp Verification Code
+                        </span>
+                        {countdown > 0 ? (
+                          <span className="text-xs text-muted-foreground font-mono">Resend in {countdown}s</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleSendOtp}
+                            disabled={sendingOtp}
+                            className="text-xs font-semibold text-primary hover:underline"
+                          >
+                            Resend Code
+                          </button>
+                        )}
+                      </div>
+
+                      {otpSentMessage && (
+                        <p className="text-xs text-emerald-600 font-medium">{otpSentMessage}</p>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Input
+                          value={otp}
+                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          placeholder="Enter 6-digit code"
+                          maxLength={6}
+                          className="rounded-xl h-11 tracking-widest font-mono text-center text-lg font-bold bg-background placeholder:text-sm placeholder:font-normal placeholder:tracking-normal"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleVerifyOtp}
+                          disabled={verifyingOtp || otp.length < 4}
+                          className="rounded-xl h-11 px-5 font-semibold text-xs shrink-0"
+                        >
+                          {verifyingOtp ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                              Verifying...
+                            </>
+                          ) : (
+                            "Confirm OTP"
+                          )}
+                        </Button>
+                      </div>
+
+                      {otpError && (
+                        <p className="text-xs text-destructive font-medium">{otpError}</p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="street">Street Address / House / Flat No. *</Label>
@@ -716,8 +961,8 @@ export default function CheckoutPage() {
                               setPinError(val.length > 0 ? "Please enter a 6-digit PIN code." : "");
                             }
                           }}
-                          placeholder="444001"
-                          className="rounded-xl h-11 font-mono font-bold"
+                          placeholder="e.g. 444001"
+                          className="rounded-xl h-11 font-mono font-medium placeholder:font-sans placeholder:font-normal placeholder:text-muted-foreground/60"
                           required
                         />
                         {checkingPin && (

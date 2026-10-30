@@ -2,8 +2,7 @@ import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
-import { CartDrawer } from "@/components/layout/CartDrawer";
-import { BookingModal } from "@/components/layout/BookingModal";
+import { ClientOverlays } from "@/components/layout/ClientOverlays";
 
 export default function PublicLayout({
   children,
@@ -17,8 +16,7 @@ export default function PublicLayout({
       <main className="flex-1">{children}</main>
       <Footer />
       <MobileBottomNav />
-      <CartDrawer />
-      <BookingModal />
+      <ClientOverlays />
     </div>
   );
 }

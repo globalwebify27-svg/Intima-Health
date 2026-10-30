@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { OrderModel, ProductModel } from "@/modules/pharmacy/schema";
-import { PharmacyConfigModel } from "@/modules/pharmacy/settings-schema";
+import { PharmacyConfigModel, DEFAULT_AKOLA_PINCODES } from "@/modules/pharmacy/settings-schema";
+import { PatientModel } from "@/modules/patients/schema";
 import { AuditLogModel } from "@/modules/system/schema";
 
 export const dynamic = 'force-dynamic';
@@ -60,8 +61,24 @@ export async function POST(request: Request) {
       remainingRefills,
     } = body;
 
-    if (!patientId) {
-      return NextResponse.json({ success: false, message: "Patient is required." }, { status: 400 });
+    let finalPatientId = patientId;
+    if (!finalPatientId && shippingDetails?.phone) {
+      const cleanPhone = shippingDetails.phone.replace(/\D/g, "").slice(-10);
+      let patient = await PatientModel.findOne({ phone: new RegExp(cleanPhone + '$') });
+      if (!patient) {
+        patient = await PatientModel.create({
+          name: shippingDetails.fullName || `Patient ${cleanPhone.slice(-4)}`,
+          email: `${cleanPhone}@intima.app`,
+          phone: cleanPhone,
+          gender: "Prefer not to say",
+          status: "Active"
+        });
+      }
+      finalPatientId = patient._id;
+    }
+
+    if (!finalPatientId) {
+      return NextResponse.json({ success: false, message: "Patient profile is required. Please verify your mobile phone number." }, { status: 400 });
     }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -79,7 +96,11 @@ export async function POST(request: Request) {
       config = await PharmacyConfigModel.create({});
     }
 
-    const matchedPin = config.serviceablePincodes.find(
+    const pincodesList = (config.serviceablePincodes && config.serviceablePincodes.length > 0)
+      ? config.serviceablePincodes
+      : DEFAULT_AKOLA_PINCODES;
+
+    const matchedPin = pincodesList.find(
       (p: { pinCode: string; isActive?: boolean }) => p.pinCode === pinCode && p.isActive !== false
     );
     if (!matchedPin) {
@@ -191,7 +212,7 @@ export async function POST(request: Request) {
 
     const order = new OrderModel({
       orderNumber,
-      patientId,
+      patientId: finalPatientId,
       clinicId: clinicId || undefined,
       items: validatedItems,
       totalAmount: totalPayable,

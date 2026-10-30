@@ -22,7 +22,7 @@ const staggerContainer = {
 import * as Icons from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function ClientPage({ data }: { data: any }) {
+export default function ClientPage({ data, hospitals }: { data: any; hospitals?: any[] }) {
 
 
   return (
@@ -61,6 +61,7 @@ export default function ClientPage({ data }: { data: any }) {
                   src={data.heroImage || "/images/doctor_1.png"}
                   alt={data.title || "Treatment"}
                   fill
+                  priority
                   className="object-cover"
                   unoptimized={Boolean(data.heroImage?.startsWith("data:") || data.heroImage?.startsWith("http"))}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -140,7 +141,7 @@ export default function ClientPage({ data }: { data: any }) {
 
       {/* Alcohol & Drug De-addiction Subsection (Ashakiran Rehabilitation Centre & Sanmitra Manas Hospital) */}
       {(data.slug === "treatment-of-alcohol-addiction" || data.slug === "brown-sugar-de-addiction") && (
-        <RehabCentresSection />
+        <RehabCentresSection initialCentres={hospitals} />
       )}
 
       {/* Topic-Specific FAQs Section */}

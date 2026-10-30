@@ -197,6 +197,8 @@ const TreatmentSchema = new Schema<ITreatment>({
 
 TreatmentSchema.index({ slug: 1, deletedAt: 1 });
 TreatmentSchema.index({ type: 1, deletedAt: 1 });
+TreatmentSchema.index({ deletedAt: 1, createdAt: -1 });
+TreatmentSchema.index({ type: 1, deletedAt: 1, createdAt: -1 });
 
 TreatmentSchema.pre("find", function(this: any) { this.where({ deletedAt: null }); });
 TreatmentSchema.pre("findOne", function(this: any) { this.where({ deletedAt: null }); });

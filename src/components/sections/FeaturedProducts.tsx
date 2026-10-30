@@ -120,7 +120,7 @@ export function FeaturedProducts() {
               {/* Product Image Header */}
               <Link href={`/products/${product.slug}`} className="relative w-full h-[320px] bg-muted/20 overflow-hidden shrink-0 block">
                 <Image 
-                  src={product.image}
+                  src={product.image || "/images/product_kit_1.png"}
                   alt={product.title}
                   fill
                   className="object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
@@ -167,7 +167,7 @@ export function FeaturedProducts() {
                       id: product.id,
                       name: product.title,
                       price: product.price,
-                      image: product.image,
+                      image: product.image || "/images/product_kit_1.png",
                       type: product.type
                     })}
                     className="w-full rounded-2xl py-7 text-lg font-bold shadow-sm hover:shadow-xl transition-all group-hover:bg-primary/95 group-hover:-translate-y-1"

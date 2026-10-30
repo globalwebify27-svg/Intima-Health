@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const { phone, otp } = await req.json();
+    const { phone, otp, name } = await req.json();
 
     if (!phone || !otp) {
       return NextResponse.json({ success: false, message: "Phone and verification code are required." }, { status: 400 });
@@ -39,6 +39,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Patient profile not found." }, { status: 404 });
     }
 
+    // Update patient name if provided
+    if (name && typeof name === "string" && name.trim()) {
+      patient.name = name.trim();
+      await patient.save();
+    }
+
     // Clean up OTP record
     await OtpModel.deleteOne({ _id: otpRecord._id });
 
@@ -59,8 +65,13 @@ export async function POST(req: Request) {
         status: "Active",
         patientId: patient._id
       });
-    } else if (!user.patientId) {
-      user.patientId = patient._id;
+    } else {
+      if (name && typeof name === "string" && name.trim()) {
+        user.name = patient.name;
+      }
+      if (!user.patientId) {
+        user.patientId = patient._id;
+      }
       await user.save();
     }
 

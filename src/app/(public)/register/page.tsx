@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,7 +89,14 @@ export default function RegisterPage() {
         
         <div className="relative z-10 flex justify-end">
           <Link href="/" className="inline-block">
-            <img src="/logo.png" alt="KELKAR MANAS HEALTH CLINIC" className="h-20 w-auto object-contain" />
+            <Image
+              src="/logo.png"
+              alt="KELKAR MANAS HEALTH CLINIC"
+              width={180}
+              height={80}
+              className="h-20 w-auto object-contain"
+              priority
+            />
           </Link>
         </div>
 
@@ -128,7 +136,14 @@ export default function RegisterPage() {
           
           <div className="lg:hidden mb-8 flex justify-center">
             <Link href="/">
-              <img src="/logo.png" alt="KELKAR MANAS HEALTH CLINIC" className="h-20 w-auto object-contain" />
+              <Image
+                src="/logo.png"
+                alt="KELKAR MANAS HEALTH CLINIC"
+                width={180}
+                height={80}
+                className="h-20 w-auto object-contain"
+                priority
+              />
             </Link>
           </div>
 

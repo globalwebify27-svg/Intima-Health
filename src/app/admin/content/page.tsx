@@ -186,6 +186,7 @@ export default function ContentPage() {
       alert("An error occurred during upload.");
     } finally {
       setUploadingImage(false);
+      e.target.value = "";
     }
   };
 
@@ -1020,10 +1021,25 @@ export default function ContentPage() {
                       <h4 className="font-semibold text-sm">Hero Section</h4>
                       <div className="space-y-2">
                         <label className="text-xs font-bold text-muted-foreground">Hero Image Upload (Optional)</label>
-                        <div className="flex items-center gap-4">
-                          {formData.heroImage && (
-                            <img src={formData.heroImage} alt="Hero Preview" className="h-16 w-16 object-cover rounded-xl border border-border bg-background" />
-                          )}
+                        <div className="flex flex-wrap items-center gap-4">
+                          {formData.heroImage ? (
+                            <div className="relative group">
+                              <img
+                                src={formData.heroImage}
+                                alt="Hero Preview"
+                                className="h-16 w-16 object-cover rounded-xl border border-border bg-background shadow-xs"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, heroImage: "" })}
+                                title="Delete image"
+                                className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full shadow-md hover:bg-destructive/90 transition-transform active:scale-95 cursor-pointer"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : null}
+
                           <div className="relative">
                             <input 
                               type="file" 
@@ -1032,10 +1048,25 @@ export default function ContentPage() {
                               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                               disabled={uploadingImage}
                             />
-                            <button type="button" disabled={uploadingImage} className="px-4 py-2 bg-background border border-border rounded-lg text-sm font-semibold hover:bg-muted/50 transition-colors">
-                              {uploadingImage ? "Uploading..." : "Choose Image"}
+                            <button
+                              type="button"
+                              disabled={uploadingImage}
+                              className="px-4 py-2 bg-background border border-border rounded-lg text-sm font-semibold hover:bg-muted/50 transition-colors cursor-pointer"
+                            >
+                              {uploadingImage ? "Uploading..." : formData.heroImage ? "Change Image" : "Choose Image"}
                             </button>
                           </div>
+
+                          {formData.heroImage && (
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, heroImage: "" })}
+                              className="px-3.5 py-2 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg text-sm font-semibold hover:bg-destructive/20 transition-colors flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete Image
+                            </button>
+                          )}
                         </div>
                       </div>
                       <div className="space-y-2">

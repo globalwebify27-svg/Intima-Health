@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const { phone, isExistingPatient } = await req.json();
+    const { phone, isExistingPatient, name } = await req.json();
 
     if (!phone) {
       return NextResponse.json({ success: false, message: "Phone number is required." }, { status: 400 });
@@ -35,21 +35,30 @@ export async function POST(req: Request) {
       if (isExistingPatient === false) {
         return NextResponse.json({ success: false, message: "An account with this number already exists. Please select 'Existing Patient'." }, { status: 400 });
       }
+      // If patient had a placeholder name, update with real name from checkout
+      if (name && typeof name === "string" && name.trim() && patient.name.startsWith("Patient ")) {
+        patient.name = name.trim();
+        await patient.save();
+      }
     } else {
       if (isExistingPatient === true) {
         return NextResponse.json({ success: false, message: "No account found with this number. Please select 'New Patient'." }, { status: 400 });
       }
 
-      // Auto-create a minimal patient profile for self-registration
+      // Auto-create a patient profile for self-registration with provided name or placeholder
+      const patientName = name && typeof name === "string" && name.trim()
+        ? name.trim()
+        : `Patient ${last10.slice(-4)}`;
+
       patient = await PatientModel.create({
-        name: `Patient ${last10.slice(-4)}`, // placeholder name, updated later in profile
+        name: patientName,
         email: `${last10}@intima.app`,       // placeholder email, updated later
         phone: last10,
         gender: "Prefer not to say",
         status: "Active",
       });
       isNewPatient = true;
-      console.log(`[Auto-Registration] Created new patient profile for +91 ${last10}`);
+      console.log(`[Auto-Registration] Created new patient profile for +91 ${last10} (${patientName})`);
     }
 
     // Generate 6-digit OTP

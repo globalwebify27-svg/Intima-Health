@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   NavigationMenu,
@@ -58,7 +59,8 @@ function mergeNavItems(defaultNav: typeof NAV_ITEMS, data: { treatments: any[]; 
   return defaultNav.map(group => {
     if (group.title === "Treatments") {
       const defaultItems = defaultNav.find(g => g.title === "Treatments")?.items || [];
-      const orderMap = new Map(defaultItems.map((item, idx) => [item.href, idx]));
+      const existingHrefs = new Set(defaultItems.map(item => item.href));
+      const existingTitles = new Set(defaultItems.map(item => item.title.trim().toLowerCase()));
       const dynamicMap = new Map(treatments.map((t: any) => [`/treatments/${t.slug}`, t]));
 
       const mergedItems: NavSubItem[] = defaultItems.map(item => {
@@ -74,7 +76,13 @@ function mergeNavItems(defaultNav: typeof NAV_ITEMS, data: { treatments: any[]; 
       });
 
       const extraItems: NavSubItem[] = treatments
-        .filter((t: any) => !orderMap.has(`/treatments/${t.slug}`))
+        .filter((t: any) => {
+          const href = `/treatments/${t.slug}`;
+          const titleLower = (t.title || "").trim().toLowerCase();
+          if (existingHrefs.has(href) || existingTitles.has(titleLower)) return false;
+          if (t.slug === "sexual-health-problems" || href === "/sexual-problems") return false;
+          return true;
+        })
         .map((t: any) => ({
           title: t.title,
           href: `/treatments/${t.slug}`,
@@ -86,7 +94,8 @@ function mergeNavItems(defaultNav: typeof NAV_ITEMS, data: { treatments: any[]; 
 
     if (group.title === "Sexual Problems") {
       const defaultItems = defaultNav.find(g => g.title === "Sexual Problems")?.items || [];
-      const orderMap = new Map(defaultItems.map((item, idx) => [item.href, idx]));
+      const existingHrefs = new Set(defaultItems.map(item => item.href));
+      const existingTitles = new Set(defaultItems.map(item => item.title.trim().toLowerCase()));
       const dynamicMap = new Map(sexualProblems.map((t: any) => [`/sexual-problems/${t.slug}`, t]));
 
       const mergedItems: NavSubItem[] = defaultItems.map(item => {
@@ -102,7 +111,12 @@ function mergeNavItems(defaultNav: typeof NAV_ITEMS, data: { treatments: any[]; 
       });
 
       const extraItems: NavSubItem[] = sexualProblems
-        .filter((t: any) => !orderMap.has(`/sexual-problems/${t.slug}`))
+        .filter((t: any) => {
+          const href = `/sexual-problems/${t.slug}`;
+          const titleLower = (t.title || "").trim().toLowerCase();
+          if (existingHrefs.has(href) || existingTitles.has(titleLower)) return false;
+          return true;
+        })
         .map((t: any) => ({
           title: t.title,
           href: `/sexual-problems/${t.slug}`,
@@ -160,7 +174,14 @@ export function Header() {
         <div className="container mx-auto flex h-20 items-center justify-between px-6 lg:px-12">
           <div className="flex items-center gap-10">
             <Link href="/" className="flex items-center space-x-2">
-              <img src="/logo.png" alt="KELKAR MANAS HEALTH CLINIC" className="h-20 w-auto object-contain" />
+              <Image
+                src="/logo.png"
+                alt="KELKAR MANAS HEALTH CLINIC"
+                width={180}
+                height={80}
+                className="h-20 w-auto object-contain"
+                priority
+              />
             </Link>
 
             <NavigationMenu className="hidden xl:flex">
@@ -201,9 +222,9 @@ export function Header() {
                             group.gridCols || "grid-cols-1"
                           )}
                         >
-                          {mainItems.map((sub) => (
+                          {mainItems.map((sub, idx) => (
                             <ListItem
-                              key={sub.title}
+                              key={`${sub.href}-${sub.title}-${idx}`}
                               href={sub.href}
                               title={sub.title}
                               onClick={
@@ -227,8 +248,8 @@ export function Header() {
                                 group.gridCols?.includes("cols-") ? "md:col-span-full text-center" : ""
                               )}
                             >
-                              {footerItems.map((footerSub) => (
-                                <div key={footerSub.title}>
+                              {footerItems.map((footerSub, idx) => (
+                                <div key={`${footerSub.href}-${footerSub.title}-${idx}`}>
                                   {footerSub.description ? (
                                     <ListItem
                                       href={footerSub.href}
@@ -313,7 +334,14 @@ export function Header() {
               className="fixed inset-y-0 right-0 z-[101] w-[85%] max-w-sm bg-background border-l border-border shadow-2xl flex flex-col xl:hidden"
             >
               <div className="flex items-center justify-between p-6 border-b border-border">
-                <img src="/logo.png" alt="KELKAR MANAS HEALTH CLINIC" className="h-20 w-auto object-contain" />
+                <Image
+                  src="/logo.png"
+                  alt="KELKAR MANAS HEALTH CLINIC"
+                  width={180}
+                  height={80}
+                  className="h-20 w-auto object-contain"
+                  priority
+                />
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="p-2 rounded-full hover:bg-muted transition-colors"
@@ -341,11 +369,12 @@ export function Header() {
 
                     return (
                       <MobileNavGroup key={group.title} title={group.title}>
-                        {group.items.map((sub) => {
+                        {group.items.map((sub, idx) => {
+                          const itemKey = `${sub.href}-${sub.title}-${idx}`;
                           if (sub.actionKey === "openBooking") {
                             return (
                               <button
-                                key={sub.title}
+                                key={itemKey}
                                 onClick={() => {
                                   setIsMobileMenuOpen(false);
                                   openBooking();
@@ -360,7 +389,7 @@ export function Header() {
                           if (sub.isFooterLink) {
                             return (
                               <Link
-                                key={sub.title}
+                                key={itemKey}
                                 href={sub.href}
                                 onClick={() => setIsMobileMenuOpen(false)}
                                 className="py-2 font-semibold text-primary hover:underline transition-colors mt-2 border-t border-border/30 pt-2"
@@ -372,7 +401,7 @@ export function Header() {
 
                           return (
                             <Link
-                              key={sub.title}
+                              key={itemKey}
                               href={sub.href}
                               onClick={() => setIsMobileMenuOpen(false)}
                               className="py-2 hover:text-primary transition-colors"
