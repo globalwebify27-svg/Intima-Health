@@ -22,10 +22,11 @@ export default async function AboutPage() {
     DoctorModel.find({ status: "Active", showOnHomepage: true }).lean(),
   ]);
 
-  let parsedAboutData: any = null;
-  if (pageDoc && (pageDoc as any).content) {
+  let parsedAboutData = null;
+  const rawContent = (pageDoc as { content?: string } | null)?.content;
+  if (rawContent) {
     try {
-      parsedAboutData = JSON.parse((pageDoc as any).content);
+      parsedAboutData = JSON.parse(rawContent);
     } catch (e) {
       console.error("Failed to parse about content JSON on server:", e);
     }
