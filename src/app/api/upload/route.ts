@@ -18,29 +18,45 @@ export async function POST(req: Request) {
       );
     }
 
+    const folderParam = (formData.get("folder") as string)?.replace(/[^a-zA-Z0-9_-]/g, "") || "content";
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
     const isImage = file.type.startsWith("image/");
 
     if (isImage) {
+      if (file.type === "image/svg+xml") {
+        const hash = crypto.randomBytes(12).toString("hex");
+        const filename = `${hash}.svg`;
+        const uploadDir = path.join(process.cwd(), "public", "uploads", folderParam);
+        await mkdir(uploadDir, { recursive: true });
+        await writeFile(path.join(uploadDir, filename), buffer);
+
+        return NextResponse.json({
+          success: true,
+          message: "SVG uploaded successfully.",
+          url: `/uploads/${folderParam}/${filename}`,
+        });
+      }
+
       // Automatically optimize and convert to high-efficiency WebP
       const optimizedBuffer = await sharp(buffer)
         .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
-        .webp({ quality: 82, effort: 4 })
+        .webp({ quality: 85, effort: 4 })
         .toBuffer();
 
       const hash = crypto.randomBytes(12).toString("hex");
       const filename = `${hash}.webp`;
 
-      const uploadDir = path.join(process.cwd(), "public", "uploads", "content");
+      const uploadDir = path.join(process.cwd(), "public", "uploads", folderParam);
       await mkdir(uploadDir, { recursive: true });
       await writeFile(path.join(uploadDir, filename), optimizedBuffer);
 
       return NextResponse.json({
         success: true,
         message: "Image optimized and converted to WebP successfully.",
-        url: `/uploads/content/${filename}`,
+        url: `/uploads/${folderParam}/${filename}`,
       });
     }
 

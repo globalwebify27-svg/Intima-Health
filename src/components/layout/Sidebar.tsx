@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -27,12 +28,32 @@ interface SidebarProps {
 export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation }: SidebarProps) {
   const pathname = usePathname();
   const { openBooking } = useBookingModal();
+  const [logoUrl, setLogoUrl] = useState("/logo.png");
+
+  useEffect(() => {
+    fetch("/api/public/settings/branding")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data?.logoUrl) {
+          setLogoUrl(json.data.logoUrl);
+        }
+      })
+      .catch(() => {});
+
+    const handleBranding = (e: any) => {
+      if (e.detail?.logoUrl) {
+        setLogoUrl(e.detail.logoUrl);
+      }
+    };
+    window.addEventListener("branding_updated", handleBranding);
+    return () => window.removeEventListener("branding_updated", handleBranding);
+  }, []);
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col bg-card overflow-hidden">
       <div className="flex py-6 items-center justify-center border-b border-border shrink-0">
         <Link href="/" className="flex items-center">
-          <Image src="/logo.png" alt="Kelkar Manas Health Clinic" width={180} height={50} className="object-contain" priority />
+          <Image src={logoUrl || "/logo.png"} alt="Kelkar Manas Health Clinic" width={180} height={50} className="object-contain" priority />
         </Link>
       </div>
       <div className="px-6 py-4 shrink-0">
@@ -128,7 +149,7 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
             </SheetContent>
           </Sheet>
           <Link href="/" className="flex items-center ml-2">
-            <Image src="/logo.png" alt="Kelkar Manas Health Clinic" width={140} height={32} className="object-contain" priority />
+            <Image src={logoUrl || "/logo.png"} alt="Kelkar Manas Health Clinic" width={140} height={32} className="object-contain" priority />
           </Link>
         </div>
 

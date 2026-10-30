@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,18 @@ export default function StaffLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [logoUrl, setLogoUrl] = useState("/logo.png");
+
+  useEffect(() => {
+    fetch("/api/public/settings/branding")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data?.logoUrl) {
+          setLogoUrl(json.data.logoUrl);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +90,7 @@ export default function StaffLoginPage() {
 
         <div className="relative z-10">
           <Link href="/" className="inline-flex flex-col items-start gap-2">
-            <Image src="/logo.png" alt="Kelkar Manas Health Clinic" width={280} height={80} className="object-contain -ml-2" priority />
+            <Image src={logoUrl || "/logo.png"} alt="Kelkar Manas Health Clinic" width={280} height={80} className="object-contain -ml-2" priority />
             <span className="text-xs font-sans font-bold text-muted-foreground uppercase tracking-widest border border-border/70 bg-background/50 backdrop-blur-sm rounded-md px-2.5 py-1">Staff Portal</span>
           </Link>
         </div>
@@ -113,7 +125,7 @@ export default function StaffLoginPage() {
           
           <div className="lg:hidden mb-12 flex justify-center flex-col items-center gap-4">
             <Link href="/">
-              <Image src="/logo.png" alt="Kelkar Manas Health Clinic" width={220} height={60} className="object-contain" priority />
+              <Image src={logoUrl || "/logo.png"} alt="Kelkar Manas Health Clinic" width={220} height={60} className="object-contain" priority />
             </Link>
             <span className="text-xs font-sans font-bold text-muted-foreground uppercase tracking-widest border border-border/70 bg-muted/30 rounded-md px-2.5 py-1">Staff Portal</span>
           </div>

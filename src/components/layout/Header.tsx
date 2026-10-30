@@ -140,9 +140,24 @@ export function Header() {
   const [navItems, setNavItems] = useState(() => {
     return cachedNavData ? mergeNavItems(NAV_ITEMS, cachedNavData) : NAV_ITEMS;
   });
+  const [logoUrl, setLogoUrl] = useState(() => (cachedNavData as any)?.logoUrl || "/logo.png");
 
   useEffect(() => {
-    if (cachedNavData) return;
+    const handleBranding = (e: any) => {
+      if (e.detail?.logoUrl) {
+        setLogoUrl(e.detail.logoUrl);
+        if (cachedNavData) (cachedNavData as any).logoUrl = e.detail.logoUrl;
+      }
+    };
+    window.addEventListener("branding_updated", handleBranding);
+    return () => window.removeEventListener("branding_updated", handleBranding);
+  }, []);
+
+  useEffect(() => {
+    if (cachedNavData) {
+      if ((cachedNavData as any).logoUrl) setLogoUrl((cachedNavData as any).logoUrl);
+      return;
+    }
 
     if (!navFetchPromise) {
       navFetchPromise = fetch("/api/public/navigation")
@@ -164,6 +179,9 @@ export function Header() {
     navFetchPromise.then((data) => {
       if (data) {
         setNavItems(mergeNavItems(NAV_ITEMS, data));
+        if (data.logoUrl) {
+          setLogoUrl(data.logoUrl);
+        }
       }
     });
   }, []);
@@ -175,7 +193,7 @@ export function Header() {
           <div className="flex items-center gap-10">
             <Link href="/" className="flex items-center space-x-2">
               <Image
-                src="/logo.png"
+                src={logoUrl || "/logo.png"}
                 alt="KELKAR MANAS HEALTH CLINIC"
                 width={180}
                 height={80}
@@ -335,7 +353,7 @@ export function Header() {
             >
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <Image
-                  src="/logo.png"
+                  src={logoUrl || "/logo.png"}
                   alt="KELKAR MANAS HEALTH CLINIC"
                   width={180}
                   height={80}

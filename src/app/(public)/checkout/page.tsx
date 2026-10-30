@@ -444,49 +444,92 @@ export default function CheckoutPage() {
         });
 
         const rzpData = await razorpayRes.json();
-        
-        // If Razorpay SDK is available on window, open checkout
+        if (!razorpayRes.ok || !rzpData.success || !rzpData.order) {
+          throw new Error(rzpData.error || "Failed to initialize payment gateway.");
+        }
+
+        // Dynamically ensure Razorpay checkout script is loaded
+        await new Promise<boolean>((resolve) => {
+          if (typeof window !== "undefined" && (window as unknown as { Razorpay?: unknown }).Razorpay) {
+            resolve(true);
+            return;
+          }
+          const script = document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.async = true;
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+        });
+
+        // Open Razorpay Checkout modal
         if (typeof window !== "undefined" && window.Razorpay && rzpData.order) {
+          const keyToUse = rzpData.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TkVlKsA4NG7BFZ";
+
           const options = {
-            key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_fallback",
+            key: keyToUse,
             amount: rzpData.order.amount,
-            currency: "INR",
+            currency: rzpData.order.currency || "INR",
             name: "Kelkar Manas Health Care",
             description: `Medicine Order ${createdOrder.orderNumber}`,
             order_id: rzpData.order.id,
             prefill: {
               name: fullName,
-              contact: phone,
+              contact: phone.replace(/\D/g, "").slice(-10),
+            },
+            theme: {
+              color: "#7A2E7A",
+            },
+            modal: {
+              backdropclose: false,
+              escape: true,
+              handleback: true,
+              confirm_close: true,
+              ondismiss: () => {
+                setSubmittingOrder(false);
+              },
             },
             handler: async function (response: Record<string, unknown>) {
-              await fetch("/api/payments/razorpay/verify", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  ...response,
-                  amount: totalAmount,
-                  patientId,
-                  orderId: createdOrder._id,
-                }),
-              });
+              try {
+                await fetch("/api/payments/razorpay/verify", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    ...response,
+                    amount: totalAmount,
+                    patientId,
+                    orderId: createdOrder._id,
+                  }),
+                });
+              } catch (verifyErr) {
+                console.warn("Payment verification notice:", verifyErr);
+              }
               setConfirmedOrder(createdOrder);
               setStep("success");
               clearCart();
+              setSubmittingOrder(false);
             },
           };
+
           const rzpInstance = new window.Razorpay(options);
+          if ("on" in rzpInstance && typeof (rzpInstance as unknown as { on: (event: string, cb: (res: { error?: { description?: string } }) => void) => void }).on === "function") {
+            (rzpInstance as unknown as { on: (event: string, cb: (res: { error?: { description?: string } }) => void) => void }).on("payment.failed", function (resp: { error?: { description?: string } }) {
+              setOrderError(resp.error?.description || "Payment failed or was cancelled. Please try again.");
+              setSubmittingOrder(false);
+            });
+          }
           rzpInstance.open();
           return;
+        } else {
+          throw new Error("Unable to load Razorpay payment SDK. Please refresh and try again.");
         }
-      } catch (paymentErr) {
-        console.warn("Razorpay flow simulated in sandbox/dev mode:", paymentErr);
+      } catch (paymentErr: unknown) {
+        console.error("Razorpay flow error:", paymentErr);
+        const msg = paymentErr instanceof Error ? paymentErr.message : "Payment gateway error. Please try again.";
+        setOrderError(msg);
+        setSubmittingOrder(false);
+        return;
       }
-
-      // Fallback / Instant Confirmation for development or direct online payments
-      setConfirmedOrder(createdOrder);
-      setStep("success");
-      clearCart();
-
     } catch (err: unknown) {
       console.error(err);
       const msg = err instanceof Error ? err.message : "An error occurred while placing your order.";
@@ -600,54 +643,41 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/20">
+    <div className="min-h-screen bg-muted/20 pb-32 sm:pb-16">
       
-      {/* Checkout Minimal Header */}
-      <header className="bg-background border-b border-border py-4 sticky top-0 z-30">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <Link href="/" className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            KELKAR MANAS HEALTH CLINIC
-          </Link>
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground font-medium">
-            <Lock className="w-4 h-4 text-emerald-600" />
-            Licensed Pharmacy Checkout
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
         
         {/* Step Indicator */}
-        <div className="flex items-center justify-center gap-3 sm:gap-6 mb-8 text-xs sm:text-sm font-semibold">
+        <div className="flex items-center justify-center gap-2 sm:gap-6 mb-6 sm:mb-8 text-xs sm:text-sm font-semibold flex-wrap">
           {hasPrescriptionItems && (
             <div 
-              className={`flex items-center gap-2 cursor-pointer ${step === "prescription" ? "text-primary" : "text-muted-foreground"}`}
+              className={`flex items-center gap-1.5 sm:gap-2 cursor-pointer ${step === "prescription" ? "text-primary font-bold" : "text-muted-foreground"}`}
               onClick={() => setStep("prescription")}
             >
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === "prescription" ? "bg-primary text-white" : "bg-muted border"}`}>1</span>
+              <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs ${step === "prescription" ? "bg-primary text-white shadow-sm" : "bg-muted border"}`}>1</span>
               <span>Prescription</span>
             </div>
           )}
           
           <div 
-            className={`flex items-center gap-2 cursor-pointer ${step === "shipping" ? "text-primary" : "text-muted-foreground"}`}
+            className={`flex items-center gap-1.5 sm:gap-2 cursor-pointer ${step === "shipping" ? "text-primary font-bold" : "text-muted-foreground"}`}
             onClick={() => (!hasPrescriptionItems || (uploadedRxUrl || selectedDigitalRxId)) && setStep("shipping")}
           >
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === "shipping" ? "bg-primary text-white" : "bg-muted border"}`}>
+            <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs ${step === "shipping" ? "bg-primary text-white shadow-sm" : "bg-muted border"}`}>
               {hasPrescriptionItems ? "2" : "1"}
             </span>
             <span>Delivery & PIN</span>
           </div>
 
-          <div className={`flex items-center gap-2 ${step === "payment" ? "text-primary" : "text-muted-foreground opacity-60"}`}>
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === "payment" ? "bg-primary text-white" : "bg-muted border"}`}>
+          <div className={`flex items-center gap-1.5 sm:gap-2 ${step === "payment" ? "text-primary font-bold" : "text-muted-foreground opacity-60"}`}>
+            <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs ${step === "payment" ? "bg-primary text-white shadow-sm" : "bg-muted border"}`}>
               {hasPrescriptionItems ? "3" : "2"}
             </span>
             <span>Payment</span>
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-12">
           
           {/* Left Column: Form Steps */}
           <div className="lg:w-3/5 space-y-6">
@@ -779,11 +809,11 @@ export default function CheckoutPage() {
                   <p className="text-xs font-semibold text-destructive">{prescriptionError}</p>
                 )}
 
-                <div className="pt-4 flex justify-between items-center border-t border-border">
-                  <Link href="/booking" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+                <div className="pt-4 flex flex-col-reverse sm:flex-row gap-3 justify-between items-stretch sm:items-center border-t border-border">
+                  <Link href="/booking" className="text-xs font-semibold text-primary hover:underline flex items-center justify-center gap-1 py-1">
                     Need a new prescription? Book consultation
                   </Link>
-                  <Button onClick={handleProceedFromPrescription} className="rounded-full px-6 gap-2">
+                  <Button onClick={handleProceedFromPrescription} className="rounded-full px-6 py-3 sm:py-2 text-sm font-bold gap-2 w-full sm:w-auto justify-center">
                     Continue to Delivery
                     <ArrowRight className="w-4 h-4" />
                   </Button>
@@ -793,7 +823,7 @@ export default function CheckoutPage() {
 
             {/* STEP 2: SHIPPING ADDRESS & AKOLA PIN CODE CHECK */}
             {step === "shipping" && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-background rounded-3xl p-6 sm:p-8 border border-border shadow-sm space-y-6">
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-background rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-border shadow-sm space-y-6">
                 <div>
                   <h2 className="text-2xl font-serif font-bold">Delivery Address</h2>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -1025,13 +1055,13 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                <div className="pt-4 flex justify-between items-center border-t border-border">
+                <div className="pt-4 flex flex-col-reverse sm:flex-row gap-3 justify-between items-stretch sm:items-center border-t border-border">
                   {hasPrescriptionItems ? (
-                    <Button variant="ghost" onClick={() => setStep("prescription")} className="rounded-full">
+                    <Button variant="ghost" onClick={() => setStep("prescription")} className="rounded-full w-full sm:w-auto h-11 text-xs sm:text-sm font-semibold">
                       Back to Prescription
                     </Button>
-                  ) : <div />}
-                  <Button onClick={handleProceedFromShipping} className="rounded-full px-6 gap-2">
+                  ) : <div className="hidden sm:block" />}
+                  <Button onClick={handleProceedFromShipping} className="rounded-full px-6 py-3.5 sm:py-2.5 h-auto text-sm sm:text-base font-bold gap-2 w-full sm:w-auto justify-center">
                     Continue to Payment
                     <ArrowRight className="w-4 h-4" />
                   </Button>
@@ -1041,7 +1071,7 @@ export default function CheckoutPage() {
 
             {/* STEP 3: PAYMENT METHOD */}
             {step === "payment" && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-background rounded-3xl p-6 sm:p-8 border border-border shadow-sm space-y-6">
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-background rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-border shadow-sm space-y-6">
                 <div>
                   <h2 className="text-2xl font-serif font-bold">Payment Method</h2>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -1075,14 +1105,14 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                <div className="pt-4 flex justify-between items-center border-t border-border">
-                  <Button variant="ghost" onClick={() => setStep("shipping")} className="rounded-full">
+                <div className="pt-4 flex flex-col-reverse sm:flex-row gap-3 sm:justify-between items-stretch sm:items-center border-t border-border">
+                  <Button variant="ghost" onClick={() => setStep("shipping")} className="rounded-full w-full sm:w-auto h-11 text-xs sm:text-sm font-semibold">
                     Back to Address
                   </Button>
                   <Button 
                     onClick={handlePlaceOrder} 
                     disabled={submittingOrder}
-                    className="rounded-full px-8 py-6 text-base font-bold shadow-lg gap-2"
+                    className="rounded-full w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-6 text-sm sm:text-base font-bold shadow-lg gap-2 justify-center h-auto"
                   >
                     {submittingOrder ? (
                       <>
@@ -1103,7 +1133,7 @@ export default function CheckoutPage() {
 
           {/* Right Column: Order Summary (Sticky) */}
           <div className="lg:w-2/5">
-            <div className="bg-background rounded-3xl p-6 sm:p-8 border border-border shadow-sm sticky top-24 space-y-6">
+            <div className="bg-background rounded-2xl sm:rounded-3xl p-5 sm:p-8 border border-border shadow-sm sticky top-24 space-y-6">
               <h3 className="text-lg font-serif font-bold">Order Summary</h3>
 
               {/* Items List */}

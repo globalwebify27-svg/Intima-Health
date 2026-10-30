@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,18 @@ export default function RegisterPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [logoUrl, setLogoUrl] = useState("/logo.png");
+
+  useEffect(() => {
+    fetch("/api/public/settings/branding")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data?.logoUrl) {
+          setLogoUrl(json.data.logoUrl);
+        }
+      })
+      .catch(() => {});
+  }, []);
   
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -90,7 +102,7 @@ export default function RegisterPage() {
         <div className="relative z-10 flex justify-end">
           <Link href="/" className="inline-block">
             <Image
-              src="/logo.png"
+              src={logoUrl || "/logo.png"}
               alt="KELKAR MANAS HEALTH CLINIC"
               width={180}
               height={80}
@@ -137,7 +149,7 @@ export default function RegisterPage() {
           <div className="lg:hidden mb-8 flex justify-center">
             <Link href="/">
               <Image
-                src="/logo.png"
+                src={logoUrl || "/logo.png"}
                 alt="KELKAR MANAS HEALTH CLINIC"
                 width={180}
                 height={80}

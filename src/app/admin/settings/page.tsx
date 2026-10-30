@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { 
   Settings, 
@@ -16,7 +17,11 @@ import {
   Trash2,
   ShieldCheck,
   Save,
-  Loader2
+  Loader2,
+  Image as ImageIcon,
+  Upload,
+  RotateCcw,
+  Palette
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,11 +54,18 @@ interface PharmacyConfig {
 export default function SettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"profile" | "pharmacy">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "pharmacy" | "branding">("profile");
 
   // User Profile details
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+
+  // Branding & Logo state
+  const [logoUrl, setLogoUrl] = useState("/logo.png");
+  const [customLogoUrl, setCustomLogoUrl] = useState("/logo.png");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [savingLogo, setSavingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Form password details
   const [oldPassword, setOldPassword] = useState("");
@@ -110,6 +122,14 @@ export default function SettingsPage() {
         const configJson = await configRes.json();
         if (!ignore && configJson.success && configJson.data) {
           setPharmacyConfig(configJson.data);
+        }
+
+        // Load branding logo
+        const brandingRes = await fetch("/api/admin/settings/branding");
+        const brandingJson = await brandingRes.json();
+        if (!ignore && brandingJson.success && brandingJson.data?.logoUrl) {
+          setLogoUrl(brandingJson.data.logoUrl);
+          setCustomLogoUrl(brandingJson.data.logoUrl);
         }
       } catch (err) {
         console.error("Failed to load settings details:", err);
@@ -237,6 +257,124 @@ export default function SettingsPage() {
     setPharmacyConfig({ ...pharmacyConfig, serviceablePincodes: updated });
   };
 
+  // Upload new logo file
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+
+    const validTypes = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setErrorMsg("Invalid image type. Please upload a PNG, SVG, JPG, or WebP logo.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg("Logo file size exceeds 5MB. Please upload a smaller file.");
+      return;
+    }
+
+    setUploadingLogo(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "branding");
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (json.success && json.url) {
+        setLogoUrl(json.url);
+        setCustomLogoUrl(json.url);
+        setSuccessMsg("Logo uploaded to preview. Click 'Save Logo Changes' to apply it across the website.");
+      } else {
+        throw new Error(json.message || "Failed to upload logo.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error uploading logo.";
+      setErrorMsg(msg);
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  // Save logo changes
+  const handleSaveLogo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalUrl = customLogoUrl.trim() || logoUrl.trim();
+    if (!finalUrl) {
+      setErrorMsg("Please provide or upload a valid logo image.");
+      return;
+    }
+
+    setSavingLogo(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/admin/settings/branding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ logoUrl: finalUrl }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setLogoUrl(finalUrl);
+        setCustomLogoUrl(finalUrl);
+        setSuccessMsg("Clinic logo updated successfully! It is now live across the website, navigation menu, and admin portal.");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("branding_updated", { detail: { logoUrl: finalUrl } }));
+        }
+      } else {
+        setErrorMsg(json.message || "Failed to save logo.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "An error occurred while saving the logo.";
+      setErrorMsg(msg);
+    } finally {
+      setSavingLogo(false);
+    }
+  };
+
+  // Reset to default logo
+  const handleResetDefaultLogo = async () => {
+    if (!confirm("Are you sure you want to reset to the default system logo (/logo.png)?")) return;
+    setSavingLogo(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/admin/settings/branding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ logoUrl: "/logo.png" }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setLogoUrl("/logo.png");
+        setCustomLogoUrl("/logo.png");
+        setSuccessMsg("Reset to default system logo (/logo.png).");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("branding_updated", { detail: { logoUrl: "/logo.png" } }));
+        }
+      } else {
+        setErrorMsg(json.message || "Failed to reset logo.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to reset logo.";
+      setErrorMsg(msg);
+    } finally {
+      setSavingLogo(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground font-medium">
@@ -248,9 +386,9 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">System & Pharmacy Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight">System, Branding & Pharmacy Settings</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Manage administrator profile credentials, licensed pharmacy integration, and Akola delivery coverage.
+          Manage administrator profile credentials, clinic branding logo, and licensed pharmacy delivery coverage.
         </p>
       </div>
 
@@ -279,6 +417,18 @@ export default function SettingsPage() {
           >
             <User className="w-4 h-4" />
             Profile Credentials
+          </button>
+
+          <button
+            onClick={() => { setActiveTab("branding"); setSuccessMsg(""); setErrorMsg(""); }}
+            className={`w-full px-4 py-3 rounded-2xl text-left text-sm font-bold transition flex items-center gap-3 ${
+              activeTab === "branding"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <ImageIcon className="w-4 h-4" />
+            Branding & Logo
           </button>
 
           <button
@@ -387,7 +537,167 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Tab 2: Pharmacy Partner & Akola Delivery Matrix */}
+        {/* Tab 2: Branding & Website Logo */}
+        {activeTab === "branding" && (
+          <div className="lg:col-span-3 space-y-8">
+            <div className="bg-card border border-border p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
+              
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-5 h-5 text-primary" />
+                  <h2 className="text-xl font-bold">Clinic Branding & Website Logo</h2>
+                </div>
+                <Badge variant={logoUrl === "/logo.png" ? "outline" : "default"}>
+                  {logoUrl === "/logo.png" ? "Default Logo" : "Custom Logo Active"}
+                </Badge>
+              </div>
+
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Update the official clinic logo that appears on the public website header, mobile navigation drawer, administrative portal sidebar, patient portal, and digital documents.
+              </p>
+
+              {/* Current Logo Preview Card */}
+              <div className="p-6 rounded-2xl border border-border/80 bg-muted/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Current Logo Display
+                  </span>
+                  <span className="text-xs font-mono text-muted-foreground">
+                    {logoUrl}
+                  </span>
+                </div>
+
+                <div className="h-28 w-full rounded-xl bg-background/80 border border-border/50 flex items-center justify-center p-4 overflow-hidden shadow-inner">
+                  <Image
+                    src={logoUrl || "/logo.png"}
+                    alt="Clinic Logo Preview"
+                    width={280}
+                    height={80}
+                    className="max-h-20 w-auto object-contain"
+                    priority
+                  />
+                </div>
+              </div>
+
+              {/* Upload Controls */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Upload New Logo Image</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Supported formats: <strong>PNG (transparent recommended)</strong>, <strong>SVG</strong>, <strong>WebP</strong>, or <strong>JPG</strong>. Max file size: 5MB.
+                  </p>
+                  
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <Button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={uploadingLogo || savingLogo}
+                      className="rounded-xl px-5 gap-2 font-semibold shadow-sm"
+                    >
+                      {uploadingLogo ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Uploading & Optimizing...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          Choose Logo File
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleResetDefaultLogo}
+                      disabled={savingLogo || uploadingLogo || logoUrl === "/logo.png"}
+                      className="rounded-xl gap-2 text-xs font-semibold"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      Reset to Default Logo
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Direct Image URL fallback */}
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <Label htmlFor="customLogoUrl" className="text-xs font-semibold text-muted-foreground">
+                    Or Enter Direct Logo URL / Path
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="customLogoUrl"
+                      value={customLogoUrl}
+                      onChange={(e) => {
+                        setCustomLogoUrl(e.target.value);
+                        setLogoUrl(e.target.value);
+                      }}
+                      placeholder="/logo.png or https://example.com/logo.png"
+                      className="rounded-xl h-11 font-mono text-xs"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleSaveLogo}
+                      disabled={savingLogo || uploadingLogo}
+                      className="rounded-xl px-6 font-bold gap-2 shrink-0 shadow-md"
+                    >
+                      {savingLogo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      Save Logo Changes
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Mock Header Preview */}
+              <div className="space-y-2 pt-4 border-t border-border">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-primary" /> Live Navigation Bar Preview
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  Here is an exact simulation of how your logo renders on the visitor navigation bar:
+                </p>
+
+                <div className="rounded-2xl border border-border/80 bg-background/90 shadow-sm p-4 flex items-center justify-between overflow-x-auto">
+                  <div className="flex items-center gap-6">
+                    <div className="h-12 flex items-center px-2">
+                      <Image
+                        src={logoUrl || "/logo.png"}
+                        alt="Header Simulation"
+                        width={180}
+                        height={48}
+                        className="h-10 w-auto object-contain"
+                      />
+                    </div>
+                    <div className="hidden sm:flex items-center gap-4 text-xs font-semibold text-foreground/80">
+                      <span>Treatments</span>
+                      <span>Sexual Problems</span>
+                      <span>Pharmacy</span>
+                      <span>About Us</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-primary hidden md:inline">Log In</span>
+                    <div className="h-8 px-4 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center shadow-sm">
+                      Get Started
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Pharmacy Partner & Akola Delivery Matrix */}
         {activeTab === "pharmacy" && (
           <div className="lg:col-span-3 space-y-8">
             <form onSubmit={handleSavePharmacyConfig} className="bg-card border border-border p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
