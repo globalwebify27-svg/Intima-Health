@@ -122,15 +122,19 @@ export function Hero() {
                   "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100&h=100&fit=crop",
                   "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop"
                 ].map((src, i) => (
-                  <motion.div
+                  <div
                     key={i}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.8 + (i * 0.1) }}
                     className="inline-block h-12 w-12 rounded-full border-2 border-background bg-muted overflow-hidden shadow-sm"
                   >
-                    <img src={src} alt="Happy patient" className="w-full h-full object-cover" />
-                  </motion.div>
+                    <img
+                      src={src}
+                      alt="Patient avatar"
+                      width={48}
+                      height={48}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 ))}
               </div>
               <motion.div
@@ -181,24 +185,16 @@ export function Hero() {
                 <div className="absolute inset-0 bg-primary/10 mix-blend-color-burn pointer-events-none" />
               </div>
 
-              {/* Glassmorphism Floating Badge - Still gently floats on its own */}
-              <motion.div
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute -left-6 sm:-left-10 bottom-12 z-20"
-              >
-                <div className="bg-white/80 backdrop-blur-xl border border-white/60 p-4 rounded-2xl shadow-card max-w-[240px]">
+              {/* Glassmorphism Floating Badge */}
+              <div className="absolute -left-6 sm:-left-10 bottom-12 z-20 transition-transform duration-500 hover:-translate-y-1">
+                <div className="bg-white/90 backdrop-blur-xl border border-white/60 p-4 rounded-2xl shadow-card max-w-[240px]">
                   <div className="flex items-center gap-3 mb-2">
-                    <motion.div
-                      animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="h-2.5 w-2.5 rounded-full bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.6)]"
-                    />
+                    <span className="h-2.5 w-2.5 rounded-full bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.6)] animate-pulse" />
                     <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Available Now</p>
                   </div>
                   <p className="text-sm font-bold text-foreground leading-snug">Connect with a specialist in under 15 minutes.</p>
                 </div>
-              </motion.div>
+              </div>
             </motion.div>
           </motion.div>
 

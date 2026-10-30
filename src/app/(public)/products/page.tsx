@@ -1,19 +1,22 @@
-"use client";
+import { connectDB } from "@/db/connect";
+import { ProductModel } from "@/modules/pharmacy/schema";
+import ProductsClient, { Product } from "./ProductsClient";
+import { Metadata } from "next";
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Filter, ShieldCheck, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { useCart } from "@/store/useCart";
+export const revalidate = 60; // Incremental Static Regeneration: revalidate every 60s
 
-interface Product {
-  id: string;
-  _id?: string;
+export const metadata: Metadata = {
+  title: "Clinical-Grade Health Products & Medicines | Kelkar Manas Health Care",
+  description:
+    "Explore our complete range of clinical-grade medications, supplements, and wellness diagnostic kits with discreet delivery.",
+};
+
+interface ProductDoc {
+  _id?: { toString(): string } | string;
+  id?: string;
   slug?: string;
   name: string;
-  category: string;
+  category?: string;
   price: number;
   mrp?: number;
   image?: string;
@@ -26,268 +29,38 @@ interface Product {
   stock?: number;
 }
 
-const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
-};
+export default async function ProductsPage() {
+  let initialProducts: Product[] = [];
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 }
+  try {
+    await connectDB();
+
+    const productsDoc = (await ProductModel.find({ deletedAt: null })
+      .select("name slug category price mrp image type description isPrescription dosageForm packSize composition stock")
+      .lean()) as unknown as ProductDoc[];
+
+    if (productsDoc && productsDoc.length > 0) {
+      initialProducts = productsDoc.map((p) => ({
+        id: p._id?.toString() || p.id || "",
+        _id: p._id?.toString(),
+        slug: p.slug || p._id?.toString(),
+        name: p.name,
+        category: p.category || "Medication",
+        price: Number(p.price || 0),
+        mrp: p.mrp ? Number(p.mrp) : undefined,
+        image: p.image || "/images/product_kit_1.png",
+        type: p.type || "medication",
+        description: p.description,
+        isPrescription: Boolean(p.isPrescription),
+        dosageForm: p.dosageForm,
+        packSize: p.packSize,
+        composition: p.composition,
+        stock: p.stock,
+      }));
+    }
+  } catch (error) {
+    console.error("Error loading products on server:", error);
   }
-};
 
-export default function ProductsPage() {
-  const { addItem } = useCart();
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/public/store/products")
-      .then(res => res.json())
-      .then(json => {
-        if (json.success) {
-          // Normalize _id to id and ensure valid slug
-          const mapped = json.data.map((p: any) => ({
-            ...p,
-            id: p._id || p.id,
-            slug: p.slug || p._id || p.id,
-          }));
-          setProducts(mapped);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      
-      {/* Header Section */}
-      <section className="pt-12 pb-16 bg-muted/30 border-b border-border">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            initial="hidden"
-            animate="visible"
-            variants={fadeIn}
-            className="max-w-3xl"
-          >
-            <h1 className="text-4xl md:text-5xl font-serif font-medium mb-6">
-              Clinical-grade solutions, <br />
-              <span className="text-primary italic">delivered discreetly.</span>
-            </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              From prescription treatments to at-home diagnostic panels, get exactly what you need without the waiting room.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Main Content */}
-      <section className="py-16">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row gap-12">
-            
-            {/* Mobile Filter Sticky Header */}
-            <div className="md:hidden sticky top-[80px] z-40 bg-background/95 backdrop-blur py-4 border-b border-border flex items-center justify-between mb-8 -mx-4 px-4 shadow-sm">
-              <span className="font-semibold text-lg">Filters</span>
-              <Button variant="outline" size="sm" onClick={() => setIsMobileFiltersOpen(true)} className="gap-2 rounded-full">
-                <Filter className="w-4 h-4" />
-                Categories
-              </Button>
-            </div>
-
-            {/* Sidebar / Filters (Desktop) */}
-            <div className="hidden md:block w-64 shrink-0 space-y-8">
-              <div>
-                <div className="flex items-center gap-2 font-semibold mb-4 text-lg">
-                  <Filter className="w-5 h-5" />
-                  Categories
-                </div>
-                <ul className="space-y-3 text-muted-foreground">
-                  <li><button className="text-primary font-medium">All Products</button></li>
-                  <li><button className="hover:text-foreground transition-colors">Sexual Health</button></li>
-                  <li><button className="hover:text-foreground transition-colors">Diagnostics</button></li>
-                  <li><button className="hover:text-foreground transition-colors">Wellness Supplements</button></li>
-                  <li><button className="hover:text-foreground transition-colors">Hair Health</button></li>
-                </ul>
-              </div>
-
-              <div>
-                <div className="font-semibold mb-4 text-lg">Treatment Type</div>
-                <ul className="space-y-3 text-muted-foreground">
-                  <li className="flex items-center gap-2">
-                    <input type="checkbox" id="rx-desk" className="rounded border-border text-primary focus:ring-primary" />
-                    <label htmlFor="rx-desk">Prescription Required</label>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <input type="checkbox" id="otc-desk" className="rounded border-border text-primary focus:ring-primary" />
-                    <label htmlFor="otc-desk">Over-the-Counter</label>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Mobile Filters Modal */}
-            <AnimatePresence>
-              {isMobileFiltersOpen && (
-                <>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setIsMobileFiltersOpen(false)}
-                    className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm md:hidden"
-                  />
-                  <motion.div
-                    initial={{ x: "-100%" }}
-                    animate={{ x: 0 }}
-                    exit={{ x: "-100%" }}
-                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="fixed inset-y-0 left-0 z-[101] w-[85%] max-w-sm bg-background border-r border-border shadow-2xl flex flex-col md:hidden"
-                  >
-                    <div className="flex items-center justify-between p-6 border-b border-border">
-                      <span className="font-semibold text-xl flex items-center gap-2">
-                        <Filter className="w-5 h-5" />
-                        Filters
-                      </span>
-                      <button
-                        onClick={() => setIsMobileFiltersOpen(false)}
-                        className="p-2 rounded-full hover:bg-muted transition-colors"
-                      >
-                        <X className="w-5 h-5 text-muted-foreground" />
-                      </button>
-                    </div>
-                    
-                    <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                      <div>
-                        <div className="font-semibold mb-4 text-lg">Categories</div>
-                        <ul className="space-y-4 text-muted-foreground text-base">
-                          <li><button className="text-primary font-medium w-full text-left" onClick={() => setIsMobileFiltersOpen(false)}>All Products</button></li>
-                          <li><button className="hover:text-foreground transition-colors w-full text-left" onClick={() => setIsMobileFiltersOpen(false)}>Sexual Health</button></li>
-                          <li><button className="hover:text-foreground transition-colors w-full text-left" onClick={() => setIsMobileFiltersOpen(false)}>Diagnostics</button></li>
-                          <li><button className="hover:text-foreground transition-colors w-full text-left" onClick={() => setIsMobileFiltersOpen(false)}>Wellness Supplements</button></li>
-                          <li><button className="hover:text-foreground transition-colors w-full text-left" onClick={() => setIsMobileFiltersOpen(false)}>Hair Health</button></li>
-                        </ul>
-                      </div>
-
-                      <div className="pt-6 border-t border-border">
-                        <div className="font-semibold mb-4 text-lg">Treatment Type</div>
-                        <ul className="space-y-4 text-muted-foreground text-base">
-                          <li className="flex items-center gap-3">
-                            <input type="checkbox" id="rx-mob" className="w-5 h-5 rounded border-border text-primary focus:ring-primary" />
-                            <label htmlFor="rx-mob">Prescription Required</label>
-                          </li>
-                          <li className="flex items-center gap-3">
-                            <input type="checkbox" id="otc-mob" className="w-5 h-5 rounded border-border text-primary focus:ring-primary" />
-                            <label htmlFor="otc-mob">Over-the-Counter</label>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    
-                    <div className="p-6 border-t border-border bg-muted/30">
-                      <Button className="w-full rounded-full py-6 text-base" onClick={() => setIsMobileFiltersOpen(false)}>
-                        Apply Filters
-                      </Button>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-
-            {/* Product Grid */}
-            <div className="flex-1">
-              <div className="flex justify-between items-center mb-8">
-                <p className="text-muted-foreground">{products.length} Products</p>
-                <select className="bg-background border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                  <option>Recommended</option>
-                  <option>Price: Low to High</option>
-                  <option>Price: High to Low</option>
-                </select>
-              </div>
-
-              <motion.div 
-                initial="hidden"
-                animate="visible"
-                variants={staggerContainer}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
-              >
-                {loading ? (
-                  <div className="col-span-full py-12 text-center text-muted-foreground">Loading products...</div>
-                ) : products.map((product, index) => {
-                  const productSlug = product.slug || product.id || product._id;
-                  return (
-                    <motion.div 
-                      key={product.id}
-                      variants={fadeIn}
-                      className="group flex flex-col bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl transition-all duration-300"
-                    >
-                      {/* Product Image Area */}
-                      <Link href={`/products/${productSlug}`} className="relative aspect-square bg-muted/50 p-6 flex items-center justify-center overflow-hidden">
-                        {product.isPrescription && (
-                          <div className="absolute top-4 left-4 bg-background/80 backdrop-blur text-xs font-bold px-2 py-1 rounded border border-border z-10 flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3 text-primary" />
-                            Rx
-                          </div>
-                        )}
-                        <Image
-                          src={product.image || "/images/product_kit_1.png"}
-                          alt={product.name || "Product"}
-                          width={300}
-                          height={300}
-                          priority={index < 4}
-                          className="object-contain group-hover:scale-105 transition-transform duration-500"
-                        />
-                      </Link>
-
-                      {/* Product Details */}
-                      <div className="p-6 flex flex-col flex-1">
-                        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                          {product.category}
-                        </div>
-                        <Link href={`/products/${productSlug}`}>
-                          <h3 className="font-serif text-xl font-medium mb-2 group-hover:text-primary transition-colors line-clamp-1">
-                            {product.name}
-                          </h3>
-                        </Link>
-                        <p className="text-muted-foreground text-sm line-clamp-2 mb-6 flex-1">
-                          {product.description}
-                        </p>
-                      
-                      <div className="flex items-center justify-between mt-auto">
-                        <span className="font-semibold text-lg">
-                          ₹{product.price.toLocaleString()}
-                        </span>
-                        <Button 
-                          onClick={() => addItem({
-                            id: product.id,
-                            name: product.name,
-                            price: product.price,
-                            image: product.image || "/images/product_kit_1.png",
-                            type: product.type || "medication",
-                            isPrescription: product.isPrescription,
-                          })}
-                          size="sm" 
-                          className="rounded-full gap-2"
-                        >
-                          <ShoppingBag className="w-4 h-4" />
-                          Add
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-              </motion.div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-    </div>
-  );
+  return <ProductsClient initialProducts={initialProducts} />;
 }

@@ -3,7 +3,7 @@ import { connectDB } from "@/db/connect";
 import { ProductModel } from "@/modules/store/schema";
 import mongoose from "mongoose";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120; // Cache for 2 minutes
 
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {

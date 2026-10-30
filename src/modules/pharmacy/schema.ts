@@ -57,6 +57,8 @@ const ProductSchema = new Schema<IProduct>({
 });
 
 ProductSchema.index({ slug: 1 });
+ProductSchema.index({ slug: 1, deletedAt: 1 });
+ProductSchema.index({ deletedAt: 1, createdAt: -1 });
 ProductSchema.index({ status: 1, deletedAt: 1 });
 ProductSchema.index({ category: 1, deletedAt: 1 });
 

@@ -19,7 +19,7 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
 };
 
-import * as Icons from "lucide-react";
+import { CauseIcon } from "@/components/ui/cause-icon";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function ClientPage({ data, hospitals }: { data: any; hospitals?: any[] }) {
@@ -95,8 +95,7 @@ export default function ClientPage({ data, hospitals }: { data: any; hospitals?:
             {data.causes?.map((cause: any, idx: number) => (
               <motion.div key={idx} variants={fadeIn} className="bg-muted/30 p-8 rounded-[2rem] border border-border h-full flex flex-col">
                 <div className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center mb-6 shrink-0">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {(() => { const Icon = (Icons as any)[cause.icon] || Icons.HelpCircle; return <Icon className="w-6 h-6" />; })()}
+                  <CauseIcon name={cause.icon} className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-serif font-medium mb-3">{cause.title}</h3>
                 {cause.description && (
