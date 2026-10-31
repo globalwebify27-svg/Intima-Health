@@ -41,7 +41,7 @@ interface Consultation {
 
 export default function PatientPrescriptionsPage() {
   const router = useRouter();
-  const { addItem, updateQuantity } = useCart();
+  const { addItem, updateQuantity, clearCart } = useCart();
 
   const [prescriptions, setPrescriptions] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,6 +129,9 @@ export default function PatientPrescriptionsPage() {
     if (!selectedConsult) return;
     const meds: Medicine[] = JSON.parse(selectedConsult.prescriptionSummary || "[]");
 
+    // Clear prior cart items first so medicines from previous sessions are not duplicated
+    clearCart();
+
     // Add selected medicines to cart
     meds.forEach((m, idx) => {
       if (selectedMeds[idx]) {
@@ -156,7 +159,8 @@ export default function PatientPrescriptionsPage() {
     });
 
     setOrderModalOpen(false);
-    router.push("/checkout");
+    // Route to patient dashboard checkout with the specific consultationId
+    router.push(`/patient/checkout?consultationId=${selectedConsult._id}`);
   };
 
   const handleDownloadPrescription = (consultation: Consultation) => {
@@ -179,16 +183,11 @@ export default function PatientPrescriptionsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Active Prescriptions & Refills</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Active Prescriptions &amp; Refills</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             View valid doctor prescriptions, select individual medicines to order, and request authorized refills.
           </p>
         </div>
-        <Link href="/products">
-          <Button variant="outline" size="sm" className="rounded-full shadow-sm gap-2">
-            <ShoppingBag className="w-4 h-4" /> Browse Pharmacy
-          </Button>
-        </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

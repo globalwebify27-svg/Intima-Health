@@ -156,7 +156,7 @@ export function Footer() {
               <h4 className="mb-6 text-xs font-bold uppercase tracking-widest text-white/40">Hospital</h4>
               <ul className="space-y-4 text-sm font-semibold text-white/80">
                 <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
-                <li><Link href="/products" className="hover:text-white transition-colors">Pharmacy</Link></li>
+                <li><Link href="/doctors" className="hover:text-white transition-colors">Specialist Doctors</Link></li>
                 <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
                 <li><Link href="/faq" className="hover:text-white transition-colors">FAQ</Link></li>
               </ul>

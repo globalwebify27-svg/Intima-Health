@@ -163,10 +163,6 @@ export const NAV_ITEMS: NavGroupItem[] = [
     ],
   },
   {
-    title: "Pharmacy",
-    href: "/products",
-  },
-  {
     title: "About Us",
     href: "/about",
   },

@@ -3,7 +3,6 @@ import { Hero } from "@/components/sections/Hero";
 import { WelcomeSection } from "@/components/sections/WelcomeSection";
 import { TrustIndicators } from "@/components/sections/TrustIndicators";
 import { Conditions } from "@/components/sections/Conditions";
-import { FeaturedProducts } from "@/components/sections/FeaturedProducts";
 import { SeekHelpSection } from "@/components/sections/SeekHelpSection";
 import { TreatmentApproachSection } from "@/components/sections/TreatmentApproachSection";
 import { FeaturedExperts } from "@/components/sections/FeaturedExperts";

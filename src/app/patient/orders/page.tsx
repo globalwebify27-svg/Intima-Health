@@ -6,7 +6,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Eye, Package, MapPin } from "lucide-react";
+import { Eye, Package, MapPin, Pill } from "lucide-react";
 
 interface Order {
   _id: string;
@@ -145,9 +145,9 @@ export default function PatientOrdersPage() {
             Track your prescription medicines, delivery status, and purchase history.
           </p>
         </div>
-        <Link href="/products">
+        <Link href="/patient/prescriptions">
           <Button className="rounded-full shadow-sm gap-2">
-            <ShoppingBag className="w-4 h-4" /> Order Medicines
+            <Pill className="w-4 h-4" /> Order from Prescriptions
           </Button>
         </Link>
       </div>
@@ -160,11 +160,11 @@ export default function PatientOrdersPage() {
           <div>
             <h3 className="text-lg font-bold">No Medicine Orders Yet</h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto mt-1">
-              Once you order prescribed medicines or OTC healthcare products, you can track their status and delivery here.
+              Once you order prescribed medicines through your verified doctor prescriptions, you can track their status and delivery here.
             </p>
           </div>
-          <Link href="/products">
-            <Button size="sm" className="rounded-full px-6">Explore Pharmacy</Button>
+          <Link href="/patient/prescriptions">
+            <Button size="sm" className="rounded-full px-6">Order from My Prescriptions</Button>
           </Link>
         </div>
       ) : (

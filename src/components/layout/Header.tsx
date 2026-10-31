@@ -7,7 +7,6 @@ import {
   NavigationMenu,
   NavigationMenuContent,
   NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
@@ -15,8 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/store/useCart";
-import { ShoppingBag, Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBookingModal } from "@/store/useBookingModal";
 import { NAV_ITEMS, NavSubItem } from "@/constants/navigation";
@@ -48,11 +46,24 @@ const ListItem = React.forwardRef<
 });
 ListItem.displayName = "ListItem";
 
-// Client-side in-memory cache for dynamic navigation to avoid re-fetching on every page transition
-let cachedNavData: { treatments: any[]; sexualProblems: any[] } | null = null;
-let navFetchPromise: Promise<any> | null = null;
+interface DynamicNavItem {
+  slug: string;
+  title: string;
+  heroSubtext?: string;
+  badge?: string;
+}
 
-function mergeNavItems(defaultNav: typeof NAV_ITEMS, data: { treatments: any[]; sexualProblems: any[] }) {
+interface DynamicNavData {
+  treatments: DynamicNavItem[];
+  sexualProblems: DynamicNavItem[];
+  logoUrl?: string;
+}
+
+// Client-side in-memory cache for dynamic navigation to avoid re-fetching on every page transition
+let cachedNavData: DynamicNavData | null = null;
+let navFetchPromise: Promise<DynamicNavData | null> | null = null;
+
+function mergeNavItems(defaultNav: typeof NAV_ITEMS, data: DynamicNavData) {
   const treatments = data.treatments || [];
   const sexualProblems = data.sexualProblems || [];
 
@@ -61,10 +72,10 @@ function mergeNavItems(defaultNav: typeof NAV_ITEMS, data: { treatments: any[]; 
       const defaultItems = defaultNav.find(g => g.title === "Treatments")?.items || [];
       const existingHrefs = new Set(defaultItems.map(item => item.href));
       const existingTitles = new Set(defaultItems.map(item => item.title.trim().toLowerCase()));
-      const dynamicMap = new Map(treatments.map((t: any) => [`/treatments/${t.slug}`, t]));
+      const dynamicMap = new Map(treatments.map((t) => [`/treatments/${t.slug}`, t]));
 
       const mergedItems: NavSubItem[] = defaultItems.map(item => {
-        const dynamic = dynamicMap.get(item.href) as any;
+        const dynamic = dynamicMap.get(item.href);
         if (dynamic) {
           return {
             ...item,
@@ -76,14 +87,14 @@ function mergeNavItems(defaultNav: typeof NAV_ITEMS, data: { treatments: any[]; 
       });
 
       const extraItems: NavSubItem[] = treatments
-        .filter((t: any) => {
+        .filter((t) => {
           const href = `/treatments/${t.slug}`;
           const titleLower = (t.title || "").trim().toLowerCase();
           if (existingHrefs.has(href) || existingTitles.has(titleLower)) return false;
           if (t.slug === "sexual-health-problems" || href === "/sexual-problems") return false;
           return true;
         })
-        .map((t: any) => ({
+        .map((t) => ({
           title: t.title,
           href: `/treatments/${t.slug}`,
           description: t.heroSubtext || t.badge || "Clinical treatment care.",
@@ -96,10 +107,10 @@ function mergeNavItems(defaultNav: typeof NAV_ITEMS, data: { treatments: any[]; 
       const defaultItems = defaultNav.find(g => g.title === "Sexual Problems")?.items || [];
       const existingHrefs = new Set(defaultItems.map(item => item.href));
       const existingTitles = new Set(defaultItems.map(item => item.title.trim().toLowerCase()));
-      const dynamicMap = new Map(sexualProblems.map((t: any) => [`/sexual-problems/${t.slug}`, t]));
+      const dynamicMap = new Map(sexualProblems.map((t) => [`/sexual-problems/${t.slug}`, t]));
 
       const mergedItems: NavSubItem[] = defaultItems.map(item => {
-        const dynamic = dynamicMap.get(item.href) as any;
+        const dynamic = dynamicMap.get(item.href);
         if (dynamic) {
           return {
             ...item,
@@ -111,13 +122,13 @@ function mergeNavItems(defaultNav: typeof NAV_ITEMS, data: { treatments: any[]; 
       });
 
       const extraItems: NavSubItem[] = sexualProblems
-        .filter((t: any) => {
+        .filter((t) => {
           const href = `/sexual-problems/${t.slug}`;
           const titleLower = (t.title || "").trim().toLowerCase();
           if (existingHrefs.has(href) || existingTitles.has(titleLower)) return false;
           return true;
         })
-        .map((t: any) => ({
+        .map((t) => ({
           title: t.title,
           href: `/sexual-problems/${t.slug}`,
           description: t.heroSubtext || t.badge || "Medical advice and guidance.",
@@ -132,21 +143,31 @@ function mergeNavItems(defaultNav: typeof NAV_ITEMS, data: { treatments: any[]; 
 
 export function Header() {
   const router = useRouter();
-  const { openCart, items } = useCart();
   const { openBooking } = useBookingModal();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const cartItemCount = items.reduce((total, item) => total + item.quantity, 0);
-  const [isCheckingCartAuth, setIsCheckingCartAuth] = useState(false);
   const [navItems, setNavItems] = useState(() => {
     return cachedNavData ? mergeNavItems(NAV_ITEMS, cachedNavData) : NAV_ITEMS;
   });
-  const [logoUrl, setLogoUrl] = useState(() => (cachedNavData as any)?.logoUrl || "/logo.png");
+  const [logoUrl, setLogoUrl] = useState(() => cachedNavData?.logoUrl || "/logo.png");
+  const [authUser, setAuthUser] = useState<{ name?: string; role?: string } | null>(null);
 
   useEffect(() => {
-    const handleBranding = (e: any) => {
-      if (e.detail?.logoUrl) {
-        setLogoUrl(e.detail.logoUrl);
-        if (cachedNavData) (cachedNavData as any).logoUrl = e.detail.logoUrl;
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.user) {
+          setAuthUser(data.user);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const handleBranding = (e: Event) => {
+      const customEvent = e as CustomEvent<{ logoUrl?: string }>;
+      if (customEvent.detail?.logoUrl) {
+        setLogoUrl(customEvent.detail.logoUrl);
+        if (cachedNavData) cachedNavData.logoUrl = customEvent.detail.logoUrl;
       }
     };
     window.addEventListener("branding_updated", handleBranding);
@@ -155,7 +176,6 @@ export function Header() {
 
   useEffect(() => {
     if (cachedNavData) {
-      if ((cachedNavData as any).logoUrl) setLogoUrl((cachedNavData as any).logoUrl);
       return;
     }
 
@@ -299,36 +319,55 @@ export function Header() {
 
           <div className="flex items-center gap-4 shrink-0">
             <button
-              onClick={() => openCart()}
-              className="relative p-2 text-foreground/80 hover:text-primary transition-colors cursor-pointer"
-              aria-label="Shopping Cart"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              {cartItemCount > 0 && (
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-primary rounded-full">
-                  {cartItemCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              className="xl:hidden p-2 text-foreground/80 hover:text-primary transition-colors"
+              className="xl:hidden p-2 text-foreground/80 hover:text-primary transition-colors cursor-pointer"
               onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Open Navigation Menu"
             >
               <Menu className="w-6 h-6" />
             </button>
 
-            <div className="hidden sm:flex items-center gap-6">
-              <Link href="/login" className="text-sm font-semibold text-foreground/80 hover:text-primary transition-colors">
-                Log in
-              </Link>
-              <button
-                onClick={() => openBooking()}
-                className={cn(buttonVariants({ size: "lg" }), "rounded-full px-6 py-3 text-sm font-semibold shadow-sm hover:shadow-md transition-all")}
-              >
-                Get Started
-              </button>
-            </div>
+            {authUser ? (
+              <div className="hidden sm:flex items-center gap-3">
+                <Link
+                  href={
+                    authUser.role === "ADMIN"
+                      ? "/admin/dashboard"
+                      : authUser.role === "DOCTOR"
+                      ? "/doctor/dashboard"
+                      : "/patient/dashboard"
+                  }
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-all text-xs font-bold border border-primary/20"
+                >
+                  <User className="w-3.5 h-3.5 text-primary" />
+                  <span>{authUser.name ? authUser.name.split(" ")[0] : "Dashboard"}</span>
+                </Link>
+                <Link
+                  href={
+                    authUser.role === "ADMIN"
+                      ? "/admin/dashboard"
+                      : authUser.role === "DOCTOR"
+                      ? "/doctor/dashboard"
+                      : "/patient/dashboard"
+                  }
+                >
+                  <Button size="sm" className="rounded-full px-5 font-bold shadow-sm">
+                    My Portal
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="hidden sm:flex items-center gap-6">
+                <Link href="/login" className="text-sm font-semibold text-foreground/80 hover:text-primary transition-colors">
+                  Log in
+                </Link>
+                <button
+                  onClick={() => openBooking()}
+                  className={cn(buttonVariants({ size: "lg" }), "rounded-full px-6 py-3 text-sm font-semibold shadow-sm hover:shadow-md transition-all")}
+                >
+                  Get Started
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -435,20 +474,39 @@ export function Header() {
               </div>
 
               <div className="p-6 border-t border-border bg-muted/30 flex flex-col gap-4">
-                <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                  <Button variant="outline" className="w-full rounded-full py-6 text-base">
-                    Log In
-                  </Button>
-                </Link>
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    openBooking();
-                  }}
-                  className={cn(buttonVariants(), "w-full rounded-full py-6 text-base font-semibold shadow-sm hover:shadow-md transition-all")}
-                >
-                  Get Started
-                </button>
+                {authUser ? (
+                  <Link
+                    href={
+                      authUser.role === "ADMIN"
+                        ? "/admin/dashboard"
+                        : authUser.role === "DOCTOR"
+                        ? "/doctor/dashboard"
+                        : "/patient/dashboard"
+                    }
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Button className="w-full rounded-full py-6 text-base font-bold shadow-sm">
+                      Go to My Portal ({authUser.name?.split(" ")[0] || "Account"})
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="outline" className="w-full rounded-full py-6 text-base">
+                        Log In
+                      </Button>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        openBooking();
+                      }}
+                      className={cn(buttonVariants(), "w-full rounded-full py-6 text-base font-semibold shadow-sm hover:shadow-md transition-all")}
+                    >
+                      Get Started
+                    </button>
+                  </>
+                )}
               </div>
             </motion.div>
           </>

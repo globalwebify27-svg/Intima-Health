@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { verifyJwt, getAuthToken } from "@/lib/jwt";
 import { connectDB } from "@/db/connect";
 import { PatientModel } from "@/modules/patients/schema";
@@ -38,6 +37,7 @@ export async function GET(req: Request) {
     }
 
     let profileId = undefined;
+    let resolvedPhone: string | undefined = undefined;
     let resolvedClinicId = dbUser.clinicId;
     if (dbUser.role === "DOCTOR") {
       const doctorProfile = await DoctorRepository.findByEmail(dbUser.email);
@@ -53,17 +53,28 @@ export async function GET(req: Request) {
         resolvedClinicId = therapistProfile.clinicId;
       }
     } else if (dbUser.role === "PATIENT") {
+      let patientProfile = null;
       if (dbUser.patientId) {
         profileId = dbUser.patientId;
-      } else {
-        // Fallback for older OTP users
+        patientProfile = await PatientModel.findById(dbUser.patientId).exec();
+      }
+      if (!patientProfile) {
+        // Fallback for older OTP users or email lookup
         if (dbUser.email && dbUser.email.includes("@noemail-intima.com")) {
-          const phone = dbUser.email.split("@")[0];
-          const patientProfile = await PatientModel.findOne({ phone: new RegExp(phone + '$') }).exec();
-          profileId = patientProfile ? patientProfile._id : undefined;
+          const phoneFromEmail = dbUser.email.split("@")[0];
+          patientProfile = await PatientModel.findOne({ phone: new RegExp(phoneFromEmail + '$') }).exec();
         } else {
-          const patientProfile = await PatientModel.findOne({ email: dbUser.email }).exec();
-          profileId = patientProfile ? patientProfile._id : undefined;
+          patientProfile = await PatientModel.findOne({ email: dbUser.email }).exec();
+        }
+        profileId = patientProfile ? patientProfile._id : undefined;
+      }
+
+      if (patientProfile && patientProfile.phone) {
+        resolvedPhone = patientProfile.phone;
+      } else if (dbUser.email) {
+        const potentialPhone = dbUser.email.split("@")[0].replace(/\D/g, "");
+        if (potentialPhone.length === 10) {
+          resolvedPhone = potentialPhone;
         }
       }
     }
@@ -74,6 +85,7 @@ export async function GET(req: Request) {
         id: dbUser._id,
         name: dbUser.name,
         email: dbUser.email,
+        phone: resolvedPhone,
         role: dbUser.role,
         clinicId: resolvedClinicId,
         doctorId: dbUser.role === "DOCTOR" ? profileId : undefined,
@@ -81,9 +93,10 @@ export async function GET(req: Request) {
         patientId: dbUser.role === "PATIENT" ? profileId : undefined,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to retrieve session.";
     return NextResponse.json(
-      { success: false, message: error.message || "Failed to retrieve session." },
+      { success: false, message },
       { status: 500 }
     );
   }

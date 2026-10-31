@@ -2,14 +2,14 @@
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { BookingModal } from "@/components/layout/BookingModal";
-import { LayoutDashboard, Calendar, FileText, Pill, ShoppingBag, Settings, UserCircle } from "lucide-react";
+import { LayoutDashboard, Calendar, Pill, ShoppingBag, UserCircle } from "lucide-react";
 
 const patientLinks = [
   { title: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
   { title: "My Profile", href: "/patient/profile", icon: UserCircle },
   { title: "Appointments", href: "/patient/appointments", icon: Calendar },
-  { title: "Prescriptions", href: "/patient/prescriptions", icon: Pill },
-  { title: "Orders", href: "/patient/orders", icon: ShoppingBag },
+  { title: "Prescriptions & Medicines", href: "/patient/prescriptions", icon: Pill },
+  { title: "Medicine Orders", href: "/patient/orders", icon: ShoppingBag },
 ];
 
 export default function PatientLayout({ children }: { children: React.ReactNode }) {

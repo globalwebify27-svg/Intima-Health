@@ -1,6 +1,7 @@
 import { FileText, Download, Pill } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface Medicine {
   drug: string;
@@ -26,13 +27,12 @@ interface Consultation {
 
 interface DigitalPrescriptionsListProps {
   consultations: Consultation[];
-  handleOrderFromPharmacy: (consultation: Consultation) => void;
+  handleOrderFromPharmacy?: (consultation: Consultation) => void;
   handleDownloadPrescription: (consultation: Consultation) => void;
 }
 
 export function DigitalPrescriptionsList({
   consultations,
-  handleOrderFromPharmacy,
   handleDownloadPrescription
 }: DigitalPrescriptionsListProps) {
   const completedConsultations = consultations.filter(
@@ -75,13 +75,14 @@ export function DigitalPrescriptionsList({
                 </div>
 
                 <div className="flex flex-wrap gap-2 pt-2 border-t border-border/40">
-                  <Button 
-                    size="sm" 
-                    onClick={() => handleOrderFromPharmacy(consult)}
-                    className="rounded-xl h-9 text-xs font-bold gap-1.5"
-                  >
-                    <Pill className="w-3.5 h-3.5" /> Order from Clinic Pharmacy
-                  </Button>
+                  <Link href="/patient/prescriptions">
+                    <Button 
+                      size="sm" 
+                      className="rounded-xl h-9 text-xs font-bold gap-1.5"
+                    >
+                      <Pill className="w-3.5 h-3.5" /> Order from Clinic Pharmacy
+                    </Button>
+                  </Link>
                   <Button 
                     size="sm" 
                     variant="outline" 

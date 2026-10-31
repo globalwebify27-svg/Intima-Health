@@ -754,9 +754,14 @@ export default function PatientDashboard() {
 
         {/* Right Column: Pharmacy Orders History */}
         <div className="p-6 bg-card rounded-3xl border border-border/60 shadow-sm min-h-[350px] space-y-4">
-          <h3 className="text-lg font-bold flex items-center gap-2 border-b border-border/50 pb-3">
-            <Pill className="w-4 h-4 text-primary" /> Active Pharmacy Orders
-          </h3>
+          <div className="flex items-center justify-between border-b border-border/50 pb-3">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <Pill className="w-4 h-4 text-primary" /> Active Medicine Orders
+            </h3>
+            <Link href="/patient/orders" className="text-xs font-semibold text-primary hover:underline">
+              View All
+            </Link>
+          </div>
 
           <div className="space-y-4">
             {pharmacyOrders.length > 0 ? (
