@@ -1,4 +1,4 @@
-import { getMailTransporter, getMailConfig } from "./transporter";
+import { getMailTransporter, getMailConfig, getMailTransporterAsync, getResolvedMailConfig } from "./transporter";
 import { generateAppointmentCustomerEmail } from "./templates/appointment";
 import { generateOrderCustomerEmail, OrderEmailItem } from "./templates/order";
 import { generatePatientWelcomeEmail } from "./templates/welcome";
@@ -14,6 +14,8 @@ import { AppointmentModel } from "@/modules/appointments/schema";
 import { PatientModel } from "@/modules/patients/schema";
 import { OrderModel } from "@/modules/pharmacy/schema";
 import { ContactSubmissionModel } from "@/modules/contact/schema";
+import { SettingModel } from "@/modules/system/schema";
+import { generateContactInquiryAdminEmail } from "./templates/contact";
 
 interface PopulatedRef {
   _id?: unknown;
@@ -81,8 +83,8 @@ interface RawPatientDoc {
  */
 export async function sendAppointmentCustomerEmail(appointmentId: string): Promise<boolean> {
   try {
-    const transporter = getMailTransporter();
-    const config = getMailConfig();
+    const transporter = (await getMailTransporterAsync()) || getMailTransporter();
+    const config = await getResolvedMailConfig();
     if (!transporter) {
       console.log(`[Mail Service] SMTP not configured. Skipping customer appointment email for ID: ${appointmentId}`);
       return false;
@@ -143,8 +145,8 @@ export async function sendAppointmentCustomerEmail(appointmentId: string): Promi
  */
 export async function sendOrderCustomerEmail(orderId: string): Promise<boolean> {
   try {
-    const transporter = getMailTransporter();
-    const config = getMailConfig();
+    const transporter = (await getMailTransporterAsync()) || getMailTransporter();
+    const config = await getResolvedMailConfig();
     if (!transporter) {
       console.log(`[Mail Service] SMTP not configured. Skipping customer order email for ID: ${orderId}`);
       return false;
@@ -215,8 +217,8 @@ export async function sendOrderCustomerEmail(orderId: string): Promise<boolean> 
  */
 export async function sendPatientWelcomeEmail(patientId: string): Promise<boolean> {
   try {
-    const transporter = getMailTransporter();
-    const config = getMailConfig();
+    const transporter = (await getMailTransporterAsync()) || getMailTransporter();
+    const config = await getResolvedMailConfig();
     if (!transporter) return false;
 
     await connectDB();
@@ -252,8 +254,8 @@ export async function sendPatientWelcomeEmail(patientId: string): Promise<boolea
  */
 export async function sendDailyAdminReport(): Promise<{ success: boolean; message: string; data?: Record<string, unknown> }> {
   try {
-    const transporter = getMailTransporter();
-    const config = getMailConfig();
+    const transporter = (await getMailTransporterAsync()) || getMailTransporter();
+    const config = await getResolvedMailConfig();
 
     if (!transporter) {
       return {
@@ -429,6 +431,71 @@ export async function sendDailyAdminReport(): Promise<{ success: boolean; messag
   } catch (error) {
     console.error(`[Mail Service] Error sending daily admin report:`, error);
     const msg = error instanceof Error ? error.message : "Failed to compile daily report.";
+    return {
+      success: false,
+      message: msg,
+    };
+  }
+}
+
+/**
+ * Dispatches an instant email notification when a new contact inquiry is submitted.
+ * Uses recipient email configured in database settings, falling back to ADMIN_NOTIFICATION_EMAIL or temptest9093@gmail.com
+ */
+export async function sendContactNotification(submission: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  subject: string;
+  message: string;
+  createdAt?: Date;
+}): Promise<{ success: boolean; message: string; recipient?: string }> {
+  try {
+    await connectDB();
+    const transporter = (await getMailTransporterAsync()) || getMailTransporter();
+    const config = await getResolvedMailConfig();
+
+    // 1. Resolve notification recipient (DB setting overrides env fallback, default to temptest9093@gmail.com)
+    const emailSetting = await SettingModel.findOne({ key: "contact_notification_email" }).lean();
+    const recipient = emailSetting?.value?.trim() || config.adminEmail || "temptest9093@gmail.com";
+
+    if (!transporter) {
+      console.warn(`[Mail Service] SMTP Transporter not configured. Skipping contact notification email to ${recipient}.`);
+      return {
+        success: false,
+        message: "SMTP is not configured in environment variables.",
+        recipient,
+      };
+    }
+
+    const { subject, html } = generateContactInquiryAdminEmail({
+      firstName: submission.firstName,
+      lastName: submission.lastName,
+      email: submission.email,
+      subject: submission.subject,
+      message: submission.message,
+      submittedAt: submission.createdAt
+        ? new Date(submission.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+        : undefined,
+    });
+
+    await transporter.sendMail({
+      from: `"${config.fromName} Inquiries" <${config.fromEmail}>`,
+      to: recipient,
+      replyTo: submission.email,
+      subject,
+      html,
+    });
+
+    console.log(`[Mail Service] Successfully dispatched contact notification to ${recipient}`);
+    return {
+      success: true,
+      message: `Notification sent to ${recipient}`,
+      recipient,
+    };
+  } catch (error) {
+    console.error("[Mail Service] Error sending contact inquiry notification:", error);
+    const msg = error instanceof Error ? error.message : "Failed to send contact notification.";
     return {
       success: false,
       message: msg,

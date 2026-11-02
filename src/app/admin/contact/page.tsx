@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { MessageSquare, CheckCircle, Mail, AlertCircle } from "lucide-react";
+import { MessageSquare, CheckCircle, Mail, AlertCircle, Settings, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ISubmission {
@@ -20,9 +21,18 @@ export default function AdminContactPage() {
   const [submissions, setSubmissions] = useState<ISubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notifEmail, setNotifEmail] = useState("temptest9093@gmail.com");
 
   useEffect(() => {
     fetchSubmissions();
+    fetch("/api/admin/settings/notifications")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data?.contactNotificationEmail) {
+          setNotifEmail(data.data.contactNotificationEmail);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const fetchSubmissions = async () => {
@@ -68,6 +78,26 @@ export default function AdminContactPage() {
         <Button onClick={fetchSubmissions} variant="outline" className="rounded-xl border-border/60 shadow-sm text-sm font-semibold h-10 px-4">
           Refresh List
         </Button>
+      </div>
+
+      {/* Notification Recipient Alert */}
+      <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Bell className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Owner Notification Recipient</p>
+            <p className="text-sm font-bold text-foreground">
+              New inquiries are emailed to: <span className="text-primary font-mono">{notifEmail}</span>
+            </p>
+          </div>
+        </div>
+        <Link href="/admin/settings">
+          <Button variant="outline" size="sm" className="rounded-xl text-xs font-semibold gap-1.5 h-8 border-primary/30 text-primary hover:bg-primary/5">
+            <Settings className="w-3.5 h-3.5" /> Edit in Settings
+          </Button>
+        </Link>
       </div>
 
       {error && (

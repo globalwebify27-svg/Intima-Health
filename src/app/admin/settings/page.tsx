@@ -21,7 +21,13 @@ import {
   Image as ImageIcon,
   Upload,
   RotateCcw,
-  Palette
+  Palette,
+  Mail,
+  Send,
+  Bell,
+  Server,
+  Key,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -54,7 +60,27 @@ interface PharmacyConfig {
 export default function SettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"profile" | "pharmacy" | "branding">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "pharmacy" | "branding" | "notifications">("profile");
+
+  // Notification Recipient state (Owner Testing & Inquiries)
+  const [contactNotificationEmail, setContactNotificationEmail] = useState("temptest9093@gmail.com");
+  const [savingNotificationEmail, setSavingNotificationEmail] = useState(false);
+  const [testingNotification, setTestingNotification] = useState(false);
+
+  // SMTP Server Configuration state
+  const [smtpHost, setSmtpHost] = useState("smtp.hostinger.com");
+  const [smtpPort, setSmtpPort] = useState<number | string>(465);
+  const [smtpSecure, setSmtpSecure] = useState(true);
+  const [smtpUser, setSmtpUser] = useState("");
+  const [smtpPass, setSmtpPass] = useState("");
+  const [showSmtpPass, setShowSmtpPass] = useState(false);
+  const [hasSmtpPass, setHasSmtpPass] = useState(false);
+  const [smtpFromName, setSmtpFromName] = useState("Kelkar Manas Health Care");
+  const [smtpFromEmail, setSmtpFromEmail] = useState("care@kelkarmanas.com");
+  const [isSmtpConfigured, setIsSmtpConfigured] = useState(false);
+  const [savingSmtp, setSavingSmtp] = useState(false);
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // User Profile details
   const [userName, setUserName] = useState("");
@@ -130,6 +156,24 @@ export default function SettingsPage() {
         if (!ignore && brandingJson.success && brandingJson.data?.logoUrl) {
           setLogoUrl(brandingJson.data.logoUrl);
           setCustomLogoUrl(brandingJson.data.logoUrl);
+        }
+
+        // Load contact notification & SMTP settings
+        const notifRes = await fetch("/api/admin/settings/notifications");
+        const notifJson = await notifRes.json();
+        if (!ignore && notifJson.success && notifJson.data) {
+          const d = notifJson.data;
+          if (d.contactNotificationEmail) {
+            setContactNotificationEmail(d.contactNotificationEmail);
+          }
+          if (d.smtpHost) setSmtpHost(d.smtpHost);
+          if (d.smtpPort) setSmtpPort(d.smtpPort);
+          if (typeof d.smtpSecure === "boolean") setSmtpSecure(d.smtpSecure);
+          if (d.smtpUser) setSmtpUser(d.smtpUser);
+          if (d.smtpFromName) setSmtpFromName(d.smtpFromName);
+          if (d.smtpFromEmail) setSmtpFromEmail(d.smtpFromEmail);
+          setHasSmtpPass(Boolean(d.hasSmtpPass));
+          setIsSmtpConfigured(Boolean(d.isSmtpConfigured));
         }
       } catch (err) {
         console.error("Failed to load settings details:", err);
@@ -375,6 +419,163 @@ export default function SettingsPage() {
     }
   };
 
+  // Save notification email for contact form & owner testing
+  const handleSaveNotificationEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingNotificationEmail(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/admin/settings/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactNotificationEmail }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setSuccessMsg(json.message || "Contact form notification email saved successfully.");
+      } else {
+        setErrorMsg(json.message || "Failed to update notification email.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update notification email.";
+      setErrorMsg(msg);
+    } finally {
+      setSavingNotificationEmail(false);
+    }
+  };
+
+  // Trigger test notification email to the configured recipient
+  const handleSendTestNotification = async () => {
+    setTestingNotification(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/admin/settings/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test_contact", email: contactNotificationEmail }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setSuccessMsg(json.message || `Test notification sent to ${contactNotificationEmail}!`);
+      } else {
+        setErrorMsg(json.message || "Failed to deliver test notification. Please verify SMTP settings.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to trigger test notification.";
+      setErrorMsg(msg);
+    } finally {
+      setTestingNotification(false);
+    }
+  };
+
+  // Save SMTP Outgoing Server Configuration
+  const handleSaveSmtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSmtp(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+    setSmtpTestResult(null);
+
+    try {
+      const payload: Record<string, any> = {
+        smtpHost: smtpHost.trim(),
+        smtpPort: Number(smtpPort) || 465,
+        smtpSecure,
+        smtpUser: smtpUser.trim(),
+        smtpFromName: smtpFromName.trim(),
+        smtpFromEmail: smtpFromEmail.trim(),
+      };
+      if (smtpPass.trim()) {
+        payload.smtpPass = smtpPass.trim();
+      }
+
+      const res = await fetch("/api/admin/settings/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setSuccessMsg(json.message || "SMTP configuration saved and activated successfully.");
+        if (json.data) {
+          setIsSmtpConfigured(Boolean(json.data.isSmtpConfigured));
+          setHasSmtpPass(Boolean(json.data.hasSmtpPass));
+        }
+        setSmtpPass(""); // Clear local input after successful save
+      } else {
+        setErrorMsg(json.message || "Failed to update SMTP settings.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update SMTP settings.";
+      setErrorMsg(msg);
+    } finally {
+      setSavingSmtp(false);
+    }
+  };
+
+  // Test SMTP Server Connection (Handshake & Auth)
+  const handleTestSmtpConnection = async () => {
+    setTestingSmtp(true);
+    setSmtpTestResult(null);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/admin/settings/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "test_smtp",
+          smtpHost: smtpHost.trim(),
+          smtpPort: Number(smtpPort) || 465,
+          smtpSecure,
+          smtpUser: smtpUser.trim(),
+          smtpPass: smtpPass.trim() || undefined,
+          email: contactNotificationEmail,
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setSmtpTestResult({ success: true, message: json.message || "SMTP connection verified successfully!" });
+        setSuccessMsg(json.message || "SMTP connection verified successfully!");
+      } else {
+        setSmtpTestResult({ success: false, message: json.message || "SMTP connection test failed." });
+        setErrorMsg(json.message || "SMTP connection test failed. Please verify credentials.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to test SMTP connection.";
+      setSmtpTestResult({ success: false, message: msg });
+      setErrorMsg(msg);
+    } finally {
+      setTestingSmtp(false);
+    }
+  };
+
+  // Apply quick provider presets
+  const applyPreset = (preset: "hostinger_ssl" | "hostinger_tls" | "gmail") => {
+    if (preset === "hostinger_ssl") {
+      setSmtpHost("smtp.hostinger.com");
+      setSmtpPort(465);
+      setSmtpSecure(true);
+    } else if (preset === "hostinger_tls") {
+      setSmtpHost("smtp.hostinger.com");
+      setSmtpPort(587);
+      setSmtpSecure(false);
+    } else if (preset === "gmail") {
+      setSmtpHost("smtp.gmail.com");
+      setSmtpPort(587);
+      setSmtpSecure(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground font-medium">
@@ -441,6 +642,18 @@ export default function SettingsPage() {
           >
             <Truck className="w-4 h-4" />
             Pharmacy & Delivery Coverage
+          </button>
+
+          <button
+            onClick={() => { setActiveTab("notifications"); setSuccessMsg(""); setErrorMsg(""); }}
+            className={`w-full px-4 py-3 rounded-2xl text-left text-sm font-bold transition flex items-center gap-3 ${
+              activeTab === "notifications"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <Bell className="w-4 h-4" />
+            Notifications & Inquiries
           </button>
         </div>
 
@@ -910,6 +1123,369 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* Tab 4: Notifications & Inquiries */}
+        {activeTab === "notifications" && (
+          <div className="lg:col-span-3 space-y-6">
+            {/* Card 1: Contact Form Inquiry Notification Recipient */}
+            <div className="bg-card border border-border p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
+              <div>
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-primary" />
+                  Contact Form & Inquiry Notifications
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Specify the recipient email address where patient messages submitted via the public Contact page are delivered.
+                </p>
+              </div>
+
+              <form onSubmit={handleSaveNotificationEmail} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="notificationEmail" className="font-bold flex items-center gap-2 text-sm">
+                    <Mail className="w-4 h-4 text-primary" />
+                    Inquiry Notification Email (Owner Testing)
+                  </Label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      id="notificationEmail"
+                      type="email"
+                      value={contactNotificationEmail}
+                      onChange={(e) => setContactNotificationEmail(e.target.value)}
+                      placeholder="temptest9093@gmail.com"
+                      className="rounded-xl h-11 flex-1 font-medium"
+                      required
+                    />
+                    <Button
+                      type="submit"
+                      disabled={savingNotificationEmail}
+                      className="rounded-xl h-11 px-6 font-bold shadow-sm gap-2 shrink-0"
+                    >
+                      {savingNotificationEmail ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Save Recipient
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Defaulted to <strong className="text-foreground">temptest9093@gmail.com</strong> for owner testing. Any inquiries received from the public website contact form will be routed directly to this address.
+                  </p>
+                </div>
+
+                {/* Instant Test Inquiry Email */}
+                <div className="p-4 bg-muted/40 border border-border/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Send className="w-3.5 h-3.5 text-primary" />
+                      Verify Inquiry Dispatch
+                    </h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Send a mock website inquiry to verify that <span className="font-semibold text-foreground">{contactNotificationEmail}</span> receives emails properly.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSendTestNotification}
+                    disabled={testingNotification || !contactNotificationEmail}
+                    className="rounded-xl text-xs font-bold gap-2 shrink-0 border-primary/40 text-primary hover:bg-primary/5"
+                  >
+                    {testingNotification ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Delivering Test...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        Send Test Inquiry
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
+
+            {/* Card 2: SMTP Outgoing Mail Server Configuration */}
+            <div className="bg-card border border-border p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
+                <div>
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <Server className="w-5 h-5 text-primary" />
+                    SMTP Outgoing Mail Server Configuration
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Configure your custom SMTP mail provider (Hostinger, Gmail, Google Workspace, AWS SES, etc.) for transactional patient emails and notifications.
+                  </p>
+                </div>
+                <div>
+                  {isSmtpConfigured ? (
+                    <Badge className="bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20 border-emerald-500/30 gap-1.5 px-3 py-1 font-bold text-xs">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> SMTP Active
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30 gap-1.5 px-3 py-1 font-bold text-xs">
+                      <AlertCircle className="w-3.5 h-3.5" /> Incomplete Setup
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Presets */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                  Quick Provider Presets
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyPreset("hostinger_ssl")}
+                    className="rounded-xl text-xs font-semibold hover:border-primary"
+                  >
+                    Hostinger (SSL • Port 465)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyPreset("hostinger_tls")}
+                    className="rounded-xl text-xs font-semibold hover:border-primary"
+                  >
+                    Hostinger (TLS • Port 587)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyPreset("gmail")}
+                    className="rounded-xl text-xs font-semibold hover:border-primary"
+                  >
+                    Gmail / Google Workspace (Port 587)
+                  </Button>
+                </div>
+              </div>
+
+              <form onSubmit={handleSaveSmtp} className="space-y-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {/* SMTP Host */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="smtpHost" className="text-xs font-bold">
+                      SMTP Host / Server
+                    </Label>
+                    <Input
+                      id="smtpHost"
+                      type="text"
+                      value={smtpHost}
+                      onChange={(e) => setSmtpHost(e.target.value)}
+                      placeholder="smtp.hostinger.com"
+                      className="rounded-xl h-10 font-medium"
+                      required
+                    />
+                  </div>
+
+                  {/* SMTP Port */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="smtpPort" className="text-xs font-bold">
+                      SMTP Port
+                    </Label>
+                    <Input
+                      id="smtpPort"
+                      type="number"
+                      value={smtpPort}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setSmtpPort(e.target.value);
+                        if (val === 465) setSmtpSecure(true);
+                        else if (val === 587) setSmtpSecure(false);
+                      }}
+                      placeholder="465"
+                      className="rounded-xl h-10 font-medium"
+                      required
+                    />
+                  </div>
+
+                  {/* Security / Encryption */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="smtpSecure" className="text-xs font-bold">
+                      Encryption Protocol
+                    </Label>
+                    <select
+                      id="smtpSecure"
+                      value={smtpSecure ? "ssl" : "tls"}
+                      onChange={(e) => {
+                        const isSecure = e.target.value === "ssl";
+                        setSmtpSecure(isSecure);
+                        if (isSecure && Number(smtpPort) === 587) setSmtpPort(465);
+                        else if (!isSecure && Number(smtpPort) === 465) setSmtpPort(587);
+                      }}
+                      className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="ssl">SSL / TLS (Recommended for Port 465)</option>
+                      <option value="tls">STARTTLS / TLS (Recommended for Port 587)</option>
+                    </select>
+                  </div>
+
+                  {/* SMTP Username */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="smtpUser" className="text-xs font-bold">
+                      SMTP Username / Email
+                    </Label>
+                    <Input
+                      id="smtpUser"
+                      type="text"
+                      value={smtpUser}
+                      onChange={(e) => setSmtpUser(e.target.value)}
+                      placeholder="care@kelkarmanas.com"
+                      className="rounded-xl h-10 font-medium"
+                      required
+                    />
+                  </div>
+
+                  {/* SMTP Password */}
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="smtpPass" className="text-xs font-bold flex items-center gap-1.5">
+                        <Key className="w-3.5 h-3.5 text-primary" />
+                        SMTP Password / App Password
+                      </Label>
+                      {hasSmtpPass && (
+                        <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Password is saved in system
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="smtpPass"
+                        type={showSmtpPass ? "text" : "password"}
+                        value={smtpPass}
+                        onChange={(e) => setSmtpPass(e.target.value)}
+                        placeholder={hasSmtpPass ? "•••••••••••• (Leave blank to keep currently saved password)" : "Enter SMTP account or app password"}
+                        className="rounded-xl h-10 font-medium pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSmtpPass(!showSmtpPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                      >
+                        {showSmtpPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {hasSmtpPass 
+                        ? "A password is already saved securely. Only type here if you wish to change it."
+                        : "For Gmail/Google Workspace, generate and enter a 16-character App Password."}
+                    </p>
+                  </div>
+
+                  {/* Sender Display Name */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="smtpFromName" className="text-xs font-bold">
+                      Sender Display Name
+                    </Label>
+                    <Input
+                      id="smtpFromName"
+                      type="text"
+                      value={smtpFromName}
+                      onChange={(e) => setSmtpFromName(e.target.value)}
+                      placeholder="Kelkar Manas Health Care"
+                      className="rounded-xl h-10 font-medium"
+                      required
+                    />
+                  </div>
+
+                  {/* Sender From Email */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="smtpFromEmail" className="text-xs font-bold">
+                      Sender &quot;From&quot; Email Address
+                    </Label>
+                    <Input
+                      id="smtpFromEmail"
+                      type="email"
+                      value={smtpFromEmail}
+                      onChange={(e) => setSmtpFromEmail(e.target.value)}
+                      placeholder="care@kelkarmanas.com"
+                      className="rounded-xl h-10 font-medium"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Connection Test Output Alert */}
+                {smtpTestResult && (
+                  <div
+                    className={`p-4 rounded-2xl border text-xs font-medium flex items-start gap-2.5 ${
+                      smtpTestResult.success
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                        : "bg-destructive/10 text-destructive border-destructive/20"
+                    }`}
+                  >
+                    {smtpTestResult.success ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      <strong className="block font-bold">
+                        {smtpTestResult.success ? "Connection Verified Successfully" : "Connection Failed"}
+                      </strong>
+                      <span className="mt-0.5 block leading-relaxed">{smtpTestResult.message}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-border">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleTestSmtpConnection}
+                    disabled={testingSmtp || !smtpHost || !smtpUser}
+                    className="rounded-xl h-11 px-5 font-bold gap-2 text-xs border-primary/40 text-primary hover:bg-primary/5"
+                  >
+                    {testingSmtp ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Verifying SMTP Handshake...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        Test SMTP Connection
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    type="submit"
+                    disabled={savingSmtp}
+                    className="rounded-xl h-11 px-8 font-bold gap-2 shadow-sm"
+                  >
+                    {savingSmtp ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Saving SMTP Settings...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        Save SMTP Settings
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </div>
