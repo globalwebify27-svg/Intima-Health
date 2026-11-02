@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, UserPlus, Calendar, IndianRupee, ArrowUpRight, ArrowDownRight, TrendingUp, Clock } from "lucide-react";
+import { Users, UserPlus, Calendar, IndianRupee, TrendingUp, Clock, Mail, Loader2 } from "lucide-react";
 import { formatTime12Hour } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface StatsData {
   totalRevenue: number;
@@ -30,11 +31,36 @@ interface StatsData {
   }[];
 }
 
+interface ClinicItem {
+  _id: string;
+  name: string;
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [clinics, setClinics] = useState<any[]>([]);
+  const [clinics, setClinics] = useState<ClinicItem[]>([]);
   const [selectedClinic, setSelectedClinic] = useState<string>("all");
+  const [sendingReport, setSendingReport] = useState(false);
+  const [reportStatus, setReportStatus] = useState<string | null>(null);
+
+  const handleTriggerDailyReport = async () => {
+    setSendingReport(true);
+    setReportStatus(null);
+    try {
+      const res = await fetch("/api/cron/daily-admin-report", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setReportStatus(`Executive daily report dispatched to ${data.data?.recipient || 'kelkarmanashealthcare@gmail.com'}!`);
+      } else {
+        setReportStatus(`Notice: ${data.message}`);
+      }
+    } catch {
+      setReportStatus("Failed to dispatch daily report. Check Hostinger SMTP settings in .env.");
+    } finally {
+      setSendingReport(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/clinics")
@@ -46,15 +72,26 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    const url = selectedClinic === "all" ? "/api/admin/stats" : `/api/admin/stats?clinicId=${selectedClinic}`;
-    fetch(url)
-      .then(res => res.json())
-      .then(json => {
-        if (json.success) setStats(json.data);
-      })
-      .catch(err => console.error("Stats fetch error:", err))
-      .finally(() => setLoading(false));
+    let isCancelled = false;
+    const fetchStats = async () => {
+      try {
+        const url = selectedClinic === "all" ? "/api/admin/stats" : `/api/admin/stats?clinicId=${selectedClinic}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        if (!isCancelled && json.success) {
+          setStats(json.data);
+        }
+      } catch (err) {
+        console.error("Stats fetch error:", err);
+      } finally {
+        if (!isCancelled) setLoading(false);
+      }
+    };
+
+    fetchStats();
+    return () => {
+      isCancelled = true;
+    };
   }, [selectedClinic]);
 
   if (loading) {
@@ -128,17 +165,46 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
           <p className="text-muted-foreground mt-2">Monitor your platform&apos;s overall performance and metrics.</p>
         </div>
-        <select
-          value={selectedClinic}
-          onChange={(e) => setSelectedClinic(e.target.value)}
-          className="h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-        >
-          <option value="all">All Clinics (Global)</option>
-          {clinics.map(c => (
-            <option key={c._id} value={c._id}>{c.name}</option>
-          ))}
-        </select>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleTriggerDailyReport}
+            disabled={sendingReport}
+            className="h-10 border-purple-200 hover:border-purple-300 hover:bg-purple-50 text-purple-950 gap-2 font-medium"
+          >
+            {sendingReport ? (
+              <Loader2 className="w-4 h-4 animate-spin text-purple-700" />
+            ) : (
+              <Mail className="w-4 h-4 text-purple-700" />
+            )}
+            {sendingReport ? "Dispatching Report..." : "Email Daily Report"}
+          </Button>
+
+          <select
+            value={selectedClinic}
+            onChange={(e) => setSelectedClinic(e.target.value)}
+            className="h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="all">All Clinics (Global)</option>
+            {clinics.map(c => (
+              <option key={c._id} value={c._id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
+
+      {reportStatus && (
+        <div className="p-3.5 rounded-xl border border-purple-200 bg-purple-50/70 text-purple-900 text-sm flex items-center justify-between">
+          <span>{reportStatus}</span>
+          <button
+            onClick={() => setReportStatus(null)}
+            className="text-xs text-purple-600 hover:text-purple-800 font-semibold ml-4"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Stat Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

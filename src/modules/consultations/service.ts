@@ -113,6 +113,14 @@ export class ConsultationService {
       }
     }
 
+    // --- Active status logic: mark appointment as Engaged ---
+    if (data.status === "Active" && updated.appointmentId) {
+      const aptId = (updated.appointmentId as any)?._id || updated.appointmentId;
+      if (aptId) {
+        await AppointmentModel.findByIdAndUpdate(aptId, { status: "Engaged" }).exec();
+      }
+    }
+
     // --- Completion-specific logic ---
     if (data.status === "Completed") {
       // Update appointment status to Completed
@@ -132,7 +140,7 @@ export class ConsultationService {
     return updated;
   }
 
-  static async listConsultations(filters: { doctorId?: string; patientId?: string; status?: string; clinicId?: string }) {
+  static async listConsultations(filters: { doctorId?: string; patientId?: string; status?: string; clinicId?: string; appointmentId?: string }) {
     return await ConsultationRepository.list(filters);
   }
 }

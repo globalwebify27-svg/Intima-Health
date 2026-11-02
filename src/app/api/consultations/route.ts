@@ -25,6 +25,7 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") || undefined;
+    const appointmentId = searchParams.get("appointmentId") || undefined;
     let doctorId = searchParams.get("doctorId") || undefined;
     let patientId = searchParams.get("patientId") || undefined;
     let clinicId = searchParams.get("clinicId") || undefined;
@@ -54,6 +55,7 @@ export async function GET(req: Request) {
       patientId,
       status,
       clinicId,
+      appointmentId,
     });
 
     return NextResponse.json({

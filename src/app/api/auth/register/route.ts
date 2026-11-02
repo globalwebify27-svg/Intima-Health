@@ -4,6 +4,7 @@ import { UserModel, hashPassword } from "@/modules/auth/schema";
 import { PatientModel } from "@/modules/patients/schema";
 import { signJwt } from "@/lib/jwt";
 import { sendWelcomeMessage } from "@/lib/whatsapp";
+import { sendPatientWelcomeEmail } from "@/lib/mail/service";
 import { z } from "zod";
 
 export const dynamic = 'force-dynamic';
@@ -68,8 +69,11 @@ export async function POST(req: Request) {
       patientId: patient._id
     });
 
-    // 3. Send welcome WhatsApp message
+    // 3. Send welcome WhatsApp message & Email
     await sendWelcomeMessage(patient._id.toString());
+    sendPatientWelcomeEmail(patient._id.toString()).catch(e =>
+      console.error("[Auth Register] Failed to send welcome email:", e)
+    );
 
     // 4. Generate JWT & sign in automatically
     const token = signJwt({
@@ -102,9 +106,10 @@ export async function POST(req: Request) {
     });
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Registration failed.";
     return NextResponse.json(
-      { success: false, message: error.message || "Registration failed." },
+      { success: false, message },
       { status: 500 }
     );
   }

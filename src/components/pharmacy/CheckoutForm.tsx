@@ -953,7 +953,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                       id="name"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="John Doe"
+                      placeholder="(e.g., Name)"
                       className="rounded-xl h-11"
                       required
                     />
@@ -1067,7 +1067,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                                     setNewPhone(raw);
                                     setShowOtpBox(false);
                                   }}
-                                  placeholder="New 10-digit delivery number"
+                                  placeholder="(e.g., XXX XXX XXXX)"
                                   className="rounded-xl h-11 pl-11 font-mono font-medium bg-background"
                                 />
                               </div>
@@ -1191,7 +1191,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                                 setIsGuestPhoneVerified(false);
                                 setShowOtpBox(false);
                               }}
-                              placeholder="98765 43210"
+                              placeholder="(e.g., XXX XXX XXXX)"
                               className="rounded-xl h-11 pl-11 font-mono font-medium"
                               required
                             />
@@ -1288,7 +1288,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                     id="street"
                     value={street}
                     onChange={(e) => setStreet(e.target.value)}
-                    placeholder="Flat 204, Om Residency, Civil Lines"
+                    placeholder="(e.g., Flat No. XX, Building Name, Area Name)"
                     className="rounded-xl h-11"
                     required
                   />
@@ -1313,7 +1313,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                             setPinError(val.length > 0 ? "Please enter a 6-digit PIN code." : "");
                           }
                         }}
-                        placeholder="e.g. 444001"
+                        placeholder="(e.g., 444001)"
                         className="rounded-xl h-11 font-mono font-medium placeholder:font-sans placeholder:font-normal placeholder:text-muted-foreground/60"
                         required
                       />
@@ -1351,7 +1351,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                     id="landmark"
                     value={landmark}
                     onChange={(e) => setLandmark(e.target.value)}
-                    placeholder="Near District Hospital or Town Hall"
+                    placeholder="(e.g., Near Landmark, School, or Market)"
                     className="rounded-xl h-11"
                   />
                 </div>

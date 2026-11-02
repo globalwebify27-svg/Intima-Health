@@ -101,7 +101,9 @@ function ConsultationsContent() {
 
   const fetchConsultations = () => {
     setLoading(true);
-    fetch("/api/consultations")
+    setError("");
+    const url = targetAptId ? `/api/consultations?appointmentId=${targetAptId}` : "/api/consultations";
+    fetch(url)
       .then((res) => res.json())
       .then((resData) => {
         if (resData.success) {
@@ -213,24 +215,7 @@ function ConsultationsContent() {
       }
 
       if (found && found.status !== "Completed" && activeConsultation?._id !== found._id) {
-        let canJoin = false;
-        const isVideo = found.appointmentId?.type === "Video" || 
-                        (found as any).appointmentId?.serviceName?.toLowerCase().includes("online");
-
-        if (isVideo) {
-          // For video consultations, doctor can always join
-          canJoin = true;
-        } else if (found.appointmentId?.date && found.appointmentId?.time) {
-          const now = new Date();
-          const [hours, minutes] = found.appointmentId.time.split(':').map(Number);
-          const aptDate = new Date(`${found.appointmentId.date}T00:00:00`);
-          aptDate.setHours(hours, minutes, 0, 0);
-          canJoin = (aptDate.getTime() - now.getTime()) / (1000 * 60) <= 15;
-        }
-        
-        if (canJoin) {
-          handleStartConsultation(found);
-        }
+        handleStartConsultation(found);
       }
     }
   }, [targetAptId, consultations, activeConsultation]);
@@ -345,11 +330,33 @@ function ConsultationsContent() {
     window.location.href = "/doctor/appointments";
   };
 
-  if (loading || !activeConsultation) {
+  if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         <p className="text-muted-foreground font-medium">Entering consultation room...</p>
+      </div>
+    );
+  }
+
+  if (error || !activeConsultation) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4 max-w-md mx-auto text-center px-4">
+        <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto">
+          <ShieldAlert className="w-6 h-6" />
+        </div>
+        <h3 className="font-bold text-lg">Unable to Connect Consultation</h3>
+        <p className="text-sm text-muted-foreground">
+          {error || "The appointment could not be loaded into the consultation room. Please verify the appointment status."}
+        </p>
+        <div className="flex gap-3 mt-2">
+          <Button variant="outline" onClick={fetchConsultations} className="rounded-xl">
+            Retry Connection
+          </Button>
+          <Button onClick={() => window.location.href = "/doctor/appointments"} className="rounded-xl">
+            Back to Appointments
+          </Button>
+        </div>
       </div>
     );
   }

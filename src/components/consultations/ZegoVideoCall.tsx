@@ -15,11 +15,14 @@ export function ZegoVideoCall({ roomID, userID, userName, onLeaveRoom, onJoinRoo
   const zpRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !roomID || !userID) return;
     
     let isMounted = true;
 
     const myCallContainer = async (element: HTMLDivElement) => {
+      // Clear container before rendering
+      element.innerHTML = "";
+
       // Generate Kit Token
       const appID = parseInt(process.env.NEXT_PUBLIC_ZEGO_APP_ID || "0", 10);
       const serverSecret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET || "";
@@ -40,7 +43,7 @@ export function ZegoVideoCall({ roomID, userID, userName, onLeaveRoom, onJoinRoo
         serverSecret,
         roomID,
         userID,
-        userName
+        userName || "Participant"
       );
 
       // Create instance object from Kit Token.
@@ -65,6 +68,24 @@ export function ZegoVideoCall({ roomID, userID, userName, onLeaveRoom, onJoinRoo
           mode: ZegoUIKitPrebuilt.OneONoneCall, // For 1-on-1 consultations
         },
         showPreJoinView: false,
+        turnOnCameraWhenJoining: true,
+        turnOnMicrophoneWhenJoining: true,
+        useFrontFacingCamera: true,
+        showMyCameraToggleButton: true,
+        showMyMicrophoneToggleButton: true,
+        showAudioVideoSettingsButton: true,
+        showScreenSharingButton: true,
+        layout: "Auto",
+        videoScreenConfig: {
+          objectFit: "cover",
+          localMirror: true,
+        },
+        videoViewConfig: [
+          {
+            showAvatarWhenCameraOff: true,
+          },
+        ],
+        showNonVideoUser: true,
         onLeaveRoom: () => {
           if (onLeaveRoom) {
             onLeaveRoom();
@@ -83,7 +104,12 @@ export function ZegoVideoCall({ roomID, userID, userName, onLeaveRoom, onJoinRoo
     return () => {
       isMounted = false;
       if (zpRef.current) {
-        zpRef.current.destroy();
+        try {
+          zpRef.current.destroy();
+        } catch (e) {
+          console.warn("Zego destroy error:", e);
+        }
+        zpRef.current = null;
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps

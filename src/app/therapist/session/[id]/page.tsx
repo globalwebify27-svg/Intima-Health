@@ -62,36 +62,50 @@ export default function TherapistSessionRoomPage({
   const [completing, setCompleting] = useState(false);
 
   useEffect(() => {
-    // 1. Fetch current logged in therapist
-    fetch("/api/auth/me")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.user) {
-          if (data.user.role !== "THERAPIST") {
+    let isCancelled = false;
+
+    Promise.all([
+      fetch("/api/auth/me").then((res) => res.json()).catch(() => null),
+      fetch(`/api/therapy-sessions/${id}?_t=${Date.now()}`).then((res) => res.json())
+    ])
+      .then(([authData, sessionData]) => {
+        if (isCancelled) return;
+
+        if (authData && authData.success && authData.user) {
+          if (authData.user.role !== "THERAPIST") {
             router.push("/staff-login");
             return;
           }
-          setCurrentUserId(data.user.id || data.user.therapistId || "therapist_user");
-          setCurrentUserName(data.user.name || "Therapist");
+          const tId = authData.user.therapistId || authData.user.id || "therapist_user";
+          const tName = authData.user.name || "Therapist";
+          setCurrentUserId(String(tId));
+          setCurrentUserName(tName);
         } else {
           router.push("/staff-login");
+          return;
         }
-      })
-      .catch((err) => console.error("Error loading therapist session:", err));
 
-    // 2. Fetch therapy session
-    fetch(`/api/therapy-sessions/${id}?_t=${Date.now()}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data) {
-          setSession(data.data);
-          setNotes(data.data.therapistNotes || "");
+        if (sessionData && sessionData.success && sessionData.data) {
+          setSession(sessionData.data);
+          setNotes(sessionData.data.therapistNotes || "");
         } else {
-          setError(data.message || "Therapy session not found.");
+          setError(sessionData?.message || "Therapy session not found.");
         }
       })
-      .catch((err) => setError(err.message || "Failed to load therapy session."))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (!isCancelled) {
+          setError(err.message || "Failed to load therapy session.");
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [id, router]);
 
   const handleSaveNotes = async (markComplete: boolean = false) => {
@@ -130,7 +144,7 @@ export default function TherapistSessionRoomPage({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[80vh] space-y-4">
+      <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center space-y-4">
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         <p className="text-muted-foreground font-medium">Entering confidential therapy room...</p>
       </div>
@@ -139,15 +153,17 @@ export default function TherapistSessionRoomPage({
 
   if (error || !session) {
     return (
-      <div className="max-w-md mx-auto py-16 px-4 text-center space-y-4">
-        <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
-          <Shield className="w-6 h-6" />
+      <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-500 flex items-center justify-center mx-auto">
+            <Shield className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Session Unavailable</h2>
+          <p className="text-muted-foreground text-sm">{error || "Unable to load therapy room."}</p>
+          <Button onClick={() => router.push("/therapist/dashboard")} variant="outline" className="rounded-xl border-slate-700 text-slate-200">
+            Return to Therapist Dashboard
+          </Button>
         </div>
-        <h2 className="text-xl font-bold">Session Unavailable</h2>
-        <p className="text-muted-foreground text-sm">{error || "Unable to load therapy room."}</p>
-        <Button onClick={() => router.push("/therapist/dashboard")} variant="outline" className="rounded-xl">
-          Return to Therapist Dashboard
-        </Button>
       </div>
     );
   }
@@ -155,9 +171,9 @@ export default function TherapistSessionRoomPage({
   const roomID = session.videoChannelName || `therapy_room_${session._id}`;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="fixed inset-0 z-50 bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
       {/* Top Bar */}
-      <header className="h-16 px-4 sm:px-6 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 flex items-center justify-between z-20">
+      <header className="h-16 px-4 sm:px-6 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -206,15 +222,17 @@ export default function TherapistSessionRoomPage({
       </header>
 
       {/* Main Split Layout: Left Video, Right Clinical Notes Panel */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden h-[calc(100vh-4rem)]">
         {/* Left: Video Call Room */}
-        <div className="lg:col-span-8 bg-black relative flex flex-col min-h-[450px] lg:min-h-0">
-          <ZegoVideoCall
-            roomID={roomID}
-            userID={currentUserId}
-            userName={currentUserName}
-            onLeaveRoom={() => router.push("/therapist/dashboard")}
-          />
+        <div className="lg:col-span-8 bg-black relative flex flex-col h-full min-h-[450px] lg:min-h-0 overflow-hidden">
+          {currentUserId && (
+            <ZegoVideoCall
+              roomID={roomID}
+              userID={currentUserId}
+              userName={currentUserName || "Therapist"}
+              onLeaveRoom={() => router.push("/therapist/dashboard")}
+            />
+          )}
         </div>
 
         {/* Right: Clinical Consultation & Notes Panel */}

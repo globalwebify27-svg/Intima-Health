@@ -5,6 +5,7 @@ import { OrderModel, ProductModel } from "@/modules/pharmacy/schema";
 import { PharmacyConfigModel, DEFAULT_AKOLA_PINCODES } from "@/modules/pharmacy/settings-schema";
 import { PatientModel } from "@/modules/patients/schema";
 import { AuditLogModel } from "@/modules/system/schema";
+import { sendOrderCustomerEmail } from "@/lib/mail/service";
 
 export const dynamic = 'force-dynamic';
 
@@ -280,6 +281,11 @@ export async function POST(request: Request) {
     });
 
     await order.save();
+
+    // Send customer order confirmation & invoice email asynchronously
+    sendOrderCustomerEmail(order._id.toString()).catch((e: unknown) => {
+      console.error("[Orders] Customer receipt email error:", e);
+    });
 
     // Audit Log entry
     await AuditLogModel.create({

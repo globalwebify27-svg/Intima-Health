@@ -4,6 +4,7 @@ import { IAppointment } from "./schema";
 import { ISlot, IBookAppointmentInput, IRescheduleInput } from "./types";
 import { BookAppointmentSchema, RescheduleAppointmentSchema } from "./validators";
 import { sendAppointmentBookingMessage } from "@/lib/whatsapp";
+import { sendAppointmentCustomerEmail } from "@/lib/mail/service";
 import { PlatformServiceModel } from "@/modules/services/schema";
 
 export class AppointmentService {
@@ -63,7 +64,8 @@ export class AppointmentService {
       const t = b.time.trim();
       if (t.includes(" AM") || t.includes(" PM") || t.includes(" am") || t.includes(" pm")) {
         const [timePart, modifier] = t.split(/\s+/);
-        let [hours, minutes] = timePart.split(":");
+        const [rawHours, minutes] = timePart.split(":");
+        let hours = rawHours;
         if (hours === "12") hours = "00";
         if (modifier.toUpperCase() === "PM") {
           hours = String(parseInt(hours, 10) + 12);
@@ -170,6 +172,10 @@ export class AppointmentService {
     // Send WhatsApp notification (contains appointment details and payment link)
     if (!input.skipNotification) {
       await sendAppointmentBookingMessage((created as any)._id.toString());
+      // Send Email confirmation asynchronously to customer
+      sendAppointmentCustomerEmail((created as any)._id.toString()).catch((err) => {
+        console.error("[Appointments] Email notification error:", err);
+      });
     }
 
     return created;

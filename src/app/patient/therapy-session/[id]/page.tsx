@@ -42,34 +42,56 @@ export default function PatientTherapySessionPage({
   const [currentUserName, setCurrentUserName] = useState("Patient");
 
   useEffect(() => {
-    // 1. Fetch current user session
-    fetch("/api/auth/me")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.user) {
-          setCurrentUserId(data.user.id || data.user.patientId || "patient_user");
-          setCurrentUserName(data.user.name || "Patient");
-        }
-      })
-      .catch((err) => console.error("Error loading auth session:", err));
+    let isCancelled = false;
 
-    // 2. Fetch therapy session details
-    fetch(`/api/therapy-sessions/${id}?_t=${Date.now()}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data) {
-          setSession(data.data);
+    Promise.all([
+      fetch("/api/auth/me").then((res) => res.json()).catch(() => null),
+      fetch(`/api/therapy-sessions/${id}?_t=${Date.now()}`).then((res) => res.json())
+    ])
+      .then(([authData, sessionData]) => {
+        if (isCancelled) return;
+
+        if (sessionData && sessionData.success && sessionData.data) {
+          const sess = sessionData.data;
+          setSession(sess);
+
+          // Resolve stable patient ID and Name
+          const resolvedId = 
+            authData?.user?.patientId || 
+            authData?.user?.id || 
+            (typeof sess.patientId === "object" ? sess.patientId?._id : sess.patientId) || 
+            `patient_${sess._id}`;
+          
+          const resolvedName = 
+            authData?.user?.name || 
+            (typeof sess.patientId === "object" ? sess.patientId?.name : "Patient") || 
+            "Patient";
+
+          setCurrentUserId(String(resolvedId));
+          setCurrentUserName(resolvedName);
         } else {
-          setError(data.message || "Therapy session not found.");
+          setError(sessionData?.message || "Therapy session not found.");
         }
       })
-      .catch((err) => setError(err.message || "Failed to load therapy session."))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (!isCancelled) {
+          setError(err.message || "Failed to load therapy session.");
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [id]);
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-4">
+      <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center space-y-4">
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         <p className="text-muted-foreground font-medium">Entering confidential therapy room...</p>
       </div>
@@ -78,15 +100,17 @@ export default function PatientTherapySessionPage({
 
   if (error || !session) {
     return (
-      <div className="max-w-md mx-auto py-16 px-4 text-center space-y-4">
-        <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
-          <Shield className="w-6 h-6" />
+      <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-500 flex items-center justify-center mx-auto">
+            <Shield className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Session Unavailable</h2>
+          <p className="text-muted-foreground text-sm">{error || "Unable to load session."}</p>
+          <Button onClick={() => router.push("/patient/dashboard")} variant="outline" className="rounded-xl border-slate-700 text-slate-200">
+            Return to Dashboard
+          </Button>
         </div>
-        <h2 className="text-xl font-bold">Session Unavailable</h2>
-        <p className="text-muted-foreground text-sm">{error || "Unable to load session."}</p>
-        <Button onClick={() => router.push("/patient/dashboard")} variant="outline" className="rounded-xl">
-          Return to Dashboard
-        </Button>
       </div>
     );
   }
@@ -94,9 +118,9 @@ export default function PatientTherapySessionPage({
   const roomID = session.videoChannelName || `therapy_room_${session._id}`;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="fixed inset-0 z-50 bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
       {/* Top Bar */}
-      <header className="h-16 px-4 sm:px-6 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between z-20">
+      <header className="h-16 px-4 sm:px-6 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -109,8 +133,8 @@ export default function PatientTherapySessionPage({
           <div className="h-4 w-px bg-slate-800 hidden sm:block" />
           <div className="flex items-center gap-2">
             <HeartHandshake className="w-4 h-4 text-rose-400" />
-            <h1 className="text-sm font-bold text-white tracking-wide">{session.name}</h1>
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] py-0">
+            <h1 className="text-sm font-bold text-white tracking-wide truncate max-w-[200px] sm:max-w-none">{session.name}</h1>
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] py-0 hidden xs:inline-flex">
               Encrypted Online Session
             </Badge>
           </div>
@@ -129,13 +153,15 @@ export default function PatientTherapySessionPage({
       </header>
 
       {/* Main Video Call Viewport */}
-      <div className="flex-1 relative w-full h-[calc(100vh-4rem)]">
-        <ZegoVideoCall
-          roomID={roomID}
-          userID={currentUserId || "patient_anonymous"}
-          userName={currentUserName || "Patient"}
-          onLeaveRoom={() => router.push("/patient/dashboard")}
-        />
+      <div className="flex-1 relative w-full h-[calc(100vh-4rem)] overflow-hidden">
+        {currentUserId && (
+          <ZegoVideoCall
+            roomID={roomID}
+            userID={currentUserId}
+            userName={currentUserName || "Patient"}
+            onLeaveRoom={() => router.push("/patient/dashboard")}
+          />
+        )}
       </div>
     </div>
   );
