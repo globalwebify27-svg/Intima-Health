@@ -1,4 +1,5 @@
 import { wrapEmailLayout } from "./layout";
+import { emailIcons } from "./icons";
 
 export interface OrderEmailItem {
   name: string;
@@ -42,7 +43,7 @@ export function generateOrderCustomerEmail(data: OrderEmailData): { subject: str
   const bodyHtml = `
     <div style="text-align: center; margin-bottom: 24px;">
       <span class="badge-pill" style="display: inline-block; background-color: #E8F5E9; color: #2E7D32; font-weight: 700; font-size: 11px; padding: 4px 14px; border-radius: 9999px; text-transform: uppercase;">
-        ✓ Medicine Order Placed
+        ${emailIcons.truck("#2E7D32", 14)} Medicine Order Placed
       </span>
       <h2 style="font-family: Georgia, serif; font-size: 22px; color: #2D242D; margin: 12px 0 6px 0;">
         Dear ${data.patientName},
@@ -114,7 +115,7 @@ export function generateOrderCustomerEmail(data: OrderEmailData): { subject: str
 
     <!-- Shipping Address -->
     <div style="background-color: #ffffff; border: 1px solid #ECE4EB; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
-      <h4 style="margin: 0 0 6px 0; font-size: 13px; color: #2D242D;">📍 Shipping Address:</h4>
+      <h4 style="margin: 0 0 6px 0; font-size: 13px; color: #2D242D;">${emailIcons.mapPin("#7A2E7A", 14)} Shipping Address:</h4>
       <p style="margin: 0; font-size: 12px; color: #6E5C6E; line-height: 1.5;">
         ${data.shippingAddress}
       </p>

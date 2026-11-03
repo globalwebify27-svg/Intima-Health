@@ -64,8 +64,10 @@ export default function SettingsPage() {
 
   // Notification Recipient state (Owner Testing & Inquiries)
   const [contactNotificationEmail, setContactNotificationEmail] = useState("temptest9093@gmail.com");
+  const [testRecipientEmail, setTestRecipientEmail] = useState("saahmed311@gmail.com");
   const [savingNotificationEmail, setSavingNotificationEmail] = useState(false);
   const [testingNotification, setTestingNotification] = useState(false);
+  const [testingAllMails, setTestingAllMails] = useState(false);
 
   // SMTP Server Configuration state
   const [smtpHost, setSmtpHost] = useState("smtp.hostinger.com");
@@ -76,7 +78,7 @@ export default function SettingsPage() {
   const [showSmtpPass, setShowSmtpPass] = useState(false);
   const [hasSmtpPass, setHasSmtpPass] = useState(false);
   const [smtpFromName, setSmtpFromName] = useState("Kelkar Manas Health Care");
-  const [smtpFromEmail, setSmtpFromEmail] = useState("care@kelkarmanas.com");
+  const [smtpFromEmail, setSmtpFromEmail] = useState("support@kelkarmanasclinic.com");
   const [isSmtpConfigured, setIsSmtpConfigured] = useState(false);
   const [savingSmtp, setSavingSmtp] = useState(false);
   const [testingSmtp, setTestingSmtp] = useState(false);
@@ -165,6 +167,10 @@ export default function SettingsPage() {
           const d = notifJson.data;
           if (d.contactNotificationEmail) {
             setContactNotificationEmail(d.contactNotificationEmail);
+            const first = d.contactNotificationEmail.split(/[,;\s]+/)[0];
+            if (first) {
+              setTestRecipientEmail(first);
+            }
           }
           if (d.smtpHost) setSmtpHost(d.smtpHost);
           if (d.smtpPort) setSmtpPort(d.smtpPort);
@@ -447,8 +453,13 @@ export default function SettingsPage() {
     }
   };
 
-  // Trigger test notification email to the configured recipient
+  // Trigger test notification email to the configured or custom test recipient
   const handleSendTestNotification = async () => {
+    const targetEmail = testRecipientEmail.trim() || contactNotificationEmail.trim();
+    if (!targetEmail) {
+      setErrorMsg("Please enter a test recipient email address.");
+      return;
+    }
     setTestingNotification(true);
     setSuccessMsg("");
     setErrorMsg("");
@@ -457,12 +468,12 @@ export default function SettingsPage() {
       const res = await fetch("/api/admin/settings/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "test_contact", email: contactNotificationEmail }),
+        body: JSON.stringify({ action: "test_contact", email: targetEmail }),
       });
 
       const json = await res.json();
       if (json.success) {
-        setSuccessMsg(json.message || `Test notification sent to ${contactNotificationEmail}!`);
+        setSuccessMsg(json.message || `Test notification sent to ${targetEmail}!`);
       } else {
         setErrorMsg(json.message || "Failed to deliver test notification. Please verify SMTP settings.");
       }
@@ -471,6 +482,38 @@ export default function SettingsPage() {
       setErrorMsg(msg);
     } finally {
       setTestingNotification(false);
+    }
+  };
+
+  // Trigger all 5 email templates with test data to recipient
+  const handleTriggerAllTestEmails = async () => {
+    const targetEmail = testRecipientEmail.trim() || contactNotificationEmail.trim();
+    if (!targetEmail) {
+      setErrorMsg("Please enter a test recipient email address.");
+      return;
+    }
+    setTestingAllMails(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/admin/settings/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test_all", email: targetEmail }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setSuccessMsg(json.message || `All 5 email templates dispatched to ${targetEmail}!`);
+      } else {
+        setErrorMsg(json.message || "Failed to trigger all test emails. Please verify SMTP settings.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to trigger test emails.";
+      setErrorMsg(msg);
+    } finally {
+      setTestingAllMails(false);
     }
   };
 
@@ -1137,23 +1180,28 @@ export default function SettingsPage() {
                   Contact Form & Inquiry Notifications
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Specify the recipient email address where patient messages submitted via the public Contact page are delivered.
+                  Specify the recipient email address(es) where patient messages submitted via the public Contact page are delivered.
                 </p>
               </div>
 
               <form onSubmit={handleSaveNotificationEmail} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="notificationEmail" className="font-bold flex items-center gap-2 text-sm">
-                    <Mail className="w-4 h-4 text-primary" />
-                    Inquiry Notification Email (Owner Testing)
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="notificationEmail" className="font-bold flex items-center gap-2 text-sm">
+                      <Mail className="w-4 h-4 text-primary" />
+                      Inquiry Notification Recipients (Multiple Emails Supported)
+                    </Label>
+                    <span className="text-xs text-muted-foreground font-medium hidden sm:inline">
+                      Separate multiple emails with commas
+                    </span>
+                  </div>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       id="notificationEmail"
-                      type="email"
+                      type="text"
                       value={contactNotificationEmail}
                       onChange={(e) => setContactNotificationEmail(e.target.value)}
-                      placeholder="temptest9093@gmail.com"
+                      placeholder="e.g. saahmed311@gmail.com, support@kelkarmanasclinic.com"
                       className="rounded-xl h-11 flex-1 font-medium"
                       required
                     />
@@ -1170,46 +1218,112 @@ export default function SettingsPage() {
                       ) : (
                         <>
                           <Save className="w-4 h-4" />
-                          Save Recipient
+                          Save Recipients
                         </>
                       )}
                     </Button>
                   </div>
+
+                  {/* Recipient Chips Preview */}
+                  {contactNotificationEmail && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-xs text-muted-foreground font-medium mr-1">Active Recipients:</span>
+                      {contactNotificationEmail
+                        .split(/[,;\s]+/)
+                        .map((e) => e.trim())
+                        .filter(Boolean)
+                        .map((email, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20"
+                          >
+                            <Mail className="w-3 h-3" />
+                            {email}
+                          </span>
+                        ))}
+                    </div>
+                  )}
+
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Defaulted to <strong className="text-foreground">temptest9093@gmail.com</strong> for owner testing. Any inquiries received from the public website contact form will be routed directly to this address.
+                    Any inquiries submitted through the public website contact form will be automatically dispatched to all recipients listed above.
                   </p>
                 </div>
 
-                {/* Instant Test Inquiry Email */}
-                <div className="p-4 bg-muted/40 border border-border/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* Instant Test Section with Custom Recipient Input */}
+                <div className="p-4 sm:p-5 bg-muted/40 border border-border/80 rounded-2xl space-y-3">
                   <div>
                     <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
                       <Send className="w-3.5 h-3.5 text-primary" />
-                      Verify Inquiry Dispatch
+                      Verify Email Deliveries (Test Console)
                     </h4>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Send a mock website inquiry to verify that <span className="font-semibold text-foreground">{contactNotificationEmail}</span> receives emails properly.
+                      Enter any test recipient inbox below to verify live delivery without changing your permanent saved recipients.
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleSendTestNotification}
-                    disabled={testingNotification || !contactNotificationEmail}
-                    className="rounded-xl text-xs font-bold gap-2 shrink-0 border-primary/40 text-primary hover:bg-primary/5"
-                  >
-                    {testingNotification ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Delivering Test...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-3.5 h-3.5" />
-                        Send Test Inquiry
-                      </>
-                    )}
-                  </Button>
+
+                  <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 pt-1">
+                    <div className="relative flex-1">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="email"
+                        value={testRecipientEmail}
+                        onChange={(e) => setTestRecipientEmail(e.target.value)}
+                        placeholder="Enter custom test recipient email (e.g. saahmed311@gmail.com)"
+                        className="pl-9 pr-8 rounded-xl h-10 text-xs font-medium bg-background"
+                      />
+                      {testRecipientEmail && (
+                        <button
+                          type="button"
+                          onClick={() => setTestRecipientEmail("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1"
+                          title="Clear test email"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleSendTestNotification}
+                        disabled={testingNotification || testingAllMails || !testRecipientEmail.trim()}
+                        className="rounded-xl text-xs font-bold gap-2 shrink-0 border-primary/40 text-primary hover:bg-primary/5 h-10"
+                      >
+                        {testingNotification ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            Delivering Test...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-3.5 h-3.5" />
+                            Send 1 Inquiry Test
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        onClick={handleTriggerAllTestEmails}
+                        disabled={testingNotification || testingAllMails || !testRecipientEmail.trim()}
+                        className="rounded-xl text-xs font-bold gap-2 shrink-0 shadow-sm h-10"
+                      >
+                        {testingAllMails ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            Triggering All 5...
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="w-3.5 h-3.5" />
+                            Trigger All 5 Test Emails
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </form>
             </div>
@@ -1345,7 +1459,7 @@ export default function SettingsPage() {
                       type="text"
                       value={smtpUser}
                       onChange={(e) => setSmtpUser(e.target.value)}
-                      placeholder="care@kelkarmanas.com"
+                      placeholder="support@kelkarmanasclinic.com"
                       className="rounded-xl h-10 font-medium"
                       required
                     />
@@ -1414,7 +1528,7 @@ export default function SettingsPage() {
                       type="email"
                       value={smtpFromEmail}
                       onChange={(e) => setSmtpFromEmail(e.target.value)}
-                      placeholder="care@kelkarmanas.com"
+                      placeholder="support@kelkarmanasclinic.com"
                       className="rounded-xl h-10 font-medium"
                       required
                     />

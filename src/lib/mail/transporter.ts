@@ -1,6 +1,26 @@
 import nodemailer, { type Transporter } from "nodemailer";
+import path from "path";
+import fs from "fs";
 import { connectDB } from "@/db/connect";
 import { SettingModel } from "@/modules/system/schema";
+
+export function getMailLogoAttachment() {
+  try {
+    const logoPath = path.join(process.cwd(), "public", "logo.png");
+    if (fs.existsSync(logoPath)) {
+      return [
+        {
+          filename: "logo.png",
+          path: logoPath,
+          cid: "clinic-logo@kelkarmanas",
+        },
+      ];
+    }
+  } catch (err) {
+    console.warn("[Mail] Failed to load clinic logo attachment:", err);
+  }
+  return [];
+}
 
 export interface MailConfig {
   host: string;
@@ -21,7 +41,7 @@ export function getMailConfig(): MailConfig {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
     fromName: process.env.SMTP_FROM_NAME || "Kelkar Manas Health Care",
-    fromEmail: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || "care@kelkarmanas.com",
+    fromEmail: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || "support@kelkarmanasclinic.com",
     adminEmail: process.env.ADMIN_NOTIFICATION_EMAIL || "temptest9093@gmail.com",
   };
 }

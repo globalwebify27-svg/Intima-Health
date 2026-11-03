@@ -1,4 +1,5 @@
 import { wrapEmailLayout } from "./layout";
+import { emailIcons } from "./icons";
 
 export interface DailyReportAppointment {
   patientName: string;
@@ -61,11 +62,11 @@ export function generateDailyAdminReportEmail(data: DailyAdminReportData): { sub
   const tomorrowsRows = data.tomorrowsSchedule.length > 0 ? data.tomorrowsSchedule.map(apt => `
     <tr>
       <td style="padding: 10px 8px; border-bottom: 1px solid #ECE4EB; font-size: 13px; font-weight: 700; color: #2D242D;">
-        ⏰ ${apt.time}
+        ${emailIcons.clock("#7A2E7A", 12)} ${apt.time}
       </td>
       <td style="padding: 10px 8px; border-bottom: 1px solid #ECE4EB; font-size: 13px; color: #2D242D;">
         <strong>${apt.patientName}</strong>
-        ${apt.patientPhone ? `<br><a href="tel:${apt.patientPhone}" style="color: #7A2E7A; text-decoration: none; font-size: 11px;">📞 +91 ${apt.patientPhone}</a>` : ""}
+        ${apt.patientPhone ? `<br><a href="tel:${apt.patientPhone}" style="color: #7A2E7A; text-decoration: none; font-size: 11px;">${emailIcons.phone("#7A2E7A", 11)} +91 ${apt.patientPhone}</a>` : ""}
       </td>
       <td style="padding: 10px 8px; border-bottom: 1px solid #ECE4EB; font-size: 13px; color: #2D242D;">
         Dr. ${apt.doctorName}
@@ -73,7 +74,7 @@ export function generateDailyAdminReportEmail(data: DailyAdminReportData): { sub
       </td>
       <td style="padding: 10px 8px; border-bottom: 1px solid #ECE4EB; font-size: 12px; font-weight: 600; text-align: right;">
         <span style="display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; ${apt.type === 'Video' ? 'background: #E0F2FE; color: #0369A1;' : 'background: #F3E8FF; color: #6B21A8;'}">
-          ${apt.type === 'Video' ? '💻 Video' : '🏥 In-Clinic'}
+          ${apt.type === 'Video' ? `${emailIcons.video("#0369A1", 11)} Video` : `${emailIcons.hospital("#6B21A8", 11)} In-Clinic`}
         </span>
       </td>
     </tr>
@@ -93,8 +94,8 @@ export function generateDailyAdminReportEmail(data: DailyAdminReportData): { sub
       </td>
       <td style="padding: 10px 8px; border-bottom: 1px solid #ECE4EB; font-size: 13px; color: #2D242D;">
         <strong>${order.patientName}</strong>
-        <br><span style="font-size: 11px; color: #6E5C6E;">📞 +91 ${order.phone}</span>
-        <br><span style="font-size: 11px; color: #8F7D8F;">📍 ${order.address}</span>
+        <br><span style="font-size: 11px; color: #6E5C6E;">${emailIcons.phone("#6E5C6E", 11)} +91 ${order.phone}</span>
+        <br><span style="font-size: 11px; color: #8F7D8F;">${emailIcons.mapPin("#8F7D8F", 11)} ${order.address}</span>
       </td>
       <td style="padding: 10px 8px; border-bottom: 1px solid #ECE4EB; font-size: 12px; color: #6E5C6E;">
         ${order.itemsSummary}
@@ -118,7 +119,7 @@ export function generateDailyAdminReportEmail(data: DailyAdminReportData): { sub
   const patientsHtml = data.todayPatients.length > 0 ? `
     <div style="background-color: #FAF7F9; border-radius: 12px; padding: 14px 16px; margin-bottom: 24px;">
       <h4 style="margin: 0 0 10px 0; font-size: 13px; color: #2D242D; text-transform: uppercase; letter-spacing: 0.5px;">
-        👤 New Registered Patients (${data.todayPatients.length})
+        ${emailIcons.user("#7A2E7A", 13)} New Registered Patients (${data.todayPatients.length})
       </h4>
       <div style="font-size: 12px; color: #6E5C6E; line-height: 1.8;">
         ${data.todayPatients.map(p => `&bull; <strong>${p.name}</strong> (${p.phone ? `+91 ${p.phone}` : p.email})`).join("<br>")}
@@ -130,7 +131,7 @@ export function generateDailyAdminReportEmail(data: DailyAdminReportData): { sub
   const inquiriesHtml = data.todayInquiries.length > 0 ? `
     <div style="background-color: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
       <h4 style="margin: 0 0 10px 0; font-size: 13px; color: #92400E; text-transform: uppercase; letter-spacing: 0.5px;">
-        💬 Website Inquiries Received Today (${data.todayInquiries.length})
+        ${emailIcons.mail("#92400E", 13)} Website Inquiries Received Today (${data.todayInquiries.length})
       </h4>
       ${data.todayInquiries.map(inq => `
         <div style="border-bottom: 1px solid #FCD34D; padding: 8px 0; font-size: 12px; line-height: 1.5;">
@@ -183,7 +184,7 @@ export function generateDailyAdminReportEmail(data: DailyAdminReportData): { sub
     <div style="margin-bottom: 28px;">
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #7A2E7A; padding-bottom: 6px; margin-bottom: 12px;">
         <h3 style="margin: 0; font-size: 15px; color: #2D242D; font-family: Georgia, serif;">
-          📅 Tomorrow's Scheduled Sessions (${data.tomorrowsDate})
+          ${emailIcons.calendar("#7A2E7A", 15)} Tomorrow's Scheduled Sessions (${data.tomorrowsDate})
         </h3>
       </div>
       <table style="width: 100%; border-collapse: collapse;">
@@ -205,7 +206,7 @@ export function generateDailyAdminReportEmail(data: DailyAdminReportData): { sub
     <div style="margin-bottom: 28px;">
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #7A2E7A; padding-bottom: 6px; margin-bottom: 12px;">
         <h3 style="margin: 0; font-size: 15px; color: #2D242D; font-family: Georgia, serif;">
-          💊 Pharmacy Deliveries Received Today (${data.todayOrders.length})
+          ${emailIcons.pill("#7A2E7A", 15)} Pharmacy Deliveries Received Today (${data.todayOrders.length})
         </h3>
       </div>
       <table style="width: 100%; border-collapse: collapse;">

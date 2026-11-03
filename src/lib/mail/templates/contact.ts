@@ -1,4 +1,5 @@
 import { wrapEmailLayout } from "./layout";
+import { emailIcons } from "./icons";
 
 export interface ContactNotificationEmailData {
   firstName: string;
@@ -12,13 +13,13 @@ export interface ContactNotificationEmailData {
 
 export function generateContactInquiryAdminEmail(data: ContactNotificationEmailData): { subject: string; html: string } {
   const fullName = `${data.firstName || ""} ${data.lastName || ""}`.trim() || "Website Visitor";
-  const portalUrl = data.adminPortalUrl || "https://kelkarmanas.com/admin/contact";
+  const portalUrl = data.adminPortalUrl || "https://kelkarmanasclinic.com/admin/contact";
   const timeStr = data.submittedAt || new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
 
   const bodyHtml = `
     <div style="text-align: center; margin-bottom: 24px;">
       <span class="badge-pill" style="display: inline-block; background-color: #EDE7F6; color: #512DA8; font-weight: 700; font-size: 11px; padding: 4px 14px; border-radius: 9999px; text-transform: uppercase;">
-        📬 New Website Contact Inquiry
+        ${emailIcons.mail("#512DA8", 13)} New Website Contact Inquiry
       </span>
       <h2 style="font-family: Georgia, serif; font-size: 22px; color: #2D242D; margin: 12px 0 6px 0;">
         New Message from ${fullName}
@@ -32,21 +33,21 @@ export function generateContactInquiryAdminEmail(data: ContactNotificationEmailD
     <div style="background-color: #FAF7F9; border: 1px solid #ECE4EB; border-radius: 14px; padding: 20px; margin-bottom: 24px;">
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F; width: 35%;">Sender Name:</td>
+          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F; width: 35%;">${emailIcons.user("#8F7D8F", 13)} Sender Name:</td>
           <td style="padding: 8px 0; font-size: 14px; font-weight: 700; color: #2D242D;">${fullName}</td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">Sender Email:</td>
+          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">${emailIcons.mail("#8F7D8F", 13)} Sender Email:</td>
           <td style="padding: 8px 0; font-size: 14px; font-weight: 700; color: #7A2E7A;">
             <a href="mailto:${data.email}" style="color: #7A2E7A; text-decoration: underline;">${data.email}</a>
           </td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">Subject:</td>
+          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">${emailIcons.fileText("#8F7D8F", 13)} Subject:</td>
           <td style="padding: 8px 0; font-size: 14px; font-weight: 700; color: #2D242D;">${data.subject || "General Inquiry"}</td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">Received At:</td>
+          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">${emailIcons.clock("#8F7D8F", 13)} Received At:</td>
           <td style="padding: 8px 0; font-size: 13px; font-weight: 600; color: #6E5C6E;">${timeStr}</td>
         </tr>
       </table>

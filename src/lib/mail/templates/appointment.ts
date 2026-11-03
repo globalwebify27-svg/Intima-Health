@@ -1,4 +1,5 @@
 import { wrapEmailLayout } from "./layout";
+import { emailIcons } from "./icons";
 
 export interface AppointmentEmailData {
   patientName: string;
@@ -17,12 +18,12 @@ export interface AppointmentEmailData {
 
 export function generateAppointmentCustomerEmail(data: AppointmentEmailData): { subject: string; html: string } {
   const isVideo = data.type === "Video";
-  const portalUrl = data.dashboardUrl || "https://kelkarmanas.com/patient/appointments";
+  const portalUrl = data.dashboardUrl || "https://kelkarmanasclinic.com/patient/appointments";
 
   const bodyHtml = `
     <div style="text-align: center; margin-bottom: 24px;">
       <span class="badge-pill" style="display: inline-block; background-color: #E8F5E9; color: #2E7D32; font-weight: 700; font-size: 11px; padding: 4px 14px; border-radius: 9999px; text-transform: uppercase;">
-        ✓ Appointment Confirmed
+        ${emailIcons.checkCircle("#2E7D32", 13)} Appointment Confirmed
       </span>
       <h2 style="font-family: Georgia, serif; font-size: 22px; color: #2D242D; margin: 12px 0 6px 0;">
         Dear ${data.patientName},
@@ -36,38 +37,40 @@ export function generateAppointmentCustomerEmail(data: AppointmentEmailData): { 
     <div style="background-color: #FAF7F9; border: 1px solid #ECE4EB; border-radius: 14px; padding: 20px; margin-bottom: 24px;">
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F; width: 40%;">Consulting Doctor:</td>
+          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F; width: 40%;">${emailIcons.stethoscope("#8F7D8F", 14)} Consulting Doctor:</td>
           <td style="padding: 8px 0; font-size: 14px; font-weight: 700; color: #2D242D;">
             Dr. ${data.doctorName}
             ${data.doctorSpecialization ? `<br><span style="font-size: 12px; font-weight: normal; color: #7A2E7A;">${data.doctorSpecialization}</span>` : ""}
           </td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">Date & Time:</td>
+          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">${emailIcons.calendar("#8F7D8F", 14)} Date &amp; Time:</td>
           <td style="padding: 8px 0; font-size: 14px; font-weight: 700; color: #2D242D;">
-            📅 ${data.date} &bull; ⏰ ${data.time}
+            ${data.date} &bull; ${data.time}
           </td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">Consultation Mode:</td>
+          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">${emailIcons.activity("#8F7D8F", 14)} Consultation Mode:</td>
           <td style="padding: 8px 0; font-size: 14px; font-weight: 700; color: #2D242D;">
-            ${isVideo ? "💻 Online Video Consultation" : "🏥 In-Person Clinic Visit"}
+            ${isVideo 
+              ? `${emailIcons.video("#0284C7", 14)} Online Video Consultation` 
+              : `${emailIcons.hospital("#7A2E7A", 14)} In-Person Clinic Visit`}
           </td>
         </tr>
         ${data.serviceName ? `
         <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">Clinical Focus:</td>
+          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">${emailIcons.fileText("#8F7D8F", 14)} Clinical Focus:</td>
           <td style="padding: 8px 0; font-size: 14px; font-weight: 600; color: #2D242D;">${data.serviceName}</td>
         </tr>` : ""}
         ${data.feeAmount ? `
         <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">Consultation Fee:</td>
+          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F;">${emailIcons.checkCircle("#2E7D32", 13)} Consultation Fee:</td>
           <td style="padding: 8px 0; font-size: 14px; font-weight: 700; color: #7A2E7A;">
             ₹${data.feeAmount.toLocaleString()} (${data.paymentStatus || "Paid"})
           </td>
         </tr>` : ""}
         <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F; vertical-align: top;">Location:</td>
+          <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F; vertical-align: top;">${emailIcons.mapPin("#8F7D8F", 14)} Location:</td>
           <td style="padding: 8px 0; font-size: 13px; color: #2D242D; line-height: 1.4;">
             ${isVideo 
               ? "Join your secure HD video room via your Patient Portal 5 minutes prior to the session."
@@ -94,7 +97,7 @@ export function generateAppointmentCustomerEmail(data: AppointmentEmailData): { 
     </div>
 
     <p style="font-size: 12px; color: #8F7D8F; text-align: center; margin: 0;">
-      Need to reschedule or have questions? Contact our patient care team at <a href="tel:+917030414140" style="color: #7A2E7A; font-weight: 600; text-decoration: none;">+91 70304 14140</a>.
+      Need to reschedule or have questions? Contact our patient care team at <a href="tel:+919422861000" style="color: #7A2E7A; font-weight: 600; text-decoration: none;">+91 94228 61000</a>.
     </p>
   `;
 

@@ -7,9 +7,15 @@ import {
   getResolvedMailConfig, 
   resetMailTransporterCache, 
   verifySmtpConnectionWithConfig,
-  getMailTransporterAsync
+  getMailTransporterAsync,
+  getMailLogoAttachment
 } from "@/lib/mail/transporter";
 import { sendContactNotification } from "@/lib/mail/service";
+import { generatePatientWelcomeEmail } from "@/lib/mail/templates/welcome";
+import { generateAppointmentCustomerEmail } from "@/lib/mail/templates/appointment";
+import { generateOrderCustomerEmail } from "@/lib/mail/templates/order";
+import { generateContactInquiryAdminEmail } from "@/lib/mail/templates/contact";
+import { generateDailyAdminReportEmail } from "@/lib/mail/templates/daily-admin-report";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +47,7 @@ export async function GET() {
         smtpSecure: config.secure,
         smtpUser: config.user || "",
         smtpFromName: config.fromName || "Kelkar Manas Health Care",
-        smtpFromEmail: config.fromEmail || "care@kelkarmanas.com",
+        smtpFromEmail: config.fromEmail || "support@kelkarmanasclinic.com",
         hasSmtpPass: Boolean(config.pass),
         isSmtpConfigured,
       },
@@ -71,15 +77,22 @@ export async function PUT(req: Request) {
 
     const updates: { key: string; value: string; category: string }[] = [];
 
-    // 1. Contact Notification Email
+    // 1. Contact Notification Email (Multiple supported via comma separation)
     if (typeof body.contactNotificationEmail === "string") {
-      const email = body.contactNotificationEmail.trim().toLowerCase();
-      if (email) {
+      const raw = body.contactNotificationEmail.trim().toLowerCase();
+      if (raw) {
+        const emailList = raw.split(/[,;\s]+/).map((e: string) => e.trim()).filter(Boolean);
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-          return NextResponse.json({ success: false, message: "Please enter a valid notification email address." }, { status: 400 });
+        for (const em of emailList) {
+          if (!emailRegex.test(em)) {
+            return NextResponse.json({ 
+              success: false, 
+              message: `Invalid email address format: "${em}". Please enter valid email addresses separated by commas.` 
+            }, { status: 400 });
+          }
         }
-        updates.push({ key: "contact_notification_email", value: email, category: "notifications" });
+        const unique = Array.from(new Set(emailList));
+        updates.push({ key: "contact_notification_email", value: unique.join(", "), category: "notifications" });
       }
     }
 
@@ -243,7 +256,7 @@ export async function POST(req: Request) {
         subject: "Website Contact Form - Owner Verification Test",
         message: "This is a test notification dispatched from the Kelkar Manas Health Care Admin Panel to verify that the owner notification recipient is receiving contact form inquiries.",
         createdAt: new Date(),
-      });
+      }, recipient);
 
       if (!result.success) {
         return NextResponse.json({
@@ -255,8 +268,177 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         success: true,
-        message: `Test contact notification successfully delivered to ${recipient}!`,
-        recipient,
+        message: `Test contact notification successfully delivered to ${result.recipient || recipient}!`,
+        recipient: result.recipient || recipient,
+      });
+    }
+
+    if (action === "test_all") {
+      const rawTarget = body.email || config.adminEmail || DEFAULT_NOTIFICATION_EMAIL;
+      const targetEmails = rawTarget
+        .split(/[,;\s]+/)
+        .map((e: string) => e.trim())
+        .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+      const recipients = targetEmails.length > 0 ? targetEmails : [rawTarget];
+      const targetString = recipients.join(", ");
+
+      const transporter = await getMailTransporterAsync();
+      if (!transporter) {
+        return NextResponse.json({
+          success: false,
+          message: "SMTP is not fully configured. Please ensure SMTP user and password are saved.",
+        }, { status: 400 });
+      }
+
+      const results: string[] = [];
+
+      // 1. Patient Welcome Email
+      try {
+        const welcome = generatePatientWelcomeEmail({
+          patientName: "Ahmed Sana (Test)",
+          email: recipients[0] || rawTarget,
+          phone: "9422861000",
+          portalUrl: "https://kelkarmanasclinic.com/patient/dashboard",
+        });
+        await transporter.sendMail({
+          from: `"${config.fromName}" <${config.fromEmail}>`,
+          to: recipients,
+          subject: `[Test 1/5] ${welcome.subject}`,
+          html: welcome.html,
+          attachments: getMailLogoAttachment(),
+        });
+        results.push("1. Patient Welcome Email");
+      } catch (e: any) {
+        console.error("Failed test 1:", e);
+      }
+
+      // 2. Appointment Booking Confirmation
+      try {
+        const apt = generateAppointmentCustomerEmail({
+          patientName: "Ahmed Sana (Test)",
+          doctorName: "Dr. Suyog Kelkar",
+          doctorSpecialization: "Chief Consultant Psychiatrist & Sexologist",
+          clinicName: "Kelkar Manas Health Care",
+          clinicAddress: "Civil Lines, Akola",
+          date: "Wednesday, 4 November 2026",
+          time: "11:30 AM",
+          type: "Video",
+          serviceName: "Sexual Wellness & Intimacy Counseling",
+          feeAmount: 1000,
+          paymentStatus: "Completed",
+          dashboardUrl: "https://kelkarmanasclinic.com/patient/appointments",
+        });
+        await transporter.sendMail({
+          from: `"${config.fromName}" <${config.fromEmail}>`,
+          to: recipients,
+          subject: `[Test 2/5] ${apt.subject}`,
+          html: apt.html,
+          attachments: getMailLogoAttachment(),
+        });
+        results.push("2. Appointment Confirmation");
+      } catch (e: any) {
+        console.error("Failed test 2:", e);
+      }
+
+      // 3. Medicine / Pharmacy Order
+      try {
+        const order = generateOrderCustomerEmail({
+          orderNumber: "ORD-2026-90412",
+          patientName: "Ahmed Sana (Test)",
+          phone: "+91 94228 61000",
+          items: [
+            { name: "TRP PLUS TAB", quantity: 1, price: 340, dosage: "1 Tab Night", isPrescription: true },
+            { name: "WELLFIRE 50 TAB", quantity: 1, price: 280, dosage: "SOS As advised", isPrescription: true },
+          ],
+          itemsSubtotal: 620,
+          taxAmount: 0,
+          deliveryCharge: 0,
+          totalAmount: 620,
+          paymentMethod: "Online (Razorpay)",
+          shippingAddress: "Civil Lines, Akola, Maharashtra 444001",
+          estimatedDelivery: "Same Day Dispatch (Within 24 Hours)",
+        });
+        await transporter.sendMail({
+          from: `"${config.fromName}" <${config.fromEmail}>`,
+          to: recipients,
+          subject: `[Test 3/5] ${order.subject}`,
+          html: order.html,
+          attachments: getMailLogoAttachment(),
+        });
+        results.push("3. Medicine Order Confirmation");
+      } catch (e: any) {
+        console.error("Failed test 3:", e);
+      }
+
+      // 4. Contact Form Inquiry Notification
+      try {
+        const contact = generateContactInquiryAdminEmail({
+          firstName: "Rajesh",
+          lastName: "Sharma",
+          email: "rajesh.sharma@example.com",
+          subject: "Inquiry regarding sexual wellness and therapy slots",
+          message: "Hello Dr. Kelkar team, I would like to know if weekend therapy slots are available for shockwave therapy in Akola clinic, and what is the typical procedure for the first visit? Thank you.",
+          submittedAt: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+          adminPortalUrl: "https://kelkarmanasclinic.com/admin/contact",
+        });
+        await transporter.sendMail({
+          from: `"${config.fromName}" <${config.fromEmail}>`,
+          to: recipients,
+          subject: `[Test 4/5] ${contact.subject}`,
+          html: contact.html,
+          attachments: getMailLogoAttachment(),
+        });
+        results.push("4. Contact Form Inquiry Notification");
+      } catch (e: any) {
+        console.error("Failed test 4:", e);
+      }
+
+      // 5. Daily Operations Executive Report
+      try {
+        const report = generateDailyAdminReportEmail({
+          reportDate: new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+          tomorrowsDate: new Date(Date.now() + 86400000).toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+          stats: {
+            totalBookingsToday: 12,
+            tomorrowsAppointmentsCount: 9,
+            totalOrdersToday: 8,
+            totalOrderRevenueToday: 6450,
+            newPatientsCount: 5,
+            inquiriesCount: 3,
+          },
+          tomorrowsSchedule: [
+            { patientName: "Patient 8104", patientPhone: "9422861000", doctorName: "Dr. Suyog Kelkar", date: "Tomorrow", time: "11:30 AM", type: "Walk-in", serviceName: "Follow-up" },
+          ],
+          todayBookings: [
+            { patientName: "Patient 7922", patientPhone: "8261067922", doctorName: "Dr. Suyog Kelkar", date: "Today", time: "10:00 AM", type: "Video", serviceName: "Consultation" },
+          ],
+          todayOrders: [
+            { orderNumber: "ORD-2026-90412", patientName: "Patient 7922", phone: "8261067922", itemsCount: 2, itemsSummary: "TRP PLUS TAB, WELLFIRE 50 TAB", totalAmount: 620, address: "Akola" },
+          ],
+          todayPatients: [
+            { name: "Patient 7922", phone: "8261067922", createdAt: "Today" },
+          ],
+          todayInquiries: [
+            { name: "Rajesh Sharma", email: "rajesh@example.com", subject: "Clinic slots", message: "Inquiry details...", createdAt: "Today" },
+          ],
+        });
+        await transporter.sendMail({
+          from: `"${config.fromName}" <${config.fromEmail}>`,
+          to: recipients,
+          subject: `[Test 5/5] ${report.subject}`,
+          html: report.html,
+          attachments: getMailLogoAttachment(),
+        });
+        results.push("5. Daily Executive Operations Report");
+      } catch (e: any) {
+        console.error("Failed test 5:", e);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `All ${results.length} email templates were successfully dispatched to ${targetString}!`,
+        deliveredTemplates: results,
+        recipient: targetString,
       });
     }
 

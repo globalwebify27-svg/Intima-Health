@@ -1,4 +1,4 @@
-import { getMailTransporter, getMailConfig, getMailTransporterAsync, getResolvedMailConfig } from "./transporter";
+import { getMailTransporter, getMailConfig, getMailTransporterAsync, getResolvedMailConfig, getMailLogoAttachment } from "./transporter";
 import { generateAppointmentCustomerEmail } from "./templates/appointment";
 import { generateOrderCustomerEmail, OrderEmailItem } from "./templates/order";
 import { generatePatientWelcomeEmail } from "./templates/welcome";
@@ -130,6 +130,7 @@ export async function sendAppointmentCustomerEmail(appointmentId: string): Promi
       to: patient.email,
       subject,
       html,
+      attachments: getMailLogoAttachment(),
     });
 
     console.log(`[Mail Service] Successfully sent appointment confirmation email to ${patient.email}`);
@@ -238,6 +239,7 @@ export async function sendPatientWelcomeEmail(patientId: string): Promise<boolea
       to: patient.email,
       subject,
       html,
+      attachments: getMailLogoAttachment(),
     });
 
     console.log(`[Mail Service] Successfully sent welcome email to ${patient.email}`);
@@ -411,6 +413,7 @@ export async function sendDailyAdminReport(): Promise<{ success: boolean; messag
       to: config.adminEmail,
       subject,
       html,
+      attachments: getMailLogoAttachment(),
     });
 
     console.log(`[Mail Service] Successfully sent Daily Admin Report to ${config.adminEmail}`);
@@ -440,31 +443,54 @@ export async function sendDailyAdminReport(): Promise<{ success: boolean; messag
 
 /**
  * Dispatches an instant email notification when a new contact inquiry is submitted.
- * Uses recipient email configured in database settings, falling back to ADMIN_NOTIFICATION_EMAIL or temptest9093@gmail.com
+ * Supports multiple recipient emails (comma-separated in settings), with optional override for tests.
  */
-export async function sendContactNotification(submission: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  subject: string;
-  message: string;
-  createdAt?: Date;
-}): Promise<{ success: boolean; message: string; recipient?: string }> {
+export async function sendContactNotification(
+  submission: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    subject: string;
+    message: string;
+    createdAt?: Date;
+  },
+  overrideRecipient?: string
+): Promise<{ success: boolean; message: string; recipient?: string }> {
   try {
     await connectDB();
     const transporter = (await getMailTransporterAsync()) || getMailTransporter();
     const config = await getResolvedMailConfig();
 
-    // 1. Resolve notification recipient (DB setting overrides env fallback, default to temptest9093@gmail.com)
-    const emailSetting = await SettingModel.findOne({ key: "contact_notification_email" }).lean();
-    const recipient = emailSetting?.value?.trim() || config.adminEmail || "temptest9093@gmail.com";
+    let recipientList: string[] = [];
+
+    if (overrideRecipient && overrideRecipient.trim()) {
+      recipientList = overrideRecipient
+        .split(/[,;\s]+/)
+        .map((e: string) => e.trim())
+        .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+    }
+
+    if (recipientList.length === 0) {
+      const emailSetting = await SettingModel.findOne({ key: "contact_notification_email" }).lean();
+      const raw: string = emailSetting?.value?.trim() || config.adminEmail || "temptest9093@gmail.com";
+      recipientList = raw
+        .split(/[,;\s]+/)
+        .map((e: string) => e.trim())
+        .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+    }
+
+    if (recipientList.length === 0) {
+      recipientList = ["temptest9093@gmail.com"];
+    }
+
+    const recipientString = recipientList.join(", ");
 
     if (!transporter) {
-      console.warn(`[Mail Service] SMTP Transporter not configured. Skipping contact notification email to ${recipient}.`);
+      console.warn(`[Mail Service] SMTP Transporter not configured. Skipping contact notification email to ${recipientString}.`);
       return {
         success: false,
         message: "SMTP is not configured in environment variables.",
-        recipient,
+        recipient: recipientString,
       };
     }
 
@@ -481,17 +507,18 @@ export async function sendContactNotification(submission: {
 
     await transporter.sendMail({
       from: `"${config.fromName} Inquiries" <${config.fromEmail}>`,
-      to: recipient,
+      to: recipientList,
       replyTo: submission.email,
       subject,
       html,
+      attachments: getMailLogoAttachment(),
     });
 
-    console.log(`[Mail Service] Successfully dispatched contact notification to ${recipient}`);
+    console.log(`[Mail Service] Successfully dispatched contact notification to ${recipientString}`);
     return {
       success: true,
-      message: `Notification sent to ${recipient}`,
-      recipient,
+      message: `Notification sent to ${recipientString}`,
+      recipient: recipientString,
     };
   } catch (error) {
     console.error("[Mail Service] Error sending contact inquiry notification:", error);
