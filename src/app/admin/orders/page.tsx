@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Search, ShieldCheck, MapPin, Eye, RefreshCcw, 
-  ExternalLink 
+  ExternalLink, Receipt 
 } from "lucide-react";
+import Link from "next/link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface Order {
@@ -28,6 +29,8 @@ interface Order {
     phone: string;
     pinCode: string;
     city: string;
+    receiverName?: string;
+    receiverPhone?: string;
   };
   paymentStatus?: string;
   paymentMethod?: string;
@@ -187,14 +190,26 @@ export default function OrdersAdminPage() {
       cell: ({ row }) => {
         const order = row.original;
         return (
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={() => { setSelectedOrder(order); setDetailModalOpen(true); }}
-            className="rounded-xl text-xs gap-1 h-8 font-semibold"
-          >
-            <Eye className="w-3.5 h-3.5" /> Details
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => { setSelectedOrder(order); setDetailModalOpen(true); }}
+              className="rounded-xl text-xs gap-1 h-8 font-semibold"
+            >
+              <Eye className="w-3.5 h-3.5" /> Details
+            </Button>
+            <Link href={`/admin/billing?orderId=${order._id}`}>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="rounded-xl text-xs gap-1 h-8 font-bold border-primary/30 text-primary hover:bg-primary/5"
+                title="Customize & Preview Bill"
+              >
+                <Receipt className="w-3.5 h-3.5" /> Bill
+              </Button>
+            </Link>
+          </div>
         );
       },
     },
@@ -307,15 +322,31 @@ export default function OrdersAdminPage() {
                 </div>
               </div>
 
-              {/* Delivery Address */}
-              <div className="p-3 bg-muted/20 rounded-xl border border-border space-y-1">
+              {/* Delivery Address & Receiver Info */}
+              <div className="p-3 bg-muted/20 rounded-xl border border-border space-y-1.5">
                 <span className="font-bold text-[10px] uppercase text-muted-foreground">Destination Address</span>
                 <p className="text-foreground">{selectedOrder.shippingAddress}</p>
+                {selectedOrder.shippingDetails?.receiverName && (
+                  <div className="pt-1.5 mt-1 border-t border-border/60 text-xs flex items-center justify-between text-primary">
+                    <span className="font-semibold">Receiver at Doorstep: <strong>{selectedOrder.shippingDetails.receiverName}</strong></span>
+                    {selectedOrder.shippingDetails.receiverPhone && (
+                      <span className="font-mono font-bold text-foreground">+91 {selectedOrder.shippingDetails.receiverPhone}</span>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className="flex justify-between items-center pt-2 font-bold text-sm">
-                <span>Total Amount:</span>
-                <span className="text-primary text-base">₹{selectedOrder.totalAmount.toLocaleString()}</span>
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center pt-3 border-t border-border gap-3">
+                <div className="flex justify-between items-center sm:gap-4 font-bold text-sm">
+                  <span>Total Amount:</span>
+                  <span className="text-primary text-base">₹{selectedOrder.totalAmount.toLocaleString()}</span>
+                </div>
+                <Link href={`/admin/billing?orderId=${selectedOrder._id}`} className="w-full sm:w-auto">
+                  <Button size="sm" className="rounded-xl text-xs font-bold gap-2 w-full sm:w-auto">
+                    <Receipt className="w-3.5 h-3.5" />
+                    Customize & Preview Bill
+                  </Button>
+                </Link>
               </div>
             </div>
           )}

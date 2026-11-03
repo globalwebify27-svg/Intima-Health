@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import crypto from "crypto";
 import sharp from "sharp";
+import { saveUploadedMedia } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -53,15 +52,14 @@ export async function POST(req: Request) {
       .slice(0, 20);
     const filename = `${sanitizedName}_${hash}.webp`;
 
-    // Ensure upload directory exists
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "hospitals");
-    await mkdir(uploadDir, { recursive: true });
-
-    // Write file to disk
-    const filePath = path.join(uploadDir, filename);
-    await writeFile(filePath, optimizedBuffer);
-
-    const url = `/uploads/hospitals/${filename}`;
+    // Persist to MongoDB Media collection (safe on Vercel / serverless without EROFS errors)
+    const { url } = await saveUploadedMedia({
+      folder: "hospitals",
+      filename,
+      buffer: optimizedBuffer,
+      contentType: "image/webp",
+      isPermanent: true,
+    });
 
     return NextResponse.json({
       success: true,

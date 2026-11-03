@@ -13,6 +13,8 @@ export interface OrderEmailData {
   orderNumber: string;
   patientName: string;
   phone: string;
+  receiverName?: string;
+  receiverPhone?: string;
   items: OrderEmailItem[];
   itemsSubtotal: number;
   taxAmount: number;
@@ -119,6 +121,11 @@ export function generateOrderCustomerEmail(data: OrderEmailData): { subject: str
       <p style="margin: 0; font-size: 12px; color: #6E5C6E; line-height: 1.5;">
         ${data.shippingAddress}
       </p>
+      ${data.receiverName ? `
+      <p style="margin: 6px 0 0 0; font-size: 12px; color: #7A2E7A; font-weight: 600;">
+        Receiver at Doorstep: <strong>${data.receiverName}</strong>${data.receiverPhone ? ` (+91 ${data.receiverPhone})` : ""}
+      </p>
+      ` : ""}
       <p style="margin: 6px 0 0 0; font-size: 11px; color: #8F7D8F;">
         Estimated Delivery: <strong>${data.estimatedDelivery || "Within 24 Hours (Akola Local Express)"}</strong>
       </p>

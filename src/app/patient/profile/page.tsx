@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, User, Phone, Mail, Calendar, ShieldAlert, Heart, Siren, AlertCircle } from "lucide-react";
+import { Check, User, Phone, Mail, Calendar, ShieldAlert, Heart, Siren, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface PatientProfile {
   name: string;
@@ -52,7 +52,8 @@ export default function PatientProfilePage() {
         if (data.success && data.data) {
           const profile: PatientProfile = data.data;
           setName(profile.name || "");
-          setEmail(profile.email || "");
+          const isPlaceholder = profile.email?.endsWith("@intima.app") || profile.email?.includes("@noemail-intima.com");
+          setEmail(isPlaceholder ? "" : (profile.email || ""));
           setPhone(profile.phone || "");
           setGender(profile.gender || "");
           setDob(profile.dob ? new Date(profile.dob).toISOString().split('T')[0] : "");
@@ -74,9 +75,17 @@ export default function PatientProfilePage() {
     setSuccess(false);
     setError("");
 
+    const cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setError("Please enter a valid email address format (e.g. name@gmail.com).");
+      setSaving(false);
+      return;
+    }
+
     const payload = {
       name,
       phone,
+      email: cleanEmail || undefined,
       gender,
       dob: dob || undefined,
       allergies: allergies.split(",").map((a) => a.trim()).filter(Boolean),
@@ -177,14 +186,34 @@ export default function PatientProfilePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5 md:col-span-2">
-              <Label htmlFor="email" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Email Address (Read-only)</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="email" className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-primary" />
+                  Email Address (For Notifications & Invoices)
+                </Label>
+                {email && !email.endsWith("@intima.app") && !email.includes("@noemail-intima.com") ? (
+                  <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Active for Notifications
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-semibold text-amber-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    No Notifications (Email Needed)
+                  </span>
+                )}
+              </div>
               <Input
                 id="email"
                 type="email"
                 value={email}
-                className="rounded-xl h-11 bg-muted/30 text-muted-foreground border-border/40 cursor-not-allowed"
-                disabled
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email (e.g. name@gmail.com)"
+                className="rounded-xl h-11 border-border/60 bg-background"
               />
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Appointment confirmations, digital consultation links, and pharmacy receipts will be dispatched directly to this address.
+              </p>
             </div>
 
             <div className="space-y-1.5">

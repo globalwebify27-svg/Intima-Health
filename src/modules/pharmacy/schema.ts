@@ -123,21 +123,48 @@ const PrescriptionVerificationSchema = new Schema<IPrescriptionVerification>({
   rejectionReason: { type: String },
 }, { _id: false });
 
+// --- ADDITIONAL CHARGES ON BILL ---
+export interface IAdditionalCharge {
+  id?: string;
+  name: string; // e.g. "Packing Charges", "Handling Charges", or custom
+  amount: number;
+}
+
+const AdditionalChargeSchema = new Schema<IAdditionalCharge>({
+  id: { type: String },
+  name: { type: String, required: true },
+  amount: { type: Number, required: true, default: 0 },
+}, { _id: false });
+
 // --- PRICING BREAKDOWN ---
 export interface IOrderPricing {
   itemsTotal: number;
+  taxPercent?: number; // e.g. 12, 5, 18, 0
   taxAmount: number; // GST
   deliveryCharge: number;
+  packingCharge?: number;
+  handlingCharge?: number;
+  additionalCharges?: IAdditionalCharge[];
   discountAmount?: number;
   totalPayable: number;
+  customizedAt?: Date;
+  customizedBy?: string;
+  notes?: string;
 }
 
 const OrderPricingSchema = new Schema<IOrderPricing>({
   itemsTotal: { type: Number, required: true },
+  taxPercent: { type: Number, default: 0 },
   taxAmount: { type: Number, default: 0 },
   deliveryCharge: { type: Number, default: 0 },
+  packingCharge: { type: Number, default: 0 },
+  handlingCharge: { type: Number, default: 0 },
+  additionalCharges: [AdditionalChargeSchema],
   discountAmount: { type: Number, default: 0 },
   totalPayable: { type: Number, required: true },
+  customizedAt: { type: Date },
+  customizedBy: { type: String },
+  notes: { type: String },
 }, { _id: false });
 
 // --- STRUCTURED SHIPPING ADDRESS ---
@@ -149,6 +176,8 @@ export interface IShippingDetails {
   state: string; // "Maharashtra"
   pinCode: string; // e.g. "444001"
   landmark?: string;
+  receiverName?: string;
+  receiverPhone?: string;
 }
 
 const ShippingDetailsSchema = new Schema<IShippingDetails>({
@@ -159,6 +188,8 @@ const ShippingDetailsSchema = new Schema<IShippingDetails>({
   state: { type: String, required: true, default: "Maharashtra" },
   pinCode: { type: String, required: true },
   landmark: { type: String },
+  receiverName: { type: String },
+  receiverPhone: { type: String },
 }, { _id: false });
 
 // --- DELIVERY TRACKING ---

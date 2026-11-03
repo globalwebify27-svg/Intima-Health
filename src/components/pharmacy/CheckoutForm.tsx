@@ -6,7 +6,7 @@ import {
   ShieldCheck, ArrowRight, CreditCard, ShoppingBag, 
   CheckCircle2, AlertCircle, Upload, FileText, 
   Truck, Building2, Loader2, UserCheck,
-  Banknote, Edit3, Phone
+  Banknote, Edit3, Phone, UserPlus, Users
 } from "lucide-react";
 import { useCart } from "@/store/useCart";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,8 @@ interface ConfirmedOrder {
     phone?: string;
     areaName?: string;
     pinCode?: string;
+    receiverName?: string;
+    receiverPhone?: string;
   };
 }
 
@@ -90,6 +92,9 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
 
   // Shipping form state (Focus: Akola, Maharashtra)
   const [fullName, setFullName] = useState("");
+  const [isDifferentReceiver, setIsDifferentReceiver] = useState(false);
+  const [receiverName, setReceiverName] = useState("");
+  const [receiverPhone, setReceiverPhone] = useState("");
   const [street, setStreet] = useState("");
   const city = "Akola";
   const state = "Maharashtra";
@@ -144,7 +149,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
           setPatientId(pId);
           
           if (data.user.name) {
-            setFullName(data.user.name);
+            // Keep fullName empty as requested so the placeholder (e.g., Name) is visible
             setProfileName(data.user.name);
           }
           if (data.user.phone) {
@@ -376,7 +381,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
           setIsGuestPhoneVerified(true);
           const resolvedPatientId = data.user?.patientId || data.user?.id;
           if (resolvedPatientId) setPatientId(resolvedPatientId);
-          if (data.user?.name && !fullName.trim()) setFullName(data.user.name);
+          if (data.user?.name) setProfileName(data.user.name);
           setShowOtpBox(false);
           setOtpSentMessage("");
           setOtpError("");
@@ -398,6 +403,18 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
     if (!fullName.trim()) {
       setPinError("Full recipient name is required.");
       return;
+    }
+
+    if (isDifferentReceiver) {
+      if (!receiverName.trim()) {
+        setPinError("Please enter the receiver's full name.");
+        return;
+      }
+      const cleanReceiverPhone = receiverPhone.replace(/\D/g, "").slice(-10);
+      if (!cleanReceiverPhone || cleanReceiverPhone.length < 10) {
+        setPinError("Please enter a valid 10-digit mobile number for the receiver.");
+        return;
+      }
     }
 
     if (isLoggedIn) {
@@ -481,8 +498,10 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
           isPrescription: !!i.isPrescription,
         })),
         shippingDetails: {
-          fullName,
+          fullName: fullName.trim(),
           phone: finalPhone, // Order-only delivery phone without altering profile
+          receiverName: isDifferentReceiver ? receiverName.trim() : undefined,
+          receiverPhone: isDifferentReceiver ? receiverPhone.replace(/\D/g, "").slice(-10) : undefined,
           street,
           city: "Akola",
           state: "Maharashtra",
@@ -674,6 +693,18 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
               <span className="text-muted-foreground">Delivery Contact Phone:</span>
               <span className="font-semibold font-mono text-foreground">+91 {confirmedOrder.shippingDetails?.phone || activeDeliveryPhone}</span>
             </div>
+            {(confirmedOrder.shippingDetails?.receiverName || (isDifferentReceiver && receiverName)) && (
+              <div className="flex justify-between items-center border-b pb-2 bg-primary/5 -mx-5 px-5 py-2 rounded-lg">
+                <span className="text-primary font-bold flex items-center gap-1.5">
+                  <UserPlus className="w-3.5 h-3.5" />
+                  Receiver at Doorstep:
+                </span>
+                <span className="font-semibold text-foreground">
+                  {confirmedOrder.shippingDetails?.receiverName || receiverName}
+                  {(confirmedOrder.shippingDetails?.receiverPhone || receiverPhone) && ` (+91 ${confirmedOrder.shippingDetails?.receiverPhone || receiverPhone})`}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between items-center border-b pb-2">
               <span className="text-muted-foreground">Payment Method:</span>
               <span className="font-semibold text-foreground">
@@ -944,9 +975,15 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                     <div className="flex items-center justify-between">
                       <Label htmlFor="name">Recipient Full Name *</Label>
                       {isLoggedIn && profileName && (
-                        <span className="text-[11px] text-muted-foreground">
-                          Account: <strong className="text-foreground">{profileName}</strong>
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setFullName(profileName)}
+                          className="text-[11px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+                          title="Click to fill with your account name"
+                        >
+                          <span>Account: <strong className="text-foreground">{profileName}</strong></span>
+                          <span className="text-[10px] text-primary font-bold underline">(Use my name)</span>
+                        </button>
                       )}
                     </div>
                     <Input
@@ -1279,6 +1316,83 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* Receiver Info Option (Put recipient name and phone no. for those who will receive the medicine) */}
+                <div className="rounded-2xl border border-border/80 bg-muted/20 p-4 space-y-3 transition-all">
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={isDifferentReceiver}
+                      onChange={(e) => setIsDifferentReceiver(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary accent-primary"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <Users className="w-4 h-4 text-primary" />
+                          Add Receiver Information (Someone else will receive the medicine?)
+                        </span>
+                        <Badge variant="outline" className="text-[10px] py-0 px-2 font-normal text-muted-foreground border-border/60">
+                          Optional
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                        Enable this option to provide the name and mobile number of the person at the delivery address who will receive the medicine.
+                      </p>
+                    </div>
+                  </label>
+
+                  {isDifferentReceiver && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="pt-3 border-t border-border/70 space-y-3"
+                    >
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                        <UserPlus className="w-3.5 h-3.5" />
+                        Doorstep Receiver Details:
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="receiverName" className="text-xs font-medium">Receiver Full Name *</Label>
+                          <Input
+                            id="receiverName"
+                            value={receiverName}
+                            onChange={(e) => setReceiverName(e.target.value)}
+                            placeholder="(e.g., Name)"
+                            className="rounded-xl h-11 bg-background"
+                            required={isDifferentReceiver}
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label htmlFor="receiverPhone" className="text-xs font-medium">Receiver Phone Number *</Label>
+                          <div className="relative">
+                            <span className="absolute left-3.5 top-3 text-xs font-bold text-muted-foreground select-none">+91</span>
+                            <Input
+                              id="receiverPhone"
+                              type="tel"
+                              maxLength={10}
+                              value={receiverPhone}
+                              onChange={(e) => {
+                                let raw = e.target.value.replace(/\D/g, "");
+                                if (raw.startsWith("0")) raw = raw.slice(1);
+                                if (raw.startsWith("91") && raw.length > 10) raw = raw.slice(2);
+                                raw = raw.slice(0, 10);
+                                setReceiverPhone(raw);
+                              }}
+                              placeholder="(e.g., XXX XXX XXXX)"
+                              className="rounded-xl h-11 pl-11 font-mono font-medium bg-background"
+                              required={isDifferentReceiver}
+                            />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">The delivery courier will contact this phone upon arrival at your doorstep.</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Street Address */}

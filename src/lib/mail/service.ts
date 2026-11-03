@@ -63,6 +63,9 @@ interface RawOrderDoc {
     phone?: string;
     street?: string;
     city?: string;
+    pinCode?: string;
+    receiverName?: string;
+    receiverPhone?: string;
   };
   patientId?: PopulatedRef;
   items?: RawOrderItem[];
@@ -76,6 +79,25 @@ interface RawPatientDoc {
   email?: string;
   phone?: string;
   createdAt?: Date;
+}
+
+/**
+ * Checks whether an email is a real, deliverable customer email address.
+ * Rejects empty emails and placeholder domains (@intima.app, @noemail-intima.com, @example.com).
+ * Customer email notifications are ONLY sent if this returns true.
+ */
+export function isValidCustomerNotificationEmail(email?: string | null): boolean {
+  if (!email || typeof email !== "string") return false;
+  const trimmed = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return false;
+  if (
+    trimmed.endsWith("@intima.app") ||
+    trimmed.includes("@noemail-intima.com") ||
+    trimmed.endsWith("@example.com")
+  ) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -106,8 +128,8 @@ export async function sendAppointmentCustomerEmail(appointmentId: string): Promi
     const doctor = apt.doctorId as unknown as PopulatedRef;
     const clinic = apt.clinicId as unknown as PopulatedRef;
 
-    if (!patient.email || patient.email.includes("@noemail-intima.com")) {
-      console.log(`[Mail Service] Patient has no valid email address: ${patient.email}`);
+    if (!isValidCustomerNotificationEmail(patient.email)) {
+      console.log(`[Mail Service] Patient has no valid notification email configured (${patient.email}). Skipping appointment email.`);
       return false;
     }
 
@@ -166,8 +188,8 @@ export async function sendOrderCustomerEmail(orderId: string): Promise<boolean> 
     const patient = order.patientId as unknown as PopulatedRef;
     const recipientEmail = patient?.email;
 
-    if (!recipientEmail || recipientEmail.includes("@noemail-intima.com")) {
-      console.log(`[Mail Service] Order recipient has no valid email address.`);
+    if (!isValidCustomerNotificationEmail(recipientEmail)) {
+      console.log(`[Mail Service] Order recipient has no valid notification email configured (${recipientEmail}). Skipping order receipt email.`);
       return false;
     }
 
@@ -189,6 +211,8 @@ export async function sendOrderCustomerEmail(orderId: string): Promise<boolean> 
       orderNumber: order.orderNumber || order._id.toString(),
       patientName: order.shippingDetails?.fullName || patient?.name || "Valued Patient",
       phone: order.shippingDetails?.phone || patient?.phone || "",
+      receiverName: order.shippingDetails?.receiverName,
+      receiverPhone: order.shippingDetails?.receiverPhone,
       items: formattedItems,
       itemsSubtotal: pricing.itemsTotal,
       taxAmount: pricing.taxAmount,
@@ -224,7 +248,7 @@ export async function sendPatientWelcomeEmail(patientId: string): Promise<boolea
 
     await connectDB();
     const patient = await PatientModel.findById(patientId).exec();
-    if (!patient || !patient.email || patient.email.includes("@noemail-intima.com") || patient.email.includes("@intima.app")) {
+    if (!patient || !isValidCustomerNotificationEmail(patient.email)) {
       return false;
     }
 

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
 import sharp from "sharp";
+import { saveUploadedMedia } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -29,14 +29,19 @@ export async function POST(req: Request) {
       if (file.type === "image/svg+xml") {
         const hash = crypto.randomBytes(12).toString("hex");
         const filename = `${hash}.svg`;
-        const uploadDir = path.join(process.cwd(), "public", "uploads", folderParam);
-        await mkdir(uploadDir, { recursive: true });
-        await writeFile(path.join(uploadDir, filename), buffer);
+
+        const { url } = await saveUploadedMedia({
+          folder: folderParam,
+          filename,
+          buffer,
+          contentType: "image/svg+xml",
+          isPermanent: true,
+        });
 
         return NextResponse.json({
           success: true,
           message: "SVG uploaded successfully.",
-          url: `/uploads/${folderParam}/${filename}`,
+          url,
         });
       }
 
@@ -49,14 +54,18 @@ export async function POST(req: Request) {
       const hash = crypto.randomBytes(12).toString("hex");
       const filename = `${hash}.webp`;
 
-      const uploadDir = path.join(process.cwd(), "public", "uploads", folderParam);
-      await mkdir(uploadDir, { recursive: true });
-      await writeFile(path.join(uploadDir, filename), optimizedBuffer);
+      const { url } = await saveUploadedMedia({
+        folder: folderParam,
+        filename,
+        buffer: optimizedBuffer,
+        contentType: "image/webp",
+        isPermanent: true,
+      });
 
       return NextResponse.json({
         success: true,
         message: "Image optimized and converted to WebP successfully.",
-        url: `/uploads/${folderParam}/${filename}`,
+        url,
       });
     }
 
@@ -64,14 +73,19 @@ export async function POST(req: Request) {
     const hash = crypto.randomBytes(12).toString("hex");
     const ext = path.extname(file.name || "") || ".bin";
     const filename = `${hash}${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "docs");
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(path.join(uploadDir, filename), buffer);
+
+    const { url } = await saveUploadedMedia({
+      folder: "docs",
+      filename,
+      buffer,
+      contentType: file.type || "application/octet-stream",
+      isPermanent: true,
+    });
 
     return NextResponse.json({
       success: true,
       message: "File uploaded successfully.",
-      url: `/uploads/docs/${filename}`,
+      url,
     });
   } catch (error: any) {
     console.error("Upload error:", error);
