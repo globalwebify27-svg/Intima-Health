@@ -401,7 +401,7 @@ export function GoogleReviewsSection() {
               <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>
-                  All patient reviews are fetched and updated dynamically using Google-supported integrations. No reviews are fabricated.
+                  All patient reviews are fetched and updated dynamically directly from Google Maps.
                 </span>
               </div>
               <a
