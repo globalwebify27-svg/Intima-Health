@@ -7,6 +7,7 @@ import { SeekHelpSection } from "@/components/sections/SeekHelpSection";
 import { TreatmentApproachSection } from "@/components/sections/TreatmentApproachSection";
 import { FeaturedExperts } from "@/components/sections/FeaturedExperts";
 import { WhyChooseUs } from "@/components/sections/WhyChooseUs";
+import { GoogleReviewsSection } from "@/components/sections/GoogleReviewsSection";
 import { SelfAssessmentCTA } from "@/components/sections/SelfAssessmentCTA";
 import { HomeFaqSection } from "@/components/sections/HomeFaqSection";
 
@@ -55,6 +56,7 @@ export default function HomePage() {
       <SeekHelpSection />
       <TreatmentApproachSection />
       {/* <FeaturedExperts /> */}
+      <GoogleReviewsSection />
       <HomeFaqSection />
       <SelfAssessmentCTA />
     </>

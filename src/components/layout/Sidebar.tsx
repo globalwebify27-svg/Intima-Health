@@ -94,7 +94,7 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
               Book Appointment
             </Button>
           )}
-          {roleName !== "Patient" && (
+          {roleName !== "Patient" && !links.some((l) => l.href === `${basePath}/settings` || l.href.startsWith(`${basePath}/settings`)) && (
             <Link
               href={`${basePath}/settings`}
               className={cn(

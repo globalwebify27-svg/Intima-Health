@@ -90,6 +90,12 @@ const LIFECYCLE_STEPS = [
   { key: "Delivered", label: "Delivered" },
 ];
 
+const REQUEST_STEPS = [
+  { key: "REQUEST_RECEIVED", label: "Request Submitted to Clinic Pharmacy" },
+  { key: "CALL_COMPLETED", label: "Phone Call Verification Completed" },
+  { key: "FULFILLED", label: "Medicines Dispensed / Fulfilled" },
+];
+
 export default function PatientOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
 
@@ -295,15 +301,15 @@ export default function PatientOrderDetailPage({ params }: { params: Promise<{ i
       </div>
 
       {/* CANCELLATION OR REJECTION BANNER */}
-      {order.status === "Cancelled" && (
+      {(order.status === "Cancelled" || order.status === "CANCELLED") && (
         <div className="p-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-2xl flex items-start gap-3 text-xs leading-relaxed">
           <XCircle className="w-5 h-5 shrink-0 mt-0.5" />
           <div>
-            <p className="font-bold text-sm">This order was cancelled</p>
+            <p className="font-bold text-sm">This order request was cancelled</p>
             <p className="mt-0.5">Reason: {order.cancellationReason || "Cancelled upon request"}</p>
-            {order.refundStatus === "Pending" && (
-              <p className="mt-1 font-semibold text-amber-700">
-                Refund of ₹{order.totalAmount} has been initiated and will credit to your original payment method in 3–5 working days.
+            {order.statusHistory && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Status automatically updated by clinic pharmacy/admin.
               </p>
             )}
           </div>
@@ -400,6 +406,9 @@ export default function PatientOrderDetailPage({ params }: { params: Promise<{ i
                 <div key={idx} className="py-3.5 flex items-start justify-between text-xs sm:text-sm">
                   <div className="space-y-1">
                     <p className="font-bold text-foreground">{item.name || item.productId?.name}</p>
+                    {item.dosage && (
+                      <p className="text-xs text-muted-foreground font-medium">{item.dosage}</p>
+                    )}
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       <span>Qty: {item.quantity}</span>
                       <span>•</span>

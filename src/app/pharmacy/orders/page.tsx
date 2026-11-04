@@ -1,75 +1,56 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DataTable } from "@/components/ui/data-table";
-import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { 
-  Search, ShieldCheck, FileText, 
-  Truck, CheckCircle2, XCircle, ExternalLink, RefreshCcw, 
-  MapPin, Eye, Send
+  Phone, MessageSquare, CheckCircle2, XCircle, Clock, 
+  Search, RefreshCcw, Building2, User, Pill, AlertTriangle, 
+  PhoneCall, ShieldCheck
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 interface OrderItem {
   productId?: {
-    name: string;
-    price: number;
-    dosageForm?: string;
-    composition?: string;
+    name?: string;
   };
   name?: string;
   dosage?: string;
   quantity: number;
-  priceAtPurchase: number;
-  isPrescription?: boolean;
-  status?: string;
-  substitutedWithName?: string;
 }
 
 interface Order {
   _id: string;
   orderNumber?: string;
+  clinicId?: {
+    _id: string;
+    name?: string;
+    city?: string;
+  };
+  consultationId?: {
+    _id: string;
+    doctorId?: {
+      name?: string;
+      specialization?: string;
+    };
+    prescriptionSummary?: string;
+  };
   patientId: {
     _id: string;
     name: string;
-    email: string;
-    phone: string;
+    email?: string;
+    phone?: string;
+  };
+  shippingDetails?: {
+    fullName?: string;
+    phone?: string;
   };
   items: OrderItem[];
-  totalAmount: number;
   status: string;
-  shippingAddress: string;
-  shippingDetails?: {
-    fullName: string;
-    phone: string;
-    street: string;
-    city: string;
-    pinCode: string;
-    landmark?: string;
-  };
-  prescriptionSource?: string;
-  uploadedPrescriptionUrl?: string;
-  consultationId?: {
-    _id: string;
-    prescriptionSummary?: string;
-  } | null;
-  prescriptionVerification?: {
-    status: string;
-    notes?: string;
-    rejectionReason?: string;
-    verifiedBy?: string;
-  };
-  delivery?: {
-    courierPartner?: string;
-    trackingNumber?: string;
-    dispatchedAt?: string;
-    deliveredAt?: string;
-  };
-  paymentStatus?: string;
+  cancellationReason?: string;
+  cancelledBy?: string;
+  cancelledAt?: string;
   createdAt: string;
 }
 
@@ -79,579 +60,458 @@ export default function PharmacyOrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  // Order Details / Verification Modal
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  // Cancellation Modal State
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
+  const [cancellationReason, setCancellationReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
-  const [verifyNotes, setVerifyNotes] = useState("");
-  const [rejectionReason, setRejectionReason] = useState("");
-  const [trackingNumber, setTrackingNumber] = useState("");
-  const [courierPartner, setCourierPartner] = useState("Akola Local Express Delivery");
-  const [substituteItemIdx, setSubstituteItemIdx] = useState<number | null>(null);
-  const [substituteName, setSubstituteName] = useState("");
+
+  // Status Change State
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   const fetchOrders = () => {
     setLoading(true);
-    fetch(`/api/pharmacy/orders`)
+    fetch("/api/pharmacy/orders")
       .then((res) => res.json())
       .then((resData) => {
         if (resData.success && resData.data) {
           setOrders(resData.data);
         }
       })
-      .catch((err) => console.error("Error loading pharmacy orders:", err))
+      .catch((err) => console.error("Error fetching pharmacy orders:", err))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    let ignore = false;
-    fetch(`/api/pharmacy/orders`)
-      .then((res) => res.json())
-      .then((resData) => {
-        if (!ignore && resData.success && resData.data) {
-          setOrders(resData.data);
-        }
-      })
-      .catch((err) => console.error("Error loading pharmacy orders:", err))
-      .finally(() => {
-        if (!ignore) setLoading(false);
-      });
-
-    return () => {
-      ignore = true;
-    };
+    fetchOrders();
   }, []);
 
-  const openOrderModal = (order: Order) => {
-    setSelectedOrder(order);
-    setVerifyNotes(order.prescriptionVerification?.notes || "");
-    setRejectionReason(order.prescriptionVerification?.rejectionReason || "");
-    setTrackingNumber(order.delivery?.trackingNumber || "");
-    setCourierPartner(order.delivery?.courierPartner || "Akola Local Express Delivery");
-    setModalOpen(true);
-  };
-
-  // 1. Verify Prescription
-  const handleVerifyPrescription = async (approved: boolean) => {
-    if (!selectedOrder) return;
-    setActionLoading(true);
-
+  const handleUpdateStatus = async (orderId: string, newStatus: string, comment?: string) => {
     try {
-      const res = await fetch(`/api/pharmacy/orders/${selectedOrder._id}`, {
-        method: "PUT",
+      setUpdatingOrderId(orderId);
+      const res = await fetch(`/api/pharmacy/orders/${orderId}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prescriptionVerification: {
-            status: approved ? "Verified" : "Rejected",
-            notes: verifyNotes || (approved ? "Prescription verified by pharmacist." : "Prescription verification failed."),
-            rejectionReason: !approved ? (rejectionReason || "Invalid or expired prescription.") : undefined,
-          },
-          status: approved ? "Pharmacy_Processing" : "Prescription_Rejected",
+          status: newStatus,
+          comment: comment || `Status updated to ${newStatus} by Pharmacy Staff`,
         }),
       });
-
-      const json = await res.json();
-      if (json.success) {
+      const data = await res.json();
+      if (data.success) {
         fetchOrders();
-        setModalOpen(false);
       } else {
-        alert(json.message || "Failed to update prescription status.");
+        alert(data.message || "Failed to update order status");
       }
     } catch (err) {
       console.error(err);
-      alert("Error updating prescription status.");
+      alert("Error updating status");
     } finally {
-      setActionLoading(false);
+      setUpdatingOrderId(null);
     }
   };
 
-  // 2. Dispatch Order
-  const handleDispatchOrder = async () => {
-    if (!selectedOrder) return;
-    setActionLoading(true);
+  const openCancelModal = (order: Order) => {
+    setCancellingOrder(order);
+    setCancellationReason("");
+    setCancelModalOpen(true);
+  };
 
+  const handleConfirmCancel = async () => {
+    if (!cancellingOrder) return;
     try {
-      const res = await fetch(`/api/pharmacy/orders/${selectedOrder._id}`, {
-        method: "PUT",
+      setActionLoading(true);
+      const res = await fetch(`/api/pharmacy/orders/${cancellingOrder._id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          status: "Packed_Dispatched",
-          delivery: {
-            courierPartner,
-            trackingNumber: trackingNumber || `AKL-EXP-${Math.floor(10000 + Math.random() * 90000)}`,
-            dispatchedAt: new Date(),
-          },
-          comment: `Medicines packed in tamper-evident packaging and dispatched via ${courierPartner}.`,
+          status: "CANCELLED",
+          cancelledBy: "Pharmacy Staff",
+          cancellationReason: cancellationReason || "Order cancelled by pharmacy following patient phone verification.",
+          comment: cancellationReason || "Order cancelled by pharmacy staff.",
         }),
       });
-
-      const json = await res.json();
-      if (json.success) {
+      const data = await res.json();
+      if (data.success) {
+        setCancelModalOpen(false);
+        setCancellingOrder(null);
         fetchOrders();
-        setModalOpen(false);
       } else {
-        alert(json.message || "Failed to update dispatch status.");
+        alert(data.message || "Failed to cancel order");
       }
     } catch (err) {
       console.error(err);
-      alert("Error updating dispatch status.");
+      alert("Error cancelling order");
     } finally {
       setActionLoading(false);
     }
   };
 
-  // 3. Mark Delivered
-  const handleMarkDelivered = async () => {
-    if (!selectedOrder) return;
-    setActionLoading(true);
-
-    try {
-      const res = await fetch(`/api/pharmacy/orders/${selectedOrder._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "Delivered",
-          comment: "Package delivered to customer in Akola.",
-        }),
-      });
-
-      const json = await res.json();
-      if (json.success) {
-        fetchOrders();
-        setModalOpen(false);
-      } else {
-        alert(json.message || "Failed to mark order as delivered.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error updating order.");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // 4. Handle Unavailable Item & Propose Substitute
-  const handleSaveSubstitute = async () => {
-    if (!selectedOrder || substituteItemIdx === null || !substituteName.trim()) return;
-
-    const updatedItems = [...selectedOrder.items];
-    updatedItems[substituteItemIdx] = {
-      ...updatedItems[substituteItemIdx],
-      status: "Substituted",
-      substitutedWithName: substituteName.trim(),
-    };
-
-    setActionLoading(true);
-    try {
-      const res = await fetch(`/api/pharmacy/orders/${selectedOrder._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: updatedItems,
-          comment: `Pharmacist proposed alternative: ${substituteName.trim()} for ${updatedItems[substituteItemIdx].name}`,
-        }),
-      });
-
-      const json = await res.json();
-      if (json.success) {
-        setSelectedOrder(json.data);
-        fetchOrders();
-        setSubstituteItemIdx(null);
-        setSubstituteName("");
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const columns: ColumnDef<Order>[] = [
-    {
-      accessorKey: "orderNumber",
-      header: "Order Reference",
-      cell: ({ row }) => {
-        const order = row.original;
-        return (
-          <div className="space-y-0.5">
-            <span className="font-mono font-bold text-xs text-primary">
-              {order.orderNumber || `#${order._id.substring(18)}`}
-            </span>
-            <div className="text-[10px] text-muted-foreground">
-              {new Date(order.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      id: "patientName",
-      header: "Patient / Address",
-      cell: ({ row }) => {
-        const order = row.original;
-        return (
-          <div className="space-y-0.5 text-xs">
-            <p className="font-bold text-foreground">{order.shippingDetails?.fullName || order.patientId?.name || "Patient"}</p>
-            <p className="text-muted-foreground flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-primary" />
-              PIN: {order.shippingDetails?.pinCode || "Akola"}
-            </p>
-          </div>
-        );
-      },
-    },
-    {
-      id: "prescriptionStatus",
-      header: "Prescription",
-      cell: ({ row }) => {
-        const order = row.original;
-        const source = order.prescriptionSource;
-        const verStatus = order.prescriptionVerification?.status || "Pending";
-
-        if (source === "OTC_NO_RX") {
-          return <Badge variant="outline" className="text-[10px] bg-muted/40">OTC (No Rx)</Badge>;
-        }
-
-        if (verStatus === "Verified") {
-          return <Badge className="bg-emerald-600 text-white text-[10px]">Rx Verified</Badge>;
-        }
-        if (verStatus === "Rejected") {
-          return <Badge variant="destructive" className="text-[10px]">Rx Rejected</Badge>;
-        }
-        return <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-500/20">Pending Rx Check</Badge>;
-      },
-    },
-    {
-      accessorKey: "totalAmount",
-      header: "Amount",
-      cell: ({ row }) => {
-        const amount = row.getValue("totalAmount") as number;
-        const isPaid = row.original.paymentStatus === "Paid";
-        return (
-          <div className="text-xs">
-            <span className="font-bold text-foreground">₹{amount.toLocaleString()}</span>
-            <div className="text-[10px]">
-              {isPaid ? <span className="text-emerald-600 font-semibold">● Paid</span> : <span className="text-amber-600 font-semibold">● Pending</span>}
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Order Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        let variant: "default" | "secondary" | "destructive" | "outline" = "default";
-        if (status === "Delivered") variant = "secondary";
-        if (status === "Cancelled" || status === "Prescription_Rejected") variant = "destructive";
-        if (status.includes("Pending") || status.includes("Verification")) variant = "outline";
-
-        return (
-          <Badge variant={variant} className="text-xs font-semibold">
-            {status.replace(/_/g, " ")}
-          </Badge>
-        );
-      },
-    },
-    {
-      id: "actions",
-      header: "Fulfillment",
-      cell: ({ row }) => {
-        const order = row.original;
-        return (
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={() => openOrderModal(order)}
-            className="rounded-xl text-xs gap-1.5 h-8 font-semibold hover:bg-primary hover:text-white transition-colors"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            Review & Fulfill
-          </Button>
-        );
-      },
-    },
-  ];
-
-  // Filter logic
+  // Filter orders
   const filteredOrders = orders.filter((order) => {
-    const matchesSearch = 
-      (order.patientId?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (order.orderNumber || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order._id.toLowerCase().includes(searchQuery.toLowerCase());
+    const patientName = order.shippingDetails?.fullName || order.patientId?.name || "";
+    const patientPhone = order.shippingDetails?.phone || order.patientId?.phone || "";
+    const orderNum = order.orderNumber || order._id;
 
-    const matchesStatus = statusFilter === "All" || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesSearch =
+      patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      patientPhone.includes(searchQuery) ||
+      orderNum.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const normStatus = order.status.toUpperCase();
+    if (statusFilter === "All") return matchesSearch;
+    if (statusFilter === "Pending") {
+      return matchesSearch && (normStatus === "REQUEST_RECEIVED" || normStatus === "PLACED" || normStatus === "PRESCRIPTION_VERIFICATION");
+    }
+    if (statusFilter === "Verified") {
+      return matchesSearch && (normStatus === "CALL_COMPLETED" || normStatus === "PRESCRIPTION_APPROVED");
+    }
+    if (statusFilter === "Fulfilled") {
+      return matchesSearch && (normStatus === "FULFILLED" || normStatus === "DELIVERED");
+    }
+    if (statusFilter === "Cancelled") {
+      return matchesSearch && normStatus === "CANCELLED";
+    }
+
+    return matchesSearch;
   });
+
+  const getStatusBadge = (status: string) => {
+    const s = status.toUpperCase();
+    if (s === "REQUEST_RECEIVED" || s === "PLACED" || s === "PRESCRIPTION_VERIFICATION") {
+      return (
+        <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 text-xs font-bold gap-1">
+          <Clock className="w-3 h-3" /> Pending Verification
+        </Badge>
+      );
+    }
+    if (s === "CALL_COMPLETED" || s === "PRESCRIPTION_APPROVED") {
+      return (
+        <Badge className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 text-xs font-bold gap-1">
+          <PhoneCall className="w-3 h-3" /> Call Completed
+        </Badge>
+      );
+    }
+    if (s === "FULFILLED" || s === "DELIVERED") {
+      return (
+        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 text-xs font-bold gap-1">
+          <CheckCircle2 className="w-3 h-3" /> Fulfilled
+        </Badge>
+      );
+    }
+    if (s === "CANCELLED") {
+      return (
+        <Badge variant="destructive" className="text-xs font-bold gap-1">
+          <XCircle className="w-3 h-3" /> Cancelled
+        </Badge>
+      );
+    }
+    return <Badge variant="outline" className="text-xs font-bold">{status}</Badge>;
+  };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Pharmacy Orders & Dispensing</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Pharmacy Online Orders</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Verify prescriptions, dispense authentic medications, and coordinate local delivery in Akola, Maharashtra.
+            Call-based verification and fulfilment of prescription medicine requests assigned to this clinic pharmacy.
           </p>
         </div>
-        <Button onClick={fetchOrders} variant="outline" size="sm" className="rounded-xl gap-2 h-9 self-start">
-          <RefreshCcw className="w-3.5 h-3.5" /> Refresh Orders
+        <Button 
+          variant="outline" 
+          onClick={fetchOrders} 
+          disabled={loading}
+          className="rounded-xl gap-2 font-semibold h-10 shrink-0"
+        >
+          <RefreshCcw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          Refresh Requests
         </Button>
       </div>
 
-      {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card p-4 rounded-2xl border border-border shadow-sm">
-        <div className="w-full sm:max-w-xs relative">
-          <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+      {/* Verification Notice */}
+      <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3">
+        <PhoneCall className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="text-xs space-y-1 text-amber-900 dark:text-amber-300">
+          <p className="font-bold text-sm">Order Verification &amp; Fulfilment Protocol</p>
+          <p className="leading-relaxed">
+            Contact the patient over a phone call upon receiving the request. Verify medicines, dosage, and delivery/pickup preferences. Fulfilment or cancellation should only take place after telephone verification.
+          </p>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
-            placeholder="Search by order ID, customer name..." 
+            placeholder="Search by patient name, phone, ref..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="rounded-xl border-border bg-muted/20 pl-9 pr-4 focus:ring-primary/20 text-xs sm:text-sm"
+            className="pl-9 h-10 rounded-xl"
           />
         </div>
-        <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-          {["All", "Prescription_Verification", "Pharmacy_Processing", "Packed_Dispatched", "Delivered", "Cancelled"].map((status) => (
+
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1">
+          {["All", "Pending", "Verified", "Fulfilled", "Cancelled"].map((tab) => (
             <Button
-              key={status}
-              variant={statusFilter === status ? "default" : "outline"}
-              onClick={() => setStatusFilter(status)}
-              className="rounded-xl text-xs py-1.5 h-8 shrink-0 font-medium"
+              key={tab}
+              variant={statusFilter === tab ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter(tab)}
+              className="rounded-xl text-xs font-semibold h-9 shrink-0"
             >
-              {status.replace(/_/g, " ")}
+              {tab}
             </Button>
           ))}
         </div>
       </div>
 
+      {/* Orders Card Grid */}
       {loading ? (
-        <div className="p-12 text-center text-muted-foreground font-medium">Loading pharmacy orders...</div>
+        <div className="py-20 text-center text-muted-foreground font-medium text-sm">
+          Loading online orders for this pharmacy...
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="py-20 text-center border border-dashed border-border rounded-3xl space-y-3">
+          <Pill className="w-12 h-12 text-muted-foreground/50 mx-auto" />
+          <p className="font-bold text-base text-foreground">No Medicine Order Requests Found</p>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            When patients consult doctors at this clinic and click &ldquo;Medicine Order Request&rdquo;, their requests will appear here.
+          </p>
+        </div>
       ) : (
-        <DataTable columns={columns} data={filteredOrders} />
-      )}
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {filteredOrders.map((order) => {
+            const patientName = order.shippingDetails?.fullName || order.patientId?.name || "Patient";
+            const patientPhone = order.shippingDetails?.phone || order.patientId?.phone || "";
+            const cleanPhone = patientPhone.replace(/\D/g, "");
+            const doctor = order.consultationId?.doctorId;
+            const clinic = order.clinicId;
+            const normStatus = order.status.toUpperCase();
+            const isCancelled = normStatus === "CANCELLED";
+            const isFulfilled = normStatus === "FULFILLED" || normStatus === "DELIVERED";
+            const isCallDone = normStatus === "CALL_COMPLETED" || normStatus === "PRESCRIPTION_APPROVED";
 
-      {/* REVIEW & FULFILL DIALOG */}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 sm:p-8">
-          {selectedOrder && (
-            <div className="space-y-6">
-              <DialogHeader>
-                <div className="flex items-center justify-between">
-                  <DialogTitle className="text-xl font-bold font-serif">
-                    Order {selectedOrder.orderNumber || `#${selectedOrder._id.slice(-6)}`}
-                  </DialogTitle>
-                  <Badge variant="secondary" className="font-bold">
-                    {selectedOrder.status.replace(/_/g, " ")}
-                  </Badge>
-                </div>
-                <DialogDescription className="text-xs">
-                  Placed on {new Date(selectedOrder.createdAt).toLocaleString("en-IN")} • Recipient: {selectedOrder.shippingDetails?.fullName || selectedOrder.patientId?.name}
-                </DialogDescription>
-              </DialogHeader>
-
-              {/* 1. PRESCRIPTION VERIFICATION PANEL */}
-              {selectedOrder.prescriptionSource !== "OTC_NO_RX" && (
-                <div className="p-4 bg-muted/40 rounded-2xl border border-border/80 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-primary" />
-                      Doctor&apos;s Prescription Verification
-                    </span>
-                    <Badge variant={selectedOrder.prescriptionVerification?.status === "Verified" ? "default" : "outline"}>
-                      {selectedOrder.prescriptionVerification?.status || "Pending Verification"}
-                    </Badge>
+            return (
+              <div 
+                key={order._id}
+                className={`bg-card rounded-3xl border ${isCancelled ? "border-destructive/30 bg-destructive/5" : "border-border"} p-5 shadow-sm flex flex-col justify-between space-y-4 transition-all hover:shadow-md`}
+              >
+                {/* Card Header */}
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="font-mono font-bold text-xs text-primary">
+                        {order.orderNumber || `#${order._id.slice(-6)}`}
+                      </span>
+                      <p className="text-[11px] text-muted-foreground">
+                        {new Date(order.createdAt).toLocaleString("en-IN", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                    {getStatusBadge(order.status)}
                   </div>
 
-                  {/* Prescription Document Preview Link */}
-                  {selectedOrder.uploadedPrescriptionUrl ? (
-                    <div className="p-3 bg-background rounded-xl border border-border flex items-center justify-between text-xs">
-                      <span className="font-medium flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-primary" /> Uploaded Prescription Document
-                      </span>
-                      <a 
-                        href={selectedOrder.uploadedPrescriptionUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-primary font-bold underline flex items-center gap-1"
-                      >
-                        View / Open Rx Document <ExternalLink className="w-3 h-3" />
-                      </a>
+                  {/* Clinic Tag */}
+                  {clinic && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                      <Building2 className="w-3.5 h-3.5 text-primary" />
+                      <span>{clinic.name || "Clinic Pharmacy"}</span>
                     </div>
-                  ) : selectedOrder.consultationId ? (
-                    <div className="p-3 bg-background rounded-xl border border-border flex items-center justify-between text-xs">
-                      <span className="font-medium flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-primary" /> Digital Prescription Issued by Doctor
-                      </span>
-                      <span className="font-semibold text-emerald-600">Linked to Consultation</span>
+                  )}
+
+                  {/* Patient Contact Details Card */}
+                  <div className="p-3 bg-muted/40 rounded-2xl text-xs space-y-2 border border-border/50">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-primary shrink-0" />
+                      <span className="font-bold text-foreground text-sm">{patientName}</span>
                     </div>
-                  ) : null}
 
-                  {/* Pharmacist Actions: Approve or Reject */}
-                  {selectedOrder.status === "Prescription_Verification" && (
-                    <div className="space-y-3 pt-2 border-t border-border/60">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Pharmacist Clinical Verification Notes</Label>
-                        <Input
-                          placeholder="e.g. Verified dosage and registered medical practitioner stamp."
-                          value={verifyNotes}
-                          onChange={(e) => setVerifyNotes(e.target.value)}
-                          className="h-9 text-xs rounded-xl"
-                        />
+                    {patientPhone ? (
+                      <div className="flex items-center justify-between pt-1 border-t border-border/40 gap-2">
+                        <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
+                          <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="font-mono">{patientPhone}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <a 
+                            href={`tel:${patientPhone}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[11px] font-bold hover:bg-emerald-700 transition-colors shadow-sm"
+                          >
+                            <Phone className="w-3 h-3" /> Call
+                          </a>
+                          <a 
+                            href={`https://wa.me/91${cleanPhone.slice(-10)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 rounded-lg text-[11px] font-bold hover:bg-emerald-200 transition-colors"
+                          >
+                            <MessageSquare className="w-3 h-3" /> WhatsApp
+                          </a>
+                        </div>
                       </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground italic">No contact phone provided</p>
+                    )}
 
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleVerifyPrescription(true)} 
-                          disabled={actionLoading}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1.5 flex-1"
-                        >
-                          <CheckCircle2 className="w-4 h-4" /> Approve Prescription
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive" 
-                          onClick={() => handleVerifyPrescription(false)} 
-                          disabled={actionLoading}
-                          className="rounded-xl gap-1.5 flex-1"
-                        >
-                          <XCircle className="w-4 h-4" /> Reject Prescription
-                        </Button>
+                    {doctor && (
+                      <div className="pt-1 text-[11px] text-muted-foreground border-t border-border/40">
+                        Prescribed by: <strong className="text-foreground">Dr. {doctor.name}</strong>
                       </div>
+                    )}
+                  </div>
+
+                  {/* Ordered Medicines List */}
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Pill className="w-3.5 h-3.5 text-primary" /> Ordered Medicines ({order.items?.length || 0})
+                    </p>
+                    <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                      {(order.items || []).map((item, idx) => (
+                        <div 
+                          key={idx}
+                          className="p-2 bg-background border border-border/60 rounded-xl text-xs flex justify-between items-center"
+                        >
+                          <div>
+                            <p className="font-semibold text-foreground">{item.name || item.productId?.name || "Medication"}</p>
+                            {item.dosage && <p className="text-[10px] text-muted-foreground">{item.dosage}</p>}
+                          </div>
+                          <span className="text-[11px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
+                            Qty: {item.quantity || 1}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Cancellation Reason Display if Cancelled */}
+                  {isCancelled && (
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-xs space-y-1">
+                      <p className="font-bold text-destructive flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5" /> Order Cancelled
+                      </p>
+                      {order.cancellationReason && (
+                        <p className="text-[11px] text-destructive/90">{order.cancellationReason}</p>
+                      )}
+                      {order.cancelledBy && (
+                        <p className="text-[10px] text-muted-foreground">Cancelled by: {order.cancelledBy}</p>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
 
-              {/* 2. ORDERED MEDICATIONS & SUBSTITUTION */}
-              <div className="space-y-3">
-                <Label className="text-xs uppercase font-bold text-muted-foreground">Medications in this Order</Label>
-                <div className="divide-y divide-border/60 border border-border rounded-2xl overflow-hidden bg-background">
-                  {selectedOrder.items.map((item, idx) => (
-                    <div key={idx} className="p-3.5 flex items-center justify-between text-xs">
-                      <div className="space-y-0.5">
-                        <p className="font-bold text-foreground">
-                          {item.name || item.productId?.name} (x{item.quantity})
-                        </p>
-                        <p className="text-muted-foreground">
-                          {item.productId?.composition || item.dosage || "Standard Dose"} • ₹{item.priceAtPurchase} each
-                        </p>
-                        {item.status === "Substituted" && (
-                          <span className="inline-block px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-semibold text-[10px]">
-                            Alternative Proposed: {item.substitutedWithName}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {selectedOrder.status === "Pharmacy_Processing" && (
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            onClick={() => { setSubstituteItemIdx(idx); setSubstituteName(""); }}
-                            className="text-[11px] h-7 px-2 font-semibold text-primary"
-                          >
-                            Suggest Alt
-                          </Button>
-                        )}
-                        <span className="font-bold text-sm">₹{(item.priceAtPurchase * item.quantity).toLocaleString()}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Inline Substitute Input */}
-                {substituteItemIdx !== null && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2 text-xs">
-                    <Label className="font-bold text-blue-900">
-                      Propose Permissible Alternative for {selectedOrder.items[substituteItemIdx].name}:
-                    </Label>
+                {/* Actions & Status Management */}
+                {!isCancelled && (
+                  <div className="pt-3 border-t border-border/50 space-y-2">
+                    {/* Status Update Options */}
                     <div className="flex gap-2">
-                      <Input
-                        placeholder="e.g. Paracetamol 500mg IP (Cipla / Generic)"
-                        value={substituteName}
-                        onChange={(e) => setSubstituteName(e.target.value)}
-                        className="h-8 text-xs bg-white rounded-lg"
-                      />
-                      <Button size="sm" onClick={handleSaveSubstitute} className="h-8 rounded-lg px-3 text-xs">
-                        Save Alt
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setSubstituteItemIdx(null)} className="h-8 rounded-lg px-2 text-xs">
-                        Cancel
-                      </Button>
+                      {!isCallDone && !isFulfilled && (
+                        <Button 
+                          size="sm"
+                          disabled={updatingOrderId === order._id}
+                          onClick={() => handleUpdateStatus(order._id, "CALL_COMPLETED", "Phone call verification completed with patient")}
+                          className="flex-1 rounded-xl text-xs font-bold h-9 bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+                        >
+                          <PhoneCall className="w-3.5 h-3.5" /> Call Verified
+                        </Button>
+                      )}
+
+                      {!isFulfilled && (
+                        <Button 
+                          size="sm"
+                          disabled={updatingOrderId === order._id}
+                          onClick={() => handleUpdateStatus(order._id, "FULFILLED", "Medicine verified and dispensed by clinic pharmacy")}
+                          className="flex-1 rounded-xl text-xs font-bold h-9 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" /> Fulfil / Dispense
+                        </Button>
+                      )}
+
+                      {isFulfilled && (
+                        <div className="flex-1 py-1.5 px-3 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Fulfilment Complete
+                        </div>
+                      )}
                     </div>
+
+                    {/* Cancel Order Option with Confirmation Popup */}
+                    {!isFulfilled && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openCancelModal(order)}
+                        className="w-full text-destructive hover:bg-destructive/10 rounded-xl text-xs font-semibold h-8"
+                      >
+                        Cancel Request
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
+            );
+          })}
+        </div>
+      )}
 
-              {/* 3. DELIVERY DETAILS */}
-              <div className="p-4 bg-muted/30 rounded-2xl border border-border/80 space-y-2 text-xs">
-                <span className="font-bold text-sm flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-primary" /> Delivery Destination (Akola, Maharashtra)
-                </span>
-                <p className="text-foreground font-medium">
-                  {selectedOrder.shippingDetails?.fullName || selectedOrder.patientId?.name} • Phone: {selectedOrder.shippingDetails?.phone || selectedOrder.patientId?.phone}
-                </p>
-                <p className="text-muted-foreground">
-                  {selectedOrder.shippingAddress}
-                </p>
-              </div>
+      {/* CANCELLATION CONFIRMATION POPUP */}
+      <Dialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>
+        <DialogContent className="max-w-md rounded-3xl p-6 sm:p-7 space-y-4">
+          <div className="w-12 h-12 bg-destructive/10 text-destructive rounded-2xl mx-auto flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
 
-              {/* 4. DISPATCH CONTROLS */}
-              {selectedOrder.status === "Pharmacy_Processing" && (
-                <div className="p-4 bg-primary/5 rounded-2xl border border-primary/20 space-y-3">
-                  <span className="font-bold text-sm flex items-center gap-2 text-foreground">
-                    <Truck className="w-4 h-4 text-primary" /> Dispatch & Local Delivery
-                  </span>
-                  
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="space-y-1">
-                      <Label className="text-[11px]">Courier / Runner Partner</Label>
-                      <Input
-                        value={courierPartner}
-                        onChange={(e) => setCourierPartner(e.target.value)}
-                        className="h-9 text-xs rounded-xl"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[11px]">Tracking Reference Number</Label>
-                      <Input
-                        placeholder="e.g. AKL-DEL-4012"
-                        value={trackingNumber}
-                        onChange={(e) => setTrackingNumber(e.target.value)}
-                        className="h-9 text-xs rounded-xl"
-                      />
-                    </div>
-                  </div>
+          <DialogHeader className="text-center space-y-1">
+            <DialogTitle className="text-lg font-bold text-foreground">
+              Confirm Order Cancellation
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Are you sure you want to cancel this medicine order request? This status will automatically reflect in the patient&apos;s portal.
+            </DialogDescription>
+          </DialogHeader>
 
-                  <Button 
-                    onClick={handleDispatchOrder} 
-                    disabled={actionLoading}
-                    className="w-full rounded-xl gap-2 font-bold h-10 shadow-sm"
-                  >
-                    <Send className="w-4 h-4" /> Mark as Packed & Dispatched
-                  </Button>
-                </div>
-              )}
-
-              {selectedOrder.status === "Packed_Dispatched" && (
-                <div className="p-4 bg-emerald-50 text-emerald-900 rounded-2xl border border-emerald-200 flex items-center justify-between">
-                  <div className="space-y-0.5 text-xs">
-                    <p className="font-bold">Package Out for Delivery in Akola</p>
-                    <p className="text-muted-foreground text-[11px]">Tracking: {selectedOrder.delivery?.trackingNumber}</p>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    onClick={handleMarkDelivered} 
-                    disabled={actionLoading}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1.5 font-bold"
-                  >
-                    <CheckCircle2 className="w-4 h-4" /> Confirm Delivered
-                  </Button>
-                </div>
-              )}
+          {cancellingOrder && (
+            <div className="p-3 bg-muted/40 rounded-2xl text-xs space-y-1">
+              <p>Reference: <strong className="font-mono text-primary">{cancellingOrder.orderNumber || cancellingOrder._id}</strong></p>
+              <p>Patient: <strong>{cancellingOrder.shippingDetails?.fullName || cancellingOrder.patientId?.name}</strong></p>
             </div>
           )}
+
+          <div className="space-y-1.5 text-left">
+            <label className="text-xs font-bold text-foreground">Cancellation Reason:</label>
+            <textarea
+              placeholder="e.g. Patient uncontactable / Patient requested cancellation / Medicine unavailable"
+              value={cancellationReason}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCancellationReason(e.target.value)}
+              className="w-full rounded-xl text-xs min-h-[80px] p-3 border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setCancelModalOpen(false)}
+              disabled={actionLoading}
+              className="rounded-xl font-semibold flex-1"
+            >
+              Back
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmCancel}
+              disabled={actionLoading}
+              className="rounded-xl font-bold flex-1"
+            >
+              {actionLoading ? "Cancelling..." : "Confirm Cancellation"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

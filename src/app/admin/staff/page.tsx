@@ -614,7 +614,7 @@ export default function StaffDirectoryPage() {
                                 alt="Avatar preview"
                                 fill
                                 className="object-cover rounded-xl"
-                                unoptimized={avatar.startsWith("data:")}
+                                unoptimized={avatar.startsWith("data:") || avatar.startsWith("http")}
                               />
                             ) : (
                               <ImageIcon className="w-8 h-8 text-muted-foreground/40" />

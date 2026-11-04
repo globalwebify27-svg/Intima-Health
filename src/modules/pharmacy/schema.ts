@@ -77,7 +77,7 @@ ProductSchema.pre("save", function () {
 
 // --- ORDER ITEM ---
 export interface IOrderItem {
-  productId: Schema.Types.ObjectId;
+  productId?: Schema.Types.ObjectId;
   name?: string;
   dosage?: string;
   quantity: number;
@@ -85,10 +85,12 @@ export interface IOrderItem {
   isPrescription?: boolean;
   status?: "Pending" | "Approved" | "Substituted" | "Unavailable" | "Rejected";
   substitutedWithName?: string;
+  packaging?: string;
+  form?: string;
 }
 
 const OrderItemSchema = new Schema<IOrderItem>({
-  productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+  productId: { type: Schema.Types.ObjectId, ref: "Product", required: false },
   name: { type: String },
   dosage: { type: String },
   quantity: { type: Number, required: true, default: 1 },
@@ -100,6 +102,8 @@ const OrderItemSchema = new Schema<IOrderItem>({
     default: "Pending" 
   },
   substitutedWithName: { type: String },
+  packaging: { type: String },
+  form: { type: String },
 }, { _id: false });
 
 // --- PRESCRIPTION VERIFICATION ---

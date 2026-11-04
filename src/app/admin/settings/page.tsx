@@ -27,7 +27,8 @@ import {
   Bell,
   Server,
   Key,
-  RefreshCw
+  RefreshCw,
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -60,7 +61,14 @@ interface PharmacyConfig {
 export default function SettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"profile" | "pharmacy" | "branding" | "notifications">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "pharmacy" | "branding" | "notifications" | "google_reviews">("profile");
+
+  // Google Reviews Integration state
+  const [googleApiKey, setGoogleApiKey] = useState("");
+  const [banerPlaceId, setBanerPlaceId] = useState("ChIJBUovIfG_wjsR2D0_8I_81VM");
+  const [bhosariPlaceId, setBhosariPlaceId] = useState("");
+  const [savingGoogleSettings, setSavingGoogleSettings] = useState(false);
+  const [testingGoogleSync, setTestingGoogleSync] = useState(false);
 
   // Notification Recipient state (Owner Testing & Inquiries)
   const [contactNotificationEmail, setContactNotificationEmail] = useState("temptest9093@gmail.com");
@@ -181,6 +189,15 @@ export default function SettingsPage() {
           setHasSmtpPass(Boolean(d.hasSmtpPass));
           setIsSmtpConfigured(Boolean(d.isSmtpConfigured));
         }
+
+        // Load Google Reviews settings
+        const googleRes = await fetch("/api/admin/settings/google-reviews");
+        const googleJson = await googleRes.json();
+        if (!ignore && googleJson.success && googleJson.data) {
+          if (googleJson.data.apiKey) setGoogleApiKey(googleJson.data.apiKey);
+          if (googleJson.data.banerPlaceId) setBanerPlaceId(googleJson.data.banerPlaceId);
+          if (googleJson.data.bhosariPlaceId) setBhosariPlaceId(googleJson.data.bhosariPlaceId);
+        }
       } catch (err) {
         console.error("Failed to load settings details:", err);
       } finally {
@@ -233,6 +250,62 @@ export default function SettingsPage() {
       setErrorMsg(msg);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Save Google Reviews API Configuration
+  const handleSaveGoogleSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingGoogleSettings(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/admin/settings/google-reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apiKey: googleApiKey,
+          banerPlaceId,
+          bhosariPlaceId,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMsg("Google Places integration settings saved successfully.");
+      } else {
+        setErrorMsg(data.message || "Failed to save Google settings.");
+      }
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Error saving Google settings.");
+    } finally {
+      setSavingGoogleSettings(false);
+    }
+  };
+
+  // Test Google Places Dynamic Fetching
+  const handleTestGoogleSync = async () => {
+    setTestingGoogleSync(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/reviews/google?clinic=all");
+      const data = await res.json();
+      if (data.success && data.data) {
+        const count = data.data.reviews?.length || 0;
+        if (data.apiConnected) {
+          setSuccessMsg(`Google Places API active! Fetched ${count} authentic live reviews for Kelkar Manas.`);
+        } else {
+          setSuccessMsg(`Google integration endpoint verified. Ready for API Key.`);
+        }
+      } else {
+        setErrorMsg(data.message || "Failed to query Google Places API.");
+      }
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Error querying Google reviews.");
+    } finally {
+      setTestingGoogleSync(false);
     }
   };
 
@@ -697,6 +770,18 @@ export default function SettingsPage() {
           >
             <Bell className="w-4 h-4" />
             Notifications & Inquiries
+          </button>
+
+          <button
+            onClick={() => { setActiveTab("google_reviews"); setSuccessMsg(""); setErrorMsg(""); }}
+            className={`w-full px-4 py-3 rounded-2xl text-left text-sm font-bold transition flex items-center gap-3 ${
+              activeTab === "google_reviews"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <Star className="w-4 h-4" />
+            Google Reviews API
           </button>
         </div>
 
@@ -1600,6 +1685,115 @@ export default function SettingsPage() {
                 </div>
               </form>
             </div>
+          </div>
+        )}
+
+        {/* Tab 5: Google Reviews Integration */}
+        {activeTab === "google_reviews" && (
+          <div className="lg:col-span-3 bg-card border border-border p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
+            <form onSubmit={handleSaveGoogleSettings} className="space-y-6">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <div className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                  <h2 className="text-xl font-bold">Google Reviews &amp; Places API Integration</h2>
+                </div>
+                <Badge variant={googleApiKey ? "default" : "outline"} className="text-xs">
+                  {googleApiKey ? "API Configured" : "Awaiting API Key"}
+                </Badge>
+              </div>
+
+              <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 text-xs text-muted-foreground leading-relaxed space-y-1">
+                <p className="font-bold text-foreground text-sm">Google-Supported Dynamic Synchronization</p>
+                <p>
+                  To stream real-time authentic reviews from Google Maps to the website homepage, enter your Google Cloud Places API key below.
+                  No customer reviews will ever be generated or fabricated.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Google Places API Key</Label>
+                  <Input
+                    type="password"
+                    placeholder="AIzaSy..."
+                    value={googleApiKey}
+                    onChange={(e) => setGoogleApiKey(e.target.value)}
+                    className="rounded-xl h-11 font-mono text-xs"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Obtain this from Google Cloud Console &rarr; APIs &amp; Services &rarr; Credentials with Places API (New) enabled.
+                  </p>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>Baner Clinic Google Place ID</Label>
+                    <Input
+                      placeholder="ChIJ..."
+                      value={banerPlaceId}
+                      onChange={(e) => setBanerPlaceId(e.target.value)}
+                      className="rounded-xl h-11 font-mono text-xs"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Place ID for Kelkar Manas Baner (defaults to listing: maps.app.goo.gl/bgsaZrUK81zRvzZX7)
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label>Bhosari Clinic Google Place ID (Optional)</Label>
+                    <Input
+                      placeholder="Optional Place ID"
+                      value={bhosariPlaceId}
+                      onChange={(e) => setBhosariPlaceId(e.target.value)}
+                      className="rounded-xl h-11 font-mono text-xs"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Place ID for Kelkar Manas Bhosari branch
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleTestGoogleSync}
+                  disabled={testingGoogleSync}
+                  className="rounded-xl h-11 px-5 font-bold gap-2 text-xs border-primary/40 text-primary hover:bg-primary/5"
+                >
+                  {testingGoogleSync ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Testing Google Integration...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      Test Dynamic Sync
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  type="submit"
+                  disabled={savingGoogleSettings}
+                  className="rounded-xl h-11 px-8 font-bold gap-2 shadow-sm"
+                >
+                  {savingGoogleSettings ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving Settings...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Google Integration
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
           </div>
         )}
       </div>

@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { 
-  Pill, FileText, Activity, ShoppingBag, 
-  ExternalLink, ShieldCheck 
+  Pill, FileText, Activity, PhoneCall, 
+  CheckCircle2, Clock, ExternalLink, AlertCircle,
+  ShieldCheck, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useCart } from "@/store/useCart";
 import { printPrescription } from "@/lib/print-prescription";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -20,16 +20,114 @@ interface Medicine {
   duration: string;
 }
 
+type MedicineForm = "Tablet" | "Capsule" | "Powder" | "Liquid" | "Ointment";
+
+interface SelectableMedicineItem {
+  name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  selected: boolean;
+  form: MedicineForm;
+  packaging: string;
+  customQuantity: string;
+}
+
+function detectMedicineForm(drugName: string): MedicineForm {
+  const name = drugName.toLowerCase();
+  if (/\b(cap|capsule|capsules)\b/i.test(name)) return "Capsule";
+  if (/\b(syp|syrup|liquid|drops|sol|solution|susp|suspension)\b/i.test(name)) return "Liquid";
+  if (/\b(powder|sachet|churna|granules|kwath|churn)\b/i.test(name)) return "Powder";
+  if (/\b(gel|cream|ointment|lotion|tube)\b/i.test(name)) return "Ointment";
+  return "Tablet";
+}
+
+function getDefaultPackaging(form: MedicineForm): string {
+  switch (form) {
+    case "Tablet":
+      return "30 Tablets (1 Month Supply)";
+    case "Capsule":
+      return "30 Capsules (1 Month Supply)";
+    case "Powder":
+      return "100 gm";
+    case "Liquid":
+      return "1 Bottle (200 ml)";
+    case "Ointment":
+      return "1 Tube (15 gm)";
+    default:
+      return "1 Pack";
+  }
+}
+
+const PACKAGING_OPTIONS: Record<MedicineForm, string[]> = {
+  Tablet: [
+    "10 Tablets (1 Strip)",
+    "20 Tablets (2 Strips)",
+    "30 Tablets (1 Month Supply)",
+    "60 Tablets (2 Months Supply)",
+    "90 Tablets (3 Months Supply)",
+    "1 Strip",
+    "2 Strips",
+    "3 Strips",
+    "4 Strips",
+    "5 Strips",
+    "Custom Quantity",
+  ],
+  Capsule: [
+    "10 Capsules (1 Strip)",
+    "20 Capsules (2 Strips)",
+    "30 Capsules (1 Month Supply)",
+    "60 Capsules (2 Months Supply)",
+    "90 Capsules (3 Months Supply)",
+    "1 Strip",
+    "2 Strips",
+    "3 Strips",
+    "4 Strips",
+    "5 Strips",
+    "Custom Quantity",
+  ],
+  Powder: [
+    "50 gm",
+    "100 gm",
+    "200 gm",
+    "250 gm",
+    "500 gm",
+    "1 kg",
+    "Custom Quantity",
+  ],
+  Liquid: [
+    "1 Bottle (100 ml)",
+    "1 Bottle (200 ml)",
+    "2 Bottles (200 ml)",
+    "1 Bottle (500 ml)",
+    "1 Bottle",
+    "2 Bottles",
+    "3 Bottles",
+    "Custom Quantity",
+  ],
+  Ointment: [
+    "1 Tube (15 gm)",
+    "1 Tube (30 gm)",
+    "2 Tubes",
+    "3 Tubes",
+    "Custom Quantity",
+  ],
+};
+
 interface Consultation {
   _id: string;
   doctorId?: {
     name: string;
     specialization: string;
-    clinicId?: string;
+    clinicId?: {
+      _id: string;
+      name?: string;
+    } | string;
   };
   appointmentId?: {
     clinicId?: {
       _id: string;
+      name?: string;
     } | string;
   };
   prescriptionSummary?: string;
@@ -39,28 +137,49 @@ interface Consultation {
   daysLeft?: number;
 }
 
+interface ExistingOrder {
+  _id: string;
+  consultationId?: { _id?: string } | string;
+  status: string;
+  orderNumber?: string;
+}
+
 export default function PatientPrescriptionsPage() {
   const router = useRouter();
-  const { addItem, updateQuantity, clearCart } = useCart();
 
   const [prescriptions, setPrescriptions] = useState<Consultation[]>([]);
+  const [existingOrders, setExistingOrders] = useState<ExistingOrder[]>([]);
+  const [patientId, setPatientId] = useState<string>("");
+  const [patientUser, setPatientUser] = useState<{ name?: string; phone?: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Ordering modal state
-  const [orderModalOpen, setOrderModalOpen] = useState(false);
+  // Order Request State
   const [selectedConsult, setSelectedConsult] = useState<Consultation | null>(null);
-  const [selectedMeds, setSelectedMeds] = useState<{ [index: number]: boolean }>({});
-  const [medQuantities, setMedQuantities] = useState<{ [index: number]: number }>({});
-  const [availableProducts, setAvailableProducts] = useState<Array<{ _id: string; name: string; price: number; image?: string }>>([]);
+  const [selectableItems, setSelectableItems] = useState<SelectableMedicineItem[]>([]);
+  const [selectModalOpen, setSelectModalOpen] = useState(false);
+  const [submittingOrder, setSubmittingOrder] = useState(false);
+  const [confirmationModalOpen, setConfirmationModalOpen] = useState(false);
+  const [submittedOrderNumber, setSubmittedOrderNumber] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchPrescriptions = async (pId: string) => {
     try {
-      const res = await fetch(`/api/consultations?patientId=${pId}`);
-      const json = await res.json();
-      if (json.success && json.data) {
+      const [resConsult, resOrders] = await Promise.all([
+        fetch(`/api/consultations?patientId=${pId}`),
+        fetch(`/api/pharmacy/orders?patientId=${pId}`),
+      ]);
+
+      const jsonConsult = await resConsult.json();
+      const jsonOrders = await resOrders.json();
+
+      if (jsonOrders.success && Array.isArray(jsonOrders.data)) {
+        setExistingOrders(jsonOrders.data);
+      }
+
+      if (jsonConsult.success && jsonConsult.data) {
         const currentTime = Date.now();
         const sixtyDaysMs = 60 * 24 * 60 * 60 * 1000;
-        const completedPrescriptions = json.data
+        const completedPrescriptions = jsonConsult.data
           .filter(
             (c: { status: string; prescriptionSummary?: string; prescribedTherapies?: string }) =>
               c.status === "Completed" && (
@@ -91,76 +210,174 @@ export default function PatientPrescriptionsPage() {
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && data.user && data.user.patientId) {
-          fetchPrescriptions(data.user.patientId);
+        if (data.success && data.user) {
+          if (data.user.patientId) {
+            setPatientId(data.user.patientId);
+            setPatientUser({
+              name: data.user.name,
+              phone: data.user.phone,
+              email: data.user.email,
+            });
+            fetchPrescriptions(data.user.patientId);
+          } else {
+            setLoading(false);
+          }
+        } else {
+          setLoading(false);
         }
       })
-      .catch((err) => console.error(err));
-
-    // Fetch catalog products to map prices
-    fetch("/api/pharmacy/products")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setAvailableProducts(data.data || []);
-        }
-      })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   }, []);
 
-  const openOrderModal = (consult: Consultation) => {
+  const openMedicineSelector = (consult: Consultation) => {
     setSelectedConsult(consult);
-    const meds: Medicine[] = JSON.parse(consult.prescriptionSummary || "[]");
-    
-    // Select all by default, but patient can uncheck
-    const initialSelection: { [index: number]: boolean } = {};
-    const initialQty: { [index: number]: number } = {};
-    meds.forEach((_, idx) => {
-      initialSelection[idx] = true;
-      initialQty[idx] = 1;
+    setErrorMessage(null);
+
+    let parsedMeds: Medicine[] = [];
+    try {
+      parsedMeds = JSON.parse(consult.prescriptionSummary || "[]");
+    } catch {
+      parsedMeds = [];
+    }
+
+    if (parsedMeds.length === 0) {
+      parsedMeds = [{
+        drug: "Doctor Prescribed Medicines",
+        dosage: "As Prescribed",
+        frequency: "Daily",
+        duration: "As directed",
+      }];
+    }
+
+    const items: SelectableMedicineItem[] = parsedMeds.map((med) => {
+      const form = detectMedicineForm(med.drug);
+      return {
+        name: med.drug,
+        dosage: med.dosage,
+        frequency: med.frequency,
+        duration: med.duration,
+        selected: true,
+        form,
+        packaging: getDefaultPackaging(form),
+        customQuantity: "",
+      };
     });
 
-    setSelectedMeds(initialSelection);
-    setMedQuantities(initialQty);
-    setOrderModalOpen(true);
+    setSelectableItems(items);
+    setSelectModalOpen(true);
   };
 
-  const handleProceedToDelivery = () => {
+  const handleToggleItem = (index: number) => {
+    setSelectableItems((prev) =>
+      prev.map((item, idx) =>
+        idx === index ? { ...item, selected: !item.selected } : item
+      )
+    );
+  };
+
+  const handleFormChange = (index: number, newForm: MedicineForm) => {
+    setSelectableItems((prev) =>
+      prev.map((item, idx) =>
+        idx === index
+          ? {
+              ...item,
+              form: newForm,
+              packaging: getDefaultPackaging(newForm),
+              customQuantity: "",
+            }
+          : item
+      )
+    );
+  };
+
+  const handlePackagingChange = (index: number, newPackaging: string) => {
+    setSelectableItems((prev) =>
+      prev.map((item, idx) =>
+        idx === index ? { ...item, packaging: newPackaging } : item
+      )
+    );
+  };
+
+  const handleCustomQuantityChange = (index: number, customVal: string) => {
+    setSelectableItems((prev) =>
+      prev.map((item, idx) =>
+        idx === index ? { ...item, customQuantity: customVal } : item
+      )
+    );
+  };
+
+  const handleConfirmSubmitRequest = async () => {
     if (!selectedConsult) return;
-    const meds: Medicine[] = JSON.parse(selectedConsult.prescriptionSummary || "[]");
 
-    // Clear prior cart items first so medicines from previous sessions are not duplicated
-    clearCart();
+    const selectedMeds = selectableItems.filter((i) => i.selected);
+    if (selectedMeds.length === 0) {
+      setErrorMessage("Please select at least one medicine to order.");
+      return;
+    }
 
-    // Add selected medicines to cart
-    meds.forEach((m, idx) => {
-      if (selectedMeds[idx]) {
-        // Try matching product in catalog for realistic price
-        const matched = availableProducts.find((p) =>
-          p.name.toLowerCase().includes(m.drug.toLowerCase()) ||
-          m.drug.toLowerCase().includes(p.name.toLowerCase())
-        );
+    try {
+      setSubmittingOrder(true);
+      setErrorMessage(null);
 
-        const qty = medQuantities[idx] || 1;
-        const itemId = matched?._id || `rx-${selectedConsult._id}-${idx}`;
-        addItem({
-          id: itemId,
-          name: matched?.name || m.drug,
-          price: matched?.price || 120,
-          image: matched?.image || "/images/product_kit_1.png",
-          type: "medication",
-          isPrescription: true,
-          dosage: m.dosage,
-        });
-        if (qty > 1) {
-          updateQuantity(itemId, qty);
+      const formattedItems = selectedMeds.map((item) => {
+        const finalPackaging =
+          item.packaging === "Custom Quantity"
+            ? (item.customQuantity.trim() || "Custom Requirement")
+            : item.packaging;
+
+        return {
+          name: item.name,
+          form: item.form,
+          packaging: finalPackaging,
+          dosage: [item.dosage, item.frequency, item.duration].filter(Boolean).join(" • "),
+          quantity: 1,
+        };
+      });
+
+      const payload = {
+        consultationId: selectedConsult._id,
+        patientId,
+        patientDetails: {
+          name: patientUser?.name,
+          phone: patientUser?.phone,
+          email: patientUser?.email,
+        },
+        items: formattedItems,
+      };
+
+      const res = await fetch("/api/pharmacy/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok && !data.alreadySubmitted) {
+        throw new Error(data.message || "Failed to submit medicine order request.");
+      }
+
+      setSubmittedOrderNumber(data.data?.orderNumber || "KMH-REQ");
+      setSelectModalOpen(false);
+      setConfirmationModalOpen(true);
+
+      // Refresh orders so UI shows status badge
+      if (patientId) {
+        const resOrders = await fetch(`/api/pharmacy/orders?patientId=${patientId}`);
+        const jsonOrders = await resOrders.json();
+        if (jsonOrders.success && Array.isArray(jsonOrders.data)) {
+          setExistingOrders(jsonOrders.data);
         }
       }
-    });
-
-    setOrderModalOpen(false);
-    // Route to patient dashboard checkout with the specific consultationId
-    router.push(`/patient/checkout?consultationId=${selectedConsult._id}`);
+    } catch (err) {
+      console.error("Order request failed:", err);
+      setErrorMessage(err instanceof Error ? err.message : "Unable to place medicine order request.");
+    } finally {
+      setSubmittingOrder(false);
+    }
   };
 
   const handleDownloadPrescription = (consultation: Consultation) => {
@@ -169,6 +386,13 @@ export default function PatientPrescriptionsPage() {
     } catch {
       window.print();
     }
+  };
+
+  const getExistingOrderForConsult = (consultId: string) => {
+    return existingOrders.find((o) => {
+      const cId = typeof o.consultationId === "object" ? o.consultationId?._id : o.consultationId;
+      return cId === consultId && !["Cancelled", "CANCELLED"].includes(o.status);
+    });
   };
 
   if (loading) {
@@ -183,12 +407,19 @@ export default function PatientPrescriptionsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Active Prescriptions &amp; Refills</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Active Prescriptions &amp; Orders</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            View valid doctor prescriptions, select individual medicines to order, and request authorized refills.
+            Review your doctor&apos;s prescriptions and request medicine dispatch from the clinic pharmacy.
           </p>
         </div>
       </div>
+
+      {errorMessage && (
+        <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-2xl flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         {prescriptions.length > 0 ? (
@@ -196,6 +427,7 @@ export default function PatientPrescriptionsPage() {
             const meds: Medicine[] = JSON.parse(consult.prescriptionSummary || "[]");
             const isValid = consult.isValid ?? true;
             const daysLeft = consult.daysLeft ?? 60;
+            const existingOrder = getExistingOrderForConsult(consult._id);
 
             return (
               <div key={consult._id} className="p-6 bg-card rounded-3xl border border-border shadow-sm flex flex-col justify-between space-y-4">
@@ -229,7 +461,7 @@ export default function PatientPrescriptionsPage() {
                       <div key={idx} className="p-3 bg-muted/40 rounded-2xl text-xs space-y-0.5">
                         <div className="flex justify-between items-center">
                           <p className="font-bold text-foreground">{med.drug}</p>
-                          <span className="text-[10px] uppercase font-bold text-muted-foreground">Qty prescribed</span>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground">Prescribed</span>
                         </div>
                         <p className="text-muted-foreground">
                           {med.dosage} • {med.frequency} • {med.duration}
@@ -249,21 +481,36 @@ export default function PatientPrescriptionsPage() {
                     ))}
                   </div>
 
-                  <div className="text-xs text-muted-foreground pt-2 border-t border-border/50 flex justify-between">
+                  <div className="text-xs text-muted-foreground pt-2 border-t border-border/50 flex justify-between items-center">
                     <span>Issued: {new Date(consult.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}</span>
-                    <span>Refills remaining: 1</span>
+                    {existingOrder && (
+                      <span className="text-primary font-semibold flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" /> Order: {existingOrder.status.replace(/_/g, " ")}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
                   {isValid ? (
-                    <Button 
-                      className="flex-1 h-11 rounded-xl font-bold gap-2 shadow-sm"
-                      onClick={() => openOrderModal(consult)}
-                    >
-                      <ShoppingBag className="w-4 h-4" /> Order Prescribed Medicines
-                    </Button>
+                    existingOrder ? (
+                      <Button 
+                        variant="secondary"
+                        className="flex-1 h-11 rounded-xl font-bold gap-2 text-xs border border-primary/20 text-primary hover:bg-primary/10"
+                        onClick={() => router.push("/patient/orders")}
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" /> View Order Status ({existingOrder.orderNumber || "Active"})
+                      </Button>
+                    ) : (
+                      <Button 
+                        className="flex-1 h-11 rounded-xl font-bold gap-2 shadow-sm text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                        onClick={() => openMedicineSelector(consult)}
+                      >
+                        <PhoneCall className="w-4 h-4" />
+                        Medicine Order Request
+                      </Button>
+                    )
                   ) : (
                     <Link href="/booking" className="flex-1">
                       <Button variant="outline" className="w-full h-11 rounded-xl font-bold text-xs gap-1.5 border-primary text-primary">
@@ -290,7 +537,7 @@ export default function PatientPrescriptionsPage() {
             <div>
               <p className="font-bold text-base text-foreground">No Active Prescriptions</p>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto mt-1">
-                Consult a Kelkar Manas doctor to receive verified digital prescriptions eligible for local medicine delivery.
+                Consult a Kelkar Manas doctor to receive verified digital prescriptions eligible for pharmacy order requests.
               </p>
             </div>
             <Link href="/booking">
@@ -302,80 +549,192 @@ export default function PatientPrescriptionsPage() {
         )}
       </div>
 
-      {/* SELECT MEDICINES MODAL */}
-      <Dialog open={orderModalOpen} onOpenChange={setOrderModalOpen}>
-        <DialogContent className="max-w-lg rounded-3xl p-6 sm:p-8">
-          {selectedConsult && (
-            <div className="space-y-6">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-bold font-serif">
-                  Select Medicines to Order
-                </DialogTitle>
-                <DialogDescription className="text-xs">
-                  Choose individual medicines from your prescription. You are not forced to buy the full list.
-                </DialogDescription>
-              </DialogHeader>
+      {/* SELECT MEDICINES MODAL - FLEXIBLE PACKAGING / UNITS */}
+      <Dialog open={selectModalOpen} onOpenChange={setSelectModalOpen}>
+        <DialogContent className="max-w-xl rounded-3xl p-6 sm:p-7 space-y-4">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-xl font-bold font-serif text-foreground">
+              Select Medicines to Order
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Choose individual medicines from your prescription. You are not forced to buy the full list.
+            </DialogDescription>
+          </DialogHeader>
 
-              {/* Medicines Selection List */}
-              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                {JSON.parse(selectedConsult.prescriptionSummary || "[]").map((med: Medicine, idx: number) => {
-                  const isChecked = !!selectedMeds[idx];
-                  return (
-                    <div 
-                      key={idx}
-                      className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between text-xs ${isChecked ? "border-primary bg-primary/5" : "border-border bg-background opacity-60"}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => setSelectedMeds({ ...selectedMeds, [idx]: e.target.checked })}
-                          className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-                        />
-                        <div className="space-y-0.5">
-                          <p className="font-bold text-foreground">{med.drug}</p>
-                          <p className="text-muted-foreground">{med.dosage} • {med.duration}</p>
+          {errorMessage && (
+            <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {/* Medicines Selection List */}
+          <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+            {selectableItems.map((item, idx) => {
+              const isChecked = item.selected;
+              return (
+                <div
+                  key={idx}
+                  className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                    isChecked
+                      ? "border-primary/50 bg-primary/[0.03] shadow-xs"
+                      : "border-border/60 bg-muted/20 opacity-60"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      id={`med-check-${idx}`}
+                      checked={isChecked}
+                      onChange={() => handleToggleItem(idx)}
+                      className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer accent-primary shrink-0"
+                    />
+                    <label htmlFor={`med-check-${idx}`} className="flex-1 cursor-pointer select-none space-y-0.5">
+                      <p className="font-bold text-sm text-foreground">{item.name}</p>
+                      <p className="text-xs text-muted-foreground font-medium">
+                        {[item.dosage, item.frequency, item.duration].filter(Boolean).join(" • ")}
+                      </p>
+                    </label>
+                  </div>
+
+                  {isChecked && (
+                    <div className="pt-2.5 border-t border-border/40 space-y-2.5">
+                      {/* Medicine Form Selector */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                        <span className="text-[11px] font-bold text-muted-foreground">Medicine Form:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {(["Tablet", "Capsule", "Powder", "Liquid", "Ointment"] as MedicineForm[]).map((f) => (
+                            <button
+                              key={f}
+                              type="button"
+                              onClick={() => handleFormChange(idx, f)}
+                              className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold transition-all ${
+                                item.form === f
+                                  ? "bg-primary text-primary-foreground shadow-xs"
+                                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                              }`}
+                            >
+                              {f === "Powder" ? "Powder (gm/kg)" : f === "Liquid" ? "Liquid (ml/Bottle)" : f}
+                            </button>
+                          ))}
                         </div>
                       </div>
 
-                      {/* Quantity Selector (Capped at prescribed limits) */}
-                      {isChecked && (
-                        <div className="flex items-center gap-1.5 bg-background border border-border rounded-xl px-2 py-1">
-                          <span className="text-[10px] text-muted-foreground font-semibold">Packs:</span>
-                          <select
-                            value={medQuantities[idx] || 1}
-                            onChange={(e) => setMedQuantities({ ...medQuantities, [idx]: Number(e.target.value) })}
-                            className="bg-transparent font-bold text-xs focus:outline-none"
-                          >
-                            <option value={1}>1</option>
-                            <option value={2}>2</option>
-                          </select>
+                      {/* Quantity / Unit Dropdown */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                        <span className="text-[11px] font-bold text-muted-foreground">Quantity / Need:</span>
+                        <select
+                          value={item.packaging}
+                          onChange={(e) => handlePackagingChange(idx, e.target.value)}
+                          className="bg-background border border-border rounded-xl px-3 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
+                          {PACKAGING_OPTIONS[item.form].map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Custom Quantity Input */}
+                      {item.packaging === "Custom Quantity" && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-[11px] text-muted-foreground font-medium shrink-0">Enter need:</span>
+                          <input
+                            type="text"
+                            value={item.customQuantity}
+                            onChange={(e) => handleCustomQuantityChange(idx, e.target.value)}
+                            placeholder={
+                              item.form === "Powder"
+                                ? "e.g., 150 gm or 2 kg"
+                                : item.form === "Liquid"
+                                ? "e.g., 350 ml or 4 bottles"
+                                : item.form === "Ointment"
+                                ? "e.g., 4 tubes (30g)"
+                                : "e.g., 45 tablets or 4 strips"
+                            }
+                            className="flex-1 bg-background border border-border rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                          />
                         </div>
                       )}
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-              <div className="p-3 bg-muted/40 rounded-xl text-[11px] text-muted-foreground flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Selected medicines will be verified against your doctor&apos;s prescription before delivery.</span>
-              </div>
+          <div className="p-3 bg-muted/40 rounded-2xl text-[11px] text-muted-foreground flex items-center gap-2 border border-border/50">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Selected medicines will be verified against your doctor&apos;s prescription before delivery.</span>
+          </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="ghost" size="sm" onClick={() => setOrderModalOpen(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleProceedToDelivery}
-                  disabled={!Object.values(selectedMeds).some(Boolean)}
-                  className="rounded-full px-6 font-bold"
-                >
-                  Proceed to Checkout
-                </Button>
-              </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button 
+              variant="outline" 
+              className="rounded-xl font-semibold text-xs"
+              onClick={() => setSelectModalOpen(false)}
+              disabled={submittingOrder}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmSubmitRequest}
+              disabled={!selectableItems.some(i => i.selected) || submittingOrder}
+              className="rounded-xl font-bold bg-primary text-primary-foreground px-6 text-xs gap-1.5"
+            >
+              {submittingOrder ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Submitting...
+                </>
+              ) : (
+                "Proceed to Request"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* CONFIRMATION MODAL - EXACT REVISED WORKFLOW COPY */}
+      <Dialog open={confirmationModalOpen} onOpenChange={setConfirmationModalOpen}>
+        <DialogContent className="max-w-md rounded-3xl p-6 sm:p-8 text-center space-y-4">
+          <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 rounded-2xl mx-auto flex items-center justify-center">
+            <CheckCircle2 className="w-8 h-8" />
+          </div>
+
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-xl font-bold text-foreground">
+              Order Request Submitted
+            </DialogTitle>
+            <DialogDescription className="text-sm text-foreground/80 leading-relaxed font-medium">
+              Your order request has been sent to the clinic pharmacy. You will receive a confirmation call from the clinic pharmacy.
+            </DialogDescription>
+          </DialogHeader>
+
+          {submittedOrderNumber && (
+            <div className="p-3 bg-muted/50 rounded-2xl text-xs text-muted-foreground">
+              Reference ID: <span className="font-mono font-bold text-foreground">{submittedOrderNumber}</span>
             </div>
           )}
+
+          <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
+            <Button 
+              variant="outline" 
+              className="rounded-xl font-semibold"
+              onClick={() => setConfirmationModalOpen(false)}
+            >
+              Close
+            </Button>
+            <Button 
+              className="rounded-xl font-bold bg-primary text-primary-foreground"
+              onClick={() => {
+                setConfirmationModalOpen(false);
+                router.push("/patient/orders");
+              }}
+            >
+              Track in My Orders &rarr;
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

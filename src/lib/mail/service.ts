@@ -16,6 +16,8 @@ import { OrderModel } from "@/modules/pharmacy/schema";
 import { ContactSubmissionModel } from "@/modules/contact/schema";
 import { SettingModel } from "@/modules/system/schema";
 import { generateContactInquiryAdminEmail } from "./templates/contact";
+import { generateMedicineOrderRequestEmail, MedicineOrderItemData } from "./templates/medicine-order-request";
+import { ClinicModel } from "@/modules/clinics/schema";
 
 interface PopulatedRef {
   _id?: unknown;
@@ -550,6 +552,136 @@ export async function sendContactNotification(
     return {
       success: false,
       message: msg,
+    };
+  }
+}
+
+/**
+ * 6. Send Medicine Order Request Notifications:
+ * Dispatches notification emails to:
+ * 1. Respective Clinic Pharmacy (clinic.email)
+ * 2. Clinic Admin (config.adminEmail / setting)
+ */
+export async function sendMedicineOrderRequestNotifications(orderId: string): Promise<{
+  success: boolean;
+  pharmacySent?: boolean;
+  adminSent?: boolean;
+  error?: string;
+}> {
+  try {
+    await connectDB();
+    const transporter = (await getMailTransporterAsync()) || getMailTransporter();
+    const config = await getResolvedMailConfig();
+
+    if (!transporter) {
+      console.warn(`[Mail Service] SMTP not configured. Skipping medicine order request emails for Order ${orderId}.`);
+      return { success: false, error: "SMTP not configured" };
+    }
+
+    const order = await OrderModel.findById(orderId)
+      .populate("patientId")
+      .populate("clinicId")
+      .populate({
+        path: "consultationId",
+        populate: { path: "doctorId" }
+      })
+      .exec();
+
+    if (!order) {
+      console.warn(`[Mail Service] Order ${orderId} not found.`);
+      return { success: false, error: "Order not found" };
+    }
+
+    const patient = order.patientId as unknown as PopulatedRef;
+    const clinic = order.clinicId as unknown as PopulatedRef;
+    const consult = order.consultationId as unknown as { doctorId?: PopulatedRef };
+    const doctor = consult?.doctorId;
+
+    const patientName = order.shippingDetails?.fullName || patient?.name || "Patient";
+    const patientPhone = order.shippingDetails?.phone || patient?.phone || "Not Provided";
+    const patientEmail = isValidCustomerNotificationEmail(patient?.email) ? patient?.email : undefined;
+
+    const clinicName = clinic?.name || "Kelkar Manas Health Care";
+    const clinicEmail = clinic?.email;
+    const clinicAddress = clinic?.address ? `${clinic.address}, ${clinic.city || ""}` : undefined;
+    const doctorName = doctor?.name;
+    const orderNumber = order.orderNumber || `#${order._id.toString().slice(-6)}`;
+
+    // Extract medicines from items
+    const medicines: MedicineOrderItemData[] = (order.items || []).map((item: RawOrderItem) => ({
+      name: item.name || "Medication",
+      dosage: item.dosage,
+      quantity: item.quantity || 1,
+    }));
+
+    let pharmacySent = false;
+    let adminSent = false;
+
+    // 1. Send to Respective Clinic Pharmacy
+    if (clinicEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clinicEmail.trim())) {
+      const pharmacyEmailData = generateMedicineOrderRequestEmail({
+        orderNumber,
+        recipientType: "PHARMACY",
+        clinicName,
+        clinicAddress,
+        doctorName,
+        patientName,
+        patientPhone,
+        patientEmail,
+        medicines,
+        portalUrl: "https://kelkarmanasclinic.com/pharmacy/orders",
+      });
+
+      await transporter.sendMail({
+        from: `"${config.fromName} Pharmacy Network" <${config.fromEmail}>`,
+        to: clinicEmail.trim(),
+        subject: pharmacyEmailData.subject,
+        html: pharmacyEmailData.html,
+        attachments: getMailLogoAttachment(),
+      });
+      pharmacySent = true;
+      console.log(`[Mail Service] Dispatched medicine order request notification to clinic pharmacy: ${clinicEmail}`);
+    }
+
+    // 2. Send to Admin
+    const emailSetting = await SettingModel.findOne({ key: "contact_notification_email" }).lean();
+    const adminRecipientsRaw: string = emailSetting?.value?.trim() || config.adminEmail || "support@kelkarmanasclinic.com";
+    const adminRecipients = adminRecipientsRaw
+      .split(/[,;\s]+/)
+      .map((e: string) => e.trim())
+      .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+
+    if (adminRecipients.length > 0) {
+      const adminEmailData = generateMedicineOrderRequestEmail({
+        orderNumber,
+        recipientType: "ADMIN",
+        clinicName,
+        clinicAddress,
+        doctorName,
+        patientName,
+        patientPhone,
+        patientEmail,
+        medicines,
+        portalUrl: "https://kelkarmanasclinic.com/admin/orders",
+      });
+
+      await transporter.sendMail({
+        from: `"${config.fromName} Order Desk" <${config.fromEmail}>`,
+        to: adminRecipients,
+        subject: adminEmailData.subject,
+        html: adminEmailData.html,
+        attachments: getMailLogoAttachment(),
+      });
+      adminSent = true;
+      console.log(`[Mail Service] Dispatched medicine order request notification to admin: ${adminRecipients.join(", ")}`);
+    }
+
+    return { success: true, pharmacySent, adminSent };
+  } catch (error) {
+    console.error("[Mail Service] Error sending medicine order request emails:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }

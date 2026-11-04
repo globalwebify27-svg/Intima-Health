@@ -20,7 +20,10 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     const order = await OrderModel.findById(id)
       .populate("patientId")
-      .populate("consultationId")
+      .populate({
+        path: "consultationId",
+        populate: { path: "doctorId" }
+      })
       .populate("items.productId")
       .populate("clinicId")
       .exec();
@@ -190,4 +193,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
       { status: 400 }
     );
   }
+}
+
+export async function PATCH(request: Request, context: RouteParams) {
+  return PUT(request, context);
 }

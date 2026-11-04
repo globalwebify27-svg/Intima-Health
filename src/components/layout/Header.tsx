@@ -53,6 +53,28 @@ interface DynamicNavItem {
   badge?: string;
 }
 
+const getPortalRoute = (role?: string) => {
+  if (!role) return "/login";
+  const r = role.toUpperCase();
+  if (r === "SUPER_ADMIN" || r === "ADMIN") return "/admin/dashboard";
+  if (r === "DOCTOR") return "/doctor/dashboard";
+  if (r === "THERAPIST") return "/therapist/dashboard";
+  if (r === "PHARMACY_STAFF" || r === "PHARMACY") return "/pharmacy/dashboard";
+  if (r === "CLINIC_MANAGER") return "/clinic-manager/dashboard";
+  return "/patient/dashboard";
+};
+
+const getPortalLabel = (role?: string) => {
+  if (!role) return "My Portal";
+  const r = role.toUpperCase();
+  if (r === "SUPER_ADMIN" || r === "ADMIN") return "Admin Portal";
+  if (r === "DOCTOR") return "Doctor Portal";
+  if (r === "THERAPIST") return "Therapist Portal";
+  if (r === "PHARMACY_STAFF" || r === "PHARMACY") return "Pharmacy Portal";
+  if (r === "CLINIC_MANAGER") return "Clinic Manager";
+  return "My Portal";
+};
+
 interface DynamicNavData {
   treatments: DynamicNavItem[];
   sexualProblems: DynamicNavItem[];
@@ -328,30 +350,10 @@ export function Header() {
 
             {authUser ? (
               <div className="hidden sm:flex items-center gap-3">
-                <Link
-                  href={
-                    authUser.role === "ADMIN"
-                      ? "/admin/dashboard"
-                      : authUser.role === "DOCTOR"
-                      ? "/doctor/dashboard"
-                      : "/patient/dashboard"
-                  }
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-all text-xs font-bold border border-primary/20"
-                >
-                  <User className="w-3.5 h-3.5 text-primary" />
-                  <span>{authUser.name ? authUser.name.split(" ")[0] : "Dashboard"}</span>
-                </Link>
-                <Link
-                  href={
-                    authUser.role === "ADMIN"
-                      ? "/admin/dashboard"
-                      : authUser.role === "DOCTOR"
-                      ? "/doctor/dashboard"
-                      : "/patient/dashboard"
-                  }
-                >
-                  <Button size="sm" className="rounded-full px-5 font-bold shadow-sm">
-                    My Portal
+                <Link href={getPortalRoute(authUser.role)}>
+                  <Button size="sm" className="rounded-full px-5 font-bold shadow-sm gap-2">
+                    <User className="w-3.5 h-3.5" />
+                    {getPortalLabel(authUser.role)}
                   </Button>
                 </Link>
               </div>
@@ -476,17 +478,12 @@ export function Header() {
               <div className="p-6 border-t border-border bg-muted/30 flex flex-col gap-4">
                 {authUser ? (
                   <Link
-                    href={
-                      authUser.role === "ADMIN"
-                        ? "/admin/dashboard"
-                        : authUser.role === "DOCTOR"
-                        ? "/doctor/dashboard"
-                        : "/patient/dashboard"
-                    }
+                    href={getPortalRoute(authUser.role)}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <Button className="w-full rounded-full py-6 text-base font-bold shadow-sm">
-                      Go to My Portal ({authUser.name?.split(" ")[0] || "Account"})
+                    <Button className="w-full rounded-full py-6 text-base font-bold shadow-sm gap-2">
+                      <User className="w-4 h-4" />
+                      Go to {getPortalLabel(authUser.role)}
                     </Button>
                   </Link>
                 ) : (

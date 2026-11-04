@@ -241,13 +241,36 @@ export default function PatientDashboard() {
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && data.user && data.user.patientId) {
-          setPatientId(data.user.patientId);
-          setPatientName(data.user.name);
-          fetchDashboardData(data.user.patientId);
+        if (data.success && data.user) {
+          if (data.user.patientId) {
+            setPatientId(data.user.patientId);
+            setPatientName(data.user.name);
+            fetchDashboardData(data.user.patientId);
+          } else {
+            // If logged in as Admin, Doctor, or Staff, auto-route to proper dashboard
+            const role = data.user.role?.toUpperCase();
+            if (role === "SUPER_ADMIN" || role === "ADMIN") {
+              window.location.href = "/admin/dashboard";
+            } else if (role === "DOCTOR") {
+              window.location.href = "/doctor/dashboard";
+            } else if (role === "THERAPIST") {
+              window.location.href = "/therapist/dashboard";
+            } else if (role === "PHARMACY_STAFF" || role === "PHARMACY") {
+              window.location.href = "/pharmacy/dashboard";
+            } else if (role === "CLINIC_MANAGER") {
+              window.location.href = "/clinic-manager/dashboard";
+            } else {
+              setLoading(false);
+            }
+          }
+        } else {
+          setLoading(false);
         }
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   }, []);
 
   const handleDownloadPrescription = (consultation: Consultation) => {

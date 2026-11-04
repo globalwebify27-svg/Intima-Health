@@ -5,7 +5,7 @@ import { LayoutDashboard, ShoppingBag, Pill, PackageSearch, Settings } from "luc
 
 const pharmacyLinks = [
   { title: "Dashboard", href: "/pharmacy/dashboard", icon: LayoutDashboard },
-  { title: "Active Orders", href: "/pharmacy/orders", icon: ShoppingBag },
+  { title: "Pharmacy Online Orders", href: "/pharmacy/orders", icon: ShoppingBag },
   { title: "Prescriptions", href: "/pharmacy/prescriptions", icon: Pill },
   { title: "Inventory", href: "/pharmacy/inventory", icon: PackageSearch },
 ];

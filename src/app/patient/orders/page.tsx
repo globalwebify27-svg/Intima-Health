@@ -6,26 +6,73 @@ import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Package, MapPin, Pill } from "lucide-react";
+import { Eye, Package, Building2, Pill, PhoneCall, Clock, CheckCircle2, XCircle } from "lucide-react";
 
 interface Order {
   _id: string;
   orderNumber?: string;
   totalAmount: number;
   status: string;
-  shippingDetails?: {
-    pinCode: string;
-    city: string;
-  };
-  paymentStatus?: string;
-  items?: Array<{ name?: string; quantity: number }>;
+  cancellationReason?: string;
+  cancelledBy?: string;
+  clinicId?: {
+    _id: string;
+    name?: string;
+    city?: string;
+  } | string;
+  items?: Array<{ name?: string; quantity: number; dosage?: string }>;
   createdAt: string;
 }
+
+const formatStatusBadge = (status: string, cancellationReason?: string) => {
+  const normalized = status.toUpperCase();
+  if (normalized === "REQUEST_RECEIVED" || normalized === "PLACED" || normalized === "PRESCRIPTION_VERIFICATION") {
+    return (
+      <Badge className="bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 text-[11px] font-semibold gap-1">
+        <Clock className="w-3 h-3" /> Request Sent (Awaiting Call)
+      </Badge>
+    );
+  }
+  if (normalized === "CALL_COMPLETED" || normalized === "PRESCRIPTION_APPROVED") {
+    return (
+      <Badge className="bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 text-[11px] font-semibold gap-1">
+        <PhoneCall className="w-3 h-3" /> Call Verified
+      </Badge>
+    );
+  }
+  if (normalized === "FULFILLED" || normalized === "DELIVERED") {
+    return (
+      <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 text-[11px] font-semibold gap-1">
+        <CheckCircle2 className="w-3 h-3" /> Fulfilled / Dispensed
+      </Badge>
+    );
+  }
+  if (normalized === "CANCELLED") {
+    return (
+      <div className="space-y-0.5">
+        <Badge variant="destructive" className="text-[11px] font-semibold gap-1">
+          <XCircle className="w-3 h-3" /> Cancelled
+        </Badge>
+        {cancellationReason && (
+          <p className="text-[10px] text-destructive max-w-[180px] truncate" title={cancellationReason}>
+            Reason: {cancellationReason}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <Badge variant="outline" className="text-[11px] font-semibold">
+      {status.replace(/_/g, " ")}
+    </Badge>
+  );
+};
 
 const columns: ColumnDef<Order>[] = [
   {
     id: "id",
-    header: "Order Reference",
+    header: "Request Reference",
     cell: ({ row }) => {
       const order = row.original;
       return (
@@ -41,49 +88,44 @@ const columns: ColumnDef<Order>[] = [
     },
   },
   {
-    accessorKey: "totalAmount",
-    header: "Amount",
-    cell: ({ row }) => {
-      const amount = row.getValue("totalAmount") as number;
-      const isPaid = row.original.paymentStatus === "Paid";
-      return (
-        <div className="text-xs">
-          <span className="font-bold">₹{amount.toLocaleString()}</span>
-          <div className="text-[10px] text-muted-foreground">
-            {isPaid ? <span className="text-emerald-600 font-medium">Paid</span> : <span className="text-amber-600 font-medium">Pending</span>}
-          </div>
-        </div>
-      );
-    }
-  },
-  {
-    id: "location",
-    header: "Delivery City",
+    id: "clinic",
+    header: "Assigned Clinic",
     cell: ({ row }) => {
       const order = row.original;
+      const clinicName = typeof order.clinicId === "object" ? order.clinicId?.name : "Kelkar Manas Clinic";
       return (
-        <span className="text-xs flex items-center gap-1 text-muted-foreground">
-          <MapPin className="w-3 h-3 text-primary" />
-          Akola {order.shippingDetails?.pinCode ? `(${order.shippingDetails.pinCode})` : ""}
+        <span className="text-xs flex items-center gap-1.5 font-medium text-foreground">
+          <Building2 className="w-3.5 h-3.5 text-primary shrink-0" />
+          {clinicName || "Clinic Pharmacy"}
         </span>
       );
     }
   },
   {
-    accessorKey: "status",
-    header: "Status",
+    id: "medicines",
+    header: "Prescribed Medicines",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      let variant: "default" | "secondary" | "destructive" | "outline" = "default";
-      if (status === "Delivered") variant = "secondary";
-      if (status === "Cancelled" || status.includes("Rejected")) variant = "destructive";
-      if (status.includes("Pending") || status.includes("Verification")) variant = "outline";
-      
+      const items = row.original.items || [];
+      if (items.length === 0) return <span className="text-xs text-muted-foreground">Prescription Items</span>;
       return (
-        <Badge variant={variant} className="text-[11px] font-semibold">
-          {status.replace(/_/g, " ")}
-        </Badge>
+        <div className="text-xs">
+          <span className="font-semibold text-foreground">
+            {items[0].name}
+          </span>
+          {items.length > 1 && (
+            <span className="text-[10px] text-muted-foreground ml-1.5 font-normal">
+              +{items.length - 1} more
+            </span>
+          )}
+        </div>
       );
+    }
+  },
+  {
+    accessorKey: "status",
+    header: "Order Status",
+    cell: ({ row }) => {
+      return formatStatusBadge(row.original.status, row.original.cancellationReason);
     },
   },
   {
@@ -95,7 +137,7 @@ const columns: ColumnDef<Order>[] = [
         <Link href={`/patient/orders/${order._id}`}>
           <Button variant="outline" size="sm" className="rounded-xl text-xs gap-1.5 h-8 font-semibold">
             <Eye className="w-3.5 h-3.5" />
-            Track Details
+            View Request
           </Button>
         </Link>
       );
@@ -131,7 +173,7 @@ export default function PatientOrdersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground font-medium">
-        Loading pharmacy delivery orders...
+        Loading medicine order requests...
       </div>
     );
   }
@@ -140,9 +182,9 @@ export default function PatientOrdersPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Medicine Orders</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Medicine Order Requests</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Track your prescription medicines, delivery status, and purchase history.
+            Track your prescription medicine requests submitted to the clinic pharmacy.
           </p>
         </div>
         <Link href="/patient/prescriptions">
@@ -158,13 +200,13 @@ export default function PatientOrdersPage() {
             <Package className="w-8 h-8" />
           </div>
           <div>
-            <h3 className="text-lg font-bold">No Medicine Orders Yet</h3>
+            <h3 className="text-lg font-bold">No Medicine Order Requests Yet</h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto mt-1">
-              Once you order prescribed medicines through your verified doctor prescriptions, you can track their status and delivery here.
+              Submit an order request directly from your doctor prescription to have the clinic pharmacy contact and assist you.
             </p>
           </div>
           <Link href="/patient/prescriptions">
-            <Button size="sm" className="rounded-full px-6">Order from My Prescriptions</Button>
+            <Button size="sm" className="rounded-full px-6">View My Prescriptions</Button>
           </Link>
         </div>
       ) : (
