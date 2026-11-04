@@ -19,7 +19,7 @@ export interface GoogleReviewItem {
 }
 
 // Verified Google Maps Listing URLs
-export const BANER_MAPS_URL = "https://maps.app.goo.gl/bgsaZrUK81zRvzZX7";
+export const BANER_MAPS_URL = "https://maps.app.goo.gl/tiVums5eDVZ9jU6HA";
 export const BHOSARI_MAPS_URL = "https://maps.google.com/?q=Kelkar+Manas+Healthcare+Bhosari+Pune";
 
 // In-memory cache for dynamic Google Places API responses
@@ -132,21 +132,78 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const clinicFilter = searchParams.get("clinic") || "all";
 
-    // 1. Resolve Google Places API Key from Database Settings or Environment
-    const apiKeySetting = await SettingModel.findOne({ key: "google_places_api_key" }).lean();
+    // 1. Resolve Settings from Database
+    const [
+      apiKeySetting, 
+      banerPlaceIdSetting, 
+      bhosariPlaceIdSetting,
+      integrationModeSetting,
+      banerWidgetSetting,
+      bhosariWidgetSetting
+    ] = await Promise.all([
+      SettingModel.findOne({ key: "google_places_api_key" }).lean(),
+      SettingModel.findOne({ key: "google_place_id_baner" }).lean(),
+      SettingModel.findOne({ key: "google_place_id_bhosari" }).lean(),
+      SettingModel.findOne({ key: "reviews_integration_mode" }).lean(),
+      SettingModel.findOne({ key: "reviews_widget_baner" }).lean(),
+      SettingModel.findOne({ key: "reviews_widget_bhosari" }).lean(),
+    ]);
+
     const apiKey = apiKeySetting?.value?.trim() || process.env.GOOGLE_PLACES_API_KEY;
-
-    // 2. Resolve Place IDs for Baner and Bhosari
-    const banerPlaceIdSetting = await SettingModel.findOne({ key: "google_place_id_baner" }).lean();
     const banerPlaceId = banerPlaceIdSetting?.value?.trim() || process.env.GOOGLE_PLACE_ID_BANER || "ChIJBUovIfG_wjsR2D0_8I_81VM";
-
-    const bhosariPlaceIdSetting = await SettingModel.findOne({ key: "google_place_id_bhosari" }).lean();
     const bhosariPlaceId = bhosariPlaceIdSetting?.value?.trim() || process.env.GOOGLE_PLACE_ID_BHOSARI;
+    const integrationMode = integrationModeSetting?.value?.trim() || "WIDGET";
+    const banerWidgetKey = banerWidgetSetting?.value?.trim() || "vbRfq6eTaBSP9BYFv0pQxguc";
+    const bhosariWidgetKey = bhosariWidgetSetting?.value?.trim() || "";
 
     let dynamicReviews: GoogleReviewItem[] = [];
-    let averageRating = 4.9;
-    let totalReviewsCount = 168;
+    let averageRating = 5.0;
+    let totalReviewsCount = 91;
     const now = Date.now();
+
+    // 2. Fetch from GRWidget API if widget key is present
+    if (banerWidgetKey && !apiKey) {
+      const cacheKey = `grwidget_${banerWidgetKey}`;
+      if (dynamicCache[cacheKey] && now - dynamicCache[cacheKey].fetchedAt < CACHE_TTL_MS) {
+        dynamicReviews = dynamicCache[cacheKey].reviews;
+        averageRating = dynamicCache[cacheKey].averageRating;
+        totalReviewsCount = dynamicCache[cacheKey].totalReviewsCount;
+      } else {
+        try {
+          const res = await fetch(`https://grwidget.com/api/v1/widgets/${banerWidgetKey}.json`, {
+            cache: "no-store",
+          });
+          if (res.ok) {
+            const grData = await res.json();
+            if (grData.business) {
+              if (grData.business.rating) averageRating = grData.business.rating;
+              if (grData.business.review_count) totalReviewsCount = grData.business.review_count;
+            }
+            if (Array.isArray(grData.reviews)) {
+              dynamicReviews = grData.reviews.map((r: { author_name?: string; rating?: number; relative_time?: string; text?: string }, idx: number) => ({
+                id: `gr-${idx}`,
+                authorName: r.author_name || "Google Reviewer",
+                rating: r.rating || 5,
+                relativeTimeDescription: r.relative_time || "Recently",
+                text: r.text || "",
+                clinicLocation: "Baner Clinic" as const,
+                googleMapsUrl: BANER_MAPS_URL,
+                verified: true,
+              }));
+
+              dynamicCache[cacheKey] = {
+                reviews: dynamicReviews,
+                averageRating,
+                totalReviewsCount,
+                fetchedAt: now,
+              };
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching GRWidget payload:", e);
+        }
+      }
+    }
 
     // 3. Dynamic Google Places API Fetching (Subject to API access & permissions)
     if (apiKey) {
@@ -204,12 +261,16 @@ export async function GET(request: Request) {
       }
     }
 
-    // 4. Return strictly authentic reviews without generating or fabricating any customer reviews
+    // 4. Return response with authentic data & widget configs
     return NextResponse.json({
       success: true,
       apiConnected: !!apiKey,
+      integrationMode,
+      banerWidgetKey,
+      bhosariWidgetKey,
+      hasWidget: !!(banerWidgetKey || bhosariWidgetKey),
       data: {
-        reviews: dynamicReviews, // Purely authentic reviews dynamically retrieved via Google-supported integration
+        reviews: dynamicReviews,
         hasReviews: dynamicReviews.length > 0,
         summary: {
           averageRating,

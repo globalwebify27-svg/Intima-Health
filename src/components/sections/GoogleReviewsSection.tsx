@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Script from "next/script";
 import { Star, ChevronLeft, ChevronRight, CheckCircle2, MapPin, ExternalLink, MessageSquare, ShieldCheck, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,15 +29,26 @@ interface ReviewsSummary {
   address: string;
 }
 
+function extractWidgetKey(input: string): string {
+  if (!input) return "";
+  const trimmed = input.trim();
+  if (!trimmed.includes("<")) return trimmed;
+  const keyMatch = trimmed.match(/data-(?:grwidget-key|grwidget|widget-id)=["']([^"']+)["']/i);
+  if (keyMatch) return keyMatch[1];
+  return trimmed;
+}
+
 export function GoogleReviewsSection() {
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [banerWidgetKey, setBanerWidgetKey] = useState<string>("");
+  const [bhosariWidgetKey, setBhosariWidgetKey] = useState<string>("");
   const [apiConnected, setApiConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<ReviewsSummary>({
     averageRating: 4.9,
     totalReviewsCount: 168,
-    primaryMapsUrl: "https://maps.app.goo.gl/bgsaZrUK81zRvzZX7",
-    banerMapsUrl: "https://maps.app.goo.gl/bgsaZrUK81zRvzZX7",
+    primaryMapsUrl: "https://maps.app.goo.gl/tiVums5eDVZ9jU6HA",
+    banerMapsUrl: "https://maps.app.goo.gl/tiVums5eDVZ9jU6HA",
     bhosariMapsUrl: "https://maps.google.com/?q=Kelkar+Manas+Healthcare+Bhosari+Pune",
     clinicName: "Kelkar Manas Health Clinic",
     address: "205, Second Floor, Platinum 9, Sus Baner Road, Baner, Pune",
@@ -51,11 +63,15 @@ export function GoogleReviewsSection() {
     fetch(`/api/reviews/google?clinic=${selectedLocation}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && data.data) {
-          setReviews(data.data.reviews || []);
-          setApiConnected(!!data.apiConnected);
-          if (data.data.summary) {
-            setSummary(data.data.summary);
+        if (data.success) {
+          if (data.banerWidgetKey) setBanerWidgetKey(data.banerWidgetKey);
+          if (data.bhosariWidgetKey) setBhosariWidgetKey(data.bhosariWidgetKey);
+          if (data.data) {
+            setReviews(data.data.reviews || []);
+            setApiConnected(!!data.apiConnected);
+            if (data.data.summary) {
+              setSummary(data.data.summary);
+            }
           }
         }
       })
@@ -64,6 +80,25 @@ export function GoogleReviewsSection() {
 
     setCurrentIndex(0);
   }, [selectedLocation]);
+
+  // Inject GRWidget Script dynamically if widget key configured
+  const cleanBanerKey = extractWidgetKey(banerWidgetKey);
+  const cleanBhosariKey = extractWidgetKey(bhosariWidgetKey);
+  const activeWidgetKey = selectedLocation === "bhosari"
+    ? (cleanBhosariKey || cleanBanerKey)
+    : (cleanBanerKey || cleanBhosariKey);
+
+  useEffect(() => {
+    if (activeWidgetKey) {
+      const existingScript = document.querySelector('script[src*="grwidget.js"]');
+      if (!existingScript) {
+        const script = document.createElement("script");
+        script.src = "https://grwidget.com/v1/grwidget.js";
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    }
+  }, [activeWidgetKey]);
 
   // Autoplay carousel if authentic reviews exist
   useEffect(() => {
@@ -177,8 +212,45 @@ export function GoogleReviewsSection() {
           </div>
         </div>
 
-        {/* Dynamic Content: Only display reviews if authentic reviews were fetched from Google Places API */}
-        {reviews.length > 0 ? (
+        {/* Dynamic Content: Priority 1: GR Widget Embed, Priority 2: Live Places API Reviews, Priority 3: Google Maps Showcase */}
+        {activeWidgetKey ? (
+          <div className="mt-8 space-y-6">
+            {/* Location Switcher if both widgets configured */}
+            {cleanBanerKey && cleanBhosariKey && (
+              <div className="flex justify-center items-center gap-2">
+                <Button
+                  size="sm"
+                  variant={selectedLocation !== "bhosari" ? "default" : "outline"}
+                  onClick={() => setSelectedLocation("baner")}
+                  className="rounded-full text-xs font-semibold px-4 h-9 gap-1.5"
+                >
+                  <MapPin className="w-3.5 h-3.5" /> Baner Clinic
+                </Button>
+                <Button
+                  size="sm"
+                  variant={selectedLocation === "bhosari" ? "default" : "outline"}
+                  onClick={() => setSelectedLocation("bhosari")}
+                  className="rounded-full text-xs font-semibold px-4 h-9 gap-1.5"
+                >
+                  <MapPin className="w-3.5 h-3.5" /> Bhosari Clinic
+                </Button>
+              </div>
+            )}
+
+            {/* Third-Party GR Widget Container */}
+            <div className="max-w-5xl mx-auto min-h-[280px]">
+              <div
+                key={activeWidgetKey}
+                className="grwidget-embed"
+                data-grwidget-key={activeWidgetKey}
+              />
+              <Script 
+                src="https://grwidget.com/v1/grwidget.js" 
+                strategy="afterInteractive" 
+              />
+            </div>
+          </div>
+        ) : reviews.length > 0 ? (
           <div>
             {/* Location Tabs */}
             <div className="mt-8 flex justify-center items-center gap-2">

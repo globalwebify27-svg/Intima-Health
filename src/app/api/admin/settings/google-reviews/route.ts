@@ -15,15 +15,28 @@ export async function GET() {
       return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
     }
 
-    const [apiKeySetting, banerPlaceSetting, bhosariPlaceSetting] = await Promise.all([
+    const [
+      apiKeySetting, 
+      banerPlaceSetting, 
+      bhosariPlaceSetting,
+      integrationModeSetting,
+      banerWidgetSetting,
+      bhosariWidgetSetting
+    ] = await Promise.all([
       SettingModel.findOne({ key: "google_places_api_key" }).lean(),
       SettingModel.findOne({ key: "google_place_id_baner" }).lean(),
       SettingModel.findOne({ key: "google_place_id_bhosari" }).lean(),
+      SettingModel.findOne({ key: "reviews_integration_mode" }).lean(),
+      SettingModel.findOne({ key: "reviews_widget_baner" }).lean(),
+      SettingModel.findOne({ key: "reviews_widget_bhosari" }).lean(),
     ]);
 
     return NextResponse.json({
       success: true,
       data: {
+        integrationMode: integrationModeSetting?.value || "WIDGET",
+        banerWidgetKey: banerWidgetSetting?.value || "vbRfq6eTaBSP9BYFv0pQxguc",
+        bhosariWidgetKey: bhosariWidgetSetting?.value || "",
         apiKey: apiKeySetting?.value || process.env.GOOGLE_PLACES_API_KEY || "",
         banerPlaceId: banerPlaceSetting?.value || process.env.GOOGLE_PLACE_ID_BANER || "ChIJBUovIfG_wjsR2D0_8I_81VM",
         bhosariPlaceId: bhosariPlaceSetting?.value || process.env.GOOGLE_PLACE_ID_BHOSARI || "",
@@ -46,9 +59,31 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { apiKey = "", banerPlaceId = "", bhosariPlaceId = "" } = body;
+    const { 
+      integrationMode = "WIDGET",
+      banerWidgetKey = "",
+      bhosariWidgetKey = "",
+      apiKey = "", 
+      banerPlaceId = "", 
+      bhosariPlaceId = "" 
+    } = body;
 
     await Promise.all([
+      SettingModel.findOneAndUpdate(
+        { key: "reviews_integration_mode" },
+        { value: integrationMode.trim(), description: "Google Reviews integration method (WIDGET or PLACES_API)" },
+        { upsert: true, new: true }
+      ),
+      SettingModel.findOneAndUpdate(
+        { key: "reviews_widget_baner" },
+        { value: banerWidgetKey.trim(), description: "Third-party widget key or embed code for Baner Clinic" },
+        { upsert: true, new: true }
+      ),
+      SettingModel.findOneAndUpdate(
+        { key: "reviews_widget_bhosari" },
+        { value: bhosariWidgetKey.trim(), description: "Third-party widget key or embed code for Bhosari Clinic" },
+        { upsert: true, new: true }
+      ),
       SettingModel.findOneAndUpdate(
         { key: "google_places_api_key" },
         { value: apiKey.trim(), description: "Google Places API key for real-time reviews" },

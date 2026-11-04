@@ -64,6 +64,9 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"profile" | "pharmacy" | "branding" | "notifications" | "google_reviews">("profile");
 
   // Google Reviews Integration state
+  const [reviewsMode, setReviewsMode] = useState<"WIDGET" | "PLACES_API">("WIDGET");
+  const [banerWidgetKey, setBanerWidgetKey] = useState("");
+  const [bhosariWidgetKey, setBhosariWidgetKey] = useState("");
   const [googleApiKey, setGoogleApiKey] = useState("");
   const [banerPlaceId, setBanerPlaceId] = useState("ChIJBUovIfG_wjsR2D0_8I_81VM");
   const [bhosariPlaceId, setBhosariPlaceId] = useState("");
@@ -194,6 +197,9 @@ export default function SettingsPage() {
         const googleRes = await fetch("/api/admin/settings/google-reviews");
         const googleJson = await googleRes.json();
         if (!ignore && googleJson.success && googleJson.data) {
+          if (googleJson.data.integrationMode) setReviewsMode(googleJson.data.integrationMode);
+          if (googleJson.data.banerWidgetKey) setBanerWidgetKey(googleJson.data.banerWidgetKey);
+          if (googleJson.data.bhosariWidgetKey) setBhosariWidgetKey(googleJson.data.bhosariWidgetKey);
           if (googleJson.data.apiKey) setGoogleApiKey(googleJson.data.apiKey);
           if (googleJson.data.banerPlaceId) setBanerPlaceId(googleJson.data.banerPlaceId);
           if (googleJson.data.bhosariPlaceId) setBhosariPlaceId(googleJson.data.bhosariPlaceId);
@@ -265,6 +271,9 @@ export default function SettingsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          integrationMode: reviewsMode,
+          banerWidgetKey,
+          bhosariWidgetKey,
           apiKey: googleApiKey,
           banerPlaceId,
           bhosariPlaceId,
@@ -272,7 +281,7 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setSuccessMsg("Google Places integration settings saved successfully.");
+        setSuccessMsg("Google Reviews integration settings saved successfully.");
       } else {
         setErrorMsg(data.message || "Failed to save Google settings.");
       }
@@ -1695,90 +1704,170 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-2">
                   <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-                  <h2 className="text-xl font-bold">Google Reviews &amp; Places API Integration</h2>
+                  <h2 className="text-xl font-bold">Google Reviews Integration</h2>
                 </div>
-                <Badge variant={googleApiKey ? "default" : "outline"} className="text-xs">
-                  {googleApiKey ? "API Configured" : "Awaiting API Key"}
+                <Badge variant={(banerWidgetKey || googleApiKey) ? "default" : "outline"} className="text-xs">
+                  {(banerWidgetKey || googleApiKey) ? "Reviews Connected" : "Not Configured"}
                 </Badge>
               </div>
 
-              <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 text-xs text-muted-foreground leading-relaxed space-y-1">
-                <p className="font-bold text-foreground text-sm">Google-Supported Dynamic Synchronization</p>
-                <p>
-                  To stream real-time authentic reviews from Google Maps to the website homepage, enter your Google Cloud Places API key below.
-                  No customer reviews will ever be generated or fabricated.
-                </p>
+              {/* Integration Method Selector */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase">Integration Method</Label>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setReviewsMode("WIDGET")}
+                    className={`p-4 rounded-2xl border text-left transition-all ${
+                      reviewsMode === "WIDGET"
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm text-foreground">Third-Party Widget (GR Widget)</span>
+                      <Badge className="bg-emerald-600 text-white text-[10px]">Recommended</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Free, unlimited page views, zero Google Cloud billing, no API keys needed.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setReviewsMode("PLACES_API")}
+                    className={`p-4 rounded-2xl border text-left transition-all ${
+                      reviewsMode === "PLACES_API"
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm text-foreground">Google Cloud Places API</span>
+                      <Badge variant="outline" className="text-[10px]">Direct API</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Direct developer connection using official Google Cloud credentials.
+                    </p>
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label>Google Places API Key</Label>
-                  <Input
-                    type="password"
-                    placeholder="AIzaSy..."
-                    value={googleApiKey}
-                    onChange={(e) => setGoogleApiKey(e.target.value)}
-                    className="rounded-xl h-11 font-mono text-xs"
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Obtain this from Google Cloud Console &rarr; APIs &amp; Services &rarr; Credentials with Places API (New) enabled.
-                  </p>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label>Baner Clinic Google Place ID</Label>
-                    <Input
-                      placeholder="ChIJ..."
-                      value={banerPlaceId}
-                      onChange={(e) => setBanerPlaceId(e.target.value)}
-                      className="rounded-xl h-11 font-mono text-xs"
-                    />
-                    <p className="text-[11px] text-muted-foreground">
-                      Place ID for Kelkar Manas Baner (defaults to listing: maps.app.goo.gl/bgsaZrUK81zRvzZX7)
+              {reviewsMode === "WIDGET" ? (
+                /* Third-Party GR Widget Configuration */
+                <div className="space-y-4 pt-2">
+                  <div className="p-4 bg-muted/40 rounded-2xl border border-border/60 text-xs space-y-2">
+                    <p className="font-bold text-foreground text-sm">GR-Widget Account Setup</p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Log into your free account at <a href="https://grwidget.com/login" target="_blank" rel="noopener noreferrer" className="text-primary font-bold underline">grwidget.com/login</a> (Email: <span className="font-mono font-bold text-foreground">kelkarmanashealthcare@gmail.com</span>), click <strong>Create Widget</strong>, select your layout (Carousel or Badge), and paste the resulting Widget Key or embed snippet below.
                     </p>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label>Bhosari Clinic Google Place ID (Optional)</Label>
-                    <Input
-                      placeholder="Optional Place ID"
-                      value={bhosariPlaceId}
-                      onChange={(e) => setBhosariPlaceId(e.target.value)}
-                      className="rounded-xl h-11 font-mono text-xs"
-                    />
-                    <p className="text-[11px] text-muted-foreground">
-                      Place ID for Kelkar Manas Bhosari branch
-                    </p>
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label>Baner Clinic Widget Key or Embed Code</Label>
+                      <Input
+                        placeholder="e.g. 5x8k2p9 or paste <div class='grwidget-embed' data-grwidget-key='...'></div>"
+                        value={banerWidgetKey}
+                        onChange={(e) => setBanerWidgetKey(e.target.value)}
+                        className="rounded-xl h-11 font-mono text-xs"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Embed key for Baner Google Maps listing (https://maps.app.goo.gl/tiVums5eDVZ9jU6HA)
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label>Bhosari Clinic Widget Key or Embed Code (Optional)</Label>
+                      <Input
+                        placeholder="e.g. Optional second widget key for Bhosari Clinic"
+                        value={bhosariWidgetKey}
+                        onChange={(e) => setBhosariWidgetKey(e.target.value)}
+                        className="rounded-xl h-11 font-mono text-xs"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Embed key for Bhosari Google Maps listing. If left empty, Baner widget will be displayed.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                /* Google Places API Configuration */
+                <div className="space-y-4 pt-2">
+                  <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 text-xs text-muted-foreground leading-relaxed space-y-1">
+                    <p className="font-bold text-foreground text-sm">Google Places API Synchronization</p>
+                    <p>
+                      Streams reviews directly using your Google Cloud Places API key.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label>Google Places API Key</Label>
+                      <Input
+                        type="password"
+                        placeholder="AIzaSy..."
+                        value={googleApiKey}
+                        onChange={(e) => setGoogleApiKey(e.target.value)}
+                        className="rounded-xl h-11 font-mono text-xs"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        From Google Cloud Console &rarr; APIs &amp; Services with Places API enabled.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label>Baner Clinic Google Place ID</Label>
+                        <Input
+                          placeholder="ChIJ..."
+                          value={banerPlaceId}
+                          onChange={(e) => setBanerPlaceId(e.target.value)}
+                          className="rounded-xl h-11 font-mono text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Bhosari Clinic Google Place ID (Optional)</Label>
+                        <Input
+                          placeholder="Optional Place ID"
+                          value={bhosariPlaceId}
+                          onChange={(e) => setBhosariPlaceId(e.target.value)}
+                          className="rounded-xl h-11 font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleTestGoogleSync}
-                  disabled={testingGoogleSync}
-                  className="rounded-xl h-11 px-5 font-bold gap-2 text-xs border-primary/40 text-primary hover:bg-primary/5"
-                >
-                  {testingGoogleSync ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Testing Google Integration...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-4 h-4" />
-                      Test Dynamic Sync
-                    </>
-                  )}
-                </Button>
+                {reviewsMode === "PLACES_API" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleTestGoogleSync}
+                    disabled={testingGoogleSync}
+                    className="rounded-xl h-11 px-5 font-bold gap-2 text-xs border-primary/40 text-primary hover:bg-primary/5"
+                  >
+                    {testingGoogleSync ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Testing Sync...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        Test Dynamic Sync
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 <Button
                   type="submit"
                   disabled={savingGoogleSettings}
-                  className="rounded-xl h-11 px-8 font-bold gap-2 shadow-sm"
+                  className="rounded-xl h-11 px-8 font-bold gap-2 shadow-sm ml-auto"
                 >
                   {savingGoogleSettings ? (
                     <>
@@ -1788,7 +1877,7 @@ export default function SettingsPage() {
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      Save Google Integration
+                      Save Configuration
                     </>
                   )}
                 </Button>
