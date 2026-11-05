@@ -156,7 +156,7 @@ export default function StoreAdminPage() {
                   <th className="p-4 font-semibold">Name</th>
                   <th className="p-4 font-semibold">Category</th>
                   <th className="p-4 font-semibold">Type</th>
-                  <th className="p-4 font-semibold">Price</th>
+                  <th className="p-4 font-semibold">Price per Tablet</th>
                   <th className="p-4 font-semibold">Stock</th>
                   <th className="p-4 font-semibold">Rx Required</th>
                   <th className="p-4 font-semibold w-24">Actions</th>
@@ -238,9 +238,19 @@ export default function StoreAdminPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold">Price (₹)</label>
-                    <input required type="number" min="0" step="1" value={formData.price || ""} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full h-10 px-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none" />
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-bold">Price per Tablet (₹)</label>
+                    <input 
+                      required 
+                      type="number" 
+                      min="0" 
+                      step="any" 
+                      placeholder="Enter the price of a single tablet"
+                      value={formData.price || ""} 
+                      onChange={e => setFormData({...formData, price: e.target.value})} 
+                      className="w-full h-10 px-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none" 
+                    />
+                    <p className="text-[11px] text-muted-foreground">Enter the price of a single tablet.</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold">Stock Quantity</label>

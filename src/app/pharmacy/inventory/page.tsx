@@ -246,7 +246,7 @@ export default function PharmacyInventoryPage() {
     },
     {
       accessorKey: "price",
-      header: "Price",
+      header: "Price per Tablet (₹)",
       cell: ({ row }) => {
         const amount = row.getValue("price") as number;
         return <span>₹{amount.toLocaleString()}</span>;
@@ -357,14 +357,16 @@ export default function PharmacyInventoryPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="price">Price (₹)</Label>
+                  <Label htmlFor="price">Price per Tablet (₹)</Label>
                   <Input 
                     id="price" 
                     type="number" 
                     value={price} 
                     onChange={(e) => setPrice(Number(e.target.value))} 
+                    placeholder="Enter the price of a single tablet"
                     required 
                   />
+                  <p className="text-[11px] text-muted-foreground">Enter the price of a single tablet.</p>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="stock">Initial Stock</Label>
@@ -425,14 +427,16 @@ export default function PharmacyInventoryPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="edit-price">Price (₹)</Label>
+                  <Label htmlFor="edit-price">Price per Tablet (₹)</Label>
                   <Input 
                     id="edit-price" 
                     type="number" 
                     value={price} 
                     onChange={(e) => setPrice(Number(e.target.value))} 
+                    placeholder="Enter the price of a single tablet"
                     required 
                   />
+                  <p className="text-[11px] text-muted-foreground">Enter the price of a single tablet.</p>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="edit-stock">Current Stock</Label>
