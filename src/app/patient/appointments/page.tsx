@@ -185,12 +185,34 @@ export default function PatientAppointmentsPage() {
   const [activeTab, setActiveTab] = useState("upcoming");
 
   useEffect(() => {
-    const fetchAppointments = async () => {
+    // Fast path: use cached patient info for instant initial query on frame 0
+    let cachedPId: string | null = null;
+    if (typeof window !== "undefined") {
       try {
-        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
-        const meJson = await meRes.json();
-        if (meJson.success && meJson.user && meJson.user.patientId) {
-          const res = await fetch(`/api/appointments?patientId=${meJson.user.patientId}&_t=${Date.now()}`, { cache: "no-store" });
+        const cached = sessionStorage.getItem("patient_auth_user");
+        if (cached) {
+          const user = JSON.parse(cached);
+          if (user.patientId) cachedPId = user.patientId;
+        }
+      } catch {}
+    }
+
+    const fetchAppointments = async (overridePid?: string) => {
+      try {
+        let pId = overridePid;
+        if (!pId) {
+          const meRes = await fetch("/api/auth/me");
+          const meJson = await meRes.json();
+          if (meJson.success && meJson.user && meJson.user.patientId) {
+            pId = meJson.user.patientId;
+            try {
+              sessionStorage.setItem("patient_auth_user", JSON.stringify(meJson.user));
+            } catch {}
+          }
+        }
+
+        if (pId) {
+          const res = await fetch(`/api/appointments?patientId=${pId}`);
           const json = await res.json();
           if (json.success) {
             const sortedApts = (json.data || []).sort((a: Appointment, b: Appointment) => {
@@ -205,11 +227,15 @@ export default function PatientAppointmentsPage() {
         setLoading(false);
       }
     };
+
+    if (cachedPId) {
+      fetchAppointments(cachedPId);
+    }
     fetchAppointments();
 
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") fetchAppointments();
-    }, 15000);
+    }, 45000);
     const onFocus = () => fetchAppointments();
     window.addEventListener("focus", onFocus);
     
@@ -219,10 +245,29 @@ export default function PatientAppointmentsPage() {
     };
   }, []);
 
-  if (loading) {
+  if (loading && appointments.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">
-        Loading appointments...
+      <div className="space-y-6 animate-pulse">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-8 w-48 bg-muted/60 rounded-xl" />
+            <div className="h-4 w-72 bg-muted/40 rounded-lg" />
+          </div>
+          <div className="h-10 w-36 bg-primary/20 rounded-xl" />
+        </div>
+        <div className="h-10 w-72 bg-muted/40 rounded-xl" />
+        <div className="rounded-2xl border border-border p-4 space-y-3 bg-card">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-12 bg-muted/20 rounded-xl flex items-center px-4 justify-between">
+              <div className="h-4 w-32 bg-muted/50 rounded" />
+              <div className="h-4 w-24 bg-muted/40 rounded" />
+              <div className="h-4 w-20 bg-muted/40 rounded" />
+              <div className="h-6 w-20 bg-muted/50 rounded-full" />
+              <div className="h-6 w-16 bg-muted/50 rounded-full" />
+              <div className="h-8 w-24 bg-muted/50 rounded-xl" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

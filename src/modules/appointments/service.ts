@@ -1,6 +1,6 @@
 import { AppointmentRepository } from "./repository";
 import { DoctorRepository } from "@/modules/doctors/repository";
-import { IAppointment } from "./schema";
+import { AppointmentModel, IAppointment } from "./schema";
 import { ISlot, IBookAppointmentInput, IRescheduleInput } from "./types";
 import { BookAppointmentSchema, RescheduleAppointmentSchema } from "./validators";
 import { sendAppointmentBookingMessage } from "@/lib/whatsapp";
@@ -256,12 +256,13 @@ export class AppointmentService {
     );
 
     if (expiredAppointments.length > 0) {
+      const expiredIds = expiredAppointments.map(apt => (apt as any)._id);
+      await AppointmentModel.updateMany(
+        { _id: { $in: expiredIds } },
+        { $set: { status: "Cancelled", updatedBy: "system" } }
+      );
       for (const apt of expiredAppointments) {
-        await AppointmentRepository.update((apt as any)._id as string, {
-          status: "Cancelled",
-          updatedBy: "system"
-        });
-        apt.status = "Cancelled";
+        (apt as any).status = "Cancelled";
       }
     }
 

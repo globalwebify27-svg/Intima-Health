@@ -42,6 +42,11 @@ const AppointmentSchema = new Schema<IAppointment>({
   timestamps: true,
 });
 
+AppointmentSchema.index({ patientId: 1, date: -1 });
+AppointmentSchema.index({ doctorId: 1, date: 1 });
+AppointmentSchema.index({ status: 1 });
+AppointmentSchema.index({ date: 1 });
+
 AppointmentSchema.pre("find", function() {
   this.where({ deletedAt: null });
 });

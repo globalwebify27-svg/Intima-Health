@@ -207,10 +207,36 @@ export default function PatientPrescriptionsPage() {
   };
 
   useEffect(() => {
+    // Fast path: use cached patient info to immediately start fetching data on frame 0
+    if (typeof window !== "undefined") {
+      try {
+        const cached = sessionStorage.getItem("patient_auth_user");
+        if (cached) {
+          const user = JSON.parse(cached);
+          if (user.patientId) {
+            setPatientId(user.patientId);
+            setPatientUser({
+              name: user.name,
+              phone: user.phone,
+              email: user.email,
+            });
+            fetchPrescriptions(user.patientId);
+          }
+        }
+      } catch (e) {
+        console.error("Cache read error:", e);
+      }
+    }
+
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.user) {
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.setItem("patient_auth_user", JSON.stringify(data.user));
+            } catch {}
+          }
           if (data.user.patientId) {
             setPatientId(data.user.patientId);
             setPatientUser({
@@ -395,10 +421,37 @@ export default function PatientPrescriptionsPage() {
     });
   };
 
-  if (loading) {
+  if (loading && prescriptions.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground font-medium">
-        Loading prescriptions and medical records...
+      <div className="space-y-6 animate-pulse">
+        <div className="space-y-2">
+          <div className="h-8 w-64 bg-muted/60 rounded-xl" />
+          <div className="h-4 w-96 max-w-full bg-muted/40 rounded-lg" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="p-6 bg-card rounded-3xl border border-border shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10" />
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-28 bg-muted rounded-md" />
+                    <div className="h-3 w-36 bg-muted/60 rounded-md" />
+                  </div>
+                </div>
+                <div className="h-5 w-20 bg-muted rounded-full" />
+              </div>
+              <div className="space-y-2">
+                <div className="h-14 bg-muted/30 rounded-2xl" />
+                <div className="h-14 bg-muted/30 rounded-2xl" />
+              </div>
+              <div className="pt-2 flex justify-between gap-2 border-t border-border/40">
+                <div className="h-9 w-32 bg-muted/50 rounded-xl" />
+                <div className="h-9 w-36 bg-primary/20 rounded-xl" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

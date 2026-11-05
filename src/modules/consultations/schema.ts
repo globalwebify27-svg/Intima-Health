@@ -32,6 +32,11 @@ const ConsultationSchema = new Schema<IConsultation>({
   timestamps: true,
 });
 
+ConsultationSchema.index({ patientId: 1, createdAt: -1 });
+ConsultationSchema.index({ doctorId: 1, createdAt: -1 });
+ConsultationSchema.index({ appointmentId: 1 });
+ConsultationSchema.index({ status: 1 });
+
 ConsultationSchema.pre("find", function() {
   this.where({ deletedAt: null });
 });
