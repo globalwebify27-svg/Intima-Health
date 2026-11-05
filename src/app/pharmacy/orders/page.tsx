@@ -120,6 +120,15 @@ export default function PharmacyOrdersPage() {
   };
 
   const openCancelModal = (order: Order) => {
+    const s = (order.status || "").toUpperCase();
+    if (s === "FULFILLED" || s === "DELIVERED") {
+      alert("Fulfilled orders cannot be cancelled.");
+      return;
+    }
+    if (s === "CANCELLED") {
+      alert("This order is already cancelled.");
+      return;
+    }
     setCancellingOrder(order);
     setCancellationReason("");
     setCancelModalOpen(true);

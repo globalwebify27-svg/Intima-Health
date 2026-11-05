@@ -112,6 +112,33 @@ export async function PUT(request: Request, { params }: RouteParams) {
     // 2. Status Transitions & Tracking
     if (body.status && body.status !== order.status) {
       const oldStatus = order.status;
+      const currentUpper = (order.status || "").toUpperCase();
+      const newUpper = (body.status || "").toUpperCase();
+
+      // BACKEND ENFORCEMENT: Fulfilled/Delivered orders cannot be cancelled
+      if (newUpper === "CANCELLED" || newUpper === "CANCEL") {
+        if (currentUpper === "FULFILLED" || currentUpper === "DELIVERED") {
+          return NextResponse.json(
+            {
+              success: false,
+              message: "Cannot cancel an order that has already been fulfilled. Fulfilled orders are completed and final.",
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Prevent redundant cancellation
+      if (currentUpper === "CANCELLED" && (newUpper === "CANCELLED" || newUpper === "CANCEL")) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Order is already cancelled.",
+          },
+          { status: 400 }
+        );
+      }
+
       order.status = body.status;
 
       if (!order.statusHistory) order.statusHistory = [];
