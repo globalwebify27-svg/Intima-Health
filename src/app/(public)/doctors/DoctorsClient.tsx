@@ -243,18 +243,20 @@ export default function DoctorsClient({ initialClinics, initialDoctors }: Doctor
                   </div>
                 </div>
 
-                <div className="w-full z-10 mt-auto">
-                  <BookNowButton 
-                    prefilledData={{
-                      doctorId: doctor._id,
-                      clinic: doctor.clinicId,
-                      city: clinics.find(c => c._id === doctor.clinicId)?.city
-                    }}
-                    className="w-full h-12 rounded-full font-bold bg-primary hover:bg-primary/90 text-white transition-all shadow-md hover:shadow-lg"
-                  >
-                    Book Consultation
-                  </BookNowButton>
-                </div>
+                {doctor.clinicId && (
+                  <div className="w-full z-10 mt-auto">
+                    <BookNowButton 
+                      prefilledData={{
+                        doctorId: doctor._id,
+                        clinic: doctor.clinicId,
+                        city: clinics.find(c => c._id === doctor.clinicId)?.city
+                      }}
+                      className="w-full h-12 rounded-full font-bold bg-primary hover:bg-primary/90 text-white transition-all shadow-md hover:shadow-lg"
+                    >
+                      Book Consultation
+                    </BookNowButton>
+                  </div>
+                )}
                 
               </motion.div>
             ))}

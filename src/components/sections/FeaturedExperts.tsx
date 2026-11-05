@@ -166,18 +166,20 @@ export function FeaturedExperts() {
                   </div>
                 </div>
 
-                <div className="w-full z-10 mt-auto">
-                  <BookNowButton 
-                    prefilledData={{
-                      doctorId: expert._id,
-                      clinic: expert.clinicId?._id || expert.clinicId,
-                      city: expert.clinicId?.city
-                    }}
-                    className="w-full h-12 rounded-full font-bold bg-primary hover:bg-primary/90 text-white transition-all shadow-md hover:shadow-lg"
-                  >
-                    Book Consultation
-                  </BookNowButton>
-                </div>
+                {(expert.clinicId?._id || expert.clinicId) && (
+                  <div className="w-full z-10 mt-auto">
+                    <BookNowButton 
+                      prefilledData={{
+                        doctorId: expert._id,
+                        clinic: expert.clinicId?._id || expert.clinicId,
+                        city: expert.clinicId?.city
+                      }}
+                      className="w-full h-12 rounded-full font-bold bg-primary hover:bg-primary/90 text-white transition-all shadow-md hover:shadow-lg"
+                    >
+                      Book Consultation
+                    </BookNowButton>
+                  </div>
+                )}
               
             </motion.div>
           ))}

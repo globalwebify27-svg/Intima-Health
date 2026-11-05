@@ -501,8 +501,14 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {sortedDoctors.map((doctor) => {
                 const isSpecialFounder = doctor.name?.toLowerCase().includes("deepak kelkar");
-                const clinic = clinics.find(c => c._id?.toString() === doctor.clinicId?.toString());
+                const doctorClinicId = typeof doctor.clinicId === "object" && doctor.clinicId !== null
+                  ? (doctor.clinicId as { _id?: string })._id?.toString()
+                  : doctor.clinicId?.toString();
+                const clinic = doctorClinicId
+                  ? clinics.find(c => c._id?.toString() === doctorClinicId)
+                  : null;
                 const cleanCity = clinic?.city?.trim() || "";
+                const hasAssignedClinic = Boolean(doctorClinicId && doctorClinicId !== "null" && doctorClinicId !== "undefined" && clinic);
 
                 return (
                   <div
@@ -588,20 +594,22 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
                         </p>
                       </div>
 
-                      {/* 3. Action Footer */}
-                      <div className="pt-4 border-t border-border/70">
-                        <BookNowButton 
-                          prefilledData={{ 
-                            doctorId: doctor._id,
-                            clinic: doctor.clinicId,
-                            city: cleanCity
-                          }} 
-                          className="w-full rounded-full py-3.5 text-sm font-semibold bg-primary text-white hover:bg-primary/95 transition-all shadow-md hover:shadow-lg inline-flex items-center justify-center gap-2 group/btn cursor-pointer"
-                        >
-                          Book Consultation
-                          <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                        </BookNowButton>
-                      </div>
+                      {/* 3. Action Footer (Only shown if doctor is assigned to a clinic) */}
+                      {hasAssignedClinic && (
+                        <div className="pt-4 border-t border-border/70">
+                          <BookNowButton 
+                            prefilledData={{ 
+                              doctorId: doctor._id,
+                              clinic: doctorClinicId,
+                              city: cleanCity
+                            }} 
+                            className="w-full rounded-full py-3.5 text-sm font-semibold bg-primary text-white hover:bg-primary/95 transition-all shadow-md hover:shadow-lg inline-flex items-center justify-center gap-2 group/btn cursor-pointer"
+                          >
+                            Book Consultation
+                            <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                          </BookNowButton>
+                        </div>
+                      )}
 
                     </div>
                   </div>
