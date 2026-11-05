@@ -600,7 +600,7 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
                       </div>
 
                       {/* 3. Action Footer (Equal height for all cards) */}
-                      <div className="pt-4 border-t border-border/70 min-h-[3.75rem] flex items-center">
+                      <div className={`pt-4 ${hasAssignedClinic ? "border-t border-border/70" : "border-t border-transparent"} min-h-[3.75rem] flex items-center`}>
                         {hasAssignedClinic ? (
                           <BookNowButton 
                             prefilledData={{ 
@@ -614,9 +614,7 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
                             <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                           </BookNowButton>
                         ) : (
-                          <div className="w-full rounded-full py-3 text-xs font-semibold text-muted-foreground bg-muted/40 border border-border/60 text-center flex items-center justify-center">
-                            <span>Hospital Faculty • Clinical Director</span>
-                          </div>
+                          <div className="w-full h-12" aria-hidden="true" />
                         )}
                       </div>
 
