@@ -70,6 +70,19 @@ export async function PUT(req: Request, { params }: RouteParams) {
       }
     }
 
+    // Synchronize linked pharmacy orders if prescription is marked Fulfilled
+    if (body.prescriptionStatus === "Fulfilled") {
+      try {
+        const { OrderModel } = await import("@/modules/pharmacy/schema");
+        await OrderModel.updateMany(
+          { consultationId: id, status: { $nin: ["CANCELLED", "Cancelled"] } },
+          { $set: { status: "FULFILLED", updatedBy: payload.email || "Pharmacy Staff" } }
+        );
+      } catch (e) {
+        console.error("OrderModel sync error in consultation update:", e);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: "Consultation updated successfully.",

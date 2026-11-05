@@ -111,7 +111,10 @@ export default function PharmacyDashboard() {
     }
   };
 
-  const pendingOrders = orders.filter(o => o.status === "Pending");
+  const pendingOrders = orders.filter(o => {
+    const s = (o.status || "").toUpperCase();
+    return !["FULFILLED", "DELIVERED", "CANCELLED"].includes(s);
+  });
   const lowStockProducts = products.filter(p => p.stock <= 15);
 
   const stats = [

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pill, FileSignature, CheckCircle, CheckCircle2, AlertCircle, Trash2, X, Calendar, User, UserCheck, Phone, Mail, Activity } from "lucide-react";
+import { Pill, FileSignature, CheckCircle, CheckCircle2, AlertCircle, Trash2, X, Calendar, User, UserCheck, Phone, Mail, Activity, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,8 @@ export default function PharmacyPrescriptionsPage() {
   const [products, setProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
   const [clinicId, setClinicId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"Pending" | "Fulfilled" | "All">("Pending");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Dispensing state
   const [showDispenseModal, setShowDispenseModal] = useState(false);
@@ -82,10 +84,45 @@ export default function PharmacyPrescriptionsPage() {
   const fetchPrescriptions = async (cId: string) => {
     try {
       const url = cId ? `/api/consultations?clinicId=${cId}` : "/api/consultations";
-      const res = await fetch(url);
+      const ordersUrl = cId ? `/api/pharmacy/orders?clinicId=${cId}` : "/api/pharmacy/orders";
+
+      const [res, ordersRes] = await Promise.all([
+        fetch(url),
+        fetch(ordersUrl).catch(() => null),
+      ]);
       const json = await res.json();
+
+      const fulfilledConsultIds = new Set<string>();
+      if (ordersRes && ordersRes.ok) {
+        try {
+          const ordersJson = await ordersRes.json();
+          if (ordersJson.success && Array.isArray(ordersJson.data)) {
+            ordersJson.data.forEach((o: any) => {
+              const s = (o.status || "").toUpperCase();
+              if (s === "FULFILLED" || s === "DELIVERED") {
+                const consultId = typeof o.consultationId === "object" ? o.consultationId?._id : o.consultationId;
+                if (consultId) fulfilledConsultIds.add(String(consultId));
+              }
+            });
+          }
+        } catch {}
+      }
+
       if (json.success && json.data) {
-        const activeRx = json.data.filter((c: any) => c.prescriptionSummary && c.prescriptionSummary !== "[]");
+        const activeRx = json.data
+          .filter((c: any) => c.prescriptionSummary && c.prescriptionSummary !== "[]")
+          .map((c: any) => {
+            if (fulfilledConsultIds.has(String(c._id)) && c.prescriptionStatus !== "Fulfilled") {
+              // Background persist sync so DB stays consistent
+              fetch(`/api/consultations/${c._id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prescriptionStatus: "Fulfilled" }),
+              }).catch(() => {});
+              return { ...c, prescriptionStatus: "Fulfilled" };
+            }
+            return c;
+          });
         setPrescriptions(activeRx);
       }
 
@@ -281,6 +318,30 @@ export default function PharmacyPrescriptionsPage() {
 
 
 
+  const counts = {
+    Pending: prescriptions.filter((p) => p.prescriptionStatus !== "Fulfilled").length,
+    Fulfilled: prescriptions.filter((p) => p.prescriptionStatus === "Fulfilled").length,
+    All: prescriptions.length,
+  };
+
+  const filteredPrescriptions = prescriptions.filter((record) => {
+    const isFulfilled = record.prescriptionStatus === "Fulfilled";
+    const patientName = record.patientId?.name || "";
+    const doctorName = record.doctorId?.name || "";
+    const rxId = record._id || "";
+
+    const matchesSearch =
+      patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doctorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rxId.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    if (statusFilter === "Pending") return !isFulfilled;
+    if (statusFilter === "Fulfilled") return isFulfilled;
+    return true;
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">
@@ -300,9 +361,49 @@ export default function PharmacyPrescriptionsPage() {
         </div>
       </div>
 
+      {/* Search & Status Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search by patient name, doctor, Rx #..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-10 rounded-xl"
+          />
+        </div>
+
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1">
+          {[
+            { id: "Pending", label: "Pending Fulfilment" },
+            { id: "Fulfilled", label: "Fulfilled" },
+            { id: "All", label: "All Prescriptions" },
+          ].map((tab) => {
+            const count = counts[tab.id as keyof typeof counts];
+            const isActive = statusFilter === tab.id;
+            return (
+              <Button
+                key={tab.id}
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter(tab.id as any)}
+                className="rounded-xl text-xs font-semibold h-9 shrink-0 gap-1.5"
+              >
+                <span>{tab.label}</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}>
+                  {count}
+                </span>
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="space-y-4">
-        {prescriptions.length > 0 ? (
-          prescriptions.map((record) => {
+        {filteredPrescriptions.length > 0 ? (
+          filteredPrescriptions.map((record) => {
             const meds = getMedsArray(record.prescriptionSummary);
             const isFulfilled = record.prescriptionStatus === "Fulfilled";
 

@@ -58,7 +58,8 @@ export default function PharmacyOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("Pending");
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
   // Cancellation Modal State
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -99,6 +100,13 @@ export default function PharmacyOrdersPage() {
       });
       const data = await res.json();
       if (data.success) {
+        if (newStatus === "FULFILLED") {
+          setSuccessBanner("Order fulfilled successfully. It has been moved to the Fulfilled archive.");
+          setTimeout(() => setSuccessBanner(null), 5000);
+        } else if (newStatus === "CALL_COMPLETED") {
+          setSuccessBanner("Phone call verification recorded for this order.");
+          setTimeout(() => setSuccessBanner(null), 4000);
+        }
         fetchOrders();
       } else {
         alert(data.message || "Failed to update order status");
@@ -135,6 +143,8 @@ export default function PharmacyOrdersPage() {
       if (data.success) {
         setCancelModalOpen(false);
         setCancellingOrder(null);
+        setSuccessBanner("Order has been cancelled and retained in history for audit purposes.");
+        setTimeout(() => setSuccessBanner(null), 5000);
         fetchOrders();
       } else {
         alert(data.message || "Failed to cancel order");
@@ -145,6 +155,24 @@ export default function PharmacyOrdersPage() {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  // Tab counts
+  const counts = {
+    Pending: orders.filter((o) => {
+      const s = o.status.toUpperCase();
+      return !["FULFILLED", "DELIVERED", "CANCELLED"].includes(s);
+    }).length,
+    Verified: orders.filter((o) => {
+      const s = o.status.toUpperCase();
+      return s === "CALL_COMPLETED" || s === "PRESCRIPTION_APPROVED";
+    }).length,
+    Fulfilled: orders.filter((o) => {
+      const s = o.status.toUpperCase();
+      return s === "FULFILLED" || s === "DELIVERED";
+    }).length,
+    Cancelled: orders.filter((o) => o.status.toUpperCase() === "CANCELLED").length,
+    All: orders.length,
   };
 
   // Filter orders
@@ -159,20 +187,23 @@ export default function PharmacyOrdersPage() {
       orderNum.toLowerCase().includes(searchQuery.toLowerCase());
 
     const normStatus = order.status.toUpperCase();
-    if (statusFilter === "All") return matchesSearch;
+    const isCancelled = normStatus === "CANCELLED";
+    const isFulfilled = normStatus === "FULFILLED" || normStatus === "DELIVERED";
+    const isVerified = normStatus === "CALL_COMPLETED" || normStatus === "PRESCRIPTION_APPROVED";
+    const isPending = !isFulfilled && !isCancelled;
+
     if (statusFilter === "Pending") {
-      return matchesSearch && (normStatus === "REQUEST_RECEIVED" || normStatus === "PLACED" || normStatus === "PRESCRIPTION_VERIFICATION");
+      return matchesSearch && isPending;
     }
     if (statusFilter === "Verified") {
-      return matchesSearch && (normStatus === "CALL_COMPLETED" || normStatus === "PRESCRIPTION_APPROVED");
+      return matchesSearch && isVerified;
     }
     if (statusFilter === "Fulfilled") {
-      return matchesSearch && (normStatus === "FULFILLED" || normStatus === "DELIVERED");
+      return matchesSearch && isFulfilled;
     }
     if (statusFilter === "Cancelled") {
-      return matchesSearch && normStatus === "CANCELLED";
+      return matchesSearch && isCancelled;
     }
-
     return matchesSearch;
   });
 
@@ -230,6 +261,14 @@ export default function PharmacyOrdersPage() {
         </Button>
       </div>
 
+      {/* Success Notification Banner */}
+      {successBanner && (
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          <span className="text-xs font-semibold">{successBanner}</span>
+        </div>
+      )}
+
       {/* Verification Notice */}
       <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3">
         <PhoneCall className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -253,19 +292,34 @@ export default function PharmacyOrdersPage() {
           />
         </div>
 
-        {/* Status Filter Tabs */}
+        {/* Status Filter Tabs with Dynamic Counts */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1">
-          {["All", "Pending", "Verified", "Fulfilled", "Cancelled"].map((tab) => (
-            <Button
-              key={tab}
-              variant={statusFilter === tab ? "default" : "outline"}
-              size="sm"
-              onClick={() => setStatusFilter(tab)}
-              className="rounded-xl text-xs font-semibold h-9 shrink-0"
-            >
-              {tab}
-            </Button>
-          ))}
+          {[
+            { id: "Pending", label: "Pending" },
+            { id: "Verified", label: "Verified" },
+            { id: "Fulfilled", label: "Fulfilled" },
+            { id: "Cancelled", label: "Cancelled" },
+            { id: "All", label: "All" },
+          ].map((tab) => {
+            const count = counts[tab.id as keyof typeof counts];
+            const isActive = statusFilter === tab.id;
+            return (
+              <Button
+                key={tab.id}
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter(tab.id)}
+                className="rounded-xl text-xs font-semibold h-9 shrink-0 gap-1.5"
+              >
+                <span>{tab.label}</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}>
+                  {count}
+                </span>
+              </Button>
+            );
+          })}
         </div>
       </div>
 

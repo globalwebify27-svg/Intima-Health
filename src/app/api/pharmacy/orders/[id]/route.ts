@@ -130,14 +130,24 @@ export async function PUT(request: Request, { params }: RouteParams) {
         if (body.courierPartner) order.delivery.courierPartner = body.courierPartner;
       }
 
-      // If Delivered
-      if (body.status === "Delivered") {
+      // If Delivered or Fulfilled
+      const upperStatus = body.status.toUpperCase();
+      if (upperStatus === "FULFILLED" || upperStatus === "DELIVERED") {
         if (!order.delivery) order.delivery = {};
         order.delivery.deliveredAt = new Date();
+
+        // Synchronize with Consultation: Mark prescriptionStatus as Fulfilled
+        if (order.consultationId) {
+          const consultId = typeof order.consultationId === "object" ? (order.consultationId as any)._id : order.consultationId;
+          const { ConsultationModel } = await import("@/modules/consultations/schema");
+          await ConsultationModel.findByIdAndUpdate(consultId, {
+            $set: { prescriptionStatus: "Fulfilled", updatedBy: updaterName }
+          }).catch((e: unknown) => console.error("Error syncing consultation prescription status:", e));
+        }
       }
 
       // If Cancelled
-      if (body.status === "Cancelled") {
+      if (upperStatus === "CANCELLED") {
         order.cancelledAt = new Date();
         order.cancelledBy = body.cancelledBy || updaterName;
         order.cancellationReason = body.cancellationReason || body.comment || "Cancelled";
