@@ -480,7 +480,7 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
 
           {/* Doctors Grid */}
           {doctorsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
               {[1, 2, 3].map((n) => (
                 <div key={n} className="h-[460px] rounded-3xl bg-muted/40 animate-pulse border border-border" />
               ))}
@@ -498,7 +498,7 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
               {sortedDoctors.map((doctor) => {
                 const isSpecialFounder = doctor.name?.toLowerCase().includes("deepak kelkar");
                 const doctorClinicId = typeof doctor.clinicId === "object" && doctor.clinicId !== null
@@ -513,17 +513,17 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
                 return (
                   <div
                     key={doctor._id}
-                    className="group flex flex-col rounded-[2rem] bg-card border border-border/80 overflow-hidden hover:shadow-2xl hover:border-primary/30 transition-all duration-300"
+                    className="group flex flex-col h-full rounded-[2rem] bg-card border border-border/80 overflow-hidden hover:shadow-2xl hover:border-primary/30 transition-all duration-300"
                   >
-                    {/* 1. Doctor Portrait Container (Clean, dedicated framing - NO text covering face!) */}
-                    <div className="relative aspect-[4/3] sm:aspect-[1.15/1] w-full overflow-hidden bg-gradient-to-b from-primary/10 via-slate-100/60 to-muted/40 border-b border-border/50">
+                    {/* 1. Doctor Portrait Container - Exact same uniform aspect ratio & edge-to-edge cover */}
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-slate-900 border-b border-border/50">
                       {doctor.avatar ? (
                         <Image
                           src={doctor.avatar}
                           alt={doctor.name}
                           fill
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          className="object-contain object-bottom p-2 group-hover:scale-105 transition-transform duration-500"
+                          className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-primary/30">
@@ -552,51 +552,56 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
                       </div>
                     </div>
 
-                    {/* 2. Doctor Information Body (Clean, highly legible text hierarchy) */}
-                    <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between space-y-5">
-                      <div>
-                        {/* Doctor Name */}
-                        <h3 className="text-2xl font-serif font-bold text-foreground mb-1 leading-snug group-hover:text-primary transition-colors">
+                    {/* 2. Doctor Information Body - Uniform heights across all cards */}
+                    <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-3">
+                        {/* Doctor Name - Consistent height for 1 and 2 line titles */}
+                        <h3 className="text-xl sm:text-2xl font-serif font-bold text-foreground leading-snug group-hover:text-primary transition-colors min-h-[3.25rem] flex items-center">
                           {doctor.name}
                         </h3>
 
-                        {/* Specialization */}
-                        <p className="text-xs sm:text-sm font-semibold text-primary mb-3 leading-snug">
+                        {/* Specialization - Uniform 2-line height */}
+                        <p className="text-xs sm:text-sm font-semibold text-primary leading-snug line-clamp-2 min-h-[2.5rem]">
                           {doctor.specialization || "Psychiatrist & Mental Health Specialist"}
                         </p>
 
-                        {/* Qualifications Pills */}
-                        {doctor.qualifications && doctor.qualifications.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 mb-3.5">
-                            <GraduationCap className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                            {doctor.qualifications.map((q, idx) => (
-                              <span 
-                                key={idx}
-                                className="px-2 py-0.5 rounded-md bg-muted text-[11px] font-semibold text-foreground/80 border border-border/60"
-                              >
-                                {q}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        {/* Qualifications Pills - Uniform height */}
+                        <div className="flex flex-wrap items-center gap-1.5 min-h-[1.75rem]">
+                          <GraduationCap className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          {(doctor.qualifications && doctor.qualifications.length > 0
+                            ? doctor.qualifications
+                            : ["Specialist"]
+                          ).map((q, idx) => (
+                            <span 
+                              key={idx}
+                              className="px-2 py-0.5 rounded-md bg-muted text-[11px] font-semibold text-foreground/80 border border-border/60"
+                            >
+                              {q}
+                            </span>
+                          ))}
+                        </div>
 
-                        {/* Hospital / Clinic Branch Location */}
-                        {clinic && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3 font-medium">
-                            <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
-                            <span>{clinic.name} {cleanCity ? `(${cleanCity})` : ""}</span>
-                          </div>
-                        )}
+                        {/* Hospital / Clinic Branch Location - Uniform height */}
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium min-h-[1.25rem]">
+                          {clinic ? (
+                            <>
+                              <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                              <span className="line-clamp-1">{clinic.name} {cleanCity ? `(${cleanCity})` : ""}</span>
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground/60 italic text-[11px]">Senior Medical Faculty</span>
+                          )}
+                        </div>
 
-                        {/* Bio summary */}
-                        <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                        {/* Bio summary - Uniform 2-line height */}
+                        <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem] leading-relaxed">
                           {doctor.bio || "Experienced specialist providing individualized clinical psychiatric care and patient consultation."}
                         </p>
                       </div>
 
-                      {/* 3. Action Footer (Only shown if doctor is assigned to a clinic) */}
-                      {hasAssignedClinic && (
-                        <div className="pt-4 border-t border-border/70">
+                      {/* 3. Action Footer (Equal height for all cards) */}
+                      <div className="pt-4 border-t border-border/70 min-h-[3.75rem] flex items-center">
+                        {hasAssignedClinic ? (
                           <BookNowButton 
                             prefilledData={{ 
                               doctorId: doctor._id,
@@ -608,8 +613,12 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
                             Book Consultation
                             <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                           </BookNowButton>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="w-full rounded-full py-3 text-xs font-semibold text-muted-foreground bg-muted/40 border border-border/60 text-center flex items-center justify-center">
+                            <span>Hospital Faculty • Clinical Director</span>
+                          </div>
+                        )}
+                      </div>
 
                     </div>
                   </div>
