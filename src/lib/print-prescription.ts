@@ -1,3 +1,13 @@
+function generateDoctorSignatureSvg(name: string): string {
+  const clean = (name || "Consultant").replace(/^(Dr\.\s*)+/i, "").trim();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 70" width="190" height="52">
+    <path d="M 15 42 Q 35 12, 55 38 T 90 28 Q 110 14, 130 35 T 165 26 Q 190 18, 220 32 Q 240 18, 250 35" fill="none" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 20 48 Q 70 54, 140 48 T 245 44" fill="none" stroke="#1e293b" stroke-width="1.6" stroke-linecap="round" />
+    <text x="130" y="27" font-family="'Brush Script MT', 'Segoe Script', 'Dancing Script', cursive, sans-serif" font-size="20" font-weight="bold" font-style="italic" fill="#0f172a" text-anchor="middle">Dr. ${clean}</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 export function printPrescription(consultation: any) {
   let doctorName = consultation.doctorId?.name || "";
   doctorName = doctorName.replace(/^(Dr\.\s*)+/i, "");
@@ -5,6 +15,7 @@ export function printPrescription(consultation: any) {
   const doctorSpecialization = consultation.doctorId?.specialization || "";
   const doctorQualifications = consultation.doctorId?.qualifications?.join(", ") || "";
   const doctorRegNumber = consultation.doctorId?.registrationNumber || "";
+  const doctorSignature = consultation.doctorId?.signature || generateDoctorSignatureSvg(doctorName);
   
   const clinic = consultation.appointmentId?.clinicId || {};
   const clinicName = clinic.name || "";
@@ -243,15 +254,36 @@ export function printPrescription(consultation: any) {
           .signature-area {
             display: flex;
             justify-content: flex-end;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
           }
           .signature-box {
             text-align: center;
-            width: 200px;
+            width: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .signature-img-wrapper {
+            height: 55px;
+            width: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            margin-bottom: 4px;
+          }
+          .signature-img {
+            max-height: 52px;
+            max-width: 180px;
+            object-fit: contain;
+            display: block;
+          }
+          .signature-placeholder {
+            height: 45px;
+            width: 100%;
           }
           .signature-line {
             border-bottom: 1px dashed var(--text-gray);
-            height: 40px;
+            width: 100%;
             margin-bottom: 8px;
           }
           .signature-name {
@@ -345,6 +377,13 @@ export function printPrescription(consultation: any) {
             
             <div class="signature-area">
               <div class="signature-box">
+                ${doctorSignature ? `
+                  <div class="signature-img-wrapper">
+                    <img src="${doctorSignature}" alt="Doctor Digital Signature" class="signature-img" />
+                  </div>
+                ` : `
+                  <div class="signature-placeholder"></div>
+                `}
                 <div class="signature-line"></div>
                 <div class="signature-name">Dr. ${doctorName}</div>
                 <div class="signature-label">Authorized Signatory</div>

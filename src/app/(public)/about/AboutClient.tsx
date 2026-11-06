@@ -592,11 +592,6 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
                             <span className="text-muted-foreground/60 italic text-[11px]">Senior Medical Faculty</span>
                           )}
                         </div>
-
-                        {/* Bio summary - Uniform 2-line height */}
-                        <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem] leading-relaxed">
-                          {doctor.bio || "Experienced specialist providing individualized clinical psychiatric care and patient consultation."}
-                        </p>
                       </div>
 
                       {/* 3. Action Footer (Equal height for all cards) */}

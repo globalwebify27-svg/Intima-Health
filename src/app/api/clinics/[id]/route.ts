@@ -38,6 +38,12 @@ export async function PUT(request: Request, { params }: RouteParams) {
     const { id } = await params;
     const body = await request.json();
     const updated = await ClinicService.updateClinic(id, body);
+    if (!updated) {
+      return NextResponse.json(
+        { success: false, message: "Clinic not found or could not be updated." },
+        { status: 404 }
+      );
+    }
     return NextResponse.json({
       success: true,
       message: "Clinic updated successfully.",

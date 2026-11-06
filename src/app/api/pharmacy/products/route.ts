@@ -84,7 +84,7 @@ export async function PUT(request: Request) {
   try {
     await connectDB();
     const body = await request.json();
-    const { id, stock, price, name, category } = body;
+    const { id, stock, price, name, category, packSize, dosageForm } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, message: "Product ID is required" }, { status: 400 });
@@ -94,6 +94,8 @@ export async function PUT(request: Request) {
     if (name !== undefined) updateFields.name = name;
     if (category !== undefined) updateFields.category = category;
     if (price !== undefined) updateFields.price = price;
+    if (packSize !== undefined) updateFields.packSize = packSize;
+    if (dosageForm !== undefined) updateFields.dosageForm = dosageForm;
     
     if (stock !== undefined) {
       updateFields.stock = stock;

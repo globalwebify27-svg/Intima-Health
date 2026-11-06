@@ -179,12 +179,12 @@ export default function PatientOrdersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full min-w-0 overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Medicine Order Requests</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Medicine Order Requests</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Track your prescription medicine requests submitted to the clinic pharmacy.
+            View your prescription medicine requests submitted to the clinic pharmacy.
           </p>
         </div>
         <Link href="/patient/prescriptions">

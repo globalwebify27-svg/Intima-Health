@@ -15,7 +15,8 @@ import {
   Mail,
   Phone,
   Activity,
-  Clock
+  Clock,
+  ArrowLeft
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -206,15 +207,25 @@ export default function DoctorPatientsPage() {
           className="w-full sm:max-w-none md:w-[70vw] lg:w-[52vw] xl:w-[50vw] data-[side=right]:sm:max-w-none data-[side=right]:w-full data-[side=right]:md:w-[70vw] data-[side=right]:lg:w-[52vw] data-[side=right]:xl:w-[50vw] overflow-y-auto p-0 border-l border-border/40 shadow-2xl flex flex-col"
         >
           {/* Sticky Header with Patient Identity */}
-          <div className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent p-6 sm:p-7 border-b border-border/50 sticky top-0 z-10 backdrop-blur-md">
+          <div className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent p-4 sm:p-7 border-b border-border/50 sticky top-0 z-10 backdrop-blur-md">
             <SheetHeader>
-              <div className="flex items-center justify-between pr-8">
-                <SheetTitle className="text-2xl font-bold flex items-center gap-3">
-                  <div className="p-2.5 bg-primary/10 text-primary rounded-xl shadow-sm border border-primary/20">
-                    <FileText className="w-6 h-6" />
-                  </div>
-                  <span>Patient Records</span>
-                </SheetTitle>
+              <div className="flex items-center justify-between gap-3 pr-8">
+                <div className="flex items-center gap-2.5">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setSelectedPatientRecords(null)} 
+                    className="h-9 px-3 rounded-xl text-xs font-bold gap-1.5 text-foreground hover:bg-muted border-border/80 shadow-xs flex items-center shrink-0"
+                  >
+                    <ArrowLeft className="w-4 h-4 text-primary" /> Back
+                  </Button>
+                  <SheetTitle className="text-xl sm:text-2xl font-bold flex items-center gap-2.5 truncate">
+                    <div className="p-2 bg-primary/10 text-primary rounded-xl shadow-sm border border-primary/20 hidden sm:flex shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <span>Patient Records</span>
+                  </SheetTitle>
+                </div>
               </div>
 
               {selectedPatientRecords && (

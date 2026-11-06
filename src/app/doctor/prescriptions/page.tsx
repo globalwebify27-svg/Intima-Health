@@ -18,6 +18,9 @@ interface DrugItem {
 interface TherapyItem {
   name: string;
   price: number;
+  therapistId?: string;
+  recommendedMode?: "Online" | "Offline" | "Both";
+  doctorNotes?: string;
 }
 
 interface ClinicService {
@@ -52,6 +55,7 @@ export default function DoctorPrescriptionsPage() {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<any[]>([]);
   const [clinicServices, setClinicServices] = useState<ClinicService[]>([]);
+  const [availableTherapists, setAvailableTherapists] = useState<any[]>([]);
   const [clinicId, setClinicId] = useState("");
 
   // Modal State
@@ -102,6 +106,13 @@ export default function DoctorPrescriptionsPage() {
           if (svcJson.success) {
             setClinicServices(svcJson.data.filter((s: any) => s.status === "Active" && s.type === "Therapy"));
           }
+
+          // Fetch clinic therapists
+          const thRes = await fetch(`/api/therapists`);
+          const thJson = await thRes.json();
+          if (thJson.success) {
+            setAvailableTherapists(thJson.data || []);
+          }
         }
       }
     } catch (err) {
@@ -147,14 +158,24 @@ export default function DoctorPrescriptionsPage() {
   };
 
   // ── Therapy handlers ──────────────────────────────────────────────────────
-  const handleAddTherapy = () => setTherapies([...therapies, { name: "", price: 0 }]);
+  const handleAddTherapy = () => setTherapies([
+    ...therapies, 
+    { name: "", price: 0, therapistId: "", recommendedMode: "Online", doctorNotes: "" }
+  ]);
   const handleRemoveTherapy = (i: number) => setTherapies(therapies.filter((_, idx) => idx !== i));
-  const handleTherapyNameChange = (i: number, val: string) => {
+  const handleTherapyChange = (index: number, field: keyof TherapyItem, value: any) => {
     const u = [...therapies];
-    u[i].name = val;
-    // Auto-fill price from clinic service catalog (read-only)
-    const matched = clinicServices.find(s => s.name.toLowerCase() === val.toLowerCase());
-    if (matched) u[i].price = matched.price;
+    u[index] = { ...u[index], [field]: value };
+    if (field === "name") {
+      const matched = clinicServices.find(s => s.name.toLowerCase() === (value || "").toLowerCase());
+      if (matched && matched.price) u[index].price = matched.price;
+    }
+    if (field === "therapistId" && value) {
+      const selectedTh = availableTherapists.find(t => t._id === value);
+      if (selectedTh && selectedTh.fees && !u[index].price) {
+        u[index].price = selectedTh.fees;
+      }
+    }
     setTherapies(u);
   };
 
@@ -382,40 +403,71 @@ export default function DoctorPrescriptionsPage() {
                     + Add Medicine
                   </Button>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {drugs.map((d, i) => (
-                    <div key={i} className="flex gap-2 items-center bg-muted/20 p-3 rounded-xl border border-border/50">
-                      <div className="grid grid-cols-4 gap-2 flex-1">
-                        <input type="text" required value={d.drug}
+                    <div key={i} className="p-3.5 bg-muted/30 border border-border/60 rounded-2xl space-y-2.5 relative">
+                      {drugs.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDrug(i)}
+                          className="absolute top-2.5 right-2.5 text-muted-foreground hover:text-destructive p-1 rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      {/* Medicine name full-width */}
+                      <div className="space-y-1 pr-6">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground">Medicine Name *</span>
+                        <input
+                          type="text"
+                          required
+                          value={d.drug}
                           onChange={e => handleDrugChange(i, "drug", e.target.value)}
-                          placeholder="Medicine name"
-                          list={`drug-list-${i}`} autoComplete="off"
-                          className="h-9 px-2.5 rounded-lg border border-border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                          placeholder="e.g. Paracetamol 650mg"
+                          list={`drug-list-${i}`}
+                          autoComplete="off"
+                          className="w-full h-9 px-3 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
                         <datalist id={`drug-list-${i}`}>
                           {products.map(p => <option key={p._id} value={p.name} />)}
                         </datalist>
-                        <input type="text" required value={d.dosage}
-                          onChange={e => handleDrugChange(i, "dosage", e.target.value)}
-                          placeholder="Dosage (e.g. 1 tab)"
-                          className="h-9 px-2.5 rounded-lg border border-border bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
-                        />
-                        <input type="text" required value={d.frequency}
-                          onChange={e => handleDrugChange(i, "frequency", e.target.value)}
-                          placeholder="Freq (e.g. 1-0-1)"
-                          className="h-9 px-2.5 rounded-lg border border-border bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
-                        />
-                        <input type="text" required value={d.duration}
-                          onChange={e => handleDrugChange(i, "duration", e.target.value)}
-                          placeholder="Duration (e.g. 5 days)"
-                          className="h-9 px-2.5 rounded-lg border border-border bg-transparent text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
-                        />
                       </div>
-                      <Button type="button" variant="ghost" size="icon"
-                        onClick={() => handleRemoveDrug(i)} disabled={drugs.length === 1}
-                        className="text-destructive hover:bg-destructive/10 shrink-0 h-8 w-8">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {/* Dosage, Freq, Duration in responsive columns */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground">Dosage</span>
+                          <input
+                            type="text"
+                            required
+                            value={d.dosage}
+                            onChange={e => handleDrugChange(i, "dosage", e.target.value)}
+                            placeholder="e.g. 1 tab / 5ml"
+                            className="w-full h-9 px-2.5 rounded-xl border border-border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground">Frequency</span>
+                          <input
+                            type="text"
+                            required
+                            value={d.frequency}
+                            onChange={e => handleDrugChange(i, "frequency", e.target.value)}
+                            placeholder="e.g. 1-0-1 / Once daily"
+                            className="w-full h-9 px-2.5 rounded-xl border border-border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground">Duration</span>
+                          <input
+                            type="text"
+                            required
+                            value={d.duration}
+                            onChange={e => handleDrugChange(i, "duration", e.target.value)}
+                            placeholder="e.g. 5 days / 1 month"
+                            className="w-full h-9 px-2.5 rounded-xl border border-border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          />
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -434,49 +486,102 @@ export default function DoctorPrescriptionsPage() {
 
                 {clinicServices.length === 0 && (
                   <p className="text-xs text-muted-foreground bg-muted/30 px-3 py-2 rounded-lg">
-                    No clinic therapies configured yet. Ask the manager to add them under "Therapies Offered".
+                    No clinic therapies configured yet. Ask the manager to add them under &quot;Therapies Offered&quot;.
                   </p>
                 )}
 
                 {therapies.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {therapies.map((t, i) => (
-                      <div key={i} className="flex gap-2 items-center bg-violet-500/5 border border-violet-500/15 p-3 rounded-xl">
-                        <div className="grid grid-cols-2 gap-2 flex-1">
-                          {/* Therapy name with autocomplete from clinic services */}
-                          <div>
-                            <input type="text" value={t.name}
-                              onChange={e => handleTherapyNameChange(i, e.target.value)}
-                              placeholder="Therapy name"
-                              list={`therapy-list-${i}`} autoComplete="off"
-                              className="w-full h-9 px-2.5 rounded-lg border border-border bg-background text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary/30"
-                            />
-                            <datalist id={`therapy-list-${i}`}>
-                              {clinicServices.map(s => <option key={s._id} value={s.name} />)}
-                            </datalist>
-                          </div>
+                      <div key={i} className="p-3.5 bg-muted/30 border border-border/60 rounded-2xl space-y-3 relative">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTherapy(i)}
+                          className="absolute top-2.5 right-2.5 text-muted-foreground hover:text-destructive p-1 rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
 
-                          {/* Price — read-only, auto-fills from clinic catalog */}
-                          <div className="relative">
-                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-bold">₹</span>
-                            <input type="number" value={t.price || ""}
-                              readOnly
-                              placeholder="Auto-fills"
-                              className="w-full h-9 pl-6 pr-2.5 rounded-lg border border-border bg-muted text-xs text-muted-foreground cursor-not-allowed focus:outline-none"
+                        {/* Therapy Service */}
+                        <div className="space-y-1 pr-6">
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground">Therapy Service *</span>
+                          <input
+                            type="text"
+                            value={t.name}
+                            onChange={e => handleTherapyChange(i, "name", e.target.value)}
+                            placeholder="Couples Therapy Session / CBT"
+                            list={`therapy-list-${i}`}
+                            autoComplete="off"
+                            className="w-full h-9 px-3 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          />
+                          <datalist id={`therapy-list-${i}`}>
+                            {clinicServices.map(s => <option key={s._id} value={s.name} />)}
+                          </datalist>
+                        </div>
+
+                        {/* Assign Licensed Therapist */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                              <User className="w-3 h-3 text-primary" /> Assign Licensed Therapist *
+                            </span>
+                            {t.therapistId && (
+                              <span className="text-[10px] font-semibold text-emerald-600">Assigned</span>
+                            )}
+                          </div>
+                          <select
+                            value={t.therapistId || ""}
+                            onChange={e => handleTherapyChange(i, "therapistId", e.target.value)}
+                            className="w-full h-9 px-3 text-xs font-medium rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          >
+                            <option value="">-- Choose Assigned Therapist --</option>
+                            {availableTherapists.map(th => (
+                              <option key={th._id} value={th._id}>
+                                {th.name} ({th.specialization || "Licensed Psychologist"}) - ₹{th.fees || 1500}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Mode & Price */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground">Recommended Mode</span>
+                            <select
+                              value={t.recommendedMode || "Online"}
+                              onChange={e => handleTherapyChange(i, "recommendedMode", e.target.value)}
+                              className="w-full h-9 px-3 text-xs font-medium rounded-xl border border-border bg-background focus:outline-none"
+                            >
+                              <option value="Online">Online Video</option>
+                              <option value="Offline">Offline Clinic</option>
+                              <option value="Both">Flexible (Both)</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground">Session Fee (₹)</span>
+                            <input
+                              type="number"
+                              value={t.price || ""}
+                              onChange={e => handleTherapyChange(i, "price", Number(e.target.value))}
+                              placeholder="1500"
+                              className="w-full h-9 px-3 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
                             />
-                            <Lock className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50" />
                           </div>
                         </div>
-                        <Button type="button" variant="ghost" size="icon"
-                          onClick={() => handleRemoveTherapy(i)}
-                          className="text-destructive hover:bg-destructive/10 shrink-0 h-8 w-8">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+
+                        {/* Clinical Guidance / Doctor Notes */}
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground">Clinical Guidance / Doctor Notes</span>
+                          <textarea
+                            rows={2}
+                            value={t.doctorNotes || ""}
+                            onChange={e => handleTherapyChange(i, "doctorNotes", e.target.value)}
+                            placeholder="Guidance for assigned therapist (e.g. CBT focus, partner dynamics, anxiety triggers)..."
+                            className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none resize-none"
+                          />
+                        </div>
                       </div>
                     ))}
-                    <p className="text-[11px] text-muted-foreground/70 px-1 flex items-center gap-1">
-                      <Lock className="w-3 h-3" /> Prices are set by the clinic manager and cannot be edited.
-                    </p>
                   </div>
                 )}
               </div>

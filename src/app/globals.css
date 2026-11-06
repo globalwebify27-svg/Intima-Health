@@ -157,8 +157,15 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
   body {
     @apply bg-background text-foreground selection:bg-primary/20 selection:text-primary;
+    min-width: 0;
   }
   html {
     @apply font-sans;
@@ -166,4 +173,17 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading tracking-tight;
   }
+}
+
+/* Force ZegoUIKit footer controls and buttons to stay visible and elevated on mobile */
+div[class*="footer"], 
+div[class*="Footer"], 
+div[class*="bottomBar"], 
+div[class*="BottomBar"],
+div[class*="toolbar"],
+div[class*="Toolbar"] {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: flex !important;
+  z-index: 50 !important;
 }

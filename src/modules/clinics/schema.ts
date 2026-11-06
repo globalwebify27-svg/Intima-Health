@@ -26,6 +26,10 @@ const ClinicSchema = new Schema<IClinic>({
 
 ClinicSchema.index({ status: 1, state: 1, city: 1 });
 
+if (mongoose.models.Clinic) {
+  delete (mongoose.models as any).Clinic;
+}
+
 export const ClinicModel = mongoose.models.Clinic || mongoose.model<IClinic>("Clinic", ClinicSchema);
 
 export interface IClinicService {

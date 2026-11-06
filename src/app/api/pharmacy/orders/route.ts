@@ -83,6 +83,8 @@ export async function POST(request: Request) {
       patientId,
       clinicId: rawClinicId,
       items,
+      totalAmount,
+      status,
       shippingDetails,
       shippingAddress,
       prescriptionSource = "DIGITAL_CONSULTATION",
@@ -94,9 +96,9 @@ export async function POST(request: Request) {
       remainingRefills,
     } = body;
 
-    // --- CASE A: MEDICINE ORDER REQUEST (CONSULTATION DIRECT ROUTING) ---
-    // If an order request is coming from a prescription/consultation
-    if (consultationId) {
+    // --- CASE A: MEDICINE ORDER REQUEST (CONSULTATION DIRECT ROUTING BY PATIENT) ---
+    // If an order request is coming from a patient requesting medicine fulfillment
+    if (consultationId && status !== "Delivered" && status !== "Dispensed") {
       const consultation = await ConsultationModel.findById(consultationId)
         .populate("doctorId")
         .populate("appointmentId")
@@ -312,9 +314,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: "Order must contain at least one item." }, { status: 400 });
     }
 
-    const pinCode = shippingDetails?.pinCode || (typeof shippingAddress === "string" ? shippingAddress.match(/\b\d{6}\b/)?.[0] : null);
-    if (!pinCode) {
-      return NextResponse.json({ success: false, message: "A valid 6-digit delivery PIN code is required." }, { status: 400 });
+    // Check if this is an in-clinic / over-the-counter dispense or direct pharmacy pickup
+    const isCounterDispense = 
+      status === "Delivered" || 
+      status === "Dispensed" ||
+      (typeof shippingAddress === "string" && (
+        shippingAddress.toLowerCase().includes("counter") || 
+        shippingAddress.toLowerCase().includes("clinic") ||
+        shippingAddress.toLowerCase().includes("pickup")
+      ));
+
+    // Postal delivery PIN code (only required for home courier delivery, not for in-person clinic counter dispense)
+    const pinCode = shippingDetails?.pinCode || 
+      (typeof shippingAddress === "string" ? shippingAddress.match(/\b\d{6}\b/)?.[0] : null) ||
+      (isCounterDispense ? "444001" : null);
+
+    if (!pinCode && !isCounterDispense) {
+      return NextResponse.json({ success: false, message: "A valid 6-digit postal delivery PIN code is required for home courier delivery." }, { status: 400 });
     }
 
     let config = await PharmacyConfigModel.findOne().exec();
@@ -322,18 +338,21 @@ export async function POST(request: Request) {
       config = await PharmacyConfigModel.create({});
     }
 
-    const pincodesList = (config.serviceablePincodes && config.serviceablePincodes.length > 0)
-      ? config.serviceablePincodes
-      : DEFAULT_AKOLA_PINCODES;
+    let matchedPin: any = null;
+    if (!isCounterDispense && pinCode) {
+      const pincodesList = (config.serviceablePincodes && config.serviceablePincodes.length > 0)
+        ? config.serviceablePincodes
+        : DEFAULT_AKOLA_PINCODES;
 
-    const matchedPin = pincodesList.find(
-      (p: { pinCode: string; isActive?: boolean }) => p.pinCode === pinCode && p.isActive !== false
-    );
-    if (!matchedPin) {
-      return NextResponse.json({
-        success: false,
-        message: `Delivery is currently not available for PIN code ${pinCode}. Medicine delivery is currently active in Akola, Maharashtra.`,
-      }, { status: 400 });
+      matchedPin = pincodesList.find(
+        (p: { pinCode: string; isActive?: boolean }) => p.pinCode === pinCode && p.isActive !== false
+      );
+      if (!matchedPin) {
+        return NextResponse.json({
+          success: false,
+          message: `Delivery is currently not available for postal PIN code ${pinCode}. Medicine delivery is currently active in Akola, Maharashtra.`,
+        }, { status: 400 });
+      }
     }
 
     let requiresPrescription = false;
@@ -397,10 +416,10 @@ export async function POST(request: Request) {
     }
 
     const taxRate = config.taxRatePercent || 12;
-    const taxAmount = Math.round((itemsTotal * taxRate) / 100);
+    const taxAmount = isCounterDispense ? 0 : Math.round((itemsTotal * taxRate) / 100);
     const freeThreshold = config.freeDeliveryThreshold || 500;
-    const deliveryCharge = itemsTotal >= freeThreshold ? 0 : (matchedPin.deliveryCharge ?? config.defaultDeliveryFee ?? 50);
-    const totalPayable = itemsTotal + taxAmount + deliveryCharge;
+    const deliveryCharge = isCounterDispense ? 0 : (itemsTotal >= freeThreshold ? 0 : (matchedPin?.deliveryCharge ?? config.defaultDeliveryFee ?? 50));
+    const totalPayable = isCounterDispense ? (totalAmount || itemsTotal) : (itemsTotal + taxAmount + deliveryCharge);
 
     const timestampStr = Date.now().toString().slice(-4);
     const randomNum = Math.floor(1000 + Math.random() * 9000);
@@ -420,9 +439,53 @@ export async function POST(request: Request) {
       }
     }
 
-    let initialStatus = "Placed";
-    if (requiresPrescription) {
+    let initialStatus = isCounterDispense ? (status || "Delivered") : "Placed";
+    if (!isCounterDispense && requiresPrescription) {
       initialStatus = "Prescription_Verification";
+    }
+
+    // If this is an in-clinic dispense and an order request for this consultation already existed, update it
+    if (consultationId && isCounterDispense) {
+      const existingOrder = await OrderModel.findOne({
+        consultationId,
+        status: { $nin: ["Cancelled", "CANCELLED"] },
+        deletedAt: null
+      }).exec();
+
+      if (existingOrder) {
+        existingOrder.status = "Delivered";
+        existingOrder.paymentStatus = (paymentMethod === "Send Link in WhatsApp") ? "Pending" : "Paid";
+        existingOrder.paymentMethod = paymentMethod;
+        if (validatedItems.length > 0) existingOrder.items = validatedItems as any;
+        existingOrder.totalAmount = totalPayable;
+        existingOrder.pricing = {
+          itemsTotal,
+          taxAmount,
+          deliveryCharge: 0,
+          discountAmount: 0,
+          totalPayable,
+        };
+        existingOrder.shippingAddress = "Clinic Counter Dispense";
+        existingOrder.prescriptionVerification = {
+          status: "Verified",
+          notes: "Dispensed and verified in-person by clinic pharmacy staff",
+          verifiedAt: new Date(),
+          verifiedBy: "Clinic Pharmacist",
+        };
+        existingOrder.statusHistory.push({
+          status: "Delivered",
+          timestamp: new Date(),
+          comment: `Order dispensed and settled in clinic pharmacy counter. Total: ₹${totalPayable.toLocaleString()} (${paymentMethod}).`,
+          updatedBy: "Pharmacy Staff",
+        });
+        await existingOrder.save();
+
+        return NextResponse.json({
+          success: true,
+          message: "Medicines dispensed and billing settled successfully.",
+          data: existingOrder,
+        });
+      }
     }
 
     const order = new OrderModel({
@@ -439,27 +502,40 @@ export async function POST(request: Request) {
         totalPayable,
       },
       status: initialStatus,
-      shippingAddress: typeof shippingAddress === "string" ? shippingAddress : `${shippingDetails?.street}, ${shippingDetails?.city}, ${shippingDetails?.state} - ${shippingDetails?.pinCode}`,
-      shippingDetails: shippingDetails || undefined,
+      shippingAddress: typeof shippingAddress === "string" ? shippingAddress : `${shippingDetails?.street || "Clinic Counter"}, ${shippingDetails?.city || "Akola"}, ${shippingDetails?.state || "Maharashtra"} - ${shippingDetails?.pinCode || "444001"}`,
+      shippingDetails: shippingDetails || {
+        fullName: "In-Clinic Patient",
+        phone: "9999999999",
+        street: "Clinic Counter Dispense",
+        city: "Akola",
+        state: "Maharashtra",
+        pinCode: "444001"
+      },
       paymentMethod,
-      paymentStatus: "Pending",
+      paymentStatus: isCounterDispense ? (paymentMethod === "Send Link in WhatsApp" ? "Pending" : "Paid") : "Pending",
       prescriptionSource: requiresPrescription ? prescriptionSource : "OTC_NO_RX",
       consultationId: consultationId || undefined,
       uploadedPrescriptionUrl: uploadedPrescriptionUrl || undefined,
       prescriptionVerification: {
-        status: requiresPrescription ? "Pending" : "Verified",
-        notes: requiresPrescription ? "Awaiting verification by licensed pharmacist" : "No prescription required for OTC items",
+        status: isCounterDispense ? "Verified" : (requiresPrescription ? "Pending" : "Verified"),
+        notes: isCounterDispense 
+          ? "Dispensed and verified in-person by clinic pharmacy staff"
+          : (requiresPrescription ? "Awaiting verification by licensed pharmacist" : "No prescription required for OTC items"),
+        verifiedAt: isCounterDispense ? new Date() : undefined,
+        verifiedBy: isCounterDispense ? "Clinic Pharmacist" : undefined,
       },
       delivery: {
-        courierPartner: "Kelkar Manas Akola Delivery Partner",
-        estimatedDeliveryDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        courierPartner: isCounterDispense ? "Over-the-Counter Dispense" : "Kelkar Manas Akola Delivery Partner",
+        estimatedDeliveryDate: isCounterDispense ? new Date() : new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
       statusHistory: [
         {
-          status: "Placed",
+          status: initialStatus,
           timestamp: new Date(),
-          comment: `Order placed by patient. Total: ₹${totalPayable.toLocaleString()} (${matchedPin.areaName}, Akola).`,
-          updatedBy: "Patient",
+          comment: isCounterDispense
+            ? `Order dispensed and settled in clinic pharmacy counter. Total: ₹${totalPayable.toLocaleString()} (${paymentMethod}).`
+            : `Order placed by patient. Total: ₹${totalPayable.toLocaleString()}${matchedPin ? ` (${matchedPin.areaName}, Akola)` : ""}.`,
+          updatedBy: isCounterDispense ? "Pharmacy Staff" : "Patient",
         },
       ],
       isRefillOrder: !!isRefillOrder,

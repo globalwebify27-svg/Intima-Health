@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { ClinicModel, IClinic } from "./schema";
 
 export class ClinicService {
@@ -6,7 +7,10 @@ export class ClinicService {
   }
 
   static async getClinicById(id: string) {
-    return await ClinicModel.findById(id).lean().exec();
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: new mongoose.Types.ObjectId(id) }, { _id: id }] }
+      : { _id: id };
+    return await ClinicModel.findOne(query as any).lean().exec();
   }
 
   static async createClinic(data: Partial<IClinic>) {
@@ -15,14 +19,20 @@ export class ClinicService {
   }
 
   static async updateClinic(id: string, data: Partial<IClinic>) {
-    return await ClinicModel.findByIdAndUpdate(
-      id,
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: new mongoose.Types.ObjectId(id) }, { _id: id }] }
+      : { _id: id };
+    return await ClinicModel.findOneAndUpdate(
+      query as any,
       { $set: data },
       { new: true, runValidators: true }
     ).exec();
   }
 
   static async deleteClinic(id: string) {
-    return await ClinicModel.findByIdAndDelete(id).exec();
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: new mongoose.Types.ObjectId(id) }, { _id: id }] }
+      : { _id: id };
+    return await ClinicModel.findOneAndDelete(query as any).exec();
   }
 }

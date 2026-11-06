@@ -13,6 +13,7 @@ interface TherapySessionDetail {
   price: number;
   date?: string;
   time?: string;
+  status?: string;
   selectedMode?: string;
   videoChannelName?: string;
   therapistId?: {
@@ -27,6 +28,33 @@ interface TherapySessionDetail {
     email: string;
   };
 }
+
+const parseDateTimeToMs = (dateStr?: string, timeStr?: string): number => {
+  if (!dateStr) return 0;
+
+  let hours = 0;
+  let minutes = 0;
+
+  if (timeStr) {
+    const cleanTime = timeStr.trim().toUpperCase();
+    if (cleanTime.includes("AM") || cleanTime.includes("PM")) {
+      const isPM = cleanTime.includes("PM");
+      const parts = cleanTime.replace(/\s*(AM|PM)/, "").split(":");
+      hours = parseInt(parts[0], 10) || 0;
+      minutes = parseInt(parts[1], 10) || 0;
+      if (isPM && hours < 12) hours += 12;
+      if (!isPM && hours === 12) hours = 0;
+    } else {
+      const parts = cleanTime.split(":");
+      hours = parseInt(parts[0], 10) || 0;
+      minutes = parseInt(parts[1], 10) || 0;
+    }
+  }
+
+  const [y, m, d] = dateStr.split("-").map(Number);
+  if (!y || !m || !d) return 0;
+  return new Date(y, m - 1, d, hours, minutes, 0, 0).getTime() || 0;
+};
 
 export default function PatientTherapySessionPage({
   params,
@@ -115,6 +143,55 @@ export default function PatientTherapySessionPage({
     );
   }
 
+  if (session.status === "Completed") {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+            <Shield className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Session Completed</h2>
+          <p className="text-muted-foreground text-sm">
+            This therapy session has concluded and was marked as completed by your therapist.
+          </p>
+          <Button onClick={() => router.push("/patient/dashboard")} className="rounded-xl bg-primary hover:bg-primary/90 text-white font-bold">
+            Return to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const isJoinable = (() => {
+    if (!session.date || !session.time) return true;
+    const sessionMs = parseDateTimeToMs(session.date, session.time);
+    if (!sessionMs) return true;
+    const now = new Date();
+    const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    if (session.date > todayLocal) return false;
+    const diffMinutes = (sessionMs - Date.now()) / (1000 * 60);
+    return diffMinutes <= 15 && diffMinutes >= -120;
+  })();
+
+  if (!isJoinable) {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+            <Clock className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Session Not Started Yet</h2>
+          <p className="text-muted-foreground text-sm">
+            Your therapy session is scheduled for <span className="text-white font-semibold">{session.date}</span> at <span className="text-white font-semibold">{session.time}</span>. The video room opens 15 minutes before the session starts.
+          </p>
+          <Button onClick={() => router.push("/patient/dashboard")} className="rounded-xl bg-primary hover:bg-primary/90 text-white font-bold">
+            Return to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const roomID = session.videoChannelName || `therapy_room_${session._id}`;
 
   return (
@@ -146,8 +223,18 @@ export default function PatientTherapySessionPage({
             <p className="text-xs font-bold text-white">{session.therapistId?.name || "Assigned Therapist"}</p>
             <p className="text-[10px] text-slate-400">{session.therapistId?.specialization || "Licensed Psychologist"}</p>
           </div>
-          <div className="w-8 h-8 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-xs font-bold border border-rose-500/30">
-            {session.therapistId?.name ? session.therapistId.name.slice(0, 2).toUpperCase() : "TH"}
+          <div className="w-8 h-8 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-xs font-bold border border-rose-500/30 overflow-hidden relative">
+            {session.therapistId?.avatar ? (
+              <img 
+                src={session.therapistId.avatar} 
+                alt="" 
+                className="w-full h-full object-cover rounded-full" 
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
+              />
+            ) : null}
+            <span className={session.therapistId?.avatar ? "absolute -z-10" : ""}>
+              {session.therapistId?.name ? session.therapistId.name.replace(/^Dr\.\s*/i, "").slice(0, 2).toUpperCase() : "TH"}
+            </span>
           </div>
         </div>
       </header>

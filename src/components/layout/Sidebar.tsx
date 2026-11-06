@@ -29,6 +29,12 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
   const pathname = usePathname();
   const { openBooking } = useBookingModal();
   const [logoUrl, setLogoUrl] = useState("/logo.png");
+  const [openMobile, setOpenMobile] = useState(false);
+
+  // Automatically close mobile sidebar whenever route changes
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [pathname]);
 
   useEffect(() => {
     fetch("/api/public/settings/branding")
@@ -49,10 +55,10 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
     return () => window.removeEventListener("branding_updated", handleBranding);
   }, []);
 
-  const SidebarContent = () => (
+  const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => (
     <div className="flex h-full flex-col bg-card overflow-hidden">
       <div className="flex py-6 items-center justify-center border-b border-border shrink-0">
-        <Link href="/" className="flex items-center">
+        <Link href="/" className="flex items-center" onClick={onNavigate}>
           <Image src={logoUrl || "/logo.png"} alt="Kelkar Manas Health Clinic" width={180} height={50} className="object-contain" priority />
         </Link>
       </div>
@@ -74,6 +80,7 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
                   isActive
@@ -90,13 +97,20 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
         
         <div className="mt-8 pt-4 border-t border-border flex flex-col gap-2">
           {roleName === "Patient" && (
-            <Button onClick={() => openBooking()} className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-sm h-11 mb-2">
+            <Button 
+              onClick={() => {
+                if (onNavigate) onNavigate();
+                openBooking();
+              }} 
+              className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-sm h-11 mb-2"
+            >
               Book Appointment
             </Button>
           )}
           {roleName !== "Patient" && !links.some((l) => l.href === `${basePath}/settings` || l.href.startsWith(`${basePath}/settings`)) && (
             <Link
               href={`${basePath}/settings`}
+              onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
                 pathname.startsWith(`${basePath}/settings`)
@@ -110,6 +124,7 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
           )}
           <button
             onClick={async () => {
+              if (onNavigate) onNavigate();
               try {
                 await fetch("/api/auth/logout", { method: "POST" });
                 window.location.href = roleName === "Patient" ? "/" : "/staff-login";
@@ -137,7 +152,7 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
       {/* Mobile Sidebar (Sheet) */}
       <div className="lg:hidden flex h-16 items-center px-4 border-b border-border bg-card fixed top-0 w-full z-40 shadow-sm justify-between">
         <div className="flex items-center">
-          <Sheet>
+          <Sheet open={openMobile} onOpenChange={setOpenMobile}>
             <SheetTrigger render={<Button variant="ghost" size="icon" className="mr-1" />}>
               <Menu className="h-6 w-6" />
               <span className="sr-only">Toggle navigation menu</span>
@@ -145,7 +160,7 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
             <SheetContent side="left" className="w-72 p-0">
               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
               <SheetDescription className="sr-only">Access your dashboard links here</SheetDescription>
-              <SidebarContent />
+              <SidebarContent onNavigate={() => setOpenMobile(false)} />
             </SheetContent>
           </Sheet>
           <Link href="/" className="flex items-center ml-2">

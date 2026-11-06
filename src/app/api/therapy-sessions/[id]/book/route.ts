@@ -23,6 +23,66 @@ async function handleBooking(req: Request, id: string) {
       );
     }
 
+    // Validate that slot is not in the past (support YYYY-MM-DD and DD-MM-YYYY)
+    const istTimeStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    const nowIST = new Date(istTimeStr);
+    const rawParts = date.trim().split(/[-/]/).map(Number);
+    let year: number;
+    let month: number;
+    let day: number;
+
+    if (rawParts[0] > 1000) {
+      year = rawParts[0];
+      month = rawParts[1];
+      day = rawParts[2];
+    } else {
+      day = rawParts[0];
+      month = rawParts[1];
+      year = rawParts[2];
+    }
+
+    const normDate = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const isPastDate = (
+      nowIST.getFullYear() > year ||
+      (nowIST.getFullYear() === year && (nowIST.getMonth() + 1) > month) ||
+      (nowIST.getFullYear() === year && (nowIST.getMonth() + 1) === month && nowIST.getDate() > day)
+    );
+
+    if (isPastDate) {
+      return NextResponse.json(
+        { success: false, message: "Cannot schedule a therapy session for a date in the past." },
+        { status: 400 }
+      );
+    }
+
+    const isToday = (
+      nowIST.getFullYear() === year &&
+      (nowIST.getMonth() + 1) === month &&
+      nowIST.getDate() === day
+    );
+
+    if (isToday) {
+      const cleanTime = time.trim().toUpperCase();
+      const isPM = cleanTime.includes("PM");
+      const isAM = cleanTime.includes("AM");
+      const numPart = cleanTime.replace(/\s*(AM|PM)/i, "").trim();
+      const parts = numPart.split(":");
+      let hours = parseInt(parts[0], 10);
+      const minutes = parseInt(parts[1], 10) || 0;
+      if (!isNaN(hours)) {
+        if (isPM && hours < 12) hours += 12;
+        if (isAM && hours === 12) hours = 0;
+        const slotMins = hours * 60 + minutes;
+        const currentMins = nowIST.getHours() * 60 + nowIST.getMinutes();
+        if (slotMins <= currentMins) {
+          return NextResponse.json(
+            { success: false, message: "This session time slot has already passed. Please select an upcoming slot." },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     const session = await TherapySessionModel.findById(id).exec();
     if (!session) {
       return NextResponse.json(
@@ -36,7 +96,7 @@ async function handleBooking(req: Request, id: string) {
       ? (session.videoChannelName || `therapy_${session._id}_${Date.now().toString(36)}`)
       : undefined;
 
-    session.date = date;
+    session.date = normDate;
     session.time = time;
     session.selectedMode = selectedMode;
     session.status = "Scheduled";
@@ -51,13 +111,14 @@ async function handleBooking(req: Request, id: string) {
 
     // Create synchronized Appointment record
     try {
+      const docIdToUse = session.doctorId || session.therapistId;
       const appointment = new AppointmentModel({
         patientId: session.patientId,
-        doctorId: session.doctorId,
+        doctorId: docIdToUse,
         clinicId: session.clinicId,
-        date,
+        date: normDate,
         time,
-        type: selectedMode === "Online" ? "Video" : "In-Person",
+        type: selectedMode === "Online" ? "Video" : "Walk-in",
         status: "Scheduled",
         paymentStatus: "Paid",
         paymentMethod,

@@ -118,7 +118,13 @@ export async function POST(req: Request) {
     ) : undefined;
 
     const prescribedTherapiesJson = Array.isArray(therapies) && therapies.length > 0
-      ? JSON.stringify(therapies.map((t: any) => ({ name: t.name, price: Number(t.price) })))
+      ? JSON.stringify(therapies.map((t: any) => ({
+          name: t.name,
+          price: Number(t.price) || 0,
+          therapistId: t.therapistId || undefined,
+          recommendedMode: t.recommendedMode || "Online",
+          doctorNotes: t.doctorNotes || undefined,
+        })))
       : undefined;
 
     // Create a "walk-in" consultation record marked Completed
@@ -146,9 +152,13 @@ export async function POST(req: Request) {
           if (therapy.name) {
             const session = new TherapySessionModel({
               patientId,
+              doctorId: (doctor as any)._id,
+              therapistId: therapy.therapistId || undefined,
               clinicId: (doctor as any).clinicId,
               name: therapy.name,
               price: Number(therapy.price) || 0,
+              recommendedMode: therapy.recommendedMode || "Online",
+              doctorNotes: therapy.doctorNotes || undefined,
               status: "Recommended",
               consultationId: (consultation as any)._id,
             });

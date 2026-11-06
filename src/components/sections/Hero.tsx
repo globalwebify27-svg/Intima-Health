@@ -108,7 +108,7 @@ export function Hero() {
                   className="rounded-2xl px-7 py-7 text-base font-bold transition-all w-full sm:w-auto bg-card/90 hover:bg-primary/10 text-foreground border-2 border-primary/25 hover:border-primary shadow-sm hover:shadow-md flex items-center justify-center gap-2 group cursor-pointer backdrop-blur-sm"
                 >
                   <Building2 className="h-5 w-5 shrink-0 text-primary group-hover:scale-110 transition-transform" />
-                  <span>Walk-in(Physical) Appointment</span>
+                  <span>Walk-in Appointment</span>
                   <ArrowRight className="ml-1 h-5 w-5 shrink-0 text-primary group-hover:translate-x-1 transition-transform" />
                 </Button>
               </motion.div>

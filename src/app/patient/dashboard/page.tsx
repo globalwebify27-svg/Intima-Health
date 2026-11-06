@@ -89,6 +89,7 @@ interface TherapySession {
     _id: string;
     name: string;
     specialization?: string;
+    avatar?: string;
   };
   therapistId?: TherapistProfile;
   createdAt?: string;
@@ -100,6 +101,51 @@ interface PharmacyOrder {
   status: string;
   createdAt: string;
 }
+
+const normalizeDateToYMD = (dateStr?: string): string => {
+  if (!dateStr) return "";
+  const clean = dateStr.trim();
+  if (clean.includes("T")) return clean.split("T")[0];
+  const parts = clean.split(/[-/]/);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      // YYYY-MM-DD
+      return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+    } else if (parts[2].length === 4) {
+      // DD-MM-YYYY
+      return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+    }
+  }
+  return clean;
+};
+
+const parseDateTimeToMs = (dateStr?: string, timeStr?: string): number => {
+  if (!dateStr) return 0;
+
+  let hours = 0;
+  let minutes = 0;
+
+  if (timeStr) {
+    const cleanTime = timeStr.trim().toUpperCase();
+    if (cleanTime.includes("AM") || cleanTime.includes("PM")) {
+      const isPM = cleanTime.includes("PM");
+      const parts = cleanTime.replace(/\s*(AM|PM)/, "").split(":");
+      hours = parseInt(parts[0], 10) || 0;
+      minutes = parseInt(parts[1], 10) || 0;
+      if (isPM && hours < 12) hours += 12;
+      if (!isPM && hours === 12) hours = 0;
+    } else {
+      const parts = cleanTime.split(":");
+      hours = parseInt(parts[0], 10) || 0;
+      minutes = parseInt(parts[1], 10) || 0;
+    }
+  }
+
+  const ymd = normalizeDateToYMD(dateStr);
+  const [y, m, d] = ymd.split("-").map(Number);
+  if (!y || !m || !d) return 0;
+  return new Date(y, m - 1, d, hours, minutes, 0, 0).getTime() || 0;
+};
 
 export default function PatientDashboard() {
   const { openBooking } = useBookingModal();
@@ -183,13 +229,61 @@ export default function PatientDashboard() {
     return `${String(hours).padStart(2, "0")}:${minutesStr || "00"} ${ampm}`;
   };
 
+  const parseTimeToMinutes = (timeStr: string): number | null => {
+    if (!timeStr) return null;
+    const clean = timeStr.trim().toUpperCase();
+    const isPM = clean.includes("PM");
+    const isAM = clean.includes("AM");
+
+    const numericPart = clean.replace(/\s*(AM|PM)/i, "").trim();
+    const parts = numericPart.split(":");
+    if (parts.length < 2) return null;
+
+    let hours = parseInt(parts[0], 10);
+    const minutes = parseInt(parts[1], 10) || 0;
+
+    if (isNaN(hours)) return null;
+
+    if (isPM && hours < 12) hours += 12;
+    if (isAM && hours === 12) hours = 0;
+
+    return hours * 60 + minutes;
+  };
+
   const getAvailableTimeSlots = () => {
-    return realSlots
+    const formatted = realSlots
       .map((s: any) => {
         const raw = typeof s === "string" ? s : s?.start || "";
         return formatSlotTime(raw);
       })
       .filter(Boolean);
+
+    if (!therapyDate) return formatted;
+
+    const ymd = normalizeDateToYMD(therapyDate);
+
+    // Calculate today's date in Indian Standard Time (Asia/Kolkata)
+    const istTimeStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    const nowIST = new Date(istTimeStr);
+    const localYear = nowIST.getFullYear();
+    const localMonth = String(nowIST.getMonth() + 1).padStart(2, "0");
+    const localDay = String(nowIST.getDate()).padStart(2, "0");
+    const todayLocal = `${localYear}-${localMonth}-${localDay}`;
+
+    if (ymd < todayLocal) {
+      return [];
+    }
+
+    if (ymd === todayLocal) {
+      const currentMinutes = nowIST.getHours() * 60 + nowIST.getMinutes();
+      return formatted.filter((slotTime) => {
+        const slotMins = parseTimeToMinutes(slotTime);
+        if (slotMins === null) return true;
+        return slotMins > currentMinutes;
+      });
+    }
+
+    return formatted;
   };
 
   const fetchDashboardData = (pId: string) => {
@@ -207,16 +301,77 @@ export default function PatientDashboard() {
         const therapyData = await therapyRes.json();
         const ordersData = await ordersRes.json();
 
-        // Process appointments
-        if (aptData.success && aptData.data) {
-          const list: Appointment[] = aptData.data;
-          const now = new Date().getTime();
-          console.log("ALL APTS:", list.map(x => ({id: x._id, status: x.status, d: x.date, t: x.time, eval: new Date(x.date + "T" + x.time).getTime(), now: new Date().getTime()})));
-          const upcoming = list
-            .filter((a) => a.status === "Scheduled")
-            .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
-          setUpcomingApts(upcoming);
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        const validStatuses = ["Scheduled", "Checked In", "Engaged", "Rescheduled", "Confirmed", "Booked", "Pending", "In_Progress"];
+
+        const isStillUpcoming = (date?: string, time?: string) => {
+          if (!date) return true;
+          const ymd = normalizeDateToYMD(date);
+          if (ymd < todayStr) return false;
+          if (ymd === todayStr && time) {
+            const ms = parseDateTimeToMs(date, time);
+            if (ms > 0 && Date.now() - ms > 2 * 60 * 60 * 1000) {
+              return false; // Ended > 2 hours ago
+            }
+          }
+          return true;
+        };
+
+        // Process doctor consultations / appointments
+        const docApts: Appointment[] = (aptData.success && Array.isArray(aptData.data))
+          ? aptData.data.filter((a: any) => 
+              validStatuses.some(s => s.toLowerCase() === (a.status || "").toLowerCase().trim()) &&
+              a.status !== "Completed" && a.status !== "Checked Out" && a.status !== "Cancelled" &&
+              isStillUpcoming(a.date, a.time)
+            )
+          : [];
+
+        // Also process scheduled / booked therapy sessions as upcoming sessions
+        const therapyApts: Appointment[] = (therapyData.success && Array.isArray(therapyData.data))
+          ? therapyData.data
+              .filter((ts: any) => 
+                validStatuses.some(s => s.toLowerCase() === (ts.status || "").toLowerCase().trim()) &&
+                ts.status !== "Completed" &&
+                ts.date && ts.time &&
+                isStillUpcoming(ts.date, ts.time)
+              )
+              .map((ts: any) => ({
+                _id: ts._id,
+                doctorId: {
+                  name: ts.therapistId?.name || ts.doctorId?.name || "Therapy Specialist",
+                  specialization: ts.therapistId?.specialization || "Psychotherapy / Counseling",
+                  clinicId: ts.clinicId?._id,
+                  fees: ts.price,
+                },
+                date: ts.date,
+                time: ts.time,
+                type: ts.selectedMode === "Offline" ? "Walk-in" : "Video",
+                status: ts.status,
+                paymentStatus: ["Paid", "Completed"].includes(ts.status) ? "Paid" : "Pending",
+                serviceName: ts.name || "Therapy Session",
+                feeAmount: ts.price,
+              }))
+          : [];
+
+        // Combine and deduplicate mirror records
+        const combined = [...docApts, ...therapyApts];
+        const seen = new Set<string>();
+        const deduplicatedUpcoming: Appointment[] = [];
+        for (const item of combined) {
+          const normDate = normalizeDateToYMD(item.date);
+          const key = `${normDate}_${(item.time || "").trim()}_${(item.serviceName || "").toLowerCase().trim()}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            deduplicatedUpcoming.push(item);
+          }
         }
+
+        deduplicatedUpcoming.sort(
+          (a, b) => parseDateTimeToMs(a.date, a.time) - parseDateTimeToMs(b.date, b.time)
+        );
+
+        setUpcomingApts(deduplicatedUpcoming);
 
         // Process consultations
         if (consultData.success && consultData.data) {
@@ -238,39 +393,82 @@ export default function PatientDashboard() {
   };
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.user) {
-          if (data.user.patientId) {
-            setPatientId(data.user.patientId);
-            setPatientName(data.user.name);
-            fetchDashboardData(data.user.patientId);
-          } else {
-            // If logged in as Admin, Doctor, or Staff, auto-route to proper dashboard
-            const role = data.user.role?.toUpperCase();
-            if (role === "SUPER_ADMIN" || role === "ADMIN") {
-              window.location.href = "/admin/dashboard";
-            } else if (role === "DOCTOR") {
-              window.location.href = "/doctor/dashboard";
-            } else if (role === "THERAPIST") {
-              window.location.href = "/therapist/dashboard";
-            } else if (role === "PHARMACY_STAFF" || role === "PHARMACY") {
-              window.location.href = "/pharmacy/dashboard";
-            } else if (role === "CLINIC_MANAGER") {
-              window.location.href = "/clinic-manager/dashboard";
-            } else {
-              setLoading(false);
-            }
+    // Fast path: use cached patient info for instant initial query on frame 0
+    if (typeof window !== "undefined") {
+      try {
+        const cached = sessionStorage.getItem("patient_auth_user");
+        if (cached) {
+          const user = JSON.parse(cached);
+          if (user.patientId) {
+            setPatientId(user.patientId);
+            if (user.name) setPatientName(user.name);
+            fetchDashboardData(user.patientId);
           }
-        } else {
-          setLoading(false);
         }
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
+      } catch {}
+    }
+
+    const loadSession = () => {
+      fetch("/api/auth/me")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.user) {
+            if (data.user.patientId) {
+              setPatientId(data.user.patientId);
+              setPatientName(data.user.name);
+              try {
+                sessionStorage.setItem("patient_auth_user", JSON.stringify(data.user));
+              } catch {}
+              fetchDashboardData(data.user.patientId);
+            } else {
+              // If logged in as Admin, Doctor, or Staff, auto-route to proper dashboard
+              const role = data.user.role?.toUpperCase();
+              if (role === "SUPER_ADMIN" || role === "ADMIN") {
+                window.location.href = "/admin/dashboard";
+              } else if (role === "DOCTOR") {
+                window.location.href = "/doctor/dashboard";
+              } else if (role === "THERAPIST") {
+                window.location.href = "/therapist/dashboard";
+              } else if (role === "PHARMACY_STAFF" || role === "PHARMACY") {
+                window.location.href = "/pharmacy/dashboard";
+              } else if (role === "CLINIC_MANAGER") {
+                window.location.href = "/clinic-manager/dashboard";
+              } else {
+                setLoading(false);
+              }
+            }
+          } else {
+            setLoading(false);
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+          setLoading(false);
+        });
+    };
+
+    loadSession();
+
+    // Re-fetch when user switches back to this tab or booking modal completes
+    const handleRefresh = () => {
+      fetch("/api/auth/me")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.user?.patientId) {
+            setPatientId(data.user.patientId);
+            fetchDashboardData(data.user.patientId);
+          }
+        })
+        .catch(() => {});
+    };
+
+    window.addEventListener("focus", handleRefresh);
+    window.addEventListener("refresh-dashboard", handleRefresh);
+
+    return () => {
+      window.removeEventListener("focus", handleRefresh);
+      window.removeEventListener("refresh-dashboard", handleRefresh);
+    };
   }, []);
 
   const handleDownloadPrescription = (consultation: Consultation) => {
@@ -491,10 +689,10 @@ export default function PatientDashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 w-full max-w-full min-w-0 overflow-x-hidden">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent break-words">
           Welcome back, {patientName || "Valued Patient"}!
         </h1>
         <p className="text-muted-foreground mt-2 text-sm md:text-base">
@@ -502,7 +700,7 @@ export default function PatientDashboard() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr w-full max-w-full min-w-0">
         {/* Next Appointment Card */}
         <UpcomingAppointmentsSlider
           upcomingApts={upcomingApts}
@@ -561,19 +759,20 @@ export default function PatientDashboard() {
       </div>
 
       {/* Main Layout: Left = Prescriptions & Therapies, Right = Orders */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3 w-full max-w-full min-w-0">
 
         {/* Left Column: Digital Prescriptions & Prescribed Therapies */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 w-full max-w-full min-w-0">
 
           {/* Therapy Sessions Section */}
           {therapySessions.length > 0 && (
-            <div className="p-6 bg-card rounded-3xl border border-border/60 shadow-sm space-y-6" id="recommended-therapies">
-              <div className="flex items-center justify-between border-b border-border/50 pb-3">
-                <h3 className="text-lg font-bold flex items-center gap-2">
-                  <Hospital className="w-5 h-5 text-primary" /> Prescribed Therapy & Counseling
+            <div className="p-4 sm:p-6 bg-card rounded-3xl border border-border/60 shadow-sm space-y-6 w-full max-w-full min-w-0 overflow-hidden" id="recommended-therapies">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-border/50 pb-3">
+                <h3 className="text-base sm:text-lg font-bold flex items-center gap-2 min-w-0">
+                  <Hospital className="w-5 h-5 text-primary shrink-0" /> 
+                  <span className="truncate sm:overflow-visible">Prescribed Therapy & Counseling</span>
                 </h3>
-                <Badge variant="outline" className="text-xs font-semibold text-primary border-primary/20 bg-primary/5">
+                <Badge variant="outline" className="text-xs font-semibold text-primary border-primary/20 bg-primary/5 w-fit shrink-0">
                   Personally Doctor-Assigned
                 </Badge>
               </div>
@@ -581,36 +780,37 @@ export default function PatientDashboard() {
               {/* 1. Recommended / Ready to Schedule */}
               {therapySessions.filter(s => (s.status as string) === "Recommended" || (s.status as string) === "Unpaid").length > 0 && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-500" /> Action Required: Doctor-Prescribed Therapy
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                    <h4 className="text-sm font-bold text-foreground flex items-center gap-2 min-w-0">
+                      <Sparkles className="w-4 h-4 text-amber-500 shrink-0" /> 
+                      <span className="truncate sm:overflow-visible">Action Required: Doctor-Prescribed Therapy</span>
                     </h4>
-                    <span className="text-xs text-muted-foreground font-medium">Prepaid confirmation required</span>
+                    <span className="text-xs text-muted-foreground font-medium shrink-0">Prepaid confirmation required</span>
                   </div>
 
                   <div className="grid gap-4">
                     {therapySessions.filter(s => (s.status as string) === "Recommended" || (s.status as string) === "Unpaid").map((session) => (
-                      <div key={session._id} className="p-5 rounded-2xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/60 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/10 space-y-4 shadow-sm">
+                      <div key={session._id} className="p-4 sm:p-5 rounded-2xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/60 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/10 space-y-4 shadow-sm w-full min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-200/60 dark:border-amber-900/40 pb-3">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-base text-foreground">{session.name}</h4>
-                              <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-[10px] font-bold">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="font-bold text-base text-foreground break-words">{session.name}</h4>
+                              <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-[10px] font-bold shrink-0">
                                 Assigned – Ready to Book
                               </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              Session Fee: <span className="font-bold text-primary">₹{session.price}</span>
+                            <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
+                              <span>Session Fee: <strong className="text-primary">₹{session.price}</strong></span>
                               {session.recommendedMode && (
-                                <span className="ml-2 px-2 py-0.5 rounded-md bg-muted text-[10px] font-semibold text-foreground/80">
+                                <span className="px-2 py-0.5 rounded-md bg-muted text-[10px] font-semibold text-foreground/80 shrink-0">
                                   Doctor Recommended: {session.recommendedMode === "Online" ? "Online Video" : session.recommendedMode === "Offline" ? "In-Person Clinic" : "Flexible"}
                                 </span>
                               )}
-                            </p>
+                            </div>
                           </div>
                           <Button
                             onClick={() => openTherapyBooking(session)}
-                            className="rounded-xl h-10 px-5 text-xs font-bold gap-2 bg-primary hover:bg-primary/90 text-white shadow-md self-start sm:self-auto"
+                            className="rounded-xl h-10 px-5 text-xs font-bold gap-2 bg-primary hover:bg-primary/90 text-white shadow-md self-start sm:self-auto shrink-0 w-full sm:w-auto justify-center"
                           >
                             <Calendar className="w-4 h-4" /> Book Session
                           </Button>
@@ -620,43 +820,69 @@ export default function PatientDashboard() {
                         {session.doctorNotes && (
                           <div className="p-3 bg-background/80 rounded-xl border border-border/60 text-xs">
                             <span className="font-bold text-primary text-[11px] uppercase tracking-wider block mb-1">Doctor's Guidance Notes:</span>
-                            <p className="text-muted-foreground italic leading-relaxed">"{session.doctorNotes}"</p>
+                            <p className="text-muted-foreground italic leading-relaxed break-words">"{session.doctorNotes}"</p>
                           </div>
                         )}
 
                         {/* Assigned Therapist Details Card */}
-                        <div className="p-3.5 rounded-xl bg-background/90 border border-border/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0 border border-primary/20">
-                              {session.therapistId?.avatar ? (
-                                <img src={session.therapistId.avatar} alt={session.therapistId.name} className="w-full h-full rounded-full object-cover" />
-                              ) : (
-                                (session.therapistId?.name || "Dr").slice(0, 2).toUpperCase()
-                              )}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-foreground">
-                                  {session.therapistId?.name || "Assigned Licensed Specialist"}
-                                </span>
-                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 font-semibold">
-                                  Assigned by Doctor
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-muted-foreground mt-0.5">
-                                {session.therapistId?.specialization || "Clinical Psychology & Sex Therapy"}
-                                {session.therapistId?.experience ? ` • ${session.therapistId.experience} yrs exp` : ""}
-                              </p>
-                            </div>
-                          </div>
+                        {(() => {
+                          const thPhoto = session.therapistId?.avatar || 
+                            (session.therapistId?.name?.toLowerCase().includes("deepak") ? "/images/doctor_1.png" : "") || 
+                            (session.therapistId?.name?.toLowerCase().includes("amol") ? "/images/doctor_2.png" : "") || 
+                            (session.therapistId?.name?.toLowerCase().includes("radhika") ? "/images/doctor_3.png" : "") || 
+                            session.doctorId?.avatar || "";
+                          const thInitials = (session.therapistId?.name || "Specialist")
+                            .replace(/^Dr\.\s*/i, "")
+                            .trim()
+                            .split(" ")
+                            .map((n: string) => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase() || "TH";
 
-                          <button
-                            onClick={() => setReassigningSession(session)}
-                            className="text-[11px] font-semibold text-muted-foreground hover:text-primary transition flex items-center gap-1 underline underline-offset-2 self-end sm:self-center"
-                          >
-                            <RefreshCw className="w-3 h-3" /> Schedule conflict? Request Reassignment
-                          </button>
-                        </div>
+                          return (
+                            <div className="p-3.5 rounded-xl bg-background/90 border border-border/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 min-w-0">
+                              <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                                <div className="w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0 border border-primary/20 overflow-hidden relative">
+                                  {thPhoto ? (
+                                    <img 
+                                      src={thPhoto} 
+                                      alt="" 
+                                      className="w-full h-full rounded-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                  ) : null}
+                                  <span className={thPhoto ? "absolute -z-10 text-xs font-bold" : "text-xs font-bold"}>
+                                    {thInitials}
+                                  </span>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-xs font-bold text-foreground break-words">
+                                      {session.therapistId?.name || "Assigned Licensed Specialist"}
+                                    </span>
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 font-semibold shrink-0">
+                                      Assigned by Doctor
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-muted-foreground mt-0.5 break-words">
+                                    {session.therapistId?.specialization || "Clinical Psychology & Sex Therapy"}
+                                    {session.therapistId?.experience ? ` • ${session.therapistId.experience} yrs exp` : ""}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => setReassigningSession(session)}
+                                className="text-[11px] font-semibold text-muted-foreground hover:text-primary transition flex items-center gap-1 underline underline-offset-2 self-start sm:self-center shrink-0"
+                              >
+                                <RefreshCw className="w-3 h-3 shrink-0" /> Schedule conflict? Request Reassignment
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </div>
                     ))}
                   </div>
@@ -668,70 +894,145 @@ export default function PatientDashboard() {
                 <div className="space-y-3">
                   <h4 className="text-sm font-bold text-muted-foreground">Pending Doctor Reassignment</h4>
                   {therapySessions.filter(s => s.status === "Reassignment_Requested").map((session) => (
-                    <div key={session._id} className="p-4 rounded-2xl border border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-sm text-foreground">{session.name}</h4>
-                          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 text-[10px] font-bold">
+                    <div key={session._id} className="p-4 rounded-2xl border border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-bold text-sm text-foreground break-words">{session.name}</h4>
+                          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 text-[10px] font-bold shrink-0">
                             Reassignment In Review
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground mt-1 break-words">
                           Your request was sent to your doctor. You will receive an updated therapist allotment shortly.
                         </p>
                       </div>
-                      <Badge variant="secondary" className="text-xs">Under Review</Badge>
+                      <Badge variant="secondary" className="text-xs shrink-0 self-start sm:self-auto">Under Review</Badge>
                     </div>
                   ))}
                 </div>
               )}
 
               {/* 3. Scheduled / Confirmed Sessions */}
-              {therapySessions.filter(s => s.status === "Scheduled" || s.status === "Booked" || s.status === "Paid" || s.status === "In_Progress").length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-bold text-foreground">Upcoming & Scheduled Sessions</h4>
-                  <div className="space-y-3">
-                    {therapySessions.filter(s => s.status === "Scheduled" || s.status === "Booked" || s.status === "Paid" || s.status === "In_Progress").map((session) => (
-                      <div key={session._id} className="p-5 rounded-2xl border border-border/80 bg-card hover:border-primary/40 transition shadow-sm space-y-3">
+              {therapySessions.filter(s => {
+                if (s.status === "Completed" || s.status === "Cancelled") return false;
+                if (!["Scheduled", "Booked", "Paid", "In_Progress"].includes(s.status)) return false;
+                if (s.date) {
+                  const norm = normalizeDateToYMD(s.date);
+                  const now = new Date();
+                  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+                  if (norm && norm < todayStr) return false;
+                }
+                return true;
+              }).length > 0 && (
+                <div className="space-y-3 w-full max-w-full min-w-0">
+                  <h4 className="text-sm font-bold text-foreground">Upcoming &amp; Scheduled Sessions</h4>
+                  <div className="space-y-3 w-full max-w-full min-w-0">
+                    {therapySessions.filter(s => {
+                      if (s.status === "Completed" || s.status === "Cancelled") return false;
+                      if (!["Scheduled", "Booked", "Paid", "In_Progress"].includes(s.status)) return false;
+                      if (s.date) {
+                        const norm = normalizeDateToYMD(s.date);
+                        const now = new Date();
+                        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+                        if (norm && norm < todayStr) return false;
+                      }
+                      return true;
+                    }).map((session) => (
+                      <div key={session._id} className="p-4 sm:p-5 rounded-2xl border border-border/80 bg-card hover:border-primary/40 transition shadow-sm space-y-3 w-full max-w-full min-w-0 overflow-hidden">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-3">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-sm">{session.name}</h4>
-                              <Badge className={session.selectedMode === "Online" ? "bg-rose-50 text-rose-700 border-rose-200 text-[10px]" : "bg-sky-50 text-sky-700 border-sky-200 text-[10px]"}>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="font-bold text-sm break-words">{session.name}</h4>
+                              <Badge className={session.selectedMode === "Online" ? "bg-rose-50 text-rose-700 border-rose-200 text-[10px] shrink-0" : "bg-sky-50 text-sky-700 border-sky-200 text-[10px] shrink-0"}>
                                 {session.selectedMode === "Online" ? "Online Video Call" : "In-Person Clinic"}
                               </Badge>
-                              <Badge variant="outline" className="text-xs text-emerald-700 border-emerald-200 bg-emerald-50">
-                                Paid & Confirmed
+                              <Badge variant="outline" className="text-xs text-emerald-700 border-emerald-200 bg-emerald-50 shrink-0">
+                                Paid &amp; Confirmed
                               </Badge>
                             </div>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1 font-medium">
-                              <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-primary" /> {session.date}</span>
-                              <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-primary" /> {session.time ? formatTime12Hour(session.time) : ""}</span>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1.5 font-medium">
+                              <span className="flex items-center gap-1.5 shrink-0"><Calendar className="w-3.5 h-3.5 text-primary" /> {session.date}</span>
+                              <span className="flex items-center gap-1.5 shrink-0"><Clock className="w-3.5 h-3.5 text-primary" /> {session.time ? formatTime12Hour(session.time) : ""}</span>
                             </div>
                           </div>
 
                           {session.selectedMode === "Online" ? (
-                            <Link href={`/patient/therapy-session/${session._id}`}>
-                              <Button size="sm" className="rounded-xl h-10 px-4 text-xs font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
-                                <Video className="w-4 h-4" /> Join Video Session
-                              </Button>
-                            </Link>
+                            (() => {
+                              let canJoin = false;
+                              let statusMessage = "Opens on schedule";
+
+                              if (session.date && session.time) {
+                                const normSessionDate = normalizeDateToYMD(session.date);
+                                const sessionMs = parseDateTimeToMs(session.date, session.time);
+                                
+                                const now = new Date();
+                                const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+                                if (normSessionDate > todayLocal) {
+                                  // Tomorrow or future date: strictly locked until scheduled date!
+                                  canJoin = false;
+                                  statusMessage = `Opens on ${session.date} (${formatTime12Hour(session.time)})`;
+                                } else if (normSessionDate < todayLocal) {
+                                  // Past date
+                                  canJoin = false;
+                                  statusMessage = "Session Expired";
+                                } else {
+                                  // Scheduled for today: only open 15m before until session ends
+                                  if (sessionMs > 0) {
+                                    const diffMinutes = (sessionMs - Date.now()) / (1000 * 60);
+                                    if (diffMinutes > 15) {
+                                      canJoin = false;
+                                      statusMessage = `Available 15m before (${formatTime12Hour(session.time)})`;
+                                    } else if (diffMinutes >= -90) {
+                                      canJoin = true;
+                                    } else {
+                                      canJoin = false;
+                                      statusMessage = "Session Ended";
+                                    }
+                                  }
+                                }
+                              }
+
+                              if (canJoin) {
+                                return (
+                                  <Link href={`/patient/therapy-session/${session._id}`} className="shrink-0 w-full sm:w-auto">
+                                    <Button size="sm" className="rounded-xl h-10 px-4 text-xs font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm w-full sm:w-auto justify-center">
+                                      <Video className="w-4 h-4" /> Join Video Session
+                                    </Button>
+                                  </Link>
+                                );
+                              }
+
+                              return (
+                                <Button 
+                                  size="sm" 
+                                  disabled 
+                                  variant="secondary" 
+                                  className="rounded-xl h-10 px-3.5 text-xs font-semibold gap-1.5 opacity-80 cursor-not-allowed bg-muted text-muted-foreground border border-border shrink-0 w-full sm:w-auto justify-center"
+                                >
+                                  <Clock className="w-3.5 h-3.5 text-muted-foreground" /> {statusMessage}
+                                </Button>
+                              );
+                            })()
                           ) : (
-                            <Badge variant="outline" className="text-xs font-semibold px-3 py-1 bg-muted">
+                            <Badge variant="outline" className="text-xs font-semibold px-3 py-1 bg-muted shrink-0 self-start sm:self-auto">
                               In-Person Visit
                             </Badge>
                           )}
                         </div>
 
                         {/* Therapist details & clinic address */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-muted-foreground gap-2 pt-1">
-                          <div className="flex items-center gap-2">
-                            <User className="w-3.5 h-3.5 text-primary" />
-                            <span>Therapist: <strong className="text-foreground">{session.therapistId?.name || "Assigned Specialist"}</strong> ({session.therapistId?.specialization || "Psychologist"})</span>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-muted-foreground gap-2 pt-1 min-w-0">
+                          <div className="flex items-start sm:items-center gap-2 min-w-0 flex-1">
+                            <User className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5 sm:mt-0" />
+                            <p className="min-w-0 break-words leading-relaxed text-xs">
+                              Therapist: <strong className="text-foreground">{session.therapistId?.name || "Assigned Specialist"}</strong>{" "}
+                              <span className="text-muted-foreground break-words">({session.therapistId?.specialization || "Psychologist"})</span>
+                            </p>
                           </div>
                           {session.selectedMode === "Offline" && session.clinicId && (
-                            <div className="flex items-center gap-1 text-primary font-medium">
-                              <MapPin className="w-3.5 h-3.5" /> {session.clinicId.name} ({session.clinicId.city || "Clinic Location"})
+                            <div className="flex items-center gap-1 text-primary font-medium shrink-0 self-start sm:self-auto">
+                              <MapPin className="w-3.5 h-3.5 shrink-0" /> {session.clinicId.name} ({session.clinicId.city || "Clinic Location"})
                             </div>
                           )}
                         </div>
@@ -747,15 +1048,15 @@ export default function PatientDashboard() {
                   <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Past Completed Sessions</h4>
                   <div className="space-y-2">
                     {therapySessions.filter(s => s.status === "Completed").map((session) => (
-                      <div key={session._id} className="p-3.5 rounded-xl border border-border/50 bg-muted/20 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-3">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          <div>
+                      <div key={session._id} className="p-3.5 rounded-xl border border-border/50 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs min-w-0 overflow-hidden">
+                        <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
+                          <div className="min-w-0 break-words">
                             <span className="font-bold text-foreground">{session.name}</span>
-                            <span className="text-muted-foreground ml-2">with {session.therapistId?.name || "Therapist"}</span>
+                            <span className="text-muted-foreground ml-1.5 text-[11px]">with {session.therapistId?.name || "Therapist"}</span>
                           </div>
                         </div>
-                        <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-200 bg-emerald-50">
+                        <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-200 bg-emerald-50 shrink-0 self-start sm:self-auto">
                           Completed on {session.date || "file"}
                         </Badge>
                       </div>
@@ -769,6 +1070,7 @@ export default function PatientDashboard() {
           {/* Prescriptions Section */}
           <DigitalPrescriptionsList
             consultations={consultations}
+            orders={pharmacyOrders}
             handleOrderFromPharmacy={handleOrderFromPharmacy}
             handleDownloadPrescription={handleDownloadPrescription}
           />
@@ -788,20 +1090,41 @@ export default function PatientDashboard() {
 
           <div className="space-y-4">
             {pharmacyOrders.length > 0 ? (
-              pharmacyOrders.map((order) => (
-                <div key={order._id} className="text-xs space-y-1.5 p-3.5 bg-muted/20 border border-border/50 rounded-2xl">
-                  <div className="flex justify-between font-bold">
-                    <span className="font-mono text-muted-foreground">#{order._id.substring(18)}</span>
-                    <span className="text-primary">₹{order.totalAmount}</span>
+              pharmacyOrders.map((order) => {
+                const normStatus = (order.status || "").toUpperCase();
+                const isFulfilled = normStatus === "FULFILLED" || normStatus === "DELIVERED";
+                const isCancelled = normStatus === "CANCELLED";
+                const isCallDone = normStatus === "CALL_COMPLETED" || normStatus === "PRESCRIPTION_APPROVED";
+
+                return (
+                  <div key={order._id} className="text-xs space-y-1.5 p-3.5 bg-muted/20 border border-border/50 rounded-2xl">
+                    <div className="flex justify-between font-bold">
+                      <span className="font-mono text-muted-foreground">#{order._id.substring(18)}</span>
+                      <span className="text-primary">₹{order.totalAmount}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-muted-foreground">{new Date(order.createdAt).toLocaleDateString("en-IN")}</span>
+                      {isFulfilled ? (
+                        <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 text-[9px] font-bold px-1.5 py-0">
+                          Fulfilled
+                        </Badge>
+                      ) : isCallDone ? (
+                        <Badge className="bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 text-[9px] font-bold px-1.5 py-0">
+                          Call Verified
+                        </Badge>
+                      ) : isCancelled ? (
+                        <Badge variant="destructive" className="text-[9px] font-bold px-1.5 py-0">
+                          Cancelled
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-[9px] font-bold px-1.5 py-0">
+                          Pending Verification
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center text-[10px]">
-                    <span className="text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</span>
-                    <Badge variant={order.status === "Pending" ? "secondary" : "outline"} className="text-[9px] px-1.5 py-0">
-                      {order.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground/60">
                 <Pill className="w-10 h-10 mb-2 stroke-[1.5]" />
@@ -972,20 +1295,48 @@ export default function PatientDashboard() {
                 </div>
 
                 {/* Assigned Therapist Details Card */}
-                {therapyToBook.therapistId && (
-                  <div className="p-3.5 rounded-2xl bg-muted/30 border border-border/60 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-bold text-xs">
-                      {therapyToBook.therapistId.name.replace("Dr. ", "").substring(0, 2).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs font-bold text-foreground truncate">{therapyToBook.therapistId.name}</p>
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-primary/30 text-primary">Allotted Therapist</Badge>
+                {therapyToBook.therapistId && (() => {
+                  const modalThPhoto = therapyToBook.therapistId.avatar || 
+                    (therapyToBook.therapistId.name?.toLowerCase().includes("deepak") ? "/images/doctor_1.png" : "") || 
+                    (therapyToBook.therapistId.name?.toLowerCase().includes("amol") ? "/images/doctor_2.png" : "") || 
+                    (therapyToBook.therapistId.name?.toLowerCase().includes("radhika") ? "/images/doctor_3.png" : "") || 
+                    therapyToBook.doctorId?.avatar || "";
+                  const modalThInitials = (therapyToBook.therapistId.name || "Specialist")
+                    .replace(/^Dr\.\s*/i, "")
+                    .trim()
+                    .split(" ")
+                    .map((n: string) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase() || "TH";
+
+                  return (
+                    <div className="p-3.5 rounded-2xl bg-muted/30 border border-border/60 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden relative">
+                        {modalThPhoto ? (
+                          <img 
+                            src={modalThPhoto} 
+                            alt="" 
+                            className="w-full h-full object-cover rounded-xl"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : null}
+                        <span className={modalThPhoto ? "absolute -z-10" : ""}>
+                          {modalThInitials}
+                        </span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate">{therapyToBook.therapistId.specialization}</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-foreground truncate">{therapyToBook.therapistId.name}</p>
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-primary/30 text-primary">Allotted Therapist</Badge>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground truncate">{therapyToBook.therapistId.specialization}</p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <div className="flex gap-3 pt-4 border-t border-border mt-4">
                   <Button variant="outline" className="flex-1 rounded-xl" onClick={closeTherapyModal}>
@@ -1021,7 +1372,13 @@ export default function PatientDashboard() {
                       setTherapyDate(e.target.value);
                       setTherapyTime("");
                     }}
-                    min={new Date().toISOString().split("T")[0]}
+                    min={(() => {
+                      const d = new Date();
+                      const y = d.getFullYear();
+                      const m = String(d.getMonth() + 1).padStart(2, "0");
+                      const day = String(d.getDate()).padStart(2, "0");
+                      return `${y}-${m}-${day}`;
+                    })()}
                   />
                 </div>
                 
@@ -1100,7 +1457,7 @@ export default function PatientDashboard() {
                   </Button>
                   <Button 
                     className="flex-1 rounded-xl text-white font-bold bg-primary hover:bg-primary/90" 
-                    disabled={!therapyDate || !therapyTime}
+                    disabled={!therapyDate || !therapyTime || !getAvailableTimeSlots().includes(therapyTime)}
                     onClick={() => setTherapyStep(3)}
                   >
                     Review & Pay <ChevronRight className="w-4 h-4 ml-1" />

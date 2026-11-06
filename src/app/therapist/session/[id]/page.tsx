@@ -142,6 +142,14 @@ export default function TherapistSessionRoomPage({
     }
   };
 
+  const handleExitOrConclude = () => {
+    if (window.confirm("Would you like to conclude and complete this therapy session? Click OK to mark Completed & archive, or Cancel to exit without completing.")) {
+      handleSaveNotes(true);
+    } else {
+      router.push("/therapist/dashboard");
+    }
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center space-y-4">
@@ -178,7 +186,7 @@ export default function TherapistSessionRoomPage({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push("/therapist/dashboard")}
+            onClick={handleExitOrConclude}
             className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg text-xs font-semibold gap-1.5"
           >
             <ArrowLeft className="w-4 h-4" /> Exit Room
@@ -230,7 +238,7 @@ export default function TherapistSessionRoomPage({
               roomID={roomID}
               userID={currentUserId}
               userName={currentUserName || "Therapist"}
-              onLeaveRoom={() => router.push("/therapist/dashboard")}
+              onLeaveRoom={handleExitOrConclude}
             />
           )}
         </div>

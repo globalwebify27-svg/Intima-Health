@@ -3,9 +3,10 @@
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { 
-  ArrowLeft, Package, Truck, ShieldCheck, Clock, CheckCircle2, 
+  ArrowLeft, Package, ShieldCheck, Clock, 
   XCircle, AlertCircle, MapPin, 
-  Phone, MessageSquare, Ban, ExternalLink
+  Phone, MessageSquare, Ban, ExternalLink,
+  PhoneCall, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,23 +80,6 @@ interface OrderData {
   createdAt: string;
 }
 
-const LIFECYCLE_STEPS = [
-  { key: "Placed", label: "Order Placed" },
-  { key: "Payment_Confirmed", label: "Payment Confirmed" },
-  { key: "Prescription_Verification", label: "Prescription Under Verification" },
-  { key: "Prescription_Approved", label: "Prescription Approved" },
-  { key: "Pharmacy_Processing", label: "Packing by Pharmacy" },
-  { key: "Packed_Dispatched", label: "Dispatched" },
-  { key: "Out_For_Delivery", label: "Out for Delivery" },
-  { key: "Delivered", label: "Delivered" },
-];
-
-const REQUEST_STEPS = [
-  { key: "REQUEST_RECEIVED", label: "Request Submitted to Clinic Pharmacy" },
-  { key: "CALL_COMPLETED", label: "Phone Call Verification Completed" },
-  { key: "FULFILLED", label: "Medicines Dispensed / Fulfilled" },
-];
-
 export default function PatientOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
 
@@ -156,16 +140,6 @@ export default function PatientOrderDetailPage({ params }: { params: Promise<{ i
       ignore = true;
     };
   }, [resolvedParams.id]);
-
-  // Determine active step index
-  const getActiveStepIndex = (currentStatus: string) => {
-    if (currentStatus === "Cancelled" || currentStatus === "Prescription_Rejected") return -1;
-    const idx = LIFECYCLE_STEPS.findIndex((s) => s.key === currentStatus);
-    if (idx !== -1) return idx;
-    if (currentStatus === "Shipped") return 5;
-    if (currentStatus === "Processing") return 4;
-    return 0;
-  };
 
   // Handle Cancellation
   const handleCancelOrder = async () => {
@@ -232,7 +206,7 @@ export default function PatientOrderDetailPage({ params }: { params: Promise<{ i
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground font-medium">
-        Loading order tracking details...
+        Loading order details...
       </div>
     );
   }
@@ -249,8 +223,11 @@ export default function PatientOrderDetailPage({ params }: { params: Promise<{ i
     );
   }
 
-  const activeIndex = getActiveStepIndex(order.status);
-  const isCancellable = !["Packed_Dispatched", "Shipped", "Out_For_Delivery", "Delivered", "Cancelled"].includes(order.status);
+  const nonCancellableStatuses = [
+    "Packed_Dispatched", "Shipped", "Out_For_Delivery", "Delivered", 
+    "Cancelled", "CANCELLED", "Fulfilled", "FULFILLED", "Completed", "COMPLETED"
+  ];
+  const isCancellable = !nonCancellableStatuses.includes(order.status);
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12">
@@ -268,9 +245,35 @@ export default function PatientOrderDetailPage({ params }: { params: Promise<{ i
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                 Order {order.orderNumber || `#${order._id.substring(18)}`}
               </h1>
-              <Badge className="font-semibold text-xs">
-                {order.status.replace(/_/g, " ")}
-              </Badge>
+              {(() => {
+                const s = (order.status || "").toUpperCase();
+                if (s === "FULFILLED" || s === "DELIVERED") {
+                  return (
+                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 font-bold text-xs gap-1 py-0.5 px-2.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Fulfilled
+                    </Badge>
+                  );
+                }
+                if (s === "CALL_COMPLETED" || s === "PRESCRIPTION_APPROVED") {
+                  return (
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 font-bold text-xs gap-1 py-0.5 px-2.5">
+                      <PhoneCall className="w-3.5 h-3.5 text-blue-600" /> Call Verified
+                    </Badge>
+                  );
+                }
+                if (s === "CANCELLED") {
+                  return (
+                    <Badge variant="destructive" className="font-bold text-xs gap-1 py-0.5 px-2.5">
+                      <XCircle className="w-3.5 h-3.5" /> Cancelled
+                    </Badge>
+                  );
+                }
+                return (
+                  <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 font-bold text-xs gap-1 py-0.5 px-2.5">
+                    <Clock className="w-3.5 h-3.5 text-amber-600" /> Pending Verification
+                  </Badge>
+                );
+              })()}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Placed on {new Date(order.createdAt).toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
@@ -325,66 +328,6 @@ export default function PatientOrderDetailPage({ params }: { params: Promise<{ i
             <p className="mt-2 text-foreground">
               Please <Link href="/booking" className="underline font-bold text-primary">book an online doctor consultation</Link> or upload a valid revised prescription.
             </p>
-          </div>
-        </div>
-      )}
-
-      {/* 9-STAGE VISUAL TRACKING STEPPER */}
-      {order.status !== "Cancelled" && order.status !== "Prescription_Rejected" && (
-        <div className="bg-background rounded-3xl p-6 sm:p-8 border border-border shadow-sm space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-serif font-bold flex items-center gap-2">
-              <Truck className="w-5 h-5 text-primary" /> Delivery Progress
-            </h2>
-            <span className="text-xs text-muted-foreground font-medium">
-              Akola Local Delivery Service
-            </span>
-          </div>
-
-          {/* Stepper Bar */}
-          <div className="relative pt-4 pb-2">
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
-              {LIFECYCLE_STEPS.map((step, idx) => {
-                const isCompleted = activeIndex >= idx;
-                const isCurrent = activeIndex === idx;
-
-                return (
-                  <div key={step.key} className="flex flex-col items-center text-center space-y-2">
-                    <div 
-                      className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-sm ${
-                        isCompleted 
-                          ? "bg-primary text-white ring-4 ring-primary/10" 
-                          : "bg-muted text-muted-foreground border border-border"
-                      }`}
-                    >
-                      {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : idx + 1}
-                    </div>
-                    <span className={`text-[11px] leading-tight font-medium ${isCurrent ? "font-bold text-primary" : isCompleted ? "text-foreground" : "text-muted-foreground"}`}>
-                      {step.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Delivery Estimate Box */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border/60 text-xs">
-            <div className="space-y-1">
-              <span className="text-muted-foreground uppercase font-bold text-[10px]">Courier Tracking</span>
-              <p className="font-semibold text-foreground flex items-center gap-1.5">
-                <Truck className="w-4 h-4 text-primary" />
-                {order.delivery?.courierPartner || "Kelkar Manas Local Express"} • Ref: <span className="font-mono text-primary font-bold">{order.delivery?.trackingNumber || "Pending Dispatch"}</span>
-              </p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-muted-foreground uppercase font-bold text-[10px]">Estimated Delivery</span>
-              <p className="font-semibold text-foreground">
-                {order.delivery?.deliveredAt 
-                  ? `Delivered on ${new Date(order.delivery.deliveredAt).toLocaleDateString("en-IN")}`
-                  : "Within 24 to 48 Hours in Akola"}
-              </p>
-            </div>
           </div>
         </div>
       )}

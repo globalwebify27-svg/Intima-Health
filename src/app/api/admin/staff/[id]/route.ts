@@ -30,7 +30,8 @@ export async function PUT(req: Request, { params }: RouteParams) {
     const body = await req.json();
     const { name, email, password, clinicId, status, doctorDetails } = body;
 
-    const user = await UserModel.findById(id).exec();
+    const user = (await UserModel.findById(id).exec()) || 
+                 (await UserModel.findOne({ $or: [{ doctorId: id }, { therapistId: id }] }).exec());
     if (!user) {
       return NextResponse.json({ success: false, message: "Staff user not found." }, { status: 404 });
     }
@@ -61,6 +62,8 @@ export async function PUT(req: Request, { params }: RouteParams) {
     if (user.role === "DOCTOR") {
       const doctor = await DoctorModel.findOne({
         $or: [
+          ...(user.doctorId ? [{ _id: user.doctorId }] : []),
+          ...(body.doctorId ? [{ _id: body.doctorId }] : []),
           { email: { $regex: new RegExp(`^${oldEmail.trim()}$`, "i") } },
           ...(email ? [{ email: { $regex: new RegExp(`^${email.trim()}$`, "i") } }] : [])
         ]
@@ -73,7 +76,17 @@ export async function PUT(req: Request, { params }: RouteParams) {
         if (status) doctor.status = status;
 
         if (doctorDetails) {
-          if (doctorDetails.avatar !== undefined) doctor.avatar = doctorDetails.avatar;
+          if (doctorDetails.avatar !== undefined) {
+            doctor.avatar = doctorDetails.avatar || undefined;
+            try {
+              const { TherapistModel } = await import("@/modules/therapists/schema");
+              await TherapistModel.updateMany(
+                { $or: [{ email: doctor.email }, { name: doctor.name }] },
+                { $set: { avatar: doctorDetails.avatar || undefined } }
+              ).exec();
+            } catch {}
+          }
+          if (doctorDetails.signature !== undefined) doctor.signature = doctorDetails.signature || undefined;
           if (doctorDetails.phone) doctor.phone = doctorDetails.phone;
           if (doctorDetails.specialization !== undefined) doctor.specialization = doctorDetails.specialization;
           if (doctorDetails.registrationNumber) doctor.registrationNumber = doctorDetails.registrationNumber;
@@ -106,6 +119,8 @@ export async function PUT(req: Request, { params }: RouteParams) {
       const { TherapistModel } = await import("@/modules/therapists/schema");
       const therapist = await TherapistModel.findOne({
         $or: [
+          ...(user.therapistId ? [{ _id: user.therapistId }] : []),
+          ...(body.therapistId ? [{ _id: body.therapistId }] : []),
           { email: { $regex: new RegExp(`^${oldEmail.trim()}$`, "i") } },
           ...(email ? [{ email: { $regex: new RegExp(`^${email.trim()}$`, "i") } }] : [])
         ]
@@ -119,6 +134,15 @@ export async function PUT(req: Request, { params }: RouteParams) {
         if (status) therapist.status = status;
 
         if (details) {
+          if (details.avatar !== undefined) {
+            therapist.avatar = details.avatar || undefined;
+            try {
+              await DoctorModel.updateMany(
+                { $or: [{ email: therapist.email }, { name: therapist.name }] },
+                { $set: { avatar: details.avatar || undefined } }
+              ).exec();
+            } catch {}
+          }
           if (details.phone) therapist.phone = details.phone;
           if (details.specialization !== undefined) therapist.specialization = details.specialization;
           if (details.registrationNumber) therapist.registrationNumber = details.registrationNumber;
@@ -131,6 +155,26 @@ export async function PUT(req: Request, { params }: RouteParams) {
           if (details.showOnHomepage !== undefined) therapist.showOnHomepage = details.showOnHomepage;
         }
         await therapist.save();
+      } else if (details) {
+        const newTh = await TherapistModel.create({
+          clinicId: clinicId ? clinicId : null,
+          name: name || user.name,
+          email: email || user.email,
+          avatar: details.avatar || undefined,
+          phone: details.phone || "+91 90000 00000",
+          specialization: details.specialization || "Clinical Psychology & Sex Therapy",
+          registrationNumber: details.registrationNumber || `RCI-${Date.now().toString().slice(-6)}`,
+          experience: details.experience !== "" && details.experience !== undefined ? Number(details.experience) : 0,
+          bio: details.bio || "",
+          rating: details.rating !== "" && details.rating !== undefined ? Number(details.rating) : 5.0,
+          fees: details.salary !== "" && details.salary !== undefined ? Number(details.salary) : 1500,
+          qualifications: details.qualifications || [],
+          availability: details.availability || [],
+          showOnHomepage: details.showOnHomepage || false,
+          status: status || "Active",
+        });
+        user.therapistId = newTh._id as any;
+        await user.save();
       }
     }
 

@@ -42,13 +42,17 @@ export async function GET() {
 
     const staffList = users.map(user => {
       const emailLower = user.email ? user.email.toLowerCase().trim() : "";
-      const docProfile = user.role === "DOCTOR" ? doctorMap.get(emailLower) : null;
-      const therapistProfile = user.role === "THERAPIST" ? therapistMap.get(emailLower) : null;
+      const docProfile = user.role === "DOCTOR" 
+        ? (user.doctorId ? doctors.find(d => d._id.toString() === user.doctorId?.toString()) || doctorMap.get(emailLower) : doctorMap.get(emailLower))
+        : null;
+      const therapistProfile = user.role === "THERAPIST" 
+        ? (user.therapistId ? therapists.find(t => t._id.toString() === user.therapistId?.toString()) || therapistMap.get(emailLower) : therapistMap.get(emailLower))
+        : null;
       const profile = docProfile || therapistProfile;
 
       return {
         id: user._id,
-        name: docProfile?.name || user.name,
+        name: docProfile?.name || therapistProfile?.name || user.name,
         email: user.email,
         role: user.role,
         clinicId: user.clinicId,
@@ -64,7 +68,11 @@ export async function GET() {
         experience: profile ? profile.experience : undefined,
         bio: profile ? profile.bio : undefined,
         rating: profile ? profile.rating : undefined,
-        avatar: profile ? profile.avatar : undefined,
+        avatar: profile?.avatar || 
+          (profile?.name?.toLowerCase().includes("deepak") ? "/images/doctor_1.png" : undefined) ||
+          (profile?.name?.toLowerCase().includes("amol") ? "/images/doctor_2.png" : undefined) ||
+          (profile?.name?.toLowerCase().includes("radhika") ? "/images/doctor_3.png" : undefined),
+        signature: docProfile ? docProfile.signature : undefined,
         availability: profile ? profile.availability : undefined,
         qualifications: profile ? profile.qualifications : undefined,
         conditions: docProfile ? docProfile.conditions : undefined,
@@ -83,6 +91,7 @@ export async function GET() {
             passwordHash: hashPassword("password123"),
             role: "DOCTOR",
             clinicId: doc.clinicId || undefined,
+            doctorId: doc._id,
             status: doc.status || "Active",
             deletedAt: null,
           });
@@ -105,10 +114,55 @@ export async function GET() {
             bio: doc.bio,
             rating: doc.rating,
             avatar: doc.avatar,
+            signature: doc.signature,
             availability: doc.availability,
             qualifications: doc.qualifications,
             conditions: doc.conditions,
             showOnHomepage: doc.showOnHomepage,
+          });
+        }
+      }
+    }
+
+    // Auto-sync: Ensure any active therapist in TherapistModel without a user account gets provisioned
+    for (const th of therapists) {
+      if (th.status === "Active" && !th.deletedAt && th.email) {
+        const emailLower = th.email.toLowerCase().trim();
+        if (!existingUserEmails.has(emailLower)) {
+          const newUser = await UserModel.create({
+            name: th.name,
+            email: emailLower,
+            passwordHash: hashPassword("therapist123"),
+            role: "THERAPIST",
+            clinicId: th.clinicId || undefined,
+            therapistId: th._id,
+            status: th.status || "Active",
+            deletedAt: null,
+          });
+          existingUserEmails.add(emailLower);
+          staffList.push({
+            id: newUser._id,
+            name: th.name,
+            email: th.email,
+            role: "THERAPIST",
+            clinicId: th.clinicId,
+            status: th.status,
+            createdAt: newUser.createdAt,
+            doctorId: undefined,
+            therapistId: th._id,
+            specialization: th.specialization,
+            registrationNumber: th.registrationNumber,
+            phone: th.phone,
+            salary: th.fees,
+            experience: th.experience,
+            bio: th.bio,
+            rating: th.rating,
+            avatar: th.avatar,
+            signature: undefined,
+            availability: th.availability,
+            qualifications: th.qualifications,
+            conditions: undefined,
+            showOnHomepage: th.showOnHomepage,
           });
         }
       }
@@ -175,6 +229,7 @@ export async function POST(req: Request) {
         email,
         phone: doctorDetails.phone,
         avatar: doctorDetails.avatar || undefined,
+        signature: doctorDetails.signature || undefined,
         specialization: doctorDetails.specialization || undefined,
         registrationNumber: doctorDetails.registrationNumber || undefined,
         experience: (doctorDetails.experience === "" || doctorDetails.experience === undefined) ? undefined : Number(doctorDetails.experience),
@@ -211,6 +266,7 @@ export async function POST(req: Request) {
         clinicId: clinicId || undefined,
         name,
         email,
+        avatar: details.avatar || undefined,
         phone: details.phone || "+91 90000 00000",
         specialization: details.specialization || "Clinical Psychology & Sex Therapy",
         registrationNumber: details.registrationNumber || `RCI-${Date.now().toString().slice(-6)}`,

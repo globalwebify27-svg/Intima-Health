@@ -42,6 +42,7 @@ interface StaffData {
   conditions?: string[];
   showOnHomepage?: boolean;
   avatar?: string;
+  signature?: string;
 }
 
 export default function StaffDirectoryPage() {
@@ -64,6 +65,7 @@ export default function StaffDirectoryPage() {
 
   // Doctor Fields
   const [avatar, setAvatar] = useState("");
+  const [signature, setSignature] = useState("");
   const [phone, setPhone] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [registrationNumber, setRegistrationNumber] = useState("");
@@ -86,7 +88,9 @@ export default function StaffDirectoryPage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [signatureUploading, setSignatureUploading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const signatureInputRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -102,11 +106,33 @@ export default function StaffDirectoryPage() {
       } else {
         setSubmitError(json.message || "Avatar upload failed.");
       }
-    } catch (err) {
+    } catch {
       setSubmitError("Failed to upload avatar.");
     } finally {
       setAvatarUploading(false);
       if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
+
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSignatureUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const json = await res.json();
+      if (json.success && json.url) {
+        setSignature(json.url);
+      } else {
+        setSubmitError(json.message || "Signature upload failed.");
+      }
+    } catch {
+      setSubmitError("Failed to upload signature.");
+    } finally {
+      setSignatureUploading(false);
+      if (signatureInputRef.current) signatureInputRef.current.value = "";
     }
   };
 
@@ -164,6 +190,7 @@ export default function StaffDirectoryPage() {
     setClinicAssignment("");
     setStatus("Active");
     setAvatar("");
+    setSignature("");
     setPhone("");
     setSpecialization("");
     setRegistrationNumber("");
@@ -200,9 +227,18 @@ export default function StaffDirectoryPage() {
       body.password = password;
     }
 
+    if (isEditMode && editStaffId) {
+      const editingMember = staff.find(s => s.id === editStaffId);
+      if (editingMember) {
+        if (editingMember.doctorId) body.doctorId = editingMember.doctorId;
+        if (editingMember.therapistId) body.therapistId = editingMember.therapistId;
+      }
+    }
+
     if (activeTab === "DOCTOR") {
       body.doctorDetails = {
-        avatar: avatar || undefined,
+        avatar: avatar,
+        signature: signature || undefined,
         phone: phone || undefined,
         specialization: specialization || "",
         registrationNumber: registrationNumber || undefined,
@@ -217,7 +253,7 @@ export default function StaffDirectoryPage() {
       };
     } else if (activeTab === "THERAPIST") {
       body.therapistDetails = {
-        avatar: avatar || undefined,
+        avatar: avatar,
         phone: phone || undefined,
         specialization: specialization || "Clinical Psychology & Sex Therapy",
         registrationNumber: registrationNumber || undefined,
@@ -270,6 +306,7 @@ export default function StaffDirectoryPage() {
 
     if (member.role === "DOCTOR" || member.role === "THERAPIST") {
       setAvatar(member.avatar || "");
+      setSignature(member.signature || "");
       setPhone(member.phone || "");
       setSpecialization(member.specialization || "");
       setRegistrationNumber(member.registrationNumber || "");
@@ -652,6 +689,56 @@ export default function StaffDirectoryPage() {
                         </div>
                       </div>
 
+                      {/* Doctor Digital Photo Signature */}
+                      {activeTab === "DOCTOR" && (
+                        <div className="space-y-2 sm:col-span-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Doctor Digital Signature (for Prescriptions)</label>
+                          <div className="flex items-center gap-4">
+                            {/* Preview */}
+                            <div className="relative w-44 h-20 rounded-xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden shrink-0 p-2">
+                              {signature ? (
+                                <img
+                                  src={signature}
+                                  alt="Doctor Signature preview"
+                                  className="max-h-full max-w-full object-contain"
+                                />
+                              ) : (
+                                <span className="text-[11px] text-muted-foreground/60 text-center font-medium">No signature uploaded</span>
+                              )}
+                            </div>
+                            {/* Upload controls */}
+                            <div className="flex flex-col gap-2">
+                              <input
+                                ref={signatureInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={handleSignatureUpload}
+                                className="hidden"
+                              />
+                              <button
+                                type="button"
+                                disabled={signatureUploading}
+                                onClick={() => signatureInputRef.current?.click()}
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-border bg-card hover:bg-muted/60 transition-colors disabled:opacity-50"
+                              >
+                                <Upload className="w-4 h-4" />
+                                {signatureUploading ? "Uploading..." : signature ? "Change Signature" : "Upload Signature"}
+                              </button>
+                              {signature && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSignature("")}
+                                  className="text-xs text-destructive hover:underline text-left"
+                                >
+                                  Remove signature
+                                </button>
+                              )}
+                              <p className="text-[11px] text-muted-foreground">PNG or JPEG photo with clean background. Appears on prescription PDFs.</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="space-y-1">
                         <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Contact Phone *</label>
                         <input
@@ -753,12 +840,12 @@ export default function StaffDirectoryPage() {
                       </div>
 
                       <div className="space-y-1 sm:col-span-2">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Doctor Biography</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Doctor Biography (Optional)</label>
                         <textarea
                           rows={2}
                           value={bio}
                           onChange={(e) => setBio(e.target.value)}
-                          placeholder="Brief biography details about experience and specialization..."
+                          placeholder="Brief biography details about experience and specialization (optional)..."
                           className="w-full p-2.5 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                         />
                       </div>

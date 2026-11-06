@@ -179,7 +179,17 @@ export default function PharmacyPrescriptionsPage() {
       totalAmount,
       status: "Delivered",
       paymentMethod,
-      shippingAddress: "Clinic Counter Dispense"
+      shippingAddress: "Clinic Counter Dispense",
+      shippingDetails: {
+        fullName: dispenseConsultation.patientId?.name || "Patient",
+        phone: dispenseConsultation.patientId?.phone || "9999999999",
+        street: "Clinic Counter Dispense",
+        city: "Akola",
+        state: "Maharashtra",
+        pinCode: "444001"
+      },
+      consultationId: dispenseConsultation._id,
+      prescriptionSource: "DOCTOR_CONSULTATION"
     };
 
     try {
@@ -608,6 +618,21 @@ export default function PharmacyPrescriptionsPage() {
                         </div>
                       ))}
                     </div>
+                    {paymentMethod === "Cash" && (
+                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-xl">
+                        💵 Collect cash at the counter. Order will be marked as Paid & Delivered immediately.
+                      </p>
+                    )}
+                    {paymentMethod === "Online" && (
+                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-xl">
+                        💳 Collect payment via clinic UPI / QR / Card machine. Order will be marked as Paid & Delivered immediately.
+                      </p>
+                    )}
+                    {paymentMethod === "Send Link in WhatsApp" && (
+                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-xl">
+                        📱 A digital payment invoice link will be sent to patient ({dispenseConsultation.patientId?.name || "Patient"}: {dispenseConsultation.patientId?.phone || "registered mobile"}).
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex gap-3 pt-2">

@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Hospital, Video, ShieldAlert, HeartHandshake, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatTime12Hour } from "@/lib/utils";
 
 interface Appointment {
   _id: string;
@@ -26,6 +27,32 @@ interface UpcomingAppointmentsSliderProps {
   handlePayAppointment: (id: string, amount: number) => void;
 }
 
+const parseDateTimeToMs = (dateStr?: string, timeStr?: string): number => {
+  if (!dateStr) return 0;
+  if (!timeStr) return new Date(`${dateStr}T00:00:00`).getTime() || 0;
+
+  let hours = 0;
+  let minutes = 0;
+  const cleanTime = timeStr.trim().toUpperCase();
+
+  if (cleanTime.includes("AM") || cleanTime.includes("PM")) {
+    const isPM = cleanTime.includes("PM");
+    const parts = cleanTime.replace(/\s*(AM|PM)/, "").split(":");
+    hours = parseInt(parts[0], 10) || 0;
+    minutes = parseInt(parts[1], 10) || 0;
+    if (isPM && hours < 12) hours += 12;
+    if (!isPM && hours === 12) hours = 0;
+  } else {
+    const parts = cleanTime.split(":");
+    hours = parseInt(parts[0], 10) || 0;
+    minutes = parseInt(parts[1], 10) || 0;
+  }
+
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setHours(hours, minutes, 0, 0);
+  return d.getTime() || 0;
+};
+
 const getServiceConfig = (serviceName?: string, type?: string) => {
   const name = (serviceName || "").toLowerCase();
   
@@ -46,15 +73,6 @@ const getServiceConfig = (serviceName?: string, type?: string) => {
   }
   
   return { icon: Hospital, label: fallbackLabel };
-};
-
-const formatTime = (time24: string) => {
-  if (!time24) return "";
-  const [hours, minutes] = time24.split(":");
-  const h = parseInt(hours, 10);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const h12 = h % 12 || 12;
-  return `${h12}:${minutes} ${ampm}`;
 };
 
 export function UpcomingAppointmentsSlider({ 
@@ -92,7 +110,7 @@ export function UpcomingAppointmentsSlider({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="p-6 bg-primary/5 rounded-3xl border border-primary/20 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[260px] lg:min-h-[220px] h-full w-[300px] sm:w-full shrink-0 snap-center"
+              className="p-5 sm:p-6 bg-primary/5 rounded-3xl border border-primary/20 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[260px] lg:min-h-[220px] h-full w-full min-w-full shrink-0 snap-center"
             >
               <div className="absolute top-0 right-0 p-4 opacity-10">
                 <ServiceIcon className="w-24 h-24" />
@@ -113,7 +131,7 @@ export function UpcomingAppointmentsSlider({
                 </div>
                 <h3 className="text-xl font-bold mb-1">{upcomingApt.doctorId?.name || "Clinician Practitioner"}</h3>
                 <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-3">{upcomingApt.doctorId?.specialization || "Wellness Expert"}</p>
-                <p className="text-sm text-muted-foreground font-medium">{upcomingApt.date} at {formatTime(upcomingApt.time)}</p>
+                <p className="text-sm text-muted-foreground font-medium">{upcomingApt.date} at {formatTime12Hour(upcomingApt.time)}</p>
 
                 {upcomingApt.paymentStatus !== "Paid" && (
                   <p className="text-xs text-amber-600 font-bold mt-2 flex items-center gap-1">
@@ -127,13 +145,12 @@ export function UpcomingAppointmentsSlider({
                   let canJoin = false;
                   
                   if (isVideo && upcomingApt.date && upcomingApt.time) {
-                    const now = new Date();
-                    const [hours, minutes] = upcomingApt.time.split(':').map(Number);
-                    const aptDate = new Date(`${upcomingApt.date}T00:00:00`);
-                    aptDate.setHours(hours, minutes, 0, 0);
-                    const diffMinutes = (aptDate.getTime() - now.getTime()) / (1000 * 60);
-                    // Joinable if within 15 minutes before, or already started
-                    canJoin = diffMinutes <= 15;
+                    const aptTimeMs = parseDateTimeToMs(upcomingApt.date, upcomingApt.time);
+                    if (aptTimeMs > 0) {
+                      const diffMinutes = (aptTimeMs - Date.now()) / (1000 * 60);
+                      // Joinable if within 15 minutes before, or started within the last 2 hours
+                      canJoin = diffMinutes <= 15 && diffMinutes >= -120;
+                    }
                   }
 
                   if (isVideo && !canJoin) {
@@ -174,7 +191,7 @@ export function UpcomingAppointmentsSlider({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="p-6 bg-primary/5 rounded-3xl border border-primary/20 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[260px] lg:min-h-[220px] h-full w-[300px] sm:w-full shrink-0 snap-center"
+          className="p-5 sm:p-6 bg-primary/5 rounded-3xl border border-primary/20 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[260px] lg:min-h-[220px] h-full w-full min-w-full shrink-0 snap-center"
         >
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <Hospital className="w-24 h-24" />

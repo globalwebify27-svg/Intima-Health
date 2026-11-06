@@ -309,14 +309,14 @@ export default function TherapistSessionsPage() {
                   variant="secondary"
                   className="flex-1 rounded-xl text-xs font-bold"
                   onClick={() => handleSaveNotes(false)}
-                  disabled={savingNotes || !notes.trim()}
+                  disabled={savingNotes}
                 >
                   Save Draft
                 </Button>
                 <Button
                   className="flex-1 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-white"
                   onClick={() => handleSaveNotes(true)}
-                  disabled={savingNotes || !notes.trim()}
+                  disabled={savingNotes}
                 >
                   {savingNotes ? "Saving..." : "Mark Completed"}
                 </Button>

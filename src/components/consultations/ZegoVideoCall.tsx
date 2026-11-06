@@ -74,7 +74,9 @@ export function ZegoVideoCall({ roomID, userID, userName, onLeaveRoom, onJoinRoo
         showMyCameraToggleButton: true,
         showMyMicrophoneToggleButton: true,
         showAudioVideoSettingsButton: true,
-        showScreenSharingButton: true,
+        showScreenSharingButton: false,
+        autoHideFooter: false,
+        showRoomTimer: true,
         layout: "Auto",
         videoScreenConfig: {
           objectFit: "cover",

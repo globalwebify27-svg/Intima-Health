@@ -52,7 +52,13 @@ export default function ClinicsAdminPage() {
 
   const fetchClinics = () => {
     setLoading(true);
-    fetch("/api/clinics")
+    fetch(`/api/clinics?t=${Date.now()}`, {
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    })
       .then((res) => res.json())
       .then((resData) => {
         if (resData.success && resData.data) {
@@ -69,23 +75,41 @@ export default function ClinicsAdminPage() {
 
   const handleCreateOrUpdate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    // Prevent accidental submit when user hits Enter on Step 1
+    if (step < 2) {
+      if (!name.trim() || !state.trim() || !city.trim() || !address.trim()) {
+        setSubmitError("Please fill out all required fields.");
+        return;
+      }
+      setSubmitError("");
+      setStep(2);
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError("");
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(email.trim())) {
       setSubmitError("Please enter a valid email address.");
       setSubmitting(false);
       return;
     }
 
+    if (!phone.trim()) {
+      setSubmitError("Please enter a valid phone number.");
+      setSubmitting(false);
+      return;
+    }
+
     const body = {
-      name,
-      state,
-      city,
-      address,
-      phone,
-      email,
+      name: name.trim(),
+      state: state.trim(),
+      city: city.trim(),
+      address: address.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
       status,
     };
 
@@ -100,8 +124,20 @@ export default function ClinicsAdminPage() {
       });
 
       const resData = await res.json();
-      if (!resData.success) {
+      if (!res.ok || !resData.success) {
         throw new Error(resData.message || "Failed to save clinic details.");
+      }
+
+      // Optimistically update table data immediately
+      const savedClinic = resData.data;
+      if (isEditMode) {
+        setClinics((prev) =>
+          prev.map((c) =>
+            c._id === editClinicId ? { ...c, ...body, ...(savedClinic || {}) } : c
+          )
+        );
+      } else if (savedClinic) {
+        setClinics((prev) => [savedClinic, ...prev]);
       }
 
       setIsModalOpen(false);
@@ -125,6 +161,7 @@ export default function ClinicsAdminPage() {
     setEmail(clinic.email);
     setStatus(clinic.status);
     setStep(1);
+    setSubmitError("");
     setIsModalOpen(true);
   };
 
@@ -304,6 +341,7 @@ export default function ClinicsAdminPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
+              onClick={(e) => e.stopPropagation()}
               className="relative w-full max-w-lg bg-card border border-border shadow-2xl rounded-3xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
             >
               {/* Header */}
@@ -313,8 +351,10 @@ export default function ClinicsAdminPage() {
                   <p className="text-xs text-muted-foreground mt-0.5">Step {step} of 2</p>
                 </div>
                 <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-1.5 hover:bg-muted rounded-full transition-colors"
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => { if (!submitting) setIsModalOpen(false); }}
+                  className="p-1.5 hover:bg-muted rounded-full transition-colors disabled:opacity-50"
                 >
                   <X className="w-5 h-5 text-muted-foreground" />
                 </button>

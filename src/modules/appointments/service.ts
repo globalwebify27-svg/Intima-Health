@@ -52,11 +52,16 @@ export class AppointmentService {
     }
 
     // Generate potential slots from doctor blocks
+    const seenBlocks = new Set<string>();
     const potentialStartTimes: string[] = [];
     for (const block of dayAvail.slots) {
+      const blockKey = `${block.start?.trim()}-${block.end?.trim()}`;
+      if (seenBlocks.has(blockKey)) continue;
+      seenBlocks.add(blockKey);
       const blocks = this.generateTimeSlots(block.start, block.end, duration);
       potentialStartTimes.push(...blocks);
     }
+    const uniqueStartTimes = Array.from(new Set(potentialStartTimes)).sort();
 
     // Get active bookings
     const bookings = await AppointmentRepository.findBookedAppointments(doctorId, dateStr);
@@ -80,7 +85,7 @@ export class AppointmentService {
     }));
 
     // Construct slot objects
-    let slots = potentialStartTimes.map(time => {
+    let slots = uniqueStartTimes.map(time => {
       // Calculate end time
       let [h, m] = time.split(":").map(Number);
       m += duration;
@@ -102,6 +107,16 @@ export class AppointmentService {
     const nowIST = new Date(istTimeStr);
     
     const [qYear, qMonth, qDay] = dateStr.split("-").map(Number);
+    const isPast = (
+      nowIST.getFullYear() > qYear ||
+      (nowIST.getFullYear() === qYear && (nowIST.getMonth() + 1) > qMonth) ||
+      (nowIST.getFullYear() === qYear && (nowIST.getMonth() + 1) === qMonth && nowIST.getDate() > qDay)
+    );
+
+    if (isPast) {
+      return [];
+    }
+
     const isToday = (
       nowIST.getFullYear() === qYear &&
       (nowIST.getMonth() + 1) === qMonth &&
@@ -263,6 +278,48 @@ export class AppointmentService {
       );
       for (const apt of expiredAppointments) {
         (apt as any).status = "Cancelled";
+      }
+    }
+
+    // Auto-sync completed therapy sessions to Appointment records
+    if (filters.patientId) {
+      try {
+        const { TherapySessionModel } = await import("@/modules/pharmacy/schema");
+        const { ObjectId } = await import("mongodb");
+        const patientIdVariants: any[] = [filters.patientId];
+        if (typeof filters.patientId === "string" && ObjectId.isValid(filters.patientId)) {
+          patientIdVariants.push(new ObjectId(filters.patientId));
+        }
+
+        const completedSessions = await TherapySessionModel.find({
+          patientId: { $in: patientIdVariants },
+          status: "Completed",
+        }).lean();
+
+        if (completedSessions.length > 0) {
+          const toCompleteIds: any[] = [];
+          for (const cs of completedSessions) {
+            for (const apt of list) {
+              if (["Scheduled", "Checked In", "Engaged", "Rescheduled"].includes(apt.status)) {
+                const nameMatch = !!(cs.name && (apt as any).serviceName && cs.name.trim().toLowerCase() === (apt as any).serviceName.trim().toLowerCase());
+                const channelMatch = !!(cs.videoChannelName && (apt as any).videoChannelName && (apt as any).videoChannelName === cs.videoChannelName);
+                const notesMatch = !!(apt.notes && cs._id && apt.notes.includes(cs._id.toString()));
+                if (nameMatch || channelMatch || notesMatch) {
+                  toCompleteIds.push((apt as any)._id);
+                  (apt as any).status = "Completed";
+                }
+              }
+            }
+          }
+          if (toCompleteIds.length > 0) {
+            await AppointmentModel.updateMany(
+              { _id: { $in: toCompleteIds } },
+              { $set: { status: "Completed", updatedBy: "therapy-session-sync" } }
+            );
+          }
+        }
+      } catch (syncErr) {
+        console.warn("[AppointmentService] Failed to sync completed therapy status:", syncErr);
       }
     }
 

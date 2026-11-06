@@ -134,7 +134,7 @@ export function generateOrderCustomerEmail(data: OrderEmailData): { subject: str
     <!-- Action Link -->
     <div style="text-align: center; margin-bottom: 16px;">
       <a href="https://kelkarmanas.com/patient/orders" class="btn-primary" style="display: inline-block; background-color: #7A2E7A; color: #ffffff; font-weight: 600; font-size: 14px; padding: 12px 32px; text-decoration: none; border-radius: 9999px;">
-        Track Order Status &rarr;
+        View Order Details &rarr;
       </a>
     </div>
 

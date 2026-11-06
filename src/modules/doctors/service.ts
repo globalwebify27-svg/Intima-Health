@@ -3,6 +3,27 @@ import { IDoctor } from "./types";
 import { CreateDoctorSchema, UpdateDoctorSchema, UpdateAvailabilitySchema } from "./validators";
 import { UserModel, hashPassword } from "@/modules/auth/schema";
 
+function deduplicateAvailability(availability?: any[]): any[] | undefined {
+  if (!availability || !Array.isArray(availability)) return availability;
+  return availability.map((dayAvail) => {
+    if (!dayAvail || !Array.isArray(dayAvail.slots)) return dayAvail;
+    const seen = new Set<string>();
+    const uniqueSlots: any[] = [];
+    for (const s of dayAvail.slots) {
+      if (!s || !s.start || !s.end) continue;
+      const key = `${s.start.trim()}-${s.end.trim()}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueSlots.push({ start: s.start.trim(), end: s.end.trim() });
+      }
+    }
+    return {
+      ...dayAvail,
+      slots: uniqueSlots,
+    };
+  });
+}
+
 export class DoctorService {
   static async registerDoctor(data: any, createdBy?: string): Promise<IDoctor> {
     const validatedData = CreateDoctorSchema.parse(data);
@@ -36,11 +57,17 @@ export class DoctorService {
     if (!doctor) {
       throw new Error("Doctor not found.");
     }
+    if (doctor.availability && Array.isArray(doctor.availability)) {
+      doctor.availability = deduplicateAvailability(doctor.availability) as any;
+    }
     return doctor;
   }
 
   static async updateProfile(id: string, data: any, updatedBy?: string): Promise<IDoctor> {
     const validatedData = UpdateDoctorSchema.parse(data);
+    if (validatedData.availability) {
+      validatedData.availability = deduplicateAvailability(validatedData.availability) as any;
+    }
     
     const doctor = await DoctorRepository.update(id, {
       ...validatedData,
@@ -56,9 +83,10 @@ export class DoctorService {
 
   static async updateAvailability(id: string, availabilityData: any, updatedBy?: string): Promise<IDoctor> {
     const { availability } = UpdateAvailabilitySchema.parse({ availability: availabilityData });
+    const cleanAvailability = deduplicateAvailability(availability);
 
     const doctor = await DoctorRepository.update(id, {
-      availability,
+      availability: cleanAvailability as any,
       updatedBy,
     });
 

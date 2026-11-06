@@ -17,6 +17,7 @@ const DoctorSchema = new Schema<IDoctor>({
   email: { type: String, required: true, unique: true, index: true },
   phone: { type: String, required: true },
   avatar: { type: String },
+  signature: { type: String },
   specialization: { type: String },
   registrationNumber: { type: String, required: true },
   experience: { type: Number },

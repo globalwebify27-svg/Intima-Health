@@ -14,7 +14,9 @@ import {
   X,
   CheckCircle2,
   AlertCircle,
-  Trash2
+  Trash2,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -141,7 +143,17 @@ export default function PrescriptionsPage() {
       totalAmount,
       status: "Delivered",
       paymentMethod,
-      shippingAddress: "Clinic Counter Dispense"
+      shippingAddress: "Clinic Counter Dispense",
+      shippingDetails: {
+        fullName: dispenseConsultation.patientId?.name || "Patient",
+        phone: dispenseConsultation.patientId?.phone || "9999999999",
+        street: "Clinic Counter Dispense",
+        city: "Akola",
+        state: "Maharashtra",
+        pinCode: "444001"
+      },
+      consultationId: dispenseConsultation._id,
+      prescriptionSource: "DOCTOR_CONSULTATION"
     };
 
     try {
@@ -400,18 +412,22 @@ export default function PrescriptionsPage() {
                 <Button 
                   variant="outline" 
                   size="sm" 
+                  className="rounded-xl border-2 border-primary/60 bg-background text-primary font-bold text-xs h-9 px-4 shadow-sm hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-50 disabled:bg-muted/70 disabled:border-border/80 disabled:text-foreground/60 disabled:cursor-not-allowed"
                   disabled={currentPage === 1} 
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 >
+                  <ChevronLeft className="w-4 h-4 mr-1 shrink-0" />
                   Previous
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
+                  className="rounded-xl border-2 border-primary/60 bg-background text-primary font-bold text-xs h-9 px-4 shadow-sm hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-50 disabled:bg-muted/70 disabled:border-border/80 disabled:text-foreground/60 disabled:cursor-not-allowed"
                   disabled={currentPage === totalPages || totalPages === 0} 
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.max(1, totalPages)))}
                 >
                   Next
+                  <ChevronRight className="w-4 h-4 ml-1 shrink-0" />
                 </Button>
               </div>
             </div>
@@ -561,6 +577,21 @@ export default function PrescriptionsPage() {
                         </div>
                       ))}
                     </div>
+                    {paymentMethod === "Cash" && (
+                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-xl">
+                        💵 Collect cash at the counter. Order will be marked as Paid & Delivered immediately.
+                      </p>
+                    )}
+                    {paymentMethod === "Online" && (
+                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-xl">
+                        💳 Collect payment via clinic UPI / QR / Card machine. Order will be marked as Paid & Delivered immediately.
+                      </p>
+                    )}
+                    {paymentMethod === "Send Link in WhatsApp" && (
+                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-xl">
+                        📱 A digital payment invoice link will be sent to patient ({dispenseConsultation.patientId?.name || "Patient"}: {dispenseConsultation.patientId?.phone || "registered mobile"}).
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex gap-3 pt-2">

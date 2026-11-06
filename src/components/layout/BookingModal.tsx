@@ -477,6 +477,7 @@ export function BookingModal() {
         setSuccessMsg("Appointment booked provisionally! Cash payment at clinic.");
         setWhatsappMsg("Your appointment has been scheduled provisionally. Please complete the cash payment at the clinic 15 minutes before your time slot.");
         setSubmitting(false);
+        if (typeof window !== "undefined") window.dispatchEvent(new Event("refresh-dashboard"));
       } else {
         setSubmitting(true);
         // Get fee from selected service
@@ -503,6 +504,7 @@ export function BookingModal() {
         setSuccessMsg("Appointment booked and paid successfully!");
         setWhatsappMsg("Your appointment has been scheduled and confirmed.");
         setSubmitting(false);
+        if (typeof window !== "undefined") window.dispatchEvent(new Event("refresh-dashboard"));
       }
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred.");

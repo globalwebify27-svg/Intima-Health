@@ -10,7 +10,9 @@ import {
   Activity, 
   ShoppingBag,
   DollarSign,
-  XCircle
+  XCircle,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { formatTime12Hour } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -245,8 +247,26 @@ export default function PaymentsPage() {
           Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems} entries
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>Previous</Button>
-          <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}>Next</Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="rounded-xl border-2 border-primary/60 bg-background text-primary font-bold text-xs h-9 px-4 shadow-sm hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-50 disabled:bg-muted/70 disabled:border-border/80 disabled:text-foreground/60 disabled:cursor-not-allowed"
+            disabled={currentPage === 1} 
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          >
+            <ChevronLeft className="w-4 h-4 mr-1 shrink-0" />
+            Previous
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="rounded-xl border-2 border-primary/60 bg-background text-primary font-bold text-xs h-9 px-4 shadow-sm hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-50 disabled:bg-muted/70 disabled:border-border/80 disabled:text-foreground/60 disabled:cursor-not-allowed"
+            disabled={currentPage === totalPages || totalPages === 0} 
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.max(1, totalPages)))}
+          >
+            Next
+            <ChevronRight className="w-4 h-4 ml-1 shrink-0" />
+          </Button>
         </div>
       </div>
     );

@@ -21,7 +21,28 @@ export async function GET(request: Request) {
     const status = searchParams.get("status");
 
     const query: Record<string, any> = {};
-    if (patientId) query.patientId = patientId;
+    if (patientId) {
+      try {
+        const { PatientModel } = await import("@/modules/patients/schema");
+        const currentPatient = await PatientModel.findById(patientId).lean().exec();
+        if (currentPatient) {
+          const conditions: any[] = [{ _id: currentPatient._id }];
+          if (currentPatient.phone) {
+            const last10 = currentPatient.phone.replace(/\D/g, "").slice(-10);
+            if (last10) conditions.push({ phone: new RegExp(last10 + "$") });
+          }
+          if (currentPatient.email && !currentPatient.email.includes("@noemail-intima.com")) {
+            conditions.push({ email: currentPatient.email.toLowerCase() });
+          }
+          const matchingPatients = await PatientModel.find({ $or: conditions }).select("_id").lean().exec();
+          query.patientId = { $in: matchingPatients.map((p: any) => p._id) };
+        } else {
+          query.patientId = patientId;
+        }
+      } catch {
+        query.patientId = patientId;
+      }
+    }
     if (clinicId) query.clinicId = clinicId;
     if (therapistId) query.therapistId = therapistId;
     if (doctorId) query.doctorId = doctorId;
@@ -35,6 +56,22 @@ export async function GET(request: Request) {
       .populate("consultationId")
       .sort({ createdAt: -1 })
       .exec();
+
+    // Ensure populated therapist profiles have their avatar resolved
+    for (const s of sessions) {
+      if (s.therapistId && !(s.therapistId as any).avatar) {
+        const thName = (s.therapistId as any).name?.toLowerCase() || "";
+        if (thName.includes("deepak")) {
+          (s.therapistId as any).avatar = "/images/doctor_1.png";
+        } else if (thName.includes("amol")) {
+          (s.therapistId as any).avatar = "/images/doctor_2.png";
+        } else if (thName.includes("radhika")) {
+          (s.therapistId as any).avatar = "/images/doctor_3.png";
+        } else if ((s.doctorId as any)?.avatar) {
+          (s.therapistId as any).avatar = (s.doctorId as any).avatar;
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,

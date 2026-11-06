@@ -272,35 +272,90 @@ export default function PatientAppointmentsPage() {
     );
   }
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const normalizeDateToYMD = (dateStr?: string): string => {
+    if (!dateStr) return "";
+    const clean = dateStr.trim();
+    if (clean.includes("T")) return clean.split("T")[0];
+    const parts = clean.split(/[-/]/);
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+      } else if (parts[2].length === 4) {
+        return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+      }
+    }
+    return clean;
+  };
+
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+  const parseDateTimeToMs = (dateStr?: string, timeStr?: string): number => {
+    if (!dateStr) return 0;
+
+    let hours = 0;
+    let minutes = 0;
+    const cleanTime = (timeStr || "").trim().toUpperCase();
+
+    if (cleanTime.includes("AM") || cleanTime.includes("PM")) {
+      const isPM = cleanTime.includes("PM");
+      const parts = cleanTime.replace(/\s*(AM|PM)/, "").split(":");
+      hours = parseInt(parts[0], 10) || 0;
+      minutes = parseInt(parts[1], 10) || 0;
+      if (isPM && hours < 12) hours += 12;
+      if (!isPM && hours === 12) hours = 0;
+    } else if (cleanTime) {
+      const parts = cleanTime.split(":");
+      hours = parseInt(parts[0], 10) || 0;
+      minutes = parseInt(parts[1], 10) || 0;
+    }
+
+    const ymd = normalizeDateToYMD(dateStr);
+    const [y, m, d] = ymd.split("-").map(Number);
+    if (!y || !m || !d) return 0;
+    return new Date(y, m - 1, d, hours, minutes, 0, 0).getTime() || 0;
+  };
+
+  const isPastAppointment = (apt: Appointment): boolean => {
+    // 1. Explicitly completed or checked out by therapist/doctor/staff
+    if (["Completed", "Checked Out"].includes(apt.status)) return true;
+
+    // 2. Date is before today
+    const ymd = normalizeDateToYMD(apt.date);
+    if (ymd && ymd < todayStr) return true;
+
+    // 3. Date is today, but time was more than 2 hours ago
+    if (ymd === todayStr && apt.time) {
+      const aptTimeMs = parseDateTimeToMs(apt.date, apt.time);
+      if (aptTimeMs > 0 && Date.now() - aptTimeMs > 2 * 60 * 60 * 1000) {
+        return true;
+      }
+    }
+
+    return false;
+  };
 
   const filteredAppointments = appointments.filter((apt) => {
     if (activeTab === "cancelled") {
       return apt.status === "Cancelled";
     }
 
-    if (activeTab === "upcoming") {
-      return (
-        ["Scheduled", "Checked In", "Engaged", "Rescheduled"].includes(apt.status) &&
-        apt.date >= todayStr
-      );
+    if (activeTab === "past") {
+      return isPastAppointment(apt) && apt.status !== "Cancelled";
     }
 
-    if (activeTab === "past") {
-      return (
-        ["Completed", "Checked Out"].includes(apt.status) ||
-        (["Scheduled", "Checked In", "Engaged", "Rescheduled"].includes(apt.status) && apt.date < todayStr)
-      );
+    if (activeTab === "upcoming") {
+      return !isPastAppointment(apt) && apt.status !== "Cancelled";
     }
     
     return true;
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 w-full max-w-full min-w-0 overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Appointments</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Appointments</h1>
           <p className="text-muted-foreground mt-2">
             View your scheduled consultations and past visits.
           </p>

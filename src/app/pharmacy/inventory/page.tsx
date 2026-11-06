@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MoreHorizontal, Plus, Edit3, X, Upload, Download, Trash2 } from "lucide-react";
+import { MoreHorizontal, Plus, Edit3, X, Upload, Download, Trash2, Search } from "lucide-react";
 import * as XLSX from "xlsx";
 
 interface Product {
@@ -17,10 +17,28 @@ interface Product {
   price: number;
   stock: number;
   status: string;
+  packSize?: string;
+  dosageForm?: string;
 }
+
+const MEDICINE_CATEGORIES = [
+  "Tablets",
+  "Syrup",
+  "Powder",
+  "Capsules",
+  "Injections",
+  "Ointment / Cream",
+  "Drops (Eye / Ear)",
+  "Inhaler / Spray",
+  "Supplements",
+  "General Medicine",
+];
 
 export default function PharmacyInventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [clinicId, setClinicId] = useState<string | null>(null);
@@ -33,7 +51,8 @@ export default function PharmacyInventoryPage() {
   // Form states
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [name, setName] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState("Tablets");
+  const [packSize, setPackSize] = useState("");
   const [price, setPrice] = useState(0);
   const [stock, setStock] = useState(0);
 
@@ -78,6 +97,7 @@ export default function PharmacyInventoryPage() {
           clinicId,
           name,
           category,
+          packSize,
           price,
           stock,
         }),
@@ -87,7 +107,8 @@ export default function PharmacyInventoryPage() {
         setIsAddModalOpen(false);
         // Reset form
         setName("");
-        setCategory("");
+        setCategory("Tablets");
+        setPackSize("");
         setPrice(0);
         setStock(0);
         fetchInventory(clinicId);
@@ -186,6 +207,7 @@ export default function PharmacyInventoryPage() {
           id: selectedProduct._id,
           name,
           category,
+          packSize,
           price,
           stock,
         }),
@@ -194,6 +216,7 @@ export default function PharmacyInventoryPage() {
       if (data.success) {
         setIsEditModalOpen(false);
         setSelectedProduct(null);
+        setPackSize("");
         fetchInventory(clinicId);
       } else {
         alert(data.message || "Failed to update product");
@@ -228,7 +251,8 @@ export default function PharmacyInventoryPage() {
   const openEditModal = (product: Product) => {
     setSelectedProduct(product);
     setName(product.name);
-    setCategory(product.category);
+    setCategory(product.category || "Tablets");
+    setPackSize(product.packSize || "");
     setPrice(product.price);
     setStock(product.stock);
     setIsEditModalOpen(true);
@@ -238,23 +262,38 @@ export default function PharmacyInventoryPage() {
     {
       accessorKey: "name",
       header: "Medicine Name",
-      cell: ({ row }) => <span className="font-bold">{row.getValue("name")}</span>,
+      cell: ({ row }) => <span className="font-bold text-foreground">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "category",
-      header: "Category",
+      header: "Category & Packaging",
+      cell: ({ row }) => {
+        const prod = row.original;
+        return (
+          <div className="flex flex-col text-xs">
+            <span className="font-semibold text-foreground">{prod.category || "General Medicine"}</span>
+            {prod.packSize && (
+              <span className="text-[11px] text-muted-foreground">{prod.packSize}</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "price",
-      header: "Price per Tablet (₹)",
+      header: "Price (₹)",
       cell: ({ row }) => {
         const amount = row.getValue("price") as number;
-        return <span>₹{amount.toLocaleString()}</span>;
+        return <span className="font-semibold text-foreground">₹{amount.toLocaleString()}</span>;
       }
     },
     {
       accessorKey: "stock",
       header: "Stock Level",
+      cell: ({ row }) => {
+        const stock = row.getValue("stock") as number;
+        return <span className={`font-semibold ${stock <= 15 ? "text-amber-600 dark:text-amber-400 font-bold" : ""}`}>{stock} units</span>;
+      }
     },
     {
       accessorKey: "status",
@@ -262,7 +301,7 @@ export default function PharmacyInventoryPage() {
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
         const variant = status === "In Stock" ? "default" : status === "Low Stock" ? "secondary" : "destructive";
-        return <Badge variant={variant as any}>{status}</Badge>;
+        return <Badge variant={variant as any} className="text-[10px]">{status}</Badge>;
       },
     },
     {
@@ -271,10 +310,10 @@ export default function PharmacyInventoryPage() {
         const product = row.original;
         return (
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => openEditModal(product)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary rounded-lg" onClick={() => openEditModal(product)}>
               <Edit3 className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive hover:bg-destructive/10 text-muted-foreground" onClick={() => handleDeleteProduct(product._id)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive hover:bg-destructive/10 text-muted-foreground rounded-lg" onClick={() => handleDeleteProduct(product._id)}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
@@ -282,6 +321,14 @@ export default function PharmacyInventoryPage() {
       },
     },
   ];
+
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const totalMobilePages = Math.ceil(filteredProducts.length / pageSize) || 1;
+  const paginatedMobileProducts = filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   if (loading) {
     return (
@@ -292,15 +339,16 @@ export default function PharmacyInventoryPage() {
   }
 
   return (
-    <div className="space-y-6 relative">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5 relative max-w-full overflow-x-hidden">
+      {/* Responsive Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Inventory Management</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
             Manage clinic pharmacy stock, prices, and categories.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <input 
             type="file" 
             accept=".csv, .xlsx, .xls" 
@@ -308,25 +356,149 @@ export default function PharmacyInventoryPage() {
             ref={fileInputRef} 
             onChange={handleFileUpload} 
           />
-          <Button variant="ghost" className="rounded-xl text-primary" onClick={downloadTemplate}>
-            <Download className="w-4 h-4 mr-2" /> Template
+          <Button variant="ghost" size="sm" className="rounded-xl text-primary font-bold text-xs h-9 px-3" onClick={downloadTemplate}>
+            <Download className="w-3.5 h-3.5 mr-1.5" /> Template
           </Button>
-          <Button variant="outline" className="rounded-xl" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-            <Upload className="w-4 h-4 mr-2" /> 
-            {isUploading ? "Importing..." : "Import Medicine"}
+          <Button variant="outline" size="sm" className="rounded-xl font-bold text-xs h-9 px-3" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+            <Upload className="w-3.5 h-3.5 mr-1.5" /> 
+            {isUploading ? "Importing..." : "Import"}
           </Button>
-          <Button className="rounded-xl" onClick={() => setIsAddModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" /> Add Product
+          <Button size="sm" className="rounded-xl font-bold text-xs h-9 px-3.5 shadow-xs" onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Product
           </Button>
         </div>
       </div>
+
+      {/* Stats Summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="p-3.5 bg-card rounded-2xl border border-border/70 shadow-2xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Medicines</span>
+          <p className="text-xl font-black text-foreground mt-0.5">{products.length}</p>
+        </div>
+        <div className="p-3.5 bg-card rounded-2xl border border-border/70 shadow-2xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Low / Out of Stock</span>
+          <p className="text-xl font-black text-amber-600 mt-0.5">
+            {products.filter(p => p.stock <= 15).length}
+          </p>
+        </div>
+        <div className="col-span-2 sm:col-span-1 p-3.5 bg-card rounded-2xl border border-border/70 shadow-2xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">In Stock</span>
+          <p className="text-xl font-black text-emerald-600 mt-0.5">
+            {products.filter(p => p.stock > 15).length}
+          </p>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative w-full">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setCurrentPage(1);
+          }}
+          placeholder="Search medicines by name or category..."
+          className="pl-10 h-10 rounded-xl bg-card border-border/80 text-sm focus:ring-2 focus:ring-primary/20 w-full"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
       
-      <DataTable columns={columns} data={products} />
+      {/* Desktop View: Full DataTable */}
+      <div className="hidden md:block w-full max-w-full overflow-hidden">
+        <DataTable columns={columns} data={filteredProducts} />
+      </div>
+
+      {/* Mobile View: Responsive Cards List */}
+      <div className="block md:hidden space-y-3">
+        {paginatedMobileProducts.length === 0 ? (
+          <div className="p-8 text-center bg-card rounded-2xl border border-border/60 text-muted-foreground text-sm">
+            {searchQuery ? "No medicines matching your search." : "No medicines in inventory yet."}
+          </div>
+        ) : (
+          paginatedMobileProducts.map((product) => {
+            const variant = product.status === "In Stock" ? "default" : product.status === "Low Stock" ? "secondary" : "destructive";
+            return (
+              <div key={product._id} className="p-4 bg-card rounded-2xl border border-border/80 shadow-xs space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-0.5">
+                    <h3 className="font-bold text-sm text-foreground leading-snug">{product.name}</h3>
+                    <span className="inline-block text-[11px] font-semibold text-muted-foreground">
+                      {product.category || "General Medicine"}{product.packSize ? ` • ${product.packSize}` : ""}
+                    </span>
+                  </div>
+                  <Badge variant={variant as any} className="shrink-0 text-[10px]">
+                    {product.status}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between pt-2.5 border-t border-border/40 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Price: </span>
+                    <span className="font-bold text-foreground">₹{product.price.toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Stock: </span>
+                    <span className={`font-bold ${product.stock <= 15 ? "text-amber-600" : "text-foreground"}`}>
+                      {product.stock} units
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary rounded-lg" onClick={() => openEditModal(product)}>
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 rounded-lg" onClick={() => handleDeleteProduct(product._id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {/* Mobile Pagination */}
+        {filteredProducts.length > pageSize && (
+          <div className="flex items-center justify-between pt-2 px-1">
+            <span className="text-xs font-semibold text-muted-foreground">
+              Page {currentPage} of {totalMobilePages}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className="rounded-xl border-2 border-primary/60 bg-background text-primary font-bold text-xs h-9 px-4 shadow-sm hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-50 disabled:bg-muted/70 disabled:border-border/80 disabled:text-foreground/60 disabled:cursor-not-allowed"
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage >= totalMobilePages}
+                onClick={() => setCurrentPage(prev => Math.min(totalMobilePages, prev + 1))}
+                className="rounded-xl border-2 border-primary/60 bg-background text-primary font-bold text-xs h-9 px-4 shadow-sm hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-50 disabled:bg-muted/70 disabled:border-border/80 disabled:text-foreground/60 disabled:cursor-not-allowed"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Add Product Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card w-full max-w-md rounded-2xl border border-border p-6 shadow-lg relative space-y-4">
+          <div className="bg-card w-full max-w-lg rounded-3xl border border-border p-6 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto">
             <button 
               onClick={() => setIsAddModalOpen(false)}
               className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
@@ -336,54 +508,98 @@ export default function PharmacyInventoryPage() {
             <h2 className="text-xl font-bold">Add New Product</h2>
             <form onSubmit={handleAddProduct} className="space-y-4">
               <div className="space-y-1">
-                <Label htmlFor="name">Medicine Name</Label>
+                <Label htmlFor="name">Medicine Name *</Label>
                 <Input 
                   id="name" 
                   value={name} 
                   onChange={(e) => setName(e.target.value)} 
                   placeholder="e.g. Paracetamol 500mg" 
                   required 
+                  className="h-10 rounded-xl"
                 />
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="category">Category</Label>
-                <Input 
-                  id="category" 
-                  value={category} 
-                  onChange={(e) => setCategory(e.target.value)} 
-                  placeholder="e.g. Analgesic" 
-                  required 
-                />
+
+              {/* Category List & Quick Select */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="category">Category *</Label>
+                  <input
+                    id="category"
+                    type="text"
+                    list="add-category-suggestions"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    placeholder="Select or type category..."
+                    className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    required
+                  />
+                  <datalist id="add-category-suggestions">
+                    {MEDICINE_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {["Tablets", "Syrup", "Powder", "Capsules"].map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setCategory(cat)}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border transition-all ${
+                          category.toLowerCase() === cat.toLowerCase()
+                            ? "bg-primary text-white border-primary"
+                            : "bg-muted/40 hover:bg-muted text-muted-foreground border-border/60"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="packSize">Pack / Unit Quantity (Optional)</Label>
+                  <Input 
+                    id="packSize" 
+                    value={packSize} 
+                    onChange={(e) => setPackSize(e.target.value)} 
+                    placeholder="e.g. 10 tabs/strip, 100ml, 5g" 
+                    className="h-10 rounded-xl bg-background"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Packaging or volume per unit.</p>
+                </div>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="price">Price per Tablet (₹)</Label>
+                  <Label htmlFor="price">Price (₹) *</Label>
                   <Input 
                     id="price" 
                     type="number" 
                     value={price} 
                     onChange={(e) => setPrice(Number(e.target.value))} 
-                    placeholder="Enter the price of a single tablet"
+                    placeholder="e.g. 40"
                     required 
+                    className="h-10 rounded-xl"
                   />
-                  <p className="text-[11px] text-muted-foreground">Enter the price of a single tablet.</p>
+                  <p className="text-[11px] text-muted-foreground">Price per unit/tablet.</p>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="stock">Initial Stock</Label>
+                  <Label htmlFor="stock">Initial Stock *</Label>
                   <Input 
                     id="stock" 
                     type="number" 
                     value={stock} 
                     onChange={(e) => setStock(Number(e.target.value))} 
                     required 
+                    className="h-10 rounded-xl"
                   />
                 </div>
               </div>
               <div className="flex gap-3 justify-end pt-2">
-                <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                <Button type="button" variant="outline" className="rounded-xl h-10 font-bold" onClick={() => setIsAddModalOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="rounded-xl h-10 font-bold">
                   Save Product
                 </Button>
               </div>
@@ -395,7 +611,7 @@ export default function PharmacyInventoryPage() {
       {/* Edit Product Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card w-full max-w-md rounded-2xl border border-border p-6 shadow-lg relative space-y-4">
+          <div className="bg-card w-full max-w-lg rounded-3xl border border-border p-6 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto">
             <button 
               onClick={() => {
                 setIsEditModalOpen(false);
@@ -408,44 +624,89 @@ export default function PharmacyInventoryPage() {
             <h2 className="text-xl font-bold">Edit Product Details</h2>
             <form onSubmit={handleEditProduct} className="space-y-4">
               <div className="space-y-1">
-                <Label htmlFor="edit-name">Medicine Name</Label>
+                <Label htmlFor="edit-name">Medicine Name *</Label>
                 <Input 
                   id="edit-name" 
                   value={name} 
                   onChange={(e) => setName(e.target.value)} 
                   required 
+                  className="h-10 rounded-xl"
                 />
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="edit-category">Category</Label>
-                <Input 
-                  id="edit-category" 
-                  value={category} 
-                  onChange={(e) => setCategory(e.target.value)} 
-                  required 
-                />
+
+              {/* Category List & Quick Select */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="edit-category">Category *</Label>
+                  <input
+                    id="edit-category"
+                    type="text"
+                    list="edit-category-suggestions"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    placeholder="Select or type category..."
+                    className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    required
+                  />
+                  <datalist id="edit-category-suggestions">
+                    {MEDICINE_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {["Tablets", "Syrup", "Powder", "Capsules"].map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setCategory(cat)}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border transition-all ${
+                          category.toLowerCase() === cat.toLowerCase()
+                            ? "bg-primary text-white border-primary"
+                            : "bg-muted/40 hover:bg-muted text-muted-foreground border-border/60"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="edit-packSize">Pack / Unit Quantity (Optional)</Label>
+                  <Input 
+                    id="edit-packSize" 
+                    value={packSize} 
+                    onChange={(e) => setPackSize(e.target.value)} 
+                    placeholder="e.g. 10 tabs/strip, 100ml, 5g" 
+                    className="h-10 rounded-xl bg-background"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Packaging or volume per unit.</p>
+                </div>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="edit-price">Price per Tablet (₹)</Label>
+                  <Label htmlFor="edit-price">Price (₹) *</Label>
                   <Input 
                     id="edit-price" 
                     type="number" 
                     value={price} 
                     onChange={(e) => setPrice(Number(e.target.value))} 
-                    placeholder="Enter the price of a single tablet"
+                    placeholder="e.g. 40"
                     required 
+                    className="h-10 rounded-xl"
                   />
-                  <p className="text-[11px] text-muted-foreground">Enter the price of a single tablet.</p>
+                  <p className="text-[11px] text-muted-foreground">Price per unit/tablet.</p>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="edit-stock">Current Stock</Label>
+                  <Label htmlFor="edit-stock">Current Stock *</Label>
                   <Input 
                     id="edit-stock" 
                     type="number" 
                     value={stock} 
                     onChange={(e) => setStock(Number(e.target.value))} 
                     required 
+                    className="h-10 rounded-xl"
                   />
                 </div>
               </div>
@@ -453,6 +714,7 @@ export default function PharmacyInventoryPage() {
                 <Button 
                   type="button" 
                   variant="outline" 
+                  className="rounded-xl h-10 font-bold"
                   onClick={() => {
                     setIsEditModalOpen(false);
                     setSelectedProduct(null);
@@ -460,7 +722,7 @@ export default function PharmacyInventoryPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="rounded-xl h-10 font-bold">
                   Save Changes
                 </Button>
               </div>

@@ -44,7 +44,34 @@ export class AppointmentRepository {
     const query: Record<string, any> = { deletedAt: null };
 
     if (filters.doctorId) query.doctorId = filters.doctorId;
-    if (filters.patientId) query.patientId = filters.patientId;
+    if (filters.patientId) {
+      try {
+        const { PatientModel } = await import("@/modules/patients/schema");
+        const mongoose = await import("mongoose");
+        const currentPatient = await PatientModel.findById(filters.patientId).lean().exec();
+        if (currentPatient) {
+          const conditions: any[] = [{ _id: currentPatient._id }];
+          if (currentPatient.phone) {
+            const last10 = currentPatient.phone.replace(/\D/g, "").slice(-10);
+            if (last10) {
+              conditions.push({ phone: new RegExp(last10 + "$") });
+            }
+          }
+          if (currentPatient.email && !currentPatient.email.includes("@noemail-intima.com")) {
+            conditions.push({ email: currentPatient.email.toLowerCase() });
+          }
+          const matchingPatients = await PatientModel.find({ $or: conditions }).select("_id").lean().exec();
+          const patientIds = matchingPatients.map((p: any) => p._id);
+          query.patientId = { $in: patientIds };
+        } else {
+          query.patientId = mongoose.default.Types.ObjectId.isValid(filters.patientId)
+            ? new mongoose.default.Types.ObjectId(filters.patientId)
+            : filters.patientId;
+        }
+      } catch {
+        query.patientId = filters.patientId;
+      }
+    }
     if (filters.date) query.date = filters.date;
     if (filters.status) query.status = filters.status;
     if (filters.clinicId) query.clinicId = filters.clinicId;

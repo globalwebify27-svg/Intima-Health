@@ -95,6 +95,7 @@ function ConsultationsContent() {
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<"patient" | "notes">("notes");
+  const [mobileView, setMobileView] = useState<"video" | "notes">("video");
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
   const [availableServices, setAvailableServices] = useState<any[]>([]);
   const [availableTherapists, setAvailableTherapists] = useState<any[]>([]);
@@ -372,9 +373,48 @@ function ConsultationsContent() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-background flex flex-col md:flex-row overflow-hidden"
           >
+            {/* Mobile View Toggle Bar */}
+            <div className="md:hidden flex items-center justify-between px-3 py-2 bg-slate-900 border-b border-slate-800 text-white z-20 shrink-0">
+              <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setMobileView("video")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    mobileView === "video" 
+                      ? "bg-primary text-white shadow-sm" 
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <Video className="w-3.5 h-3.5" /> Video Call
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileView("notes")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    mobileView === "notes" 
+                      ? "bg-primary text-white shadow-sm" 
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" /> Notes &amp; Rx
+                  {(prescriptionItems.filter(m => m.drug).length > 0 || therapyItems.filter(t => t.name).length > 0) && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  )}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleExitSession}
+                className="text-xs text-slate-400 hover:text-white px-2 py-1"
+              >
+                Exit
+              </button>
+            </div>
+
             {/* Left Section: Live Video Room or Walk-in Panel */}
             {activeConsultation.appointmentId?.type === "Walk-in" ? (
-              <div className="flex-1 flex flex-col items-center justify-center bg-slate-900/40 p-8 h-[55vh] md:h-full relative overflow-y-auto">
+              <div className={`flex-1 flex-col items-center justify-center bg-slate-900/40 p-8 relative overflow-y-auto ${mobileView === "video" ? "flex h-full" : "hidden md:flex md:h-full"}`}>
                 {/* Exit Button */}
                 <button
                   onClick={handleExitSession}
@@ -421,7 +461,7 @@ function ConsultationsContent() {
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col relative bg-slate-950 p-0 h-[55vh] md:h-full justify-between">
+              <div className={`flex-1 flex-col relative bg-slate-950 p-0 justify-between ${mobileView === "video" ? "flex h-full w-full min-h-0" : "hidden md:flex md:h-full"}`}>
                 <ZegoVideoCall 
                   roomID={activeConsultation.videoChannelName}
                   userID={(activeConsultation.doctorId?._id || "doctor-1").toString()}
@@ -442,11 +482,22 @@ function ConsultationsContent() {
                     }
                   }}
                 />
+
+                {/* Floating Quick Action Pill for Doctor on Mobile (elevated so video footer buttons remain 100% visible) */}
+                <div className="md:hidden absolute top-4 right-4 z-40">
+                  <Button
+                    size="sm"
+                    onClick={() => setMobileView("notes")}
+                    className="rounded-full shadow-2xl bg-primary/95 hover:bg-primary text-white border border-primary-foreground/20 text-xs font-bold gap-1.5 h-10 px-4 backdrop-blur-sm"
+                  >
+                    <FileText className="w-4 h-4" /> Notes &amp; Rx
+                  </Button>
+                </div>
               </div>
             )}
 
             {/* Right Section: Sidebar (Clinical Records & Bio) */}
-            <div className="w-full md:w-[450px] border-t md:border-t-0 md:border-l border-border bg-card flex flex-col h-[45vh] md:h-full z-10">
+            <div className={`w-full md:w-[450px] border-t md:border-t-0 md:border-l border-border bg-card flex-col z-10 ${mobileView === "notes" ? "flex h-full flex-1 min-h-0 overflow-y-auto" : "hidden md:flex md:h-full"}`}>
               {/* Tabs */}
               <div className="flex border-b border-border bg-muted/20">
                 <button

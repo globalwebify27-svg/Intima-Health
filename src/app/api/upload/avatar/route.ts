@@ -37,28 +37,39 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Automatically optimize and convert avatar to square WebP (800x800)
-    const optimizedBuffer = await sharp(buffer)
-      .resize({ width: 800, height: 800, fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 82, effort: 4 })
-      .toBuffer();
+    let finalBuffer: any = buffer;
+    let finalContentType = file.type || "image/png";
+    let ext = "png";
+    if (file.type.includes("jpeg") || file.type.includes("jpg")) ext = "jpg";
+    if (file.type.includes("webp")) ext = "webp";
+
+    try {
+      finalBuffer = await sharp(buffer)
+        .resize({ width: 800, height: 800, fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 82, effort: 4 })
+        .toBuffer();
+      finalContentType = "image/webp";
+      ext = "webp";
+    } catch (sharpErr) {
+      console.warn("Sharp optimization skipped, saving original avatar:", sharpErr);
+    }
 
     // Generate unique filename
     const hash = crypto.randomBytes(8).toString("hex");
-    const filename = `${hash}.webp`;
+    const filename = `${hash}.${ext}`;
 
     // Persist to MongoDB Media collection (safe on Vercel / serverless without EROFS errors)
     const { url } = await saveUploadedMedia({
       folder: "avatars",
       filename,
-      buffer: optimizedBuffer,
-      contentType: "image/webp",
+      buffer: finalBuffer,
+      contentType: finalContentType,
       isPermanent: true,
     });
 
     return NextResponse.json({
       success: true,
-      message: "Avatar optimized and converted to WebP successfully.",
+      message: "Avatar uploaded successfully.",
       url,
     });
   } catch (error: any) {

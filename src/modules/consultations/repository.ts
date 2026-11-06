@@ -109,7 +109,7 @@ export class ConsultationRepository {
 
     const consultations = await ConsultationModel.find(query)
       .populate({ path: "patientId", select: "name phone email" })
-      .populate({ path: "doctorId", select: "name specialization clinicId" })
+      .populate({ path: "doctorId", select: "name specialization clinicId qualifications registrationNumber signature avatar" })
       .populate({
         path: "appointmentId",
         select: "clinicId date time type serviceName feeAmount",

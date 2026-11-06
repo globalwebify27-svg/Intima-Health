@@ -178,6 +178,22 @@ export async function GET(request: Request) {
       .sort({ rating: -1, createdAt: -1 })
       .exec();
 
+    // Auto-heal therapist profiles missing avatar for known specialists
+    for (const t of therapists) {
+      if (!t.avatar) {
+        if (t.name?.toLowerCase().includes("deepak")) {
+          t.avatar = "/images/doctor_1.png";
+          await TherapistModel.updateOne({ _id: t._id }, { $set: { avatar: "/images/doctor_1.png" } }).catch(() => {});
+        } else if (t.name?.toLowerCase().includes("amol")) {
+          t.avatar = "/images/doctor_2.png";
+          await TherapistModel.updateOne({ _id: t._id }, { $set: { avatar: "/images/doctor_2.png" } }).catch(() => {});
+        } else if (t.name?.toLowerCase().includes("radhika")) {
+          t.avatar = "/images/doctor_3.png";
+          await TherapistModel.updateOne({ _id: t._id }, { $set: { avatar: "/images/doctor_3.png" } }).catch(() => {});
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: therapists,

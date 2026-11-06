@@ -571,6 +571,16 @@ export default function ContentPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Email 1 (Dr. Deepak Kelkar)</label>
+                                <input type="email" value={contactData.email1 || "dkdeepakkelkar736@gmail.com"} onChange={e => updateField("email1", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Email 2 (Dr. Anand Kelkar)</label>
+                                <input type="email" value={contactData.email2 || "kelkar_anand@hotmail.com"} onChange={e => updateField("email2", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
                                 <label className="text-xs font-bold text-muted-foreground">YouTube URL</label>
                                 <input type="text" value={contactData.youtube || ""} onChange={e => updateField("youtube", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
@@ -581,22 +591,22 @@ export default function ContentPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground">Twitter/X Text</label>
+                                <label className="text-xs font-bold text-muted-foreground">Twitter/X URL</label>
                                 <input type="text" value={contactData.twitter || ""} onChange={e => updateField("twitter", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
                               <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground">Website URL</label>
-                                <input type="text" value={contactData.website || ""} onChange={e => updateField("website", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                                <label className="text-xs font-bold text-muted-foreground">Facebook URL</label>
+                                <input type="text" value={contactData.facebook || ""} onChange={e => updateField("facebook", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-muted-foreground">Google Maps URL</label>
-                                <input type="text" value={contactData.googleMaps || ""} onChange={e => updateField("googleMaps", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                                <input type="text" value={contactData.googleMaps || ""} onChange={e => updateField("googleMaps", e.target.value)} placeholder="https://maps.google.com/..." className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-muted-foreground">Google Reviews URL</label>
-                                <input type="text" value={contactData.googleReviews || ""} onChange={e => updateField("googleReviews", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                                <input type="text" value={contactData.googleReviews || ""} onChange={e => updateField("googleReviews", e.target.value)} placeholder="https://g.page/r/.../review" className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
                             </div>
                           </div>
@@ -835,6 +845,16 @@ export default function ContentPage() {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Email 1 (Dr. Deepak Kelkar)</label>
+                                <input type="email" value={contactData.email1 || "dkdeepakkelkar736@gmail.com"} onChange={e => updateField("email1", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground">Email 2 (Dr. Anand Kelkar)</label>
+                                <input type="email" value={contactData.email2 || "kelkar_anand@hotmail.com"} onChange={e => updateField("email2", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
                                 <label className="text-xs font-bold text-muted-foreground">YouTube Link</label>
                                 <input type="text" value={contactData.youtube || ""} onChange={e => updateField("youtube", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
@@ -849,18 +869,18 @@ export default function ContentPage() {
                                 <input type="text" value={contactData.twitter || ""} onChange={e => updateField("twitter", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
                               <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground">Website Link</label>
-                                <input type="text" value={contactData.website || ""} onChange={e => updateField("website", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                                <label className="text-xs font-bold text-muted-foreground">Facebook Link</label>
+                                <input type="text" value={contactData.facebook || ""} onChange={e => updateField("facebook", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-muted-foreground">Google Maps Link</label>
-                                <input type="text" value={contactData.googleMaps || ""} onChange={e => updateField("googleMaps", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                                <input type="text" value={contactData.googleMaps || ""} onChange={e => updateField("googleMaps", e.target.value)} placeholder="https://maps.google.com/..." className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-muted-foreground">Google Reviews Link</label>
-                                <input type="text" value={contactData.googleReviews || ""} onChange={e => updateField("googleReviews", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                                <input type="text" value={contactData.googleReviews || ""} onChange={e => updateField("googleReviews", e.target.value)} placeholder="https://g.page/r/.../review" className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
                             </div>
                           </div>

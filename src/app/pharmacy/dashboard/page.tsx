@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShoppingBag, Pill, PackageSearch, Package } from "lucide-react";
+import { ShoppingBag, Pill, PackageSearch, Package, X, ArrowUpRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface OrderItem {
   productId?: {
@@ -25,6 +26,8 @@ interface Product {
   name: string;
   stock: number;
   status: string;
+  category?: string;
+  packSize?: string;
 }
 
 export default function PharmacyDashboard() {
@@ -33,6 +36,12 @@ export default function PharmacyDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [prescriptionsCount, setPrescriptionsCount] = useState(0);
+
+  // Restock modal state
+  const [restockProduct, setRestockProduct] = useState<Product | null>(null);
+  const [restockQty, setRestockQty] = useState<number>(50);
+  const [restocking, setRestocking] = useState(false);
+  const [restockError, setRestockError] = useState("");
 
   const fetchDashboardData = async (cId: string) => {
     try {
@@ -95,19 +104,38 @@ export default function PharmacyDashboard() {
     }
   };
 
-  const handleRestock = async (productId: string) => {
+  const handleOpenRestock = (product: Product) => {
+    setRestockProduct(product);
+    setRestockQty(50);
+    setRestockError("");
+  };
+
+  const handleConfirmRestock = async () => {
+    if (!restockProduct || !restockQty || restockQty <= 0) return;
+    setRestocking(true);
+    setRestockError("");
     try {
+      const newStock = restockProduct.stock + Number(restockQty);
       const res = await fetch("/api/pharmacy/products", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: productId, stock: 100 }),
+        body: JSON.stringify({ id: restockProduct._id, stock: newStock }),
       });
       const data = await res.json();
-      if (data.success && clinicId) {
-        fetchDashboardData(clinicId);
+      if (data.success) {
+        setRestockProduct(null);
+        setRestockQty(50);
+        if (clinicId) {
+          fetchDashboardData(clinicId);
+        }
+      } else {
+        setRestockError(data.message || "Failed to update stock.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Restock error:", err);
+      setRestockError(err.message || "An error occurred while updating stock.");
+    } finally {
+      setRestocking(false);
     }
   };
 
@@ -231,7 +259,12 @@ export default function PharmacyDashboard() {
                     <h4 className="font-semibold text-red-900 dark:text-red-400">{prod.name}</h4>
                   </div>
                   <p className="text-xs text-red-700 dark:text-red-300 mb-3">Only {prod.stock} units remaining in stock.</p>
-                  <Button variant="outline" size="sm" onClick={() => handleRestock(prod._id)} className="w-full text-red-700 border-red-200 hover:bg-red-100 dark:hover:bg-red-950/20">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleOpenRestock(prod)} 
+                    className="w-full text-red-700 border-red-200 hover:bg-red-100 dark:hover:bg-red-950/20 font-bold rounded-xl"
+                  >
                     Restock Now
                   </Button>
                 </div>
@@ -244,6 +277,103 @@ export default function PharmacyDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Restock Inventory Modal with Quantity Input */}
+      {restockProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-card border border-border rounded-3xl w-full max-w-md p-6 shadow-2xl relative space-y-5 animate-in zoom-in-95">
+            <button 
+              onClick={() => { setRestockProduct(null); setRestockQty(50); }}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2.5 border-b border-border pb-3">
+              <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+                <PackageSearch className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Restock Product Inventory</h3>
+                <p className="text-xs text-muted-foreground">Specify the quantity to add to stock</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-3.5 bg-muted/40 rounded-2xl border border-border/60 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Medicine Name</span>
+                <p className="text-sm font-bold text-foreground leading-snug">{restockProduct.name}</p>
+                <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
+                  <span>Current Stock: <strong className="text-amber-600 dark:text-amber-400 font-bold">{restockProduct.stock} units</strong></span>
+                  {restockProduct.category && <span>• {restockProduct.category}</span>}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="restock-qty" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Quantity to Add *
+                  </label>
+                  <span className="text-xs font-semibold text-primary">
+                    New Total Stock: <strong>{restockProduct.stock + (Number(restockQty) || 0)} units</strong>
+                  </span>
+                </div>
+                <Input
+                  id="restock-qty"
+                  type="number"
+                  min={1}
+                  value={restockQty || ""}
+                  onChange={(e) => setRestockQty(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  placeholder="Enter quantity to add..."
+                  className="h-11 rounded-xl text-base font-bold bg-background focus:ring-2 focus:ring-primary/20"
+                  autoFocus
+                />
+                
+                {/* Quick Add Pills */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[11px] text-muted-foreground font-medium mr-1">Quick Select:</span>
+                  {[20, 50, 100, 200, 500].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => setRestockQty(num)}
+                      className={`text-xs font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                        restockQty === num
+                          ? "bg-primary text-white border-primary shadow-xs"
+                          : "bg-muted/40 hover:bg-muted text-foreground border-border/60"
+                      }`}
+                    >
+                      +{num}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {restockError && (
+                <p className="text-xs text-destructive font-semibold">{restockError}</p>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border/40">
+                <Button
+                  variant="outline"
+                  onClick={() => { setRestockProduct(null); setRestockQty(50); }}
+                  className="rounded-xl h-11 px-5 font-bold"
+                  disabled={restocking}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmRestock}
+                  className="rounded-xl h-11 px-6 font-bold shadow-md bg-primary hover:bg-primary/90 text-white"
+                  disabled={restocking || !restockQty || restockQty <= 0}
+                >
+                  {restocking ? "Updating Stock..." : `Add +${restockQty} to Stock`}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

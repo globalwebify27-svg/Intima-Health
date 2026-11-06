@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, User, Phone, Mail, Award, BookOpen, Briefcase, DollarSign, Camera, AlertCircle } from "lucide-react";
+import { Check, User, Phone, Mail, Award, BookOpen, Briefcase, DollarSign, Camera, AlertCircle, PenTool, Upload, Trash2 } from "lucide-react";
 
 interface DoctorProfile {
   name: string;
   email: string;
   phone: string;
   avatar?: string;
+  signature?: string;
   specialization: string;
   experience: number;
   fees: number;
@@ -30,6 +31,8 @@ export default function DoctorSettingsPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [avatar, setAvatar] = useState("");
+  const [signature, setSignature] = useState("");
+  const [signatureUploading, setSignatureUploading] = useState(false);
   const [specialization, setSpecialization] = useState("");
   const [experience, setExperience] = useState("");
   const [qualifications, setQualifications] = useState("");
@@ -54,6 +57,7 @@ export default function DoctorSettingsPage() {
           setEmail(doc.email || "");
           setPhone(doc.phone || "");
           setAvatar(doc.avatar || "");
+          setSignature(doc.signature || "");
           setSpecialization(doc.specialization || "");
           setExperience(String(doc.experience || "0"));
           setQualifications(doc.qualifications?.join(", ") || "");
@@ -88,6 +92,33 @@ export default function DoctorSettingsPage() {
     }
   };
 
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSignatureUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      setError("");
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        setSignature(data.url);
+      } else {
+        throw new Error(data.message || "Failed to upload digital signature.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Signature upload failed.");
+    } finally {
+      setSignatureUploading(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!doctorId) return;
@@ -100,6 +131,7 @@ export default function DoctorSettingsPage() {
       name,
       phone,
       avatar: avatar || undefined,
+      signature: signature || undefined,
       specialization,
       experience: Number(experience),
       qualifications: qualifications.split(",").map((q) => q.trim()).filter(Boolean),
@@ -163,33 +195,95 @@ export default function DoctorSettingsPage() {
       )}
 
       <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Card: Profile Photo */}
-        <div className="lg:col-span-1 flex flex-col items-center p-6 bg-card border border-border/60 rounded-3xl shadow-sm h-fit space-y-6">
-          <div className="relative group cursor-pointer" onClick={() => document.getElementById("profile-upload")?.click()}>
-            <div className="w-36 h-36 rounded-full border-2 border-dashed border-border/80 group-hover:border-primary/50 bg-muted flex items-center justify-center overflow-hidden relative transition-colors shadow-inner">
-              {avatar ? (
-                <img src={avatar} alt="Profile Photo" className="object-cover w-full h-full" />
+        {/* Left Column: Profile Photo & Digital Signature */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Profile Photo Card */}
+          <div className="flex flex-col items-center p-6 bg-card border border-border/60 rounded-3xl shadow-sm space-y-6">
+            <div className="relative group cursor-pointer" onClick={() => document.getElementById("profile-upload")?.click()}>
+              <div className="w-36 h-36 rounded-full border-2 border-dashed border-border/80 group-hover:border-primary/50 bg-muted flex items-center justify-center overflow-hidden relative transition-colors shadow-inner">
+                {avatar ? (
+                  <img src={avatar} alt="Profile Photo" className="object-cover w-full h-full" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center font-bold text-3xl bg-primary/5 text-primary">
+                    {name ? name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() : "DR"}
+                  </div>
+                )}
+              </div>
+              <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <Camera className="w-8 h-8 text-white stroke-[1.5]" />
+              </div>
+            </div>
+            <input
+              id="profile-upload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarUpload}
+            />
+            <div className="text-center">
+              <h3 className="font-bold text-lg">{name}</h3>
+              <p className="text-sm text-primary font-semibold">{specialization || "Clinical Practitioner"}</p>
+              <p className="text-xs text-muted-foreground mt-2">Click photo to upload a new profile picture</p>
+            </div>
+          </div>
+
+          {/* Digital Signature Card */}
+          <div className="flex flex-col items-center p-6 bg-card border border-border/60 rounded-3xl shadow-sm space-y-4">
+            <div className="text-center w-full">
+              <h3 className="font-bold text-base flex items-center justify-center gap-2">
+                <PenTool className="w-4 h-4 text-primary" /> Digital Photo Signature
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Appears on prescription PDFs as the authorized signature.
+              </p>
+            </div>
+
+            <div 
+              className="w-full h-28 rounded-2xl border-2 border-dashed border-border/80 bg-muted/20 flex items-center justify-center overflow-hidden relative cursor-pointer hover:border-primary/50 transition-colors p-3"
+              onClick={() => document.getElementById("signature-upload")?.click()}
+            >
+              {signature ? (
+                <img src={signature} alt="Doctor Digital Signature" className="max-h-full max-w-full object-contain" />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center font-bold text-3xl bg-primary/5 text-primary">
-                  {name ? name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() : "DR"}
+                <div className="flex flex-col items-center text-muted-foreground/60 text-xs gap-1.5 text-center">
+                  <PenTool className="w-6 h-6 stroke-[1.5]" />
+                  <span>Click to upload signature photo</span>
                 </div>
               )}
             </div>
-            <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-              <Camera className="w-8 h-8 text-white stroke-[1.5]" />
+
+            <input
+              id="signature-upload"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handleSignatureUpload}
+            />
+
+            <div className="flex items-center gap-2 w-full">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={signatureUploading}
+                onClick={() => document.getElementById("signature-upload")?.click()}
+                className="flex-1 rounded-xl text-xs font-semibold"
+              >
+                <Upload className="w-3.5 h-3.5 mr-1.5" />
+                {signatureUploading ? "Uploading..." : signature ? "Change Signature" : "Upload Signature"}
+              </Button>
+              {signature && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSignature("")}
+                  className="rounded-xl text-xs text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              )}
             </div>
-          </div>
-          <input
-            id="profile-upload"
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleAvatarUpload}
-          />
-          <div className="text-center">
-            <h3 className="font-bold text-lg">{name}</h3>
-            <p className="text-sm text-primary font-semibold">{specialization || "Clinical Practitioner"}</p>
-            <p className="text-xs text-muted-foreground mt-2">Click photo to upload a new profile picture</p>
           </div>
         </div>
 
@@ -281,15 +375,14 @@ export default function DoctorSettingsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="bio" className="text-sm font-bold">Biography & Clinic Description</Label>
+              <Label htmlFor="bio" className="text-sm font-bold">Biography &amp; Clinic Description (Optional)</Label>
               <textarea
                 id="bio"
                 rows={5}
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 className="w-full p-3.5 rounded-xl border border-border/60 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-                placeholder="Write about your background, clinical expertise, and practice focus..."
-                required
+                placeholder="Write about your background, clinical expertise, and practice focus (optional)..."
               />
             </div>
           </div>

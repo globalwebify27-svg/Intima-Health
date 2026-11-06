@@ -17,6 +17,134 @@ interface DayAvailability {
   slots: TimeSlot[];
 }
 
+// Convert HH:MM to minutes from midnight
+const toMinutes = (timeStr: string): number => {
+  if (!timeStr || !timeStr.includes(":")) return -1;
+  const [h, m] = timeStr.split(":").map(Number);
+  if (isNaN(h) || isNaN(m)) return -1;
+  return h * 60 + m;
+};
+
+// Check if a specific slot in a day has duplicate timing, overlaps, or format errors
+const getSlotIssue = (slots: TimeSlot[], index: number): string | null => {
+  const current = slots[index];
+  if (!current.start?.trim() || !current.end?.trim()) return "Time required";
+
+  const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  if (!timeRegex.test(current.start.trim()) || !timeRegex.test(current.end.trim())) {
+    return "Invalid time format (HH:MM)";
+  }
+
+  const startMin = toMinutes(current.start.trim());
+  const endMin = toMinutes(current.end.trim());
+
+  if (startMin >= endMin) {
+    return "Start must be before End";
+  }
+
+  for (let i = 0; i < slots.length; i++) {
+    if (i === index) continue;
+    const other = slots[i];
+    if (!other.start?.trim() || !other.end?.trim()) continue;
+
+    // Exact duplicate check
+    if (
+      other.start.trim() === current.start.trim() &&
+      other.end.trim() === current.end.trim()
+    ) {
+      return "Duplicate timing";
+    }
+
+    // Overlap check
+    const oStartMin = toMinutes(other.start.trim());
+    const oEndMin = toMinutes(other.end.trim());
+    if (oStartMin !== -1 && oEndMin !== -1 && oStartMin < oEndMin) {
+      if (Math.max(startMin, oStartMin) < Math.min(endMin, oEndMin)) {
+        return "Overlaps with another slot";
+      }
+    }
+  }
+
+  return null;
+};
+
+// Deduplicate exact matching slots
+const deduplicateSlots = (slots: TimeSlot[]): TimeSlot[] => {
+  const seen = new Set<string>();
+  const unique: TimeSlot[] = [];
+  for (const s of slots) {
+    if (!s || !s.start || !s.end) continue;
+    const key = `${s.start.trim()}-${s.end.trim()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push({ start: s.start.trim(), end: s.end.trim() });
+    }
+  }
+  return unique;
+};
+
+// Suggest a smart, non-overlapping next slot for a day
+const suggestNextSlot = (existingSlots: TimeSlot[]): TimeSlot => {
+  const validSlots = existingSlots
+    .filter((s) => s.start && s.end)
+    .map((s) => ({
+      startMin: toMinutes(s.start),
+      endMin: toMinutes(s.end),
+      start: s.start.trim(),
+      end: s.end.trim(),
+    }))
+    .filter((s) => s.startMin !== -1 && s.endMin !== -1 && s.startMin < s.endMin)
+    .sort((a, b) => a.startMin - b.startMin);
+
+  if (validSlots.length === 0) {
+    return { start: "09:00", end: "13:00" };
+  }
+
+  const candidateBlocks: TimeSlot[] = [
+    { start: "09:00", end: "13:00" },
+    { start: "14:00", end: "17:00" },
+    { start: "17:00", end: "21:00" },
+    { start: "10:00", end: "14:00" },
+    { start: "15:00", end: "19:00" },
+    { start: "18:00", end: "21:00" },
+  ];
+
+  for (const cand of candidateBlocks) {
+    const cStart = toMinutes(cand.start);
+    const cEnd = toMinutes(cand.end);
+    const hasConflict = validSlots.some(
+      (s) => Math.max(cStart, s.startMin) < Math.min(cEnd, s.endMin)
+    );
+    if (!hasConflict) {
+      return cand;
+    }
+  }
+
+  const lastSlot = validSlots[validSlots.length - 1];
+  if (lastSlot.endMin + 60 <= 22 * 60) {
+    const nextStartH = Math.floor((lastSlot.endMin + 30) / 60);
+    const nextEndH = Math.min(23, nextStartH + 3);
+    return {
+      start: `${String(nextStartH).padStart(2, "0")}:00`,
+      end: `${String(nextEndH).padStart(2, "0")}:00`,
+    };
+  }
+
+  const firstSlot = validSlots[0];
+  if (firstSlot.startMin >= 2 * 60) {
+    const prevEndH = Math.floor(firstSlot.startMin / 60);
+    const prevStartH = Math.max(7, prevEndH - 3);
+    if (prevStartH < prevEndH) {
+      return {
+        start: `${String(prevStartH).padStart(2, "0")}:00`,
+        end: `${String(prevEndH).padStart(2, "0")}:00`,
+      };
+    }
+  }
+
+  return { start: "14:00", end: "17:00" };
+};
+
 export default function DoctorAvailabilityPage() {
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,7 +174,12 @@ export default function DoctorAvailabilityPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data) {
-          setAvailability(data.data.availability || []);
+          // Deduplicate existing slots so any stored duplicate timings are cleaned up immediately
+          const cleaned = (data.data.availability || []).map((av: DayAvailability) => ({
+            day: av.day,
+            slots: deduplicateSlots(av.slots || []).sort((a, b) => a.start.localeCompare(b.start)),
+          }));
+          setAvailability(cleaned);
           setSlotDuration(data.data.slotDuration || 30);
         }
       })
@@ -55,13 +188,19 @@ export default function DoctorAvailabilityPage() {
   }, []);
 
   const openEditModal = () => {
-    // Clone current availability to temporary state for modal editing
-    setTempAvailability(JSON.parse(JSON.stringify(availability)));
+    // Clone and deduplicate current availability to temporary state for modal editing
+    const cleaned = availability.map((av) => ({
+      day: av.day,
+      slots: deduplicateSlots(av.slots || []).sort((a, b) => a.start.localeCompare(b.start)),
+    }));
+    setTempAvailability(JSON.parse(JSON.stringify(cleaned)));
     setTempSlotDuration(slotDuration);
+    setError("");
     setIsModalOpen(true);
   };
 
   const handleToggleDay = (day: string) => {
+    setError("");
     const exists = tempAvailability.some((av) => av.day === day);
     if (exists) {
       setTempAvailability(tempAvailability.filter((av) => av.day !== day));
@@ -71,6 +210,7 @@ export default function DoctorAvailabilityPage() {
   };
 
   const handleSlotChange = (day: string, slotIndex: number, field: "start" | "end", value: string) => {
+    setError("");
     setTempAvailability(
       tempAvailability.map((av) => {
         if (av.day === day) {
@@ -88,17 +228,36 @@ export default function DoctorAvailabilityPage() {
   };
 
   const handleAddSlot = (day: string) => {
-    setTempAvailability(
-      tempAvailability.map((av) => {
-        if (av.day === day) {
-          return { ...av, slots: [...av.slots, { start: "09:00", end: "17:00" }] };
+    setError("");
+    setTempAvailability((prev) =>
+      prev.map((av) => {
+        if (av.day !== day) return av;
+
+        // Check if existing slots already have unresolved duplicate or invalid timing
+        const hasIssue = av.slots.some((_, i) => getSlotIssue(av.slots, i) !== null);
+        if (hasIssue) {
+          setError(`Please resolve the current duplicate or invalid slot in ${day} before adding another.`);
+          return av;
         }
-        return av;
+
+        const newSlot = suggestNextSlot(av.slots);
+
+        // Disallow adding duplicate slot
+        const isDuplicate = av.slots.some(
+          (s) => s.start.trim() === newSlot.start.trim() && s.end.trim() === newSlot.end.trim()
+        );
+        if (isDuplicate) {
+          setError(`Time slot ${newSlot.start} to ${newSlot.end} already exists for ${day}.`);
+          return av;
+        }
+
+        return { ...av, slots: [...av.slots, newSlot] };
       })
     );
   };
 
   const handleRemoveSlot = (day: string, slotIndex: number) => {
+    setError("");
     setTempAvailability(
       tempAvailability.map((av) => {
         if (av.day === day) {
@@ -109,32 +268,48 @@ export default function DoctorAvailabilityPage() {
     );
   };
 
+  // Check if any slot across all enabled days has an issue (duplicate, overlap, invalid format)
+  const hasAnySlotIssue = tempAvailability.some((av) =>
+    av.slots.some((_, idx) => getSlotIssue(av.slots, idx) !== null)
+  );
+
   const handleSave = async () => {
     if (!doctorId) return;
-    setSaving(true);
-    setSuccess(false);
     setError("");
 
-    try {
-      // Basic validation check for time formats
-      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-      for (const dayAvail of tempAvailability) {
-        for (const slot of dayAvail.slots) {
-          if (!timeRegex.test(slot.start) || !timeRegex.test(slot.end)) {
-            throw new Error(`Invalid time format in ${dayAvail.day}. Use HH:MM format.`);
-          }
+    // Validate all slots
+    for (const dayAvail of tempAvailability) {
+      if (!dayAvail.slots || dayAvail.slots.length === 0) continue;
+      for (let i = 0; i < dayAvail.slots.length; i++) {
+        const issue = getSlotIssue(dayAvail.slots, i);
+        if (issue) {
+          setError(`${dayAvail.day}: Slot ${dayAvail.slots[i].start || "empty"} - ${dayAvail.slots[i].end || "empty"} has an error: ${issue}.`);
+          return;
         }
       }
+    }
+
+    setSaving(true);
+    setSuccess(false);
+
+    try {
+      // Clean, deduplicate and sort before saving
+      const cleanedAvailability = tempAvailability
+        .filter((av) => av.slots.length > 0)
+        .map((av) => ({
+          day: av.day,
+          slots: deduplicateSlots(av.slots).sort((a, b) => a.start.localeCompare(b.start)),
+        }));
 
       const res = await fetch(`/api/doctors/${doctorId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ availability: tempAvailability, slotDuration: tempSlotDuration }),
+        body: JSON.stringify({ availability: cleanedAvailability, slotDuration: tempSlotDuration }),
       });
 
       const data = await res.json();
       if (data.success) {
-        setAvailability(tempAvailability);
+        setAvailability(cleanedAvailability);
         setSlotDuration(tempSlotDuration);
         setSuccess(true);
         setIsModalOpen(false);
@@ -217,7 +392,7 @@ export default function DoctorAvailabilityPage() {
 
               {isActive ? (
                 <div className="space-y-2.5">
-                  {dayAvail.slots.map((slot, index) => (
+                  {deduplicateSlots(dayAvail.slots).map((slot, index) => (
                     <div 
                       key={index} 
                       className="flex items-center gap-2.5 text-sm font-semibold text-foreground/80 bg-muted/40 p-2.5 rounded-xl border border-border/30"
@@ -341,34 +516,58 @@ export default function DoctorAvailabilityPage() {
                         {/* Slots Editor */}
                         {isActive && dayAvail && (
                           <div className="flex-1 md:max-w-md space-y-3">
-                            {dayAvail.slots.map((slot, index) => (
-                              <div key={index} className="flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-muted-foreground" />
-                                <Input
-                                  type="text"
-                                  value={slot.start}
-                                  onChange={(e) => handleSlotChange(day, index, "start", e.target.value)}
-                                  className="w-24 h-9 bg-muted/30 border-border/60 rounded-lg text-center text-sm font-semibold"
-                                  placeholder="09:00"
-                                />
-                                <span className="text-muted-foreground text-xs font-semibold px-1">to</span>
-                                <Input
-                                  type="text"
-                                  value={slot.end}
-                                  onChange={(e) => handleSlotChange(day, index, "end", e.target.value)}
-                                  className="w-24 h-9 bg-muted/30 border-border/60 rounded-lg text-center text-sm font-semibold"
-                                  placeholder="17:00"
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleRemoveSlot(day, index)}
-                                  className="h-9 w-9 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-lg"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            ))}
+                            {dayAvail.slots.map((slot, index) => {
+                              const issue = getSlotIssue(dayAvail.slots, index);
+
+                              return (
+                                <div key={index} className="space-y-1">
+                                  <div className={`flex items-center gap-1.5 sm:gap-2 p-1.5 rounded-xl border transition-colors ${
+                                    issue 
+                                      ? "border-destructive/60 bg-destructive/5" 
+                                      : "border-transparent"
+                                  }`}>
+                                    <Clock className={`w-4 h-4 shrink-0 ${issue ? "text-destructive" : "text-muted-foreground"}`} />
+                                    <Input
+                                      type="text"
+                                      value={slot.start}
+                                      onChange={(e) => handleSlotChange(day, index, "start", e.target.value)}
+                                      className={`w-20 sm:w-24 h-9 rounded-lg text-center text-sm font-semibold transition-colors ${
+                                        issue 
+                                          ? "border-destructive bg-background text-destructive focus-visible:ring-destructive" 
+                                          : "bg-muted/30 border-border/60"
+                                      }`}
+                                      placeholder="09:00"
+                                    />
+                                    <span className="text-muted-foreground text-xs font-semibold px-0.5">to</span>
+                                    <Input
+                                      type="text"
+                                      value={slot.end}
+                                      onChange={(e) => handleSlotChange(day, index, "end", e.target.value)}
+                                      className={`w-20 sm:w-24 h-9 rounded-lg text-center text-sm font-semibold transition-colors ${
+                                        issue 
+                                          ? "border-destructive bg-background text-destructive focus-visible:ring-destructive" 
+                                          : "bg-muted/30 border-border/60"
+                                      }`}
+                                      placeholder="17:00"
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleRemoveSlot(day, index)}
+                                      className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-lg shrink-0"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                  {issue && (
+                                    <p className="text-[11px] text-destructive font-semibold flex items-center gap-1 pl-6">
+                                      <AlertCircle className="w-3 h-3 shrink-0" />
+                                      {issue}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -392,22 +591,34 @@ export default function DoctorAvailabilityPage() {
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end px-6 py-4 border-t border-border bg-muted/10 gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsModalOpen(false)} 
-                  disabled={saving}
-                  className="rounded-xl h-11 px-5 font-bold"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleSave} 
-                  disabled={saving} 
-                  className="rounded-xl h-11 px-6 font-bold shadow-lg shadow-primary/10 hover:shadow-primary/20"
-                >
-                  {saving ? "Saving Changes..." : "Save Availability"}
-                </Button>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-t border-border bg-muted/10 gap-3">
+                {hasAnySlotIssue ? (
+                  <p className="text-xs text-destructive font-semibold flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    Duplicate or conflicting timings detected. Please fix or remove conflicting slots.
+                  </p>
+                ) : (
+                  <span className="text-xs text-muted-foreground hidden sm:inline">
+                    Slots are validated for uniqueness and chronological order.
+                  </span>
+                )}
+                <div className="flex items-center justify-end gap-3 w-full sm:w-auto">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsModalOpen(false)} 
+                    disabled={saving}
+                    className="rounded-xl h-11 px-5 font-bold flex-1 sm:flex-initial"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleSave} 
+                    disabled={saving || hasAnySlotIssue} 
+                    className="rounded-xl h-11 px-6 font-bold shadow-lg shadow-primary/10 hover:shadow-primary/20 flex-1 sm:flex-initial disabled:opacity-50"
+                  >
+                    {saving ? "Saving Changes..." : "Save Availability"}
+                  </Button>
+                </div>
               </div>
             </motion.div>
           </div>

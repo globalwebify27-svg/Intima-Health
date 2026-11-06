@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { 
   Pill, FileText, Activity, PhoneCall, 
   CheckCircle2, Clock, ExternalLink, AlertCircle,
-  ShieldCheck, Loader2
+  ShieldCheck, Loader2, XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -457,10 +457,10 @@ export default function PatientPrescriptionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full min-w-0 overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Active Prescriptions &amp; Orders</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight break-words">Active Prescriptions &amp; Orders</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Review your doctor&apos;s prescriptions and request medicine dispatch from the clinic pharmacy.
           </p>
@@ -474,49 +474,96 @@ export default function PatientPrescriptionsPage() {
         </div>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 w-full max-w-full min-w-0">
         {prescriptions.length > 0 ? (
           prescriptions.map((consult) => {
             const meds: Medicine[] = JSON.parse(consult.prescriptionSummary || "[]");
             const isValid = consult.isValid ?? true;
             const daysLeft = consult.daysLeft ?? 60;
             const existingOrder = getExistingOrderForConsult(consult._id);
+            const isOrderFulfilled = !!(existingOrder && (
+              existingOrder.status.toUpperCase() === "FULFILLED" || 
+              existingOrder.status.toUpperCase() === "DELIVERED"
+            ));
+
+            const doctorDisplayName = consult.doctorId?.name
+              ? (consult.doctorId.name.startsWith("Dr.") ? consult.doctorId.name : `Dr. ${consult.doctorId.name}`)
+              : "Dr. Medical Specialist";
+
+            const getOrderBadge = (status: string) => {
+              const norm = (status || "").toUpperCase();
+              if (norm === "FULFILLED" || norm === "DELIVERED" || norm === "COMPLETED") {
+                return (
+                  <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 text-xs font-bold gap-1.5 py-1 px-3 shadow-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Delivered &amp; Dispensed
+                  </Badge>
+                );
+              }
+              if (norm === "DISPATCHED" || norm === "SHIPPED") {
+                return (
+                  <Badge className="bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-300 text-xs font-bold gap-1.5 py-1 px-3 shadow-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" /> Dispatched / On the Way
+                  </Badge>
+                );
+              }
+              if (norm === "CALL_COMPLETED" || norm === "PRESCRIPTION_APPROVED") {
+                return (
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 text-xs font-bold gap-1.5 py-1 px-3 shadow-xs">
+                    <PhoneCall className="w-3.5 h-3.5 text-blue-600" /> Call Verified • Processing
+                  </Badge>
+                );
+              }
+              if (norm === "CANCELLED") {
+                return (
+                  <Badge variant="destructive" className="text-xs font-bold gap-1.5 py-1 px-3">
+                    <XCircle className="w-3.5 h-3.5" /> Order Cancelled
+                  </Badge>
+                );
+              }
+              return (
+                <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 text-xs font-bold gap-1.5 py-1 px-3 shadow-xs">
+                  <Clock className="w-3.5 h-3.5 text-amber-600" /> Order Placed • In Review
+                </Badge>
+              );
+            };
 
             return (
-              <div key={consult._id} className="p-6 bg-card rounded-3xl border border-border shadow-sm flex flex-col justify-between space-y-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
+              <div key={consult._id} className="p-4 sm:p-6 bg-card rounded-3xl border border-border shadow-sm flex flex-col justify-between space-y-4 w-full max-w-full min-w-0 overflow-hidden">
+                <div className="space-y-4 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-2.5 bg-primary/10 rounded-xl text-primary shrink-0">
                         <Pill className="w-5 h-5" />
                       </div>
-                      <div>
-                        <h3 className="font-bold text-base">Rx #{consult._id.substring(18)}</h3>
-                        <p className="text-xs text-muted-foreground">
-                          Prescribed by Dr. {consult.doctorId?.name || "Medical Officer"}
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-base truncate">Rx #{consult._id.substring(18)}</h3>
+                        <p className="text-xs text-muted-foreground truncate">
+                          Prescribed by {doctorDisplayName}
                         </p>
                       </div>
                     </div>
-                    {isValid ? (
-                      <Badge className="bg-emerald-600 text-white text-xs font-semibold">
-                        Valid ({daysLeft}d left)
-                      </Badge>
-                    ) : (
-                      <Badge variant="destructive" className="text-xs font-semibold">
-                        Expired
-                      </Badge>
-                    )}
+                    <div className="flex flex-wrap items-center gap-1.5 shrink-0 self-start sm:self-auto">
+                      {isValid ? (
+                        <Badge variant="outline" className="border-border text-muted-foreground text-xs font-semibold">
+                          Valid ({daysLeft}d left)
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive" className="text-xs font-semibold">
+                          Expired
+                        </Badge>
+                      )}
+                    </div>
                   </div>
 
                   {/* Medicines List */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0">
                     {meds.map((med, idx) => (
-                      <div key={idx} className="p-3 bg-muted/40 rounded-2xl text-xs space-y-0.5">
-                        <div className="flex justify-between items-center">
-                          <p className="font-bold text-foreground">{med.drug}</p>
-                          <span className="text-[10px] uppercase font-bold text-muted-foreground">Prescribed</span>
+                      <div key={idx} className="p-3 bg-muted/40 rounded-2xl text-xs space-y-0.5 min-w-0">
+                        <div className="flex justify-between items-center gap-2 min-w-0">
+                          <p className="font-bold text-foreground min-w-0 truncate">{med.drug}</p>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground shrink-0">Prescribed</span>
                         </div>
-                        <p className="text-muted-foreground">
+                        <p className="text-muted-foreground break-words text-[11px]">
                           {med.dosage} • {med.frequency} • {med.duration}
                         </p>
                       </div>
@@ -524,48 +571,61 @@ export default function PatientPrescriptionsPage() {
 
                     {/* Prescribed Therapies */}
                     {consult.prescribedTherapies && JSON.parse(consult.prescribedTherapies).map((th: { name: string }, idx: number) => (
-                      <div key={`th-${idx}`} className="p-3 bg-purple-500/5 dark:bg-purple-950/5 border border-purple-500/10 rounded-2xl text-xs flex items-center gap-2">
+                      <div key={`th-${idx}`} className="p-3 bg-purple-500/5 dark:bg-purple-950/5 border border-purple-500/10 rounded-2xl text-xs flex items-center gap-2 min-w-0">
                         <Activity className="w-4 h-4 text-purple-600 shrink-0" />
-                        <div>
-                          <p className="font-bold text-purple-900 dark:text-purple-400">{th.name}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-purple-900 dark:text-purple-400 break-words min-w-0">{th.name}</p>
                           <p className="text-muted-foreground text-[10px]">Clinical Therapy Recommended</p>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="text-xs text-muted-foreground pt-2 border-t border-border/50 flex justify-between items-center">
-                    <span>Issued: {new Date(consult.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}</span>
-                    {existingOrder && (
-                      <span className="text-primary font-semibold flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" /> Order: {existingOrder.status.replace(/_/g, " ")}
+                  {/* Live Order Status Highlight Bar */}
+                  {existingOrder && (
+                    <div className="p-3 bg-muted/30 border border-border/70 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider shrink-0">Order Status:</span>
+                        {getOrderBadge(existingOrder.status)}
+                      </div>
+                      <span className="text-xs font-mono font-bold text-foreground shrink-0">
+                        #{existingOrder.orderNumber}
                       </span>
-                    )}
+                    </div>
+                  )}
+
+                  <div className="text-xs text-muted-foreground pt-1 flex justify-between items-center gap-2 flex-wrap min-w-0">
+                    <span>Issued: {new Date(consult.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}</span>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 pt-2">
+                <div className="flex flex-col sm:flex-row gap-2 pt-2 w-full max-w-full min-w-0">
                   {isValid ? (
                     existingOrder ? (
                       <Button 
                         variant="secondary"
-                        className="flex-1 h-11 rounded-xl font-bold gap-2 text-xs border border-primary/20 text-primary hover:bg-primary/10"
-                        onClick={() => router.push("/patient/orders")}
+                        className="flex-1 h-11 rounded-xl font-bold gap-2 text-xs border border-primary/20 text-primary hover:bg-primary/10 shadow-sm w-full sm:w-auto min-w-0"
+                        onClick={() => router.push(`/patient/orders/${existingOrder._id}`)}
                       >
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" /> View Order Status ({existingOrder.orderNumber || "Active"})
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> 
+                        <span className="truncate">
+                          {isOrderFulfilled 
+                            ? `Order Delivered & Dispensed (${existingOrder.orderNumber || "Details"})`
+                            : `View Order Details (${existingOrder.orderNumber || "Active"})`}
+                        </span>
                       </Button>
                     ) : (
                       <Button 
-                        className="flex-1 h-11 rounded-xl font-bold gap-2 shadow-sm text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                        className="flex-1 h-11 rounded-xl font-bold gap-2 shadow-sm text-xs bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto min-w-0"
                         onClick={() => openMedicineSelector(consult)}
                       >
-                        <PhoneCall className="w-4 h-4" />
-                        Medicine Order Request
+                        <PhoneCall className="w-4 h-4 shrink-0" />
+                        <span className="truncate">Medicine Order Request</span>
                       </Button>
                     )
                   ) : (
-                    <Link href="/booking" className="flex-1">
+                    <Link href="/booking" className="flex-1 w-full min-w-0">
                       <Button variant="outline" className="w-full h-11 rounded-xl font-bold text-xs gap-1.5 border-primary text-primary">
                         Prescription Expired — Book Reassessment
                       </Button>
@@ -574,11 +634,12 @@ export default function PatientPrescriptionsPage() {
                   
                   <Button 
                     variant="outline" 
-                    className="w-11 h-11 p-0 shrink-0 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground"
+                    className="h-11 px-3 sm:w-11 sm:p-0 shrink-0 rounded-xl flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
                     onClick={() => handleDownloadPrescription(consult)}
                     title="Download Official Prescription"
                   >
-                    <FileText className="w-4 h-4" />
+                    <FileText className="w-4 h-4 shrink-0" />
+                    <span className="sm:hidden">Download Rx PDF</span>
                   </Button>
                 </div>
               </div>
@@ -785,7 +846,7 @@ export default function PatientPrescriptionsPage() {
                 router.push("/patient/orders");
               }}
             >
-              Track in My Orders &rarr;
+              View in My Orders &rarr;
             </Button>
           </div>
         </DialogContent>

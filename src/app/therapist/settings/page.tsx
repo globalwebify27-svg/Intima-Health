@@ -342,15 +342,14 @@ export default function TherapistSettingsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="bio" className="text-sm font-bold">Biography & Clinical Approach</Label>
+              <Label htmlFor="bio" className="text-sm font-bold">Biography &amp; Clinical Approach (Optional)</Label>
               <textarea
                 id="bio"
                 rows={4}
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 className="w-full p-3.5 rounded-xl border border-border/60 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-                placeholder="Describe your therapeutic methods, areas of focus, and patient-care philosophy..."
-                required
+                placeholder="Describe your therapeutic methods, areas of focus, and patient-care philosophy (optional)..."
               />
             </div>
           </div>
