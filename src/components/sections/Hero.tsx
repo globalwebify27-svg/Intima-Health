@@ -192,7 +192,7 @@ export function Hero() {
                     <span className="h-2.5 w-2.5 rounded-full bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.6)] animate-pulse" />
                     <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Available Now</p>
                   </div>
-                  <p className="text-sm font-bold text-foreground leading-snug">Connect with a specialist in under 15 minutes.</p>
+                  <p className="text-sm font-bold text-foreground leading-snug">Connect with Specialist</p>
                 </div>
               </div>
             </motion.div>
