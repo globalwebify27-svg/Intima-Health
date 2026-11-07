@@ -60,11 +60,16 @@ export default function PharmacyDashboard() {
         setProducts(productsJson.data || []);
       }
 
-      // 3. Fetch Prescriptions Count
-      const rxRes = await fetch(`/api/consultations?clinicId=${cId}`);
+      // 3. Fetch Prescriptions Count (Walk-in, Standalone & Video Consultations)
+      const rxUrl = cId ? `/api/consultations?clinicId=${cId}` : `/api/consultations`;
+      const rxRes = await fetch(rxUrl);
       const rxJson = await rxRes.json();
       if (rxJson.success && rxJson.data) {
-        const activeRx = rxJson.data.filter((c: any) => c.prescriptionSummary && c.prescriptionSummary !== "[]" && c.prescriptionStatus !== "Fulfilled");
+        const activeRx = rxJson.data.filter((c: any) => {
+          const hasMeds = c.prescriptionSummary && c.prescriptionSummary !== "[]" && c.prescriptionSummary.trim() !== "";
+          const hasTherapies = c.prescribedTherapies && c.prescribedTherapies !== "[]" && c.prescribedTherapies.trim() !== "";
+          return (hasMeds || hasTherapies) && c.prescriptionStatus !== "Fulfilled";
+        });
         setPrescriptionsCount(activeRx.length);
       }
     } catch (err) {

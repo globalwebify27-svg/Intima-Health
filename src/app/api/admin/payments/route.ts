@@ -1,31 +1,70 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
-import { PaymentModel } from "@/modules/pharmacy/schema";
+import { PaymentSyncService } from "@/modules/payments/service";
 
-export const dynamic = 'force-dynamic';
-
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
     await connectDB();
-    
-    // Fetch payments, populating patient info
-    const payments = await PaymentModel.find()
-      .populate("patientId", "name phone email")
-      .populate({
-        path: "appointmentId",
-        select: "date time type doctorId clinicId",
-        populate: [
-          { path: "doctorId", select: "name" },
-          { path: "clinicId", select: "name" }
-        ]
-      })
-      .populate("orderId", "totalAmount")
-      .sort({ createdAt: -1 });
+    const url = new URL(req.url);
+    const shouldSyncGateway = url.searchParams.get("sync") === "true";
 
-    return NextResponse.json({ success: true, data: payments });
+    // Always sync website database payments (appointments + orders)
+    await PaymentSyncService.syncWebsiteDatabasePayments();
+
+    // Optionally sync from payment gateway (Razorpay)
+    if (shouldSyncGateway) {
+      await PaymentSyncService.syncRazorpayGatewayPayments();
+    }
+
+    const payments = await PaymentSyncService.getCentralizedPayments();
+
+    const totalRevenue = payments
+      .filter((p) => p.status === "Success")
+      .reduce((acc, p) => acc + (p.amount || 0), 0);
+
+    const successCount = payments.filter((p) => p.status === "Success").length;
+    const failedCount = payments.filter((p) => p.status === "Failed").length;
+    const pendingCount = payments.filter((p) => p.status === "Pending").length;
+
+    return NextResponse.json({
+      success: true,
+      data: payments,
+      stats: {
+        totalRevenue,
+        successCount,
+        failedCount,
+        pendingCount,
+        totalTransactions: payments.length,
+      },
+    });
   } catch (error: any) {
     console.error("Fetch payments error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    await connectDB();
+    const [dbResult, gatewayResult] = await Promise.all([
+      PaymentSyncService.syncWebsiteDatabasePayments(),
+      PaymentSyncService.syncRazorpayGatewayPayments(),
+    ]);
+
+    const payments = await PaymentSyncService.getCentralizedPayments();
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully synced ${gatewayResult.synced} gateway payments and synchronized website orders/appointments.`,
+      gatewaySynced: gatewayResult.synced,
+      dbSynced: dbResult,
+      totalCount: payments.length,
+      data: payments,
+    });
+  } catch (error: any) {
+    console.error("Manual payment sync error:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

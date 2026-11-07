@@ -90,7 +90,7 @@ export class ConsultationRepository {
 
     if (filters.appointmentId) {
       query.appointmentId = filters.appointmentId;
-    } else if (filters.clinicId) {
+    } else if (filters.clinicId && filters.clinicId !== "all") {
       const { DoctorModel } = await import("@/modules/doctors/schema");
       const mongoose = await import("mongoose");
 

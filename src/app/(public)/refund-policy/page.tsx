@@ -1,5 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { connectDB } from "@/db/connect";
+import { PageModel } from "@/modules/cms/schema";
 import {
   RotateCcw,
   Calendar,
@@ -46,7 +48,11 @@ const SECTIONS = [
   { id: "section-11", title: "11. Governing Law" },
 ];
 
-export default function RefundPolicyPage() {
+export default async function RefundPolicyPage() {
+  await connectDB();
+  const pageDoc = await PageModel.findOne({ slug: "refund-policy", deletedAt: null }).lean();
+  const dynamicContent = pageDoc && (pageDoc as any).content ? (pageDoc as any).content : null;
+
   return (
     <div className="bg-[#FAF9F6] min-h-screen text-[#1A1A1A]">
       {/* Hero Header */}
@@ -128,7 +134,24 @@ export default function RefundPolicyPage() {
 
             {/* Policy Detailed Body */}
             <main className="lg:col-span-8 space-y-10 text-gray-800 leading-relaxed text-base">
-
+              {dynamicContent ? (
+                <div
+                  className="bg-white rounded-2xl border border-gray-200/70 p-6 md:p-10 shadow-sm leading-relaxed text-gray-800
+                    [&_h1]:text-3xl [&_h1]:font-serif [&_h1]:font-bold [&_h1]:text-[#4A154B] [&_h1]:mb-4
+                    [&_h2]:text-2xl [&_h2]:font-serif [&_h2]:font-bold [&_h2]:text-[#4A154B] [&_h2]:mt-8 [&_h2]:mb-4
+                    [&_h3]:text-xl [&_h3]:font-serif [&_h3]:font-bold [&_h3]:text-[#4A154B] [&_h3]:mt-6 [&_h3]:mb-3
+                    [&_p]:mb-4 [&_p]:leading-relaxed
+                    [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ul]:space-y-2
+                    [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_ol]:space-y-2
+                    [&_blockquote]:border-l-4 [&_blockquote]:border-purple-600 [&_blockquote]:pl-4 [&_blockquote]:py-2 [&_blockquote]:italic [&_blockquote]:bg-purple-50/50 [&_blockquote]:my-4 [&_blockquote]:rounded-r-lg
+                    [&_table]:w-full [&_table]:border-collapse [&_table]:my-6
+                    [&_th]:border [&_th]:border-gray-200 [&_th]:p-3 [&_th]:bg-gray-50 [&_th]:text-left [&_th]:font-semibold
+                    [&_td]:border [&_td]:border-gray-200 [&_td]:p-3
+                    [&_a]:text-primary [&_a]:underline"
+                  dangerouslySetInnerHTML={{ __html: dynamicContent }}
+                />
+              ) : (
+                <>
               {/* 1. No-Refund Policy */}
               <div id="section-1" className="scroll-mt-28 bg-purple-50/50 rounded-2xl border-2 border-purple-200/90 p-6 md:p-8 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
@@ -430,6 +453,8 @@ export default function RefundPolicyPage() {
                   </div>
                 </div>
               </div>
+                </>
+              )}
 
             </main>
           </div>

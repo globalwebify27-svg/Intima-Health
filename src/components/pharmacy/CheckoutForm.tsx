@@ -33,6 +33,13 @@ interface PincodeCheckResult {
   deliveryCharge?: number;
   estimatedHours?: string;
   freeDeliveryThreshold?: number;
+  taxRatePercent?: number;
+  allowCOD?: boolean;
+  pharmacyPartner?: string;
+  licenseNumber?: string;
+  pharmacistInCharge?: string;
+  contactPhone?: string;
+  address?: string;
   message?: string;
 }
 
@@ -297,7 +304,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
 
   // Financial calculations
   const itemsSubtotal = getTotal();
-  const taxRate = 12; // GST 12% on medications
+  const taxRate = pinResult?.taxRatePercent ?? 12; // Dynamic GST configured in Admin Settings
   const taxAmount = Math.round((itemsSubtotal * taxRate) / 100);
   const freeThreshold = pinResult?.freeDeliveryThreshold || 500;
   const deliveryFee = itemsSubtotal >= freeThreshold ? 0 : (pinResult?.deliveryCharge ?? 50);
@@ -676,7 +683,9 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
           <div>
             <h1 className="text-3xl font-serif font-bold mb-2">Order Confirmed!</h1>
             <p className="text-muted-foreground text-sm">
-              Your medicine delivery order has been received and forwarded to our licensed pharmacy partner.
+              Your medicine delivery order has been received and forwarded to{" "}
+              <strong className="text-foreground">{pinResult?.pharmacyPartner || "Kelkar Manas Partner Pharmacy"}</strong>
+              {pinResult?.licenseNumber ? ` (Drug Licence No. ${pinResult.licenseNumber})` : ""}.
             </p>
           </div>
 
@@ -1536,24 +1545,26 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                   </span>
                 </div>
 
-                {/* Option 2: Pay on Delivery (Cash or UPI) */}
-                <div 
-                  onClick={() => setPaymentMethod("COD")}
-                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${paymentMethod === "COD" ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-background hover:border-border/80"}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">
-                      <Banknote className="w-5 h-5" />
+                {/* Option 2: Pay on Delivery (Cash or UPI) - Configured in Admin Settings */}
+                {pinResult?.allowCOD !== false && (
+                  <div 
+                    onClick={() => setPaymentMethod("COD")}
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${paymentMethod === "COD" ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-background hover:border-border/80"}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">
+                        <Banknote className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm">Pay on Delivery (Cash or UPI upon delivery)</p>
+                        <p className="text-xs text-muted-foreground">Pay via Cash or UPI QR scan when medicines arrive at your doorstep in Akola</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-sm">Pay on Delivery (Cash or UPI upon delivery)</p>
-                      <p className="text-xs text-muted-foreground">Pay via Cash or UPI QR scan when medicines arrive at your doorstep in Akola</p>
-                    </div>
+                    <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs ${paymentMethod === "COD" ? "bg-primary text-white border-primary" : "border-muted-foreground/30"}`}>
+                      {paymentMethod === "COD" && "✓"}
+                    </span>
                   </div>
-                  <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs ${paymentMethod === "COD" ? "bg-primary text-white border-primary" : "border-muted-foreground/30"}`}>
-                    {paymentMethod === "COD" && "✓"}
-                  </span>
-                </div>
+                )}
 
                 <div className="p-3 bg-muted/40 rounded-xl border border-border/60 text-xs text-muted-foreground flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />

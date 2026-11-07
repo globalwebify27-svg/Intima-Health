@@ -23,6 +23,14 @@ export async function GET(request: Request) {
       config = await PharmacyConfigModel.create({});
     }
 
+    if (!config.isActive) {
+      return NextResponse.json({
+        success: true,
+        isServiceable: false,
+        message: "Medicine delivery & pharmacy fulfilment is temporarily paused by administration.",
+      });
+    }
+
     const pincodesList = (config.serviceablePincodes && config.serviceablePincodes.length > 0)
       ? config.serviceablePincodes
       : DEFAULT_AKOLA_PINCODES;
@@ -43,10 +51,15 @@ export async function GET(request: Request) {
           deliveryCharge: matchedPin.deliveryCharge ?? config.defaultDeliveryFee ?? 50,
           estimatedHours: matchedPin.estimatedHours || "24-48 Hours",
           freeDeliveryThreshold: config.freeDeliveryThreshold || 500,
+          taxRatePercent: config.taxRatePercent ?? 12,
+          allowCOD: config.allowCOD !== false,
           city: "Akola",
           state: "Maharashtra",
           pharmacyPartner: config.pharmacyName,
           licenseNumber: config.licenseNumber,
+          pharmacistInCharge: config.pharmacistInCharge,
+          contactPhone: config.contactPhone,
+          address: config.address,
         },
       });
     }

@@ -21,7 +21,20 @@ interface Therapy {
 interface Consultation {
   _id: string;
   appointmentId?: {
-    date: string;
+    _id?: string;
+    date?: string;
+    time?: string;
+    type?: string;
+    clinicId?: {
+      _id?: string;
+      name?: string;
+      address?: string;
+    };
+  };
+  clinicId?: {
+    _id?: string;
+    name?: string;
+    address?: string;
   };
   patientId: {
     _id: string;
@@ -30,7 +43,9 @@ interface Consultation {
     phone: string;
   };
   doctorId?: {
+    _id?: string;
     name: string;
+    specialization?: string;
   };
   prescriptionSummary?: string;
   prescribedTherapies?: string;
@@ -49,6 +64,8 @@ interface ProductData {
 export default function PharmacyPrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<Consultation[]>([]);
   const [products, setProducts] = useState<ProductData[]>([]);
+  const [clinics, setClinics] = useState<Array<{ _id: string; name: string; city?: string }>>([]);
+  const [selectedClinicId, setSelectedClinicId] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [clinicId, setClinicId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"Pending" | "Fulfilled" | "All">("Pending");
@@ -82,13 +99,15 @@ export default function PharmacyPrescriptionsPage() {
     }
   };
 
-  const fetchPrescriptions = async (cId: string) => {
+  const fetchPrescriptions = async (filterClinicId?: string) => {
     try {
-      const url = cId 
-        ? `/api/consultations?clinicId=${cId}&_t=${Date.now()}` 
+      // By default, pharmacy staff can see all prescriptions across the platform
+      const targetCId = filterClinicId && filterClinicId !== "all" ? filterClinicId : "";
+      const url = targetCId 
+        ? `/api/consultations?clinicId=${targetCId}&_t=${Date.now()}` 
         : `/api/consultations?_t=${Date.now()}`;
-      const ordersUrl = cId 
-        ? `/api/pharmacy/orders?clinicId=${cId}&_t=${Date.now()}` 
+      const ordersUrl = targetCId 
+        ? `/api/pharmacy/orders?clinicId=${targetCId}&_t=${Date.now()}` 
         : `/api/pharmacy/orders?_t=${Date.now()}`;
 
       const [res, ordersRes] = await Promise.all([
@@ -115,7 +134,11 @@ export default function PharmacyPrescriptionsPage() {
 
       if (json.success && json.data) {
         const activeRx = json.data
-          .filter((c: any) => c.prescriptionSummary && c.prescriptionSummary !== "[]")
+          .filter((c: any) => {
+            const hasMeds = c.prescriptionSummary && c.prescriptionSummary !== "[]" && c.prescriptionSummary.trim() !== "";
+            const hasTherapies = c.prescribedTherapies && c.prescribedTherapies !== "[]" && c.prescribedTherapies.trim() !== "";
+            return hasMeds || hasTherapies;
+          })
           .map((c: any) => {
             if (fulfilledConsultIds.has(String(c._id)) && c.prescriptionStatus !== "Fulfilled") {
               // Background persist sync so DB stays consistent
@@ -131,10 +154,14 @@ export default function PharmacyPrescriptionsPage() {
         setPrescriptions(activeRx);
       }
 
-      if (cId) {
-        const prodRes = await fetch(`/api/pharmacy/products?clinicId=${cId}`);
+      // Load products for dispensing
+      const prodUrl = targetCId
+        ? `/api/pharmacy/products?clinicId=${targetCId}`
+        : `/api/pharmacy/products?_t=${Date.now()}`;
+      const prodRes = await fetch(prodUrl).catch(() => null);
+      if (prodRes && prodRes.ok) {
         const prodJson = await prodRes.json();
-        if (prodJson.success) {
+        if (prodJson.success && Array.isArray(prodJson.data)) {
           setProducts(prodJson.data);
         }
       }
@@ -146,17 +173,28 @@ export default function PharmacyPrescriptionsPage() {
   };
 
   useEffect(() => {
+    // 1. Fetch user auth to set default clinic if needed
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.user && data.user.clinicId) {
           setClinicId(data.user.clinicId);
-          fetchPrescriptions(data.user.clinicId);
-        } else {
-          fetchPrescriptions("");
         }
       })
-      .catch(() => fetchPrescriptions(""));
+      .catch(() => {});
+
+    // 2. Fetch all clinics for filter
+    fetch("/api/clinics")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          setClinics(data.data);
+        }
+      })
+      .catch(() => {});
+
+    // 3. Fetch all digital prescriptions across platform
+    fetchPrescriptions();
   }, []);
 
   const handleDispenseSubmit = async (e: React.FormEvent) => {
@@ -173,9 +211,15 @@ export default function PharmacyPrescriptionsPage() {
 
     const totalAmount = dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+    const resolvedClinicId = clinicId || 
+      (dispenseConsultation as any).clinicId?._id || 
+      (dispenseConsultation as any).clinicId || 
+      (dispenseConsultation.appointmentId as any)?.clinicId?._id || 
+      (dispenseConsultation.appointmentId as any)?.clinicId;
+
     const payload = {
-      patientId: dispenseConsultation.patientId?._id,
-      clinicId,
+      patientId: dispenseConsultation.patientId?._id || (dispenseConsultation.patientId as any),
+      clinicId: resolvedClinicId,
       items: dispenseItems.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
@@ -333,29 +377,49 @@ export default function PharmacyPrescriptionsPage() {
 
 
 
-  const counts = {
-    Pending: prescriptions.filter((p) => p.prescriptionStatus !== "Fulfilled").length,
-    Fulfilled: prescriptions.filter((p) => p.prescriptionStatus === "Fulfilled").length,
-    All: prescriptions.length,
-  };
-
   const filteredPrescriptions = prescriptions.filter((record) => {
     const isFulfilled = record.prescriptionStatus === "Fulfilled";
-    const patientName = record.patientId?.name || "";
-    const doctorName = record.doctorId?.name || "";
+    const patientName = record.patientId?.name || "Patient";
+    const patientPhone = record.patientId?.phone || "";
+    const doctorName = record.doctorId?.name || "Clinician";
     const rxId = record._id || "";
+    const medSummary = record.prescriptionSummary || "";
+    const therapySummary = record.prescribedTherapies || "";
 
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doctorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rxId.toLowerCase().includes(searchQuery.toLowerCase());
+      !searchQuery ||
+      patientName.toLowerCase().includes(q) ||
+      patientPhone.includes(q) ||
+      doctorName.toLowerCase().includes(q) ||
+      rxId.toLowerCase().includes(q) ||
+      medSummary.toLowerCase().includes(q) ||
+      therapySummary.toLowerCase().includes(q);
 
     if (!matchesSearch) return false;
+
+    // Clinic Filter
+    if (selectedClinicId !== "all") {
+      const recordClinicId =
+        (record as any).clinicId?._id ||
+        (record as any).clinicId ||
+        (record.appointmentId as any)?.clinicId?._id ||
+        (record.appointmentId as any)?.clinicId;
+      if (recordClinicId && String(recordClinicId) !== String(selectedClinicId)) {
+        return false;
+      }
+    }
 
     if (statusFilter === "Pending") return !isFulfilled;
     if (statusFilter === "Fulfilled") return isFulfilled;
     return true;
   });
+
+  const counts = {
+    Pending: filteredPrescriptions.filter((p) => p.prescriptionStatus !== "Fulfilled").length,
+    Fulfilled: filteredPrescriptions.filter((p) => p.prescriptionStatus === "Fulfilled").length,
+    All: filteredPrescriptions.length,
+  };
 
   if (loading) {
     return (
@@ -367,28 +431,46 @@ export default function PharmacyPrescriptionsPage() {
 
   return (
     <div className="space-y-6 relative">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Prescription Fulfillment CENTER</h1>
           <p className="text-muted-foreground mt-2">
-            Review and fulfill digital prescriptions authorized by platform doctors.
+            Review and fulfill all digital prescriptions authorized by platform doctors (Walk-In, Standalone & Video Consultations).
           </p>
         </div>
       </div>
 
-      {/* Search & Status Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search by patient name, doctor, Rx #..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-10 rounded-xl"
-          />
+      {/* Search, Clinic & Status Filters */}
+      <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-card p-4 rounded-2xl border border-border">
+        <div className="flex flex-col sm:flex-row gap-3 flex-1">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search by patient, phone, doctor, drug..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-10 rounded-xl"
+            />
+          </div>
+
+          {/* Clinic Selector */}
+          <div className="w-full sm:w-64">
+            <select
+              value={selectedClinicId}
+              onChange={(e) => setSelectedClinicId(e.target.value)}
+              className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="all">🏥 All Clinics (Platform-wide)</option>
+              {clinics.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name} {c.city ? `(${c.city})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           {[
             { id: "Pending", label: "Pending Fulfilment" },
             { id: "Fulfilled", label: "Fulfilled" },
@@ -421,6 +503,7 @@ export default function PharmacyPrescriptionsPage() {
           filteredPrescriptions.map((record) => {
             const meds = getMedsArray(record.prescriptionSummary);
             const isFulfilled = record.prescriptionStatus === "Fulfilled";
+            const clinicName = (record as any).clinicId?.name || (record.appointmentId as any)?.clinicId?.name;
 
             return (
               <div key={record._id} className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-card rounded-2xl border border-border shadow-sm hover:border-primary/20 transition-colors gap-4">
@@ -431,9 +514,18 @@ export default function PharmacyPrescriptionsPage() {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold text-lg">Rx #${record._id.substring(18).toUpperCase()} for {record.patientId?.name || "Patient"}</h3>
-                      {!record.appointmentId && (
-                        <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/10 font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg">
-                          Direct Rx (Walk-In)
+                      {!record.appointmentId ? (
+                        <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 bg-emerald-500/10 font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg">
+                          Direct Rx (Doctor Desk)
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-600 bg-blue-500/10 font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg">
+                          {record.appointmentId?.type === "Video" ? "Video Consultation" : "In-Clinic Visit"}
+                        </Badge>
+                      )}
+                      {clinicName && (
+                        <Badge variant="secondary" className="text-[10px] text-muted-foreground font-medium px-2 py-0.5 rounded-lg">
+                          {clinicName}
                         </Badge>
                       )}
                     </div>
@@ -441,6 +533,14 @@ export default function PharmacyPrescriptionsPage() {
                       <span>Prescriber: {record.doctorId?.name || "Clinician"}</span>
                       <span className="hidden md:inline">•</span>
                       <span>Issued: {new Date(record.createdAt).toLocaleDateString()}</span>
+                      {record.patientId?.phone && (
+                        <>
+                          <span className="hidden md:inline">•</span>
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-muted-foreground" /> {record.patientId.phone}
+                          </span>
+                        </>
+                      )}
                     </div>
                     {record.notes && (
                       <p className="text-xs text-muted-foreground mt-1.5 italic bg-muted/30 px-2.5 py-1 rounded-lg border border-border/50 max-w-xl">

@@ -325,12 +325,18 @@ const OrderSchema = new Schema<IOrder>({
 export interface IPayment {
   orderId?: Schema.Types.ObjectId;
   appointmentId?: Schema.Types.ObjectId;
-  patientId: Schema.Types.ObjectId;
+  patientId?: Schema.Types.ObjectId;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  context?: string;
+  paymentMethod?: string;
   gatewayProvider: string; // e.g. "Razorpay"
   gatewayTransactionId: string;
   amount: number;
   currency: string; // e.g. "INR"
-  status: "Success" | "Failed" | "Pending";
+  status: "Success" | "Failed" | "Pending" | "Refunded";
+  notes?: Record<string, any>;
   createdBy?: string;
   updatedBy?: string;
   deletedAt?: Date | null;
@@ -339,12 +345,18 @@ export interface IPayment {
 const PaymentSchema = new Schema<IPayment>({
   orderId: { type: Schema.Types.ObjectId, ref: "Order" },
   appointmentId: { type: Schema.Types.ObjectId, ref: "Appointment" },
-  patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
+  patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: false },
+  customerName: { type: String },
+  customerPhone: { type: String },
+  customerEmail: { type: String },
+  context: { type: String },
+  paymentMethod: { type: String, default: "Online" },
   gatewayProvider: { type: String, required: true, default: "Razorpay" },
   gatewayTransactionId: { type: String, required: true, unique: true },
   amount: { type: Number, required: true },
   currency: { type: String, default: "INR" },
-  status: { type: String, enum: ["Success", "Failed", "Pending"], default: "Pending" },
+  status: { type: String, enum: ["Success", "Failed", "Pending", "Refunded"], default: "Pending" },
+  notes: { type: Schema.Types.Mixed },
   createdBy: { type: String },
   updatedBy: { type: String },
   deletedAt: { type: Date, default: null },

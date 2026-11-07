@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Rss, List, HelpCircle, Plus, Edit2, Trash2, X, Activity, Search, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
 type Tab = "pages" | "posts" | "categories" | "faqs" | "treatments" | "sexual-problems";
 
@@ -507,7 +508,7 @@ export default function ContentPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-card w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-xl border border-border flex flex-col"
+              className={`bg-card w-full ${modalType === "pages" || modalType === "posts" ? "max-w-4xl" : "max-w-2xl"} max-h-[90vh] overflow-y-auto rounded-3xl shadow-xl border border-border flex flex-col`}
             >
               <div className="p-6 border-b border-border flex justify-between items-center sticky top-0 bg-card z-10">
                 <h2 className="text-xl font-bold">{editingItem ? "Edit" : "Add"} {modalType.slice(0, -1)}</h2>
@@ -1001,10 +1002,13 @@ export default function ContentPage() {
                         </div>
                       );
                     })() : (
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold">Content (HTML/Markdown)</label>
-                        <textarea required rows={6} value={formData.content || ""} onChange={e => setFormData({...formData, content: e.target.value})} className="w-full p-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none resize-y" />
-                      </div>
+                      <RichTextEditor
+                        label="Page Content (Rich Text / HTML)"
+                        placeholder="Write your page content, headings, paragraphs, lists, disclaimers, or switch to code mode..."
+                        value={formData.content || ""}
+                        onChange={(content) => setFormData({ ...formData, content })}
+                        minHeight="380px"
+                      />
                     )}
                   </>
                 )}
@@ -1252,10 +1256,13 @@ export default function ContentPage() {
                         ))}
                       </select>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold">Content</label>
-                      <textarea required rows={6} value={formData.content || ""} onChange={e => setFormData({...formData, content: e.target.value})} className="w-full p-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none resize-y" />
-                    </div>
+                    <RichTextEditor
+                      label="Blog Content (Rich Text / HTML)"
+                      placeholder="Write blog article content, sections, headings, bullet points, or switch to code mode..."
+                      value={formData.content || ""}
+                      onChange={(content) => setFormData({ ...formData, content })}
+                      minHeight="340px"
+                    />
                   </>
                 )}
 

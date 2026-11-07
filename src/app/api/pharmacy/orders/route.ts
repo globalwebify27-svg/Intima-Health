@@ -338,6 +338,13 @@ export async function POST(request: Request) {
       config = await PharmacyConfigModel.create({});
     }
 
+    if (!config.isActive && !isCounterDispense) {
+      return NextResponse.json(
+        { success: false, message: "Medicine delivery & pharmacy fulfilment is temporarily paused by administration." },
+        { status: 400 }
+      );
+    }
+
     let matchedPin: any = null;
     if (!isCounterDispense && pinCode) {
       const pincodesList = (config.serviceablePincodes && config.serviceablePincodes.length > 0)
