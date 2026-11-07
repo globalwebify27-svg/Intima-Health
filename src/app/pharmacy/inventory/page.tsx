@@ -122,7 +122,12 @@ export default function PharmacyInventoryPage() {
   };
 
   const downloadTemplate = () => {
-    const csvContent = "Name,Category,Price,Stock\nParacetamol 500mg,Analgesic,40,120\nAmoxicillin 250mg,Antibiotic,150,45\n";
+    const csvContent = "Medicine Name,Category,Quantity / Pack Size,Price (₹),Initial Stock\n" +
+      "FLUME 20 TAB,Syrup,100ml,78,100\n" +
+      "Paracetamol 500mg,Tablets,10 tabs/strip,40,120\n" +
+      "Amoxicillin 250mg,Capsules,10 caps/strip,150,45\n" +
+      "Cough Relief Syrup,Syrup,100ml bottle,95,50\n" +
+      "Pain Relief Gel,Ointment / Cream,30g tube,110,35\n";
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -146,27 +151,67 @@ export default function PharmacyInventoryPage() {
       
       const parsedData = XLSX.utils.sheet_to_json(sheet) as any[];
       
-      // Standardize the keys (lower case, trim)
+      // Standardize the keys (lower case, trim, alphanumeric)
       const mappedProducts = parsedData.map(row => {
         const getVal = (keyNames: string[]) => {
           for (const key of Object.keys(row)) {
-            if (keyNames.includes(key.toLowerCase().trim())) {
-              return row[key];
+            const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+            for (const target of keyNames) {
+              const cleanTarget = target.toLowerCase().replace(/[^a-z0-9]/g, "");
+              if (cleanKey === cleanTarget || cleanKey.includes(cleanTarget)) {
+                return row[key];
+              }
             }
           }
           return undefined;
         };
+
+        const name = getVal(["medicinename", "medicine", "productname", "product", "name"]);
+        const category = getVal(["category", "type", "form", "dosageform"]) || "General Medicine";
+
+        // Pack / Unit Quantity column (e.g. "Quantity / Pack Size", "Pack / Unit Quantity", "Pack Size", "Quantity")
+        const explicitPackSize = getVal([
+          "packunitquantity", 
+          "quantitypacksize", 
+          "packquantity", 
+          "packsize", 
+          "packaging", 
+          "unitquantity", 
+          "volume"
+        ]);
+
+        // Explicit initial stock check
+        const explicitStock = getVal(["initialstock", "stocklevel", "currentstock", "inventory", "stock"]);
+
+        let packSizeVal = explicitPackSize;
+        let stockVal = explicitStock;
+
+        // If file had a generic "Quantity" column alongside "Stock", "Quantity" is the pack quantity!
+        if (!packSizeVal && row["Quantity"] !== undefined && (row["Stock"] !== undefined || row["Initial Stock"] !== undefined)) {
+          packSizeVal = row["Quantity"];
+        }
+
+        // If stock wasn't mapped via explicit stock keywords, fall back to "quantity" or "qty" if numeric
+        if (stockVal === undefined) {
+          const fallbackQty = getVal(["quantity", "qty"]);
+          if (fallbackQty !== undefined && !isNaN(Number(fallbackQty))) {
+            stockVal = fallbackQty;
+          }
+        }
         
+        const priceVal = getVal(["price", "cost", "mrp", "rate"]);
+
         return {
-          name: getVal(["name", "medicine name", "medicine"]),
-          category: getVal(["category", "type"]),
-          price: getVal(["price", "cost"]),
-          stock: getVal(["stock", "quantity", "qty", "stock level"]),
+          name: name ? String(name).trim() : undefined,
+          category: category ? String(category).trim() : "General Medicine",
+          packSize: packSizeVal ? String(packSizeVal).trim() : undefined,
+          price: priceVal !== undefined ? Number(String(priceVal).replace(/[^0-9.]/g, "")) : undefined,
+          stock: stockVal !== undefined ? parseInt(String(stockVal).replace(/[^0-9]/g, ""), 10) : undefined,
         };
-      }).filter(p => p.name && p.price !== undefined && p.stock !== undefined);
+      }).filter(p => p.name && p.price !== undefined && !isNaN(p.price) && p.stock !== undefined && !isNaN(p.stock));
 
       if (mappedProducts.length === 0) {
-        alert("No valid products found. Ensure columns like Name, Price, and Stock exist.");
+        alert("No valid products found. Ensure columns like Medicine Name, Price, and Stock exist.");
         return;
       }
 
@@ -361,7 +406,7 @@ export default function PharmacyInventoryPage() {
           </Button>
           <Button variant="outline" size="sm" className="rounded-xl font-bold text-xs h-9 px-2.5 flex-1 sm:flex-initial" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
             <Upload className="w-3.5 h-3.5 mr-1" /> 
-            {isUploading ? "Importing..." : "Import Medicine"}
+            {isUploading ? "Importing..." : "Import"}
           </Button>
           <Button size="sm" className="rounded-xl font-bold text-xs h-9 px-3 flex-1 sm:flex-initial shadow-xs" onClick={() => setIsAddModalOpen(true)}>
             <Plus className="w-3.5 h-3.5 mr-1" /> Add Product
@@ -570,15 +615,15 @@ export default function PharmacyInventoryPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="packSize">Quantity / Pack Size (Optional)</Label>
+                  <Label htmlFor="packSize">Pack / Unit Quantity (Optional)</Label>
                   <Input 
                     id="packSize" 
                     value={packSize} 
                     onChange={(e) => setPackSize(e.target.value)} 
-                    placeholder="e.g. 10 Tablets / 100 ml / 50 g" 
+                    placeholder="e.g. 10 tabs/strip, 100ml, 5g" 
                     className="h-10 rounded-xl bg-background"
                   />
-                  <p className="text-[11px] text-muted-foreground">e.g. 10 tabs/strip, 100ml syrup bottle, 50g jar.</p>
+                  <p className="text-[11px] text-muted-foreground">Packaging or volume per unit.</p>
                 </div>
               </div>
 
@@ -698,15 +743,15 @@ export default function PharmacyInventoryPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="edit-packSize">Quantity / Pack Size (Optional)</Label>
+                  <Label htmlFor="edit-packSize">Pack / Unit Quantity (Optional)</Label>
                   <Input 
                     id="edit-packSize" 
                     value={packSize} 
                     onChange={(e) => setPackSize(e.target.value)} 
-                    placeholder="e.g. 10 Tablets / 100 ml / 50 g" 
+                    placeholder="e.g. 10 tabs/strip, 100ml, 5g" 
                     className="h-10 rounded-xl bg-background"
                   />
-                  <p className="text-[11px] text-muted-foreground">e.g. 10 tabs/strip, 100ml syrup bottle, 50g jar.</p>
+                  <p className="text-[11px] text-muted-foreground">Packaging or volume per unit.</p>
                 </div>
               </div>
 

@@ -33,7 +33,8 @@ export async function POST(request: Request) {
       validProducts.push({
         clinicId,
         name: p.name,
-        category: p.category,
+        category: p.category || "General Medicine",
+        packSize: p.packSize ? String(p.packSize).trim() : "1 Strip",
         price: Number(p.price) || 0,
         stock: Number(p.stock) || 0,
         status,
