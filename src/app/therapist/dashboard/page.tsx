@@ -33,6 +33,7 @@ interface TherapySession {
   selectedMode?: string;
   doctorNotes?: string;
   therapistNotes?: string;
+  consultationId?: any;
   videoChannelName?: string;
   patientId?: {
     _id: string;
@@ -493,10 +494,21 @@ export default function TherapistDashboard() {
               </button>
             </div>
 
-            {/* Prescribing doctor referral note reminder */}
+            {/* Prescribing doctor referral & clinical consultation notes */}
+            {activeSessionForNotes.consultationId && (activeSessionForNotes.consultationId as any).notes && (
+              <div className="p-3 rounded-2xl bg-primary/5 border border-primary/20 text-xs mb-3 space-y-1">
+                <span className="font-bold text-primary block text-[10px] uppercase">
+                  Doctor Consultation Clinical Notes:
+                </span>
+                <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+                  {(activeSessionForNotes.consultationId as any).notes}
+                </p>
+              </div>
+            )}
+
             {activeSessionForNotes.doctorNotes && (
               <div className="p-3 rounded-2xl bg-primary/5 border border-primary/20 text-xs mb-4">
-                <span className="font-bold text-primary block mb-0.5">Prescribing Doctor Guidance:</span>
+                <span className="font-bold text-primary block mb-0.5">Doctor Referral Guidance:</span>
                 <p className="text-muted-foreground italic">"{activeSessionForNotes.doctorNotes}"</p>
               </div>
             )}

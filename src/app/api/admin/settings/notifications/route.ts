@@ -16,6 +16,7 @@ import { generateAppointmentCustomerEmail } from "@/lib/mail/templates/appointme
 import { generateOrderCustomerEmail } from "@/lib/mail/templates/order";
 import { generateContactInquiryAdminEmail } from "@/lib/mail/templates/contact";
 import { generateDailyAdminReportEmail } from "@/lib/mail/templates/daily-admin-report";
+import { generateMedicineOrderRequestEmail } from "@/lib/mail/templates/medicine-order-request";
 
 export const dynamic = "force-dynamic";
 
@@ -273,6 +274,48 @@ export async function POST(req: Request) {
       });
     }
 
+    if (action === "test_medicine_order") {
+      const recipient = body.email || config.adminEmail || DEFAULT_NOTIFICATION_EMAIL;
+      const transporter = await getMailTransporterAsync();
+      if (!transporter) {
+        return NextResponse.json({
+          success: false,
+          message: "SMTP is not fully configured.",
+        }, { status: 400 });
+      }
+
+      const emailData = generateMedicineOrderRequestEmail({
+        orderNumber: "KMH-REQ-TEST-9042",
+        recipientType: body.recipientType === "PHARMACY" ? "PHARMACY" : "ADMIN",
+        clinicName: "Kelkar Manas Health Care (Akola)",
+        clinicAddress: "Civil Lines, Near District Hospital, Akola, Maharashtra 444001",
+        doctorName: "Dr. Vishwas Binawade",
+        patientName: "Shriom Patil (Test Patient)",
+        patientPhone: "+91 82610 67922",
+        patientEmail: recipient,
+        medicines: [
+          { name: "VALNATE CR 300 MG TAB", dosage: "1 Tab • Daily (30 Days)", quantity: 1 },
+          { name: "SANMIN 2 MG TAB", dosage: "1 Tab • SOS (15 Days)", quantity: 1 },
+        ],
+        requestedAt: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+        portalUrl: "https://kelkarmanasclinic.com/admin/orders",
+      });
+
+      await transporter.sendMail({
+        from: `"${config.fromName} Order Desk" <${config.fromEmail}>`,
+        to: recipient,
+        subject: `[Test] ${emailData.subject}`,
+        html: emailData.html,
+        attachments: getMailLogoAttachment(),
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Test medicine order request email successfully sent to ${recipient}!`,
+        recipient,
+      });
+    }
+
     if (action === "test_all") {
       const rawTarget = body.email || config.adminEmail || DEFAULT_NOTIFICATION_EMAIL;
       const targetEmails = rawTarget
@@ -425,13 +468,43 @@ export async function POST(req: Request) {
         await transporter.sendMail({
           from: `"${config.fromName}" <${config.fromEmail}>`,
           to: recipients,
-          subject: `[Test 5/5] ${report.subject}`,
+          subject: `[Test 5/6] ${report.subject}`,
           html: report.html,
           attachments: getMailLogoAttachment(),
         });
         results.push("5. Daily Executive Operations Report");
       } catch (e: any) {
         console.error("Failed test 5:", e);
+      }
+
+      // 6. Medicine Order Request Notification (Clinic Pharmacy & Admin)
+      try {
+        const medReq = generateMedicineOrderRequestEmail({
+          orderNumber: "KMH-REQ-TEST-9042",
+          recipientType: "PHARMACY",
+          clinicName: "Kelkar Manas Health Care (Akola)",
+          clinicAddress: "Civil Lines, Near District Hospital, Akola, Maharashtra 444001",
+          doctorName: "Dr. Vishwas Binawade",
+          patientName: "Shriom Patil (Test Patient)",
+          patientPhone: "+91 82610 67922",
+          patientEmail: targetString,
+          medicines: [
+            { name: "VALNATE CR 300 MG TAB", dosage: "1 Tab • Daily (30 Days)", quantity: 1 },
+            { name: "SANMIN 2 MG TAB", dosage: "1 Tab • SOS (15 Days)", quantity: 1 },
+          ],
+          requestedAt: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+          portalUrl: "https://kelkarmanasclinic.com/pharmacy/orders",
+        });
+        await transporter.sendMail({
+          from: `"${config.fromName} Pharmacy Network" <${config.fromEmail}>`,
+          to: recipients,
+          subject: `[Test 6/6] ${medReq.subject}`,
+          html: medReq.html,
+          attachments: getMailLogoAttachment(),
+        });
+        results.push("6. Medicine Order Request Notification");
+      } catch (e: any) {
+        console.error("Failed test 6:", e);
       }
 
       return NextResponse.json({

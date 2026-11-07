@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, Shield, Video, Calendar, Clock, User, FileText, CheckCircle2, 
-  Sparkles, Save, HeartHandshake, Eye, AlertCircle 
+  Sparkles, Save, HeartHandshake, Eye, AlertCircle, StickyNote, ShieldCheck, Pill 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +60,8 @@ export default function TherapistSessionRoomPage({
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [patientConsultations, setPatientConsultations] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"notes" | "doctor_history">("notes");
 
   useEffect(() => {
     let isCancelled = false;
@@ -86,8 +88,23 @@ export default function TherapistSessionRoomPage({
         }
 
         if (sessionData && sessionData.success && sessionData.data) {
-          setSession(sessionData.data);
-          setNotes(sessionData.data.therapistNotes || "");
+          const sessData = sessionData.data;
+          setSession(sessData);
+          setNotes(sessData.therapistNotes || "");
+
+          const pId = sessData.patientId?._id || sessData.patientId;
+          if (pId) {
+            fetch(`/api/consultations?patientId=${pId}&_t=${Date.now()}`)
+              .then((r) => r.json())
+              .then((cJson) => {
+                if (!isCancelled && cJson?.success && Array.isArray(cJson.data)) {
+                  setPatientConsultations(
+                    cJson.data.filter((c: any) => c.status === "Completed" && (c.notes || c.prescriptionSummary))
+                  );
+                }
+              })
+              .catch((err) => console.warn("Failed to fetch doctor consultation notes:", err));
+          }
         } else {
           setError(sessionData?.message || "Therapy session not found.");
         }
@@ -264,51 +281,138 @@ export default function TherapistSessionRoomPage({
             </div>
           </div>
 
-          {/* Prescribing Doctor's Referral Notes */}
-          {session.doctorId && (
-            <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/60 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-purple-400 tracking-wider uppercase flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> Referring Doctor Guidance
-                </span>
-                <span className="text-[10px] text-slate-400">{session.doctorId.name}</span>
+          {/* Panel Navigation Tabs */}
+          <div className="flex rounded-xl bg-slate-800 p-1 text-xs">
+            <button
+              type="button"
+              onClick={() => setActiveTab("notes")}
+              className={`flex-1 py-1.5 rounded-lg font-bold transition-all ${
+                activeTab === "notes" ? "bg-primary text-white shadow-xs" : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Session Notes
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("doctor_history")}
+              className={`flex-1 py-1.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === "doctor_history" ? "bg-primary text-white shadow-xs" : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <StickyNote className="w-3.5 h-3.5" />
+              Doctor Clinical Notes ({patientConsultations.length})
+            </button>
+          </div>
+
+          {activeTab === "notes" ? (
+            <>
+              {/* Prescribing Doctor's Referral Notes */}
+              {session.doctorId && (
+                <div className="p-3.5 rounded-2xl bg-slate-800/50 border border-slate-700/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-purple-400 tracking-wider uppercase flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> Referring Doctor Guidance
+                    </span>
+                    <span className="text-[10px] text-slate-400">{session.doctorId.name}</span>
+                  </div>
+                  <p className="text-xs text-slate-300 italic leading-relaxed bg-slate-950/40 p-2.5 rounded-xl border border-slate-800">
+                    "{session.doctorNotes || "General therapy referral for psychosexual counseling and patient support."}"
+                  </p>
+                </div>
+              )}
+
+              {/* Live Clinical Notes Form */}
+              <div className="flex-1 flex flex-col space-y-2 min-h-[250px]">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-primary" /> Session Documentation
+                  </label>
+                  <span className="text-[10px] text-slate-400">Auto-saved on Conclude</span>
+                </div>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Record clinical observations, therapeutic dialogue, techniques applied (CBT, sensate focus, cognitive reframing), patient response, and follow-up plan..."
+                  className="flex-1 w-full rounded-2xl border border-slate-700 bg-slate-950/80 p-3 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-primary font-medium leading-relaxed resize-none min-h-[200px]"
+                />
               </div>
-              <p className="text-xs text-slate-300 italic leading-relaxed bg-slate-950/40 p-2.5 rounded-xl border border-slate-800">
-                "{session.doctorNotes || "General therapy referral for psychosexual counseling and patient support."}"
-              </p>
+
+              {/* Conclude Session Action */}
+              <div className="pt-2">
+                <Button
+                  onClick={() => handleSaveNotes(true)}
+                  disabled={completing}
+                  className="w-full rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-white shadow-md h-10 gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> 
+                  {completing ? "Archiving Session..." : "Conclude & Complete Session"}
+                </Button>
+                <p className="text-[10px] text-center text-slate-500 mt-2">
+                  Completing will notify patient, archive clinical notes, and close session room.
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 space-y-3">
+              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
+                <span>Shared Clinical Access: Reviewing consulting doctor notes for this patient.</span>
+              </div>
+
+              {patientConsultations.length === 0 ? (
+                <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-800 text-center text-xs text-slate-400">
+                  No previous consultation notes on record for this patient.
+                </div>
+              ) : (
+                patientConsultations.map((c) => {
+                  let meds: any[] = [];
+                  let therapies: any[] = [];
+                  try { if (c.prescriptionSummary) meds = JSON.parse(c.prescriptionSummary); } catch {}
+                  try { if (c.prescribedTherapies) therapies = JSON.parse(c.prescribedTherapies); } catch {}
+
+                  return (
+                    <div key={c._id} className="p-4 rounded-2xl bg-slate-800/70 border border-slate-700/60 space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white flex items-center gap-1.5">
+                          <StickyNote className="w-3.5 h-3.5 text-primary" />
+                          {c.doctorId?.name ? `Dr. ${c.doctorId.name}` : "Consulting Doctor"}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(c.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                      </div>
+
+                      {c.notes && (
+                        <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
+                          <span className="text-[10px] font-bold text-primary uppercase tracking-wider block">
+                            Doctor Clinical Diagnosis & Advice:
+                          </span>
+                          <p className="text-slate-200 leading-relaxed whitespace-pre-wrap font-normal">
+                            {c.notes}
+                          </p>
+                        </div>
+                      )}
+
+                      {meds.length > 0 && (
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                            Prescribed Medications:
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {meds.map((m: any, idx: number) => (
+                              <Badge key={idx} variant="outline" className="border-slate-700 text-slate-300 text-[10px]">
+                                {m.drug || m.name} {[m.dosage, m.duration].filter(Boolean).join(" • ")}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           )}
-
-          {/* Live Clinical Notes Form */}
-          <div className="flex-1 flex flex-col space-y-2 min-h-[250px]">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-primary" /> Session Documentation
-              </label>
-              <span className="text-[10px] text-slate-400">Auto-saved on Conclude</span>
-            </div>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Record clinical observations, therapeutic dialogue, techniques applied (CBT, sensate focus, cognitive reframing), patient response, and follow-up plan..."
-              className="flex-1 w-full rounded-2xl border border-slate-700 bg-slate-950/80 p-3 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-primary font-medium leading-relaxed resize-none min-h-[200px]"
-            />
-          </div>
-
-          {/* Conclude Session Action */}
-          <div className="pt-2">
-            <Button
-              onClick={() => handleSaveNotes(true)}
-              disabled={completing}
-              className="w-full rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-white shadow-md h-10 gap-2"
-            >
-              <CheckCircle2 className="w-4 h-4" /> 
-              {completing ? "Archiving Session..." : "Conclude & Complete Session"}
-            </Button>
-            <p className="text-[10px] text-center text-slate-500 mt-2">
-              Completing will notify patient, archive clinical notes, and close session room.
-            </p>
-          </div>
         </div>
       </div>
     </div>

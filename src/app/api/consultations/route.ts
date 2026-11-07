@@ -30,13 +30,19 @@ export async function GET(req: Request) {
     let patientId = searchParams.get("patientId") || undefined;
     let clinicId = searchParams.get("clinicId") || undefined;
 
-    // Secure list filters based on roles
+    // Secure list filters based on roles:
+    // Doctors and Therapists have shared access to view clinical records and consultation notes for patients
     if (payload.role === "DOCTOR") {
       const doctorProfile = await DoctorRepository.findByEmail(payload.email);
       if (!doctorProfile || !doctorProfile._id) {
         return NextResponse.json({ success: false, message: "Doctor profile not found." }, { status: 404 });
       }
-      doctorId = doctorProfile._id.toString();
+      if (!patientId) {
+        doctorId = doctorProfile._id.toString();
+      }
+    } else if (payload.role === "THERAPIST") {
+      // Therapists have shared access to view clinical notes / consultations for patients under care
+      // patientId is used to fetch patient's consultation notes
     } else if (payload.role === "PATIENT") {
       const patientProfile = await PatientModel.findOne({ email: payload.email }).exec();
       if (!patientProfile) {

@@ -4,6 +4,7 @@ export interface IConsultation {
   appointmentId?: Schema.Types.ObjectId;
   patientId: Schema.Types.ObjectId;
   doctorId: Schema.Types.ObjectId;
+  clinicId?: Schema.Types.ObjectId;
   videoChannelName?: string;
   notes?: string;
   prescriptionSummary?: string;
@@ -19,6 +20,7 @@ const ConsultationSchema = new Schema<IConsultation>({
   appointmentId: { type: Schema.Types.ObjectId, ref: "Appointment", required: false },
   patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
   doctorId: { type: Schema.Types.ObjectId, ref: "Doctor", required: true },
+  clinicId: { type: Schema.Types.ObjectId, ref: "Clinic", required: false },
   videoChannelName: { type: String },
   notes: { type: String },
   prescriptionSummary: { type: String },
@@ -34,6 +36,7 @@ const ConsultationSchema = new Schema<IConsultation>({
 
 ConsultationSchema.index({ patientId: 1, createdAt: -1 });
 ConsultationSchema.index({ doctorId: 1, createdAt: -1 });
+ConsultationSchema.index({ clinicId: 1, createdAt: -1 });
 ConsultationSchema.index({ appointmentId: 1 });
 ConsultationSchema.index({ status: 1 });
 

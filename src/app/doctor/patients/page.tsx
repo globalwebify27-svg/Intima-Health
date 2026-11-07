@@ -16,7 +16,10 @@ import {
   Phone,
   Activity,
   Clock,
-  ArrowLeft
+  ArrowLeft,
+  Sparkles,
+  Brain,
+  ShieldCheck
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -76,24 +79,43 @@ export default function DoctorPatientsPage() {
   // Records Modal state
   const [selectedPatientRecords, setSelectedPatientRecords] = useState<Patient | null>(null);
   const [patientPrescriptions, setPatientPrescriptions] = useState<any[]>([]);
+  const [patientTherapySessions, setPatientTherapySessions] = useState<any[]>([]);
+  const [recordsTab, setRecordsTab] = useState<"all" | "doctor" | "therapist">("all");
   const [loadingRecords, setLoadingRecords] = useState(false);
 
   const handleViewRecords = async (patient: Patient) => {
     setSelectedPatientRecords(patient);
     setLoadingRecords(true);
+    setRecordsTab("all");
     try {
-      // Fetch all completed consultations and filter by patient id
-      const res = await fetch(`/api/consultations?_t=${Date.now()}`, { cache: "no-store" });
-      const json = await res.json();
-      if (json.success) {
-        const history = json.data.filter((c: any) => 
-          c.status === "Completed" && 
-          c.prescriptionSummary && 
-          c.patientId?._id === patient._id
+      const [consultRes, therapyRes] = await Promise.all([
+        fetch(`/api/consultations?patientId=${patient._id}&_t=${Date.now()}`, { cache: "no-store" }),
+        fetch(`/api/therapy-sessions?patientId=${patient._id}&_t=${Date.now()}`, { cache: "no-store" }),
+      ]);
+
+      const [consultJson, therapyJson] = await Promise.all([
+        consultRes.json(),
+        therapyRes.json(),
+      ]);
+
+      if (consultJson.success && Array.isArray(consultJson.data)) {
+        const history = consultJson.data.filter((c: any) => 
+          c.status === "Completed" && (c.notes || c.prescriptionSummary || c.prescribedTherapies)
         );
-        // Sort history by date descending
         history.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         setPatientPrescriptions(history);
+      } else {
+        setPatientPrescriptions([]);
+      }
+
+      if (therapyJson.success && Array.isArray(therapyJson.data)) {
+        const tSessions = therapyJson.data.filter((s: any) => 
+          s.therapistNotes || s.doctorNotes || s.status === "Completed"
+        );
+        tSessions.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setPatientTherapySessions(tSessions);
+      } else {
+        setPatientTherapySessions([]);
       }
     } catch (err) {
       console.error("Failed to load records", err);
@@ -248,7 +270,7 @@ export default function DoctorPatientsPage() {
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="px-3 py-1 bg-primary/5 text-primary border-primary/20 font-bold text-xs gap-1.5 rounded-xl">
                         <Clock className="w-3.5 h-3.5" />
-                        {patientPrescriptions.length} {patientPrescriptions.length === 1 ? "Record" : "Records"} Found
+                        {patientPrescriptions.length + patientTherapySessions.length} Shared Clinical Records
                       </Badge>
                     </div>
                   </div>
@@ -278,17 +300,64 @@ export default function DoctorPatientsPage() {
 
           {/* Main Records Container */}
           <div className="p-6 md:p-8 space-y-6 bg-slate-50/50 dark:bg-background/95 flex-1 min-h-[500px]">
-            <div className="flex items-center justify-between">
+            {/* Shared Access Banner */}
+            <div className="p-3.5 rounded-2xl bg-primary/5 border border-primary/15 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-foreground/90 font-medium">
+                  <strong>Shared Clinical Record:</strong> Complete clinical visibility across Doctor Consultation Notes and Therapist Clinical Documentation.
+                </span>
+              </div>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-3">
               <div>
                 <h3 className="font-bold text-lg flex items-center gap-2.5 text-foreground">
-                  Prescription History
+                  Clinical Notes & History
                   <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 bg-primary/10 text-primary border-primary/20 text-xs font-bold">
-                    {patientPrescriptions.length}
+                    {patientPrescriptions.length + patientTherapySessions.length}
                   </Badge>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Chronological history of prescribed medications, recommended therapies, and doctor notes.
+                  Unified clinical notes from consultations and therapy sessions.
                 </p>
+              </div>
+
+              <div className="flex items-center gap-1.5 p-1 bg-muted/40 rounded-xl border border-border/60">
+                <button
+                  type="button"
+                  onClick={() => setRecordsTab("all")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    recordsTab === "all"
+                      ? "bg-background text-primary shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  All ({patientPrescriptions.length + patientTherapySessions.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecordsTab("doctor")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    recordsTab === "doctor"
+                      ? "bg-background text-primary shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Doctor ({patientPrescriptions.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecordsTab("therapist")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    recordsTab === "therapist"
+                      ? "bg-background text-primary shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Therapist ({patientTherapySessions.length})
+                </button>
               </div>
             </div>
             
@@ -299,17 +368,85 @@ export default function DoctorPatientsPage() {
                 </div>
                 <p className="font-medium text-sm">Loading medical history & clinical records...</p>
               </div>
-            ) : patientPrescriptions.length === 0 ? (
+            ) : (patientPrescriptions.length === 0 && patientTherapySessions.length === 0) ? (
               <div className="flex flex-col items-center justify-center py-20 bg-background rounded-3xl border border-dashed border-border/70 text-center shadow-sm p-6">
                 <FileSignature className="w-12 h-12 text-muted-foreground/30 mb-4" />
-                <p className="text-muted-foreground font-bold text-base">No prescriptions on record</p>
+                <p className="text-muted-foreground font-bold text-base">No clinical records found</p>
                 <p className="text-xs text-muted-foreground/70 mt-1 max-w-sm">
-                  Consultation records, medications, and therapy regimens will automatically appear here once issued.
+                  Consultation diagnosis, prescriptions, and therapy session notes will automatically appear here once documented.
                 </p>
               </div>
             ) : (
               <div className="space-y-6">
-                {patientPrescriptions.map((record) => {
+                {/* 1. Therapist Clinical Session Notes */}
+                {(recordsTab === "all" || recordsTab === "therapist") && patientTherapySessions.map((sess) => (
+                  <div
+                    key={sess._id}
+                    className="relative p-5 sm:p-6 bg-background rounded-3xl border border-violet-500/30 shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden space-y-4"
+                  >
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-violet-500" />
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/60">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-violet-500/10 text-violet-600 dark:text-violet-400 rounded-2xl border border-violet-500/20 shadow-xs">
+                          <Brain className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-foreground text-base tracking-tight">
+                              {sess.name}
+                            </span>
+                            <Badge className="bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30 text-[10px] font-bold">
+                              Therapist Clinical Note
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Therapist: <strong className="text-foreground">{sess.therapistId?.name || "Therapist"}</strong>
+                            {sess.date && ` • ${sess.date}`}
+                            {sess.time && ` at ${sess.time}`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-lg">
+                          {sess.selectedMode || sess.recommendedMode || "Online"} Mode
+                        </Badge>
+                        <Badge variant="secondary" className="text-[10px] font-bold">
+                          {sess.status}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Therapist Clinical Documentation */}
+                    {sess.therapistNotes ? (
+                      <div className="p-4 rounded-2xl bg-violet-500/[0.04] border border-violet-500/20 space-y-1.5">
+                        <h4 className="text-[11px] font-bold text-violet-700 dark:text-violet-400 uppercase tracking-widest flex items-center gap-1.5">
+                          <StickyNote className="w-3.5 h-3.5" />
+                          Therapist Observations & Interventions
+                        </h4>
+                        <p className="text-sm text-foreground leading-relaxed font-normal whitespace-pre-wrap">
+                          {sess.therapistNotes}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">No session documentation recorded yet.</p>
+                    )}
+
+                    {/* Doctor Referral Guidance */}
+                    {sess.doctorNotes && (
+                      <div className="p-3 rounded-xl bg-muted/30 border border-border/60 text-xs text-muted-foreground">
+                        <span className="font-bold text-primary block mb-0.5 text-[11px] uppercase">
+                          Doctor Referral Guidance:
+                        </span>
+                        <p className="italic">"{sess.doctorNotes}"</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* 2. Doctor Consultation Clinical Notes & Prescriptions */}
+                {(recordsTab === "all" || recordsTab === "doctor") && patientPrescriptions.map((record) => {
                   let parsedDrugs: any[] = [];
                   let parsedTherapies: any[] = [];
                   try { if (record.prescriptionSummary) parsedDrugs = JSON.parse(record.prescriptionSummary); } catch {}
@@ -322,10 +459,10 @@ export default function DoctorPatientsPage() {
                   return (
                     <div 
                       key={record._id} 
-                      className="relative p-5 sm:p-6 bg-background rounded-3xl border border-border/80 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group space-y-5"
+                      className="relative p-5 sm:p-6 bg-background rounded-3xl border border-primary/30 shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden group space-y-5"
                     >
                       {/* Decorative accent bar */}
-                      <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/30 group-hover:bg-primary transition-colors duration-300" />
+                      <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
                       
                       {/* Prescription Card Header */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border/60">
@@ -334,15 +471,20 @@ export default function DoctorPatientsPage() {
                             <FileSignature className="w-5 h-5" />
                           </div>
                           <div>
-                            <span className="font-bold text-foreground text-base block tracking-tight">
-                              {new Date(record.createdAt).toLocaleDateString("en-US", { 
-                                month: "long", 
-                                day: "numeric", 
-                                year: "numeric" 
-                              })}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5 block">
-                              Prescription Issued
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-foreground text-base block tracking-tight">
+                                {new Date(record.createdAt).toLocaleDateString("en-US", { 
+                                  month: "long", 
+                                  day: "numeric", 
+                                  year: "numeric" 
+                                })}
+                              </span>
+                              <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold">
+                                Doctor Clinical Note
+                              </Badge>
+                            </div>
+                            <span className="text-xs text-muted-foreground mt-0.5 block">
+                              Doctor: <strong className="text-foreground">{record.doctorId?.name ? `Dr. ${record.doctorId.name}` : "Consulting Doctor"}</strong>
                             </span>
                           </div>
                         </div>
@@ -359,6 +501,19 @@ export default function DoctorPatientsPage() {
                           )}
                         </div>
                       </div>
+
+                      {/* Clinical Diagnosis & Notes Section */}
+                      {record.notes && (
+                        <div className="p-4 rounded-2xl bg-primary/[0.04] border border-primary/20 space-y-1.5">
+                          <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest flex items-center gap-1.5">
+                            <StickyNote className="w-3.5 h-3.5" />
+                            Doctor Clinical Diagnosis & Notes
+                          </h4>
+                          <div className="text-sm text-foreground leading-relaxed font-normal whitespace-pre-wrap">
+                            {record.notes}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Content Grid: Side-by-side on wide drawer */}
                       {(hasDrugs || hasTherapies) && (
@@ -409,19 +564,6 @@ export default function DoctorPatientsPage() {
                               </div>
                             </div>
                           )}
-                        </div>
-                      )}
-
-                      {/* Clinical Notes Section */}
-                      {record.notes && (
-                        <div className="pt-2">
-                          <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                            <StickyNote className="w-3.5 h-3.5 text-primary" />
-                            Clinical Notes & Observations
-                          </h4>
-                          <div className="text-sm text-foreground bg-primary/[0.03] dark:bg-muted/30 p-4 sm:p-5 rounded-2xl border border-border/70 leading-relaxed font-normal whitespace-pre-wrap">
-                            {record.notes}
-                          </div>
                         </div>
                       )}
                     </div>

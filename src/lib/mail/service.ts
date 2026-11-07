@@ -18,6 +18,9 @@ import { SettingModel } from "@/modules/system/schema";
 import { generateContactInquiryAdminEmail } from "./templates/contact";
 import { generateMedicineOrderRequestEmail, MedicineOrderItemData } from "./templates/medicine-order-request";
 import { ClinicModel } from "@/modules/clinics/schema";
+import { UserModel } from "@/modules/auth/schema";
+import { PharmacyConfigModel } from "@/modules/pharmacy/settings-schema";
+import { ConsultationModel } from "@/modules/consultations/schema";
 
 interface PopulatedRef {
   _id?: unknown;
@@ -593,9 +596,20 @@ export async function sendMedicineOrderRequestNotifications(orderId: string): Pr
     }
 
     const patient = order.patientId as unknown as PopulatedRef;
-    const clinic = order.clinicId as unknown as PopulatedRef;
-    const consult = order.consultationId as unknown as { doctorId?: PopulatedRef };
+    let clinic = order.clinicId as unknown as PopulatedRef;
+    const consult = order.consultationId as unknown as { doctorId?: PopulatedRef; prescriptionSummary?: string };
     const doctor = consult?.doctorId;
+
+    // Fallback: If clinicId was unpopulated, resolve from consultation doctor or active clinic
+    if (!clinic) {
+      if (doctor && (doctor as any).clinicId) {
+        const cId = (doctor as any).clinicId?._id || (doctor as any).clinicId;
+        clinic = (await ClinicModel.findById(cId).lean()) as unknown as PopulatedRef;
+      }
+      if (!clinic) {
+        clinic = (await ClinicModel.findOne({ status: "Active" }).lean()) as unknown as PopulatedRef;
+      }
+    }
 
     const patientName = order.shippingDetails?.fullName || patient?.name || "Patient";
     const patientPhone = order.shippingDetails?.phone || patient?.phone || "Not Provided";
@@ -607,18 +621,87 @@ export async function sendMedicineOrderRequestNotifications(orderId: string): Pr
     const doctorName = doctor?.name;
     const orderNumber = order.orderNumber || `#${order._id.toString().slice(-6)}`;
 
-    // Extract medicines from items
-    const medicines: MedicineOrderItemData[] = (order.items || []).map((item: RawOrderItem) => ({
-      name: item.name || "Medication",
-      dosage: item.dosage,
+    // Extract medicines from items or fallback to prescriptionSummary
+    let medicines: MedicineOrderItemData[] = (order.items || []).map((item: RawOrderItem) => ({
+      name: item.name || (item as any).productId?.name || "Medication",
+      dosage: item.dosage || (item as any).productId?.composition || (item as any).productId?.dosageForm || "",
       quantity: item.quantity || 1,
     }));
+
+    if (medicines.length === 0 && consult?.prescriptionSummary) {
+      try {
+        const parsed = JSON.parse(consult.prescriptionSummary);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          medicines = parsed.map((m: any) => ({
+            name: m.drug || m.name || "Doctor Prescribed Medicine",
+            dosage: [m.dosage, m.frequency, m.duration].filter(Boolean).join(" • "),
+            quantity: 1,
+          }));
+        }
+      } catch {
+        // ignore JSON parse error
+      }
+    }
+
+    if (medicines.length === 0) {
+      medicines = [{
+        name: "Doctor Prescribed Medicines",
+        dosage: "As directed in digital prescription",
+        quantity: 1,
+      }];
+    }
 
     let pharmacySent = false;
     let adminSent = false;
 
     // 1. Send to Respective Clinic Pharmacy
+    // Resolve all pharmacy recipients for this clinic:
+    // a. Clinic official email (clinic.email)
+    // b. Active pharmacy staff users assigned to this clinic
+    // c. Pharmacy configuration contact email (fallback)
+    const pharmacyRecipientsList: string[] = [];
+
     if (clinicEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clinicEmail.trim())) {
+      pharmacyRecipientsList.push(clinicEmail.trim());
+    }
+
+    if (clinic?._id) {
+      try {
+        const pharmacyStaff = await UserModel.find({
+          clinicId: clinic._id,
+          role: { $in: ["PHARMACY_STAFF", "PHARMACY"] },
+          status: "Active",
+        }).select("email").lean();
+
+        for (const staff of pharmacyStaff) {
+          if (staff.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(staff.email.trim())) {
+            pharmacyRecipientsList.push(staff.email.trim());
+          }
+        }
+      } catch (staffErr) {
+        console.warn("[Mail Service] Failed to lookup pharmacy staff for clinic:", staffErr);
+      }
+    }
+
+    // Fallback if no specific clinic pharmacy email was found
+    if (pharmacyRecipientsList.length === 0) {
+      try {
+        const pharmConfig = await PharmacyConfigModel.findOne().select("contactEmail").lean();
+        if (pharmConfig?.contactEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pharmConfig.contactEmail.trim())) {
+          pharmacyRecipientsList.push(pharmConfig.contactEmail.trim());
+        }
+      } catch (cfgErr) {
+        console.warn("[Mail Service] Failed to lookup pharmacy config email:", cfgErr);
+      }
+    }
+
+    if (pharmacyRecipientsList.length === 0) {
+      pharmacyRecipientsList.push("pharmacy@kelkarmanas.com");
+    }
+
+    const uniquePharmacyRecipients = Array.from(new Set(pharmacyRecipientsList.map((e) => e.toLowerCase())));
+
+    if (uniquePharmacyRecipients.length > 0) {
       const pharmacyEmailData = generateMedicineOrderRequestEmail({
         orderNumber,
         recipientType: "PHARMACY",
@@ -634,24 +717,50 @@ export async function sendMedicineOrderRequestNotifications(orderId: string): Pr
 
       await transporter.sendMail({
         from: `"${config.fromName} Pharmacy Network" <${config.fromEmail}>`,
-        to: clinicEmail.trim(),
+        to: uniquePharmacyRecipients,
         subject: pharmacyEmailData.subject,
         html: pharmacyEmailData.html,
         attachments: getMailLogoAttachment(),
       });
       pharmacySent = true;
-      console.log(`[Mail Service] Dispatched medicine order request notification to clinic pharmacy: ${clinicEmail}`);
+      console.log(`[Mail Service] Dispatched medicine order request notification to clinic pharmacy (${clinicName}): ${uniquePharmacyRecipients.join(", ")}`);
     }
 
     // 2. Send to Admin
+    // Resolve admin recipients:
+    // a. Custom notification email setting in DB (key: contact_notification_email)
+    // b. Resolved mail config adminEmail
+    // c. Active SUPER_ADMIN users
     const emailSetting = await SettingModel.findOne({ key: "contact_notification_email" }).lean();
     const adminRecipientsRaw: string = emailSetting?.value?.trim() || config.adminEmail || "support@kelkarmanasclinic.com";
-    const adminRecipients = adminRecipientsRaw
+    const adminRecipientsList = adminRecipientsRaw
       .split(/[,;\s]+/)
       .map((e: string) => e.trim())
       .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
 
-    if (adminRecipients.length > 0) {
+    // Also include any active SUPER_ADMIN users
+    try {
+      const superAdmins = await UserModel.find({
+        role: "SUPER_ADMIN",
+        status: "Active",
+      }).select("email").lean();
+
+      for (const adm of superAdmins) {
+        if (adm.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adm.email.trim())) {
+          adminRecipientsList.push(adm.email.trim());
+        }
+      }
+    } catch (admErr) {
+      console.warn("[Mail Service] Failed to lookup super admins:", admErr);
+    }
+
+    if (adminRecipientsList.length === 0 && config.fromEmail) {
+      adminRecipientsList.push(config.fromEmail);
+    }
+
+    const uniqueAdminRecipients = Array.from(new Set(adminRecipientsList.map((e) => e.toLowerCase())));
+
+    if (uniqueAdminRecipients.length > 0) {
       const adminEmailData = generateMedicineOrderRequestEmail({
         orderNumber,
         recipientType: "ADMIN",
@@ -667,13 +776,13 @@ export async function sendMedicineOrderRequestNotifications(orderId: string): Pr
 
       await transporter.sendMail({
         from: `"${config.fromName} Order Desk" <${config.fromEmail}>`,
-        to: adminRecipients,
+        to: uniqueAdminRecipients,
         subject: adminEmailData.subject,
         html: adminEmailData.html,
         attachments: getMailLogoAttachment(),
       });
       adminSent = true;
-      console.log(`[Mail Service] Dispatched medicine order request notification to admin: ${adminRecipients.join(", ")}`);
+      console.log(`[Mail Service] Dispatched medicine order request notification to admin: ${uniqueAdminRecipients.join(", ")}`);
     }
 
     return { success: true, pharmacySent, adminSent };

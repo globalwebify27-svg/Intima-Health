@@ -86,25 +86,69 @@ export class ConsultationRepository {
 
     const query: any = {};
     if (filters.status) query.status = filters.status;
+    if (filters.patientId) query.patientId = filters.patientId;
 
     if (filters.appointmentId) {
       query.appointmentId = filters.appointmentId;
     } else if (filters.clinicId) {
-      const appointments = await AppointmentModel.find({ clinicId: filters.clinicId }).select("_id").lean().exec();
-      const appointmentIds = appointments.map(a => a._id);
-      query.appointmentId = { $in: appointmentIds };
+      const { DoctorModel } = await import("@/modules/doctors/schema");
+      const mongoose = await import("mongoose");
+
+      let clinicObjId: any = filters.clinicId;
+      try {
+        if (mongoose.Types.ObjectId.isValid(filters.clinicId)) {
+          clinicObjId = new mongoose.Types.ObjectId(filters.clinicId);
+        }
+      } catch {}
+
+      const clinicMatch = { $in: [filters.clinicId, clinicObjId] };
+
+      const [appointments, doctorsInClinic, unassignedDoctors] = await Promise.all([
+        AppointmentModel.find({ clinicId: clinicMatch }).select("_id").lean().exec(),
+        DoctorModel.find({ clinicId: clinicMatch }).select("_id").lean().exec(),
+        DoctorModel.find({ $or: [{ clinicId: null }, { clinicId: { $exists: false } }, { clinicId: "" }] }).select("_id").lean().exec(),
+      ]);
+
+      const appointmentIds = appointments.map((a: any) => a._id);
+      const clinicDoctorIds = doctorsInClinic.map((d: any) => d._id);
+      const fallbackDoctorIds = unassignedDoctors.map((d: any) => d._id);
+      const allRelevantDoctorIds = Array.from(new Set([...clinicDoctorIds, ...fallbackDoctorIds]));
+
+      // Backfill clinicId on ANY standalone digital prescription missing clinicId
+      await ConsultationModel.updateMany(
+        { 
+          $or: [{ clinicId: null }, { clinicId: { $exists: false } }],
+          $and: [
+            { prescriptionSummary: { $exists: true } },
+            { prescriptionSummary: { $ne: null } },
+            { prescriptionSummary: { $ne: "" } },
+            { prescriptionSummary: { $ne: "[]" } }
+          ]
+        } as any,
+        { $set: { clinicId: filters.clinicId } }
+      ).exec().catch(() => {});
+
+      const orConditions: any[] = [
+        { clinicId: clinicMatch },
+        { appointmentId: { $in: appointmentIds } },
+        // Standalone digital prescriptions without video consultation appointment
+        { appointmentId: null },
+        { appointmentId: { $exists: false } },
+      ];
+      if (allRelevantDoctorIds.length > 0) {
+        orConditions.push({ doctorId: { $in: allRelevantDoctorIds } });
+      }
+
+      query.$or = orConditions;
     } else if (filters.doctorId) {
       const docApts = await AppointmentModel.find({
         doctorId: filters.doctorId,
       }).select("_id").lean().exec();
       const docAptIds = docApts.map(a => a._id);
       query.$or = [
-        { appointmentId: { $in: docAptIds } },
-        { appointmentId: { $exists: false } },
-        { appointmentId: null }
+        { doctorId: filters.doctorId },
+        { appointmentId: { $in: docAptIds } }
       ];
-    } else if (filters.patientId) {
-      query.patientId = filters.patientId;
     }
 
     const consultations = await ConsultationModel.find(query)
@@ -115,6 +159,7 @@ export class ConsultationRepository {
         select: "clinicId date time type serviceName feeAmount",
         populate: { path: "clinicId", select: "name address" }
       })
+      .populate({ path: "clinicId", select: "name address" })
       .sort({ createdAt: -1 })
       .lean()
       .exec();

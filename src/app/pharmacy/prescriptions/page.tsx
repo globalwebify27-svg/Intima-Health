@@ -35,6 +35,7 @@ interface Consultation {
   prescriptionSummary?: string;
   prescribedTherapies?: string;
   prescriptionStatus?: "Pending" | "Fulfilled";
+  notes?: string;
   createdAt: string;
 }
 
@@ -83,12 +84,16 @@ export default function PharmacyPrescriptionsPage() {
 
   const fetchPrescriptions = async (cId: string) => {
     try {
-      const url = cId ? `/api/consultations?clinicId=${cId}` : "/api/consultations";
-      const ordersUrl = cId ? `/api/pharmacy/orders?clinicId=${cId}` : "/api/pharmacy/orders";
+      const url = cId 
+        ? `/api/consultations?clinicId=${cId}&_t=${Date.now()}` 
+        : `/api/consultations?_t=${Date.now()}`;
+      const ordersUrl = cId 
+        ? `/api/pharmacy/orders?clinicId=${cId}&_t=${Date.now()}` 
+        : `/api/pharmacy/orders?_t=${Date.now()}`;
 
       const [res, ordersRes] = await Promise.all([
-        fetch(url),
-        fetch(ordersUrl).catch(() => null),
+        fetch(url, { cache: "no-store" }),
+        fetch(ordersUrl, { cache: "no-store" }).catch(() => null),
       ]);
       const json = await res.json();
 
@@ -424,12 +429,24 @@ export default function PharmacyPrescriptionsPage() {
                     <FileSignature className="w-6 h-6 text-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg">Rx #${record._id.substring(18).toUpperCase()} for {record.patientId?.name || "Patient"}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-lg">Rx #${record._id.substring(18).toUpperCase()} for {record.patientId?.name || "Patient"}</h3>
+                      {!record.appointmentId && (
+                        <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/10 font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg">
+                          Direct Rx (Walk-In)
+                        </Badge>
+                      )}
+                    </div>
                     <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-sm text-muted-foreground mt-1">
                       <span>Prescriber: {record.doctorId?.name || "Clinician"}</span>
                       <span className="hidden md:inline">•</span>
                       <span>Issued: {new Date(record.createdAt).toLocaleDateString()}</span>
                     </div>
+                    {record.notes && (
+                      <p className="text-xs text-muted-foreground mt-1.5 italic bg-muted/30 px-2.5 py-1 rounded-lg border border-border/50 max-w-xl">
+                        Doctor Notes: "{record.notes}"
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-2 mt-3">
                       {meds.map((med, idx) => (
                         <Badge key={idx} variant="secondary" className="flex items-center gap-1">

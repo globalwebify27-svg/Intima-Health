@@ -94,7 +94,7 @@ export default function PrescriptionsPage() {
 
       if (cId) {
         // Fetch consultations
-        const res = await fetch(`/api/consultations?clinicId=${cId}`);
+        const res = await fetch(`/api/consultations?clinicId=${cId}&_t=${Date.now()}`, { cache: "no-store" });
         const json = await res.json();
         if (json.success) {
           setConsultations(json.data);

@@ -21,6 +21,7 @@ interface TherapySession {
   recommendedMode?: string;
   doctorNotes?: string;
   therapistNotes?: string;
+  consultationId?: any;
   patientId?: {
     _id: string;
     name: string;
@@ -271,6 +272,18 @@ export default function TherapistSessionsPage() {
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
+
+            {/* Prescribing doctor referral & clinical consultation notes */}
+            {activeSession.consultationId && (activeSession.consultationId as any).notes && (
+              <div className="p-3 rounded-2xl bg-primary/5 border border-primary/20 text-xs mb-3 space-y-1">
+                <span className="font-bold text-primary block text-[10px] uppercase">
+                  Doctor Consultation Clinical Notes:
+                </span>
+                <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+                  {(activeSession.consultationId as any).notes}
+                </p>
+              </div>
+            )}
 
             {activeSession.doctorNotes && (
               <div className="p-3 rounded-2xl bg-primary/5 border border-primary/20 text-xs mb-4">

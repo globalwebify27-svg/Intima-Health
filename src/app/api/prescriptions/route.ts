@@ -127,11 +127,25 @@ export async function POST(req: Request) {
         })))
       : undefined;
 
+    // Resolve clinic for standalone walk-in prescription
+    let assignedClinicId = (doctor as any).clinicId;
+    if (!assignedClinicId) {
+      const { ClinicModel } = await import("@/modules/clinics/schema");
+      const defaultClinic = await ClinicModel.findOne({ status: "Active" }).select("_id").lean();
+      if (defaultClinic) assignedClinicId = defaultClinic._id;
+    }
+
+    if (!(doctor as any).clinicId && assignedClinicId) {
+      const { DoctorModel } = await import("@/modules/doctors/schema");
+      await DoctorModel.findByIdAndUpdate((doctor as any)._id, { clinicId: assignedClinicId }).exec();
+    }
+
     // Create a "walk-in" consultation record marked Completed
     // appointmentId is optional — omitting it signals a walk-in/direct prescription
     const consultation = new ConsultationModel({
       patientId,
       doctorId: (doctor as any)._id,
+      clinicId: assignedClinicId || undefined,
       videoChannelName: `walkin-rx-${Math.random().toString(36).substring(2, 9)}`,
       status: "Completed",
       notes: notes || "",

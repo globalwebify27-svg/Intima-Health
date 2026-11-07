@@ -549,6 +549,12 @@ export async function POST(request: Request) {
       console.error("[Orders] Customer receipt email error:", e);
     });
 
+    if (!isCounterDispense) {
+      sendMedicineOrderRequestNotifications(order._id.toString()).catch((e: unknown) => {
+        console.error("[Orders] Pharmacy & Admin notification email error:", e);
+      });
+    }
+
     return NextResponse.json({
       success: true,
       message: "Order placed successfully.",

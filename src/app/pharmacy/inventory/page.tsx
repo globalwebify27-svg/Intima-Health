@@ -348,7 +348,7 @@ export default function PharmacyInventoryPage() {
             Manage clinic pharmacy stock, prices, and categories.
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <input 
             type="file" 
             accept=".csv, .xlsx, .xls" 
@@ -356,15 +356,15 @@ export default function PharmacyInventoryPage() {
             ref={fileInputRef} 
             onChange={handleFileUpload} 
           />
-          <Button variant="ghost" size="sm" className="rounded-xl text-primary font-bold text-xs h-9 px-3" onClick={downloadTemplate}>
-            <Download className="w-3.5 h-3.5 mr-1.5" /> Template
+          <Button variant="ghost" size="sm" className="rounded-xl text-primary font-bold text-xs h-9 px-2.5 flex-1 sm:flex-initial" onClick={downloadTemplate}>
+            <Download className="w-3.5 h-3.5 mr-1" /> Template
           </Button>
-          <Button variant="outline" size="sm" className="rounded-xl font-bold text-xs h-9 px-3" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-            <Upload className="w-3.5 h-3.5 mr-1.5" /> 
-            {isUploading ? "Importing..." : "Import"}
+          <Button variant="outline" size="sm" className="rounded-xl font-bold text-xs h-9 px-2.5 flex-1 sm:flex-initial" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+            <Upload className="w-3.5 h-3.5 mr-1" /> 
+            {isUploading ? "Importing..." : "Import Medicine"}
           </Button>
-          <Button size="sm" className="rounded-xl font-bold text-xs h-9 px-3.5 shadow-xs" onClick={() => setIsAddModalOpen(true)}>
-            <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Product
+          <Button size="sm" className="rounded-xl font-bold text-xs h-9 px-3 flex-1 sm:flex-initial shadow-xs" onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="w-3.5 h-3.5 mr-1" /> Add Product
           </Button>
         </div>
       </div>
@@ -523,21 +523,34 @@ export default function PharmacyInventoryPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="category">Category *</Label>
-                  <input
+                  <select
                     id="category"
-                    type="text"
-                    list="add-category-suggestions"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    placeholder="Select or type category..."
+                    value={MEDICINE_CATEGORIES.includes(category) ? category : "Other"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val !== "Other") setCategory(val);
+                      else setCategory("");
+                    }}
                     className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
                     required
-                  />
-                  <datalist id="add-category-suggestions">
+                  >
                     {MEDICINE_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat} />
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
                     ))}
-                  </datalist>
+                    <option value="Other">Other / Custom</option>
+                  </select>
+                  {(!MEDICINE_CATEGORIES.includes(category) || category === "") && (
+                    <Input
+                      type="text"
+                      placeholder="Type custom category name..."
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="h-9 text-xs rounded-xl mt-1.5"
+                      required
+                    />
+                  )}
                   <div className="flex flex-wrap gap-1 pt-1">
                     {["Tablets", "Syrup", "Powder", "Capsules"].map((cat) => (
                       <button
@@ -557,15 +570,15 @@ export default function PharmacyInventoryPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="packSize">Pack / Unit Quantity (Optional)</Label>
+                  <Label htmlFor="packSize">Quantity / Pack Size (Optional)</Label>
                   <Input 
                     id="packSize" 
                     value={packSize} 
                     onChange={(e) => setPackSize(e.target.value)} 
-                    placeholder="e.g. 10 tabs/strip, 100ml, 5g" 
+                    placeholder="e.g. 10 Tablets / 100 ml / 50 g" 
                     className="h-10 rounded-xl bg-background"
                   />
-                  <p className="text-[11px] text-muted-foreground">Packaging or volume per unit.</p>
+                  <p className="text-[11px] text-muted-foreground">e.g. 10 tabs/strip, 100ml syrup bottle, 50g jar.</p>
                 </div>
               </div>
 
@@ -638,21 +651,34 @@ export default function PharmacyInventoryPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="edit-category">Category *</Label>
-                  <input
+                  <select
                     id="edit-category"
-                    type="text"
-                    list="edit-category-suggestions"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    placeholder="Select or type category..."
+                    value={MEDICINE_CATEGORIES.includes(category) ? category : "Other"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val !== "Other") setCategory(val);
+                      else setCategory("");
+                    }}
                     className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
                     required
-                  />
-                  <datalist id="edit-category-suggestions">
+                  >
                     {MEDICINE_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat} />
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
                     ))}
-                  </datalist>
+                    <option value="Other">Other / Custom</option>
+                  </select>
+                  {(!MEDICINE_CATEGORIES.includes(category) || category === "") && (
+                    <Input
+                      type="text"
+                      placeholder="Type custom category name..."
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="h-9 text-xs rounded-xl mt-1.5"
+                      required
+                    />
+                  )}
                   <div className="flex flex-wrap gap-1 pt-1">
                     {["Tablets", "Syrup", "Powder", "Capsules"].map((cat) => (
                       <button
@@ -672,15 +698,15 @@ export default function PharmacyInventoryPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="edit-packSize">Pack / Unit Quantity (Optional)</Label>
+                  <Label htmlFor="edit-packSize">Quantity / Pack Size (Optional)</Label>
                   <Input 
                     id="edit-packSize" 
                     value={packSize} 
                     onChange={(e) => setPackSize(e.target.value)} 
-                    placeholder="e.g. 10 tabs/strip, 100ml, 5g" 
+                    placeholder="e.g. 10 Tablets / 100 ml / 50 g" 
                     className="h-10 rounded-xl bg-background"
                   />
-                  <p className="text-[11px] text-muted-foreground">Packaging or volume per unit.</p>
+                  <p className="text-[11px] text-muted-foreground">e.g. 10 tabs/strip, 100ml syrup bottle, 50g jar.</p>
                 </div>
               </div>
 

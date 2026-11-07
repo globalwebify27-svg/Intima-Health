@@ -17,12 +17,37 @@ interface DayAvailability {
   slots: TimeSlot[];
 }
 
-// Convert HH:MM to minutes from midnight
-const toMinutes = (timeStr: string): number => {
-  if (!timeStr || !timeStr.includes(":")) return -1;
-  const [h, m] = timeStr.split(":").map(Number);
-  if (isNaN(h) || isNaN(m)) return -1;
-  return h * 60 + m;
+// Convert any time string (HH:MM or HH:MM AM/PM) to minutes from midnight
+const toMinutes = (timeStr?: string): number => {
+  if (!timeStr) return -1;
+  const clean = timeStr.trim().toUpperCase();
+  const isPM = clean.includes("PM");
+  const isAM = clean.includes("AM");
+
+  const numericPart = clean.replace(/\s*(AM|PM)/i, "").trim();
+  const parts = numericPart.split(":");
+  if (parts.length < 2) return -1;
+
+  let hours = parseInt(parts[0], 10);
+  const minutes = parseInt(parts[1], 10);
+  if (isNaN(hours) || isNaN(minutes)) return -1;
+
+  if (isPM && hours < 12) hours += 12;
+  if (isAM && hours === 12) hours = 0;
+
+  return hours * 60 + minutes;
+};
+
+// Convert ANY time to 12-hour format with AM/PM (e.g. "05:00 PM", "09:00 PM")
+const formatSlotTime = (timeStr?: string): string => {
+  if (!timeStr) return "";
+  const mins = toMinutes(timeStr);
+  if (mins === -1) return timeStr;
+  const hours24 = Math.floor(mins / 60);
+  const minutes = mins % 60;
+  const period = hours24 >= 12 ? "PM" : "AM";
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  return `${String(hours12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${period}`;
 };
 
 // Check if a specific slot in a day has duplicate timing, overlaps, or format errors
@@ -30,16 +55,15 @@ const getSlotIssue = (slots: TimeSlot[], index: number): string | null => {
   const current = slots[index];
   if (!current.start?.trim() || !current.end?.trim()) return "Time required";
 
-  const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-  if (!timeRegex.test(current.start.trim()) || !timeRegex.test(current.end.trim())) {
-    return "Invalid time format (HH:MM)";
-  }
-
   const startMin = toMinutes(current.start.trim());
   const endMin = toMinutes(current.end.trim());
 
+  if (startMin === -1 || endMin === -1) {
+    return "Invalid time format";
+  }
+
   if (startMin >= endMin) {
-    return "Start must be before End";
+    return "Start time must be before End time";
   }
 
   for (let i = 0; i < slots.length; i++) {
@@ -47,40 +71,40 @@ const getSlotIssue = (slots: TimeSlot[], index: number): string | null => {
     const other = slots[i];
     if (!other.start?.trim() || !other.end?.trim()) continue;
 
+    const oStartMin = toMinutes(other.start.trim());
+    const oEndMin = toMinutes(other.end.trim());
+    if (oStartMin === -1 || oEndMin === -1) continue;
+
     // Exact duplicate check
-    if (
-      other.start.trim() === current.start.trim() &&
-      other.end.trim() === current.end.trim()
-    ) {
-      return "Duplicate timing";
+    if (oStartMin === startMin && oEndMin === endMin) {
+      return `Duplicate timing (${formatSlotTime(current.start)} – ${formatSlotTime(current.end)})`;
     }
 
     // Overlap check
-    const oStartMin = toMinutes(other.start.trim());
-    const oEndMin = toMinutes(other.end.trim());
-    if (oStartMin !== -1 && oEndMin !== -1 && oStartMin < oEndMin) {
-      if (Math.max(startMin, oStartMin) < Math.min(endMin, oEndMin)) {
-        return "Overlaps with another slot";
-      }
+    if (Math.max(startMin, oStartMin) < Math.min(endMin, oEndMin)) {
+      return `Overlaps with slot (${formatSlotTime(other.start)} – ${formatSlotTime(other.end)})`;
     }
   }
 
   return null;
 };
 
-// Deduplicate exact matching slots
+// Deduplicate exact matching slots based on start/end minutes
 const deduplicateSlots = (slots: TimeSlot[]): TimeSlot[] => {
   const seen = new Set<string>();
   const unique: TimeSlot[] = [];
   for (const s of slots) {
     if (!s || !s.start || !s.end) continue;
-    const key = `${s.start.trim()}-${s.end.trim()}`;
+    const startMin = toMinutes(s.start);
+    const endMin = toMinutes(s.end);
+    if (startMin === -1 || endMin === -1 || startMin >= endMin) continue;
+    const key = `${startMin}-${endMin}`;
     if (!seen.has(key)) {
       seen.add(key);
       unique.push({ start: s.start.trim(), end: s.end.trim() });
     }
   }
-  return unique;
+  return unique.sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
 };
 
 // Suggest a smart, non-overlapping next slot for a day
@@ -397,10 +421,10 @@ export default function DoctorAvailabilityPage() {
                       key={index} 
                       className="flex items-center gap-2.5 text-sm font-semibold text-foreground/80 bg-muted/40 p-2.5 rounded-xl border border-border/30"
                     >
-                      <Clock className="w-4 h-4 text-primary" />
-                      <span>{slot.start}</span>
+                      <Clock className="w-4 h-4 text-primary shrink-0" />
+                      <span>{formatSlotTime(slot.start)}</span>
                       <span className="text-muted-foreground/60 font-medium">to</span>
-                      <span>{slot.end}</span>
+                      <span>{formatSlotTime(slot.end)}</span>
                     </div>
                   ))}
                 </div>
@@ -559,6 +583,12 @@ export default function DoctorAvailabilityPage() {
                                       <Trash2 className="w-4 h-4" />
                                     </Button>
                                   </div>
+                                  {!issue && slot.start && slot.end && (
+                                    <div className="flex items-center gap-1.5 pl-6 text-[11px] text-muted-foreground font-semibold">
+                                      <span>Preview:</span>
+                                      <span className="text-primary font-bold">{formatSlotTime(slot.start)} to {formatSlotTime(slot.end)}</span>
+                                    </div>
+                                  )}
                                   {issue && (
                                     <p className="text-[11px] text-destructive font-semibold flex items-center gap-1 pl-6">
                                       <AlertCircle className="w-3 h-3 shrink-0" />

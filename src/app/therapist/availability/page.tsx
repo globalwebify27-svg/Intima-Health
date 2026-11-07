@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, Plus, Trash2, CheckCircle2, Save, Sparkles, RefreshCw, AlertCircle } from "lucide-react";
+import { Clock, Plus, Trash2, CheckCircle2, Save, Sparkles, RefreshCw, AlertCircle, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -160,8 +160,9 @@ export default function TherapistAvailabilityPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Quick slot adder state
+  // Quick slot adder / editor state
   const [addingDay, setAddingDay] = useState<string | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [newStart, setNewStart] = useState("10:00");
   const [newEnd, setNewEnd] = useState("10:50");
 
@@ -242,13 +243,42 @@ export default function TherapistAvailabilityPage() {
     const next = suggestNextSlot(dayItem?.slots || []);
     setNewStart(next.start);
     setNewEnd(next.end);
+    setEditingIndex(null);
     setAddingDay(day);
   };
 
-  const handleAddSlot = (day: string) => {
+  const openEditSlot = (day: string, index: number) => {
+    const dayItem = availability.find((a) => a.day === day);
+    const targetSlot = dayItem?.slots[index];
+    if (!targetSlot) return;
+
+    const sMin = parseTimeToMinutes(targetSlot.start);
+    const eMin = parseTimeToMinutes(targetSlot.end);
+    if (sMin !== -1 && eMin !== -1) {
+      const sH = Math.floor(sMin / 60);
+      const sM = sMin % 60;
+      const eH = Math.floor(eMin / 60);
+      const eM = eMin % 60;
+      setNewStart(`${String(sH).padStart(2, "0")}:${String(sM).padStart(2, "0")}`);
+      setNewEnd(`${String(eH).padStart(2, "0")}:${String(eM).padStart(2, "0")}`);
+    } else {
+      setNewStart("10:00");
+      setNewEnd("10:50");
+    }
+    setEditingIndex(index);
+    setAddingDay(day);
+  };
+
+  const handleSaveSlot = (day: string) => {
     const dayItem = availability.find((a) => a.day === day);
     const existingSlots = dayItem?.slots || [];
-    const conflict = checkSlotConflict(existingSlots, newStart, newEnd);
+    
+    // If editing, exclude the slot currently being edited from conflict checking
+    const checkAgainst = editingIndex !== null
+      ? existingSlots.filter((_, idx) => idx !== editingIndex)
+      : existingSlots;
+
+    const conflict = checkSlotConflict(checkAgainst, newStart, newEnd);
     if (conflict) {
       alert(conflict);
       return;
@@ -262,7 +292,12 @@ export default function TherapistAvailabilityPage() {
     setAvailability((prev) =>
       prev.map((item) => {
         if (item.day !== day) return item;
-        const updated = [...item.slots, formattedSlot];
+        let updated: Slot[];
+        if (editingIndex !== null) {
+          updated = item.slots.map((s, idx) => (idx === editingIndex ? formattedSlot : s));
+        } else {
+          updated = [...item.slots, formattedSlot];
+        }
         return {
           ...item,
           slots: deduplicateAndNormalizeSlots(updated),
@@ -270,6 +305,7 @@ export default function TherapistAvailabilityPage() {
       })
     );
     setAddingDay(null);
+    setEditingIndex(null);
   };
 
   const applyPresetWeekdays = () => {
@@ -342,9 +378,12 @@ export default function TherapistAvailabilityPage() {
     return <div className="text-center py-12 text-muted-foreground text-sm">Loading availability...</div>;
   }
 
-  // Check current conflict for the open inline adder
+  // Check current conflict for the open inline adder or editor
   const currentAddingDaySlots = addingDay ? (availability.find((a) => a.day === addingDay)?.slots || []) : [];
-  const currentConflictError = addingDay ? checkSlotConflict(currentAddingDaySlots, newStart, newEnd) : null;
+  const slotsToCheck = editingIndex !== null
+    ? currentAddingDaySlots.filter((_, idx) => idx !== editingIndex)
+    : currentAddingDaySlots;
+  const currentConflictError = addingDay ? checkSlotConflict(slotsToCheck, newStart, newEnd) : null;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -436,22 +475,38 @@ export default function TherapistAvailabilityPage() {
                       <span className="font-mono font-bold tracking-tight">
                         {formatSlotTime(slot.start)} – {formatSlotTime(slot.end)}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => removeSlot(item.day, idx)}
-                        className="text-muted-foreground hover:text-rose-500 transition-colors ml-1 p-0.5 rounded-md"
-                        title="Remove time slot"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-0.5 ml-1">
+                        <button
+                          type="button"
+                          onClick={() => openEditSlot(item.day, idx)}
+                          className="text-muted-foreground hover:text-primary transition-colors p-0.5 rounded-md"
+                          title="Edit time slot"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeSlot(item.day, idx)}
+                          className="text-muted-foreground hover:text-rose-500 transition-colors p-0.5 rounded-md"
+                          title="Remove time slot"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Inline Add Slot Box */}
+              {/* Inline Add / Edit Slot Box */}
               {addingDay === item.day && (
                 <div className="mt-3 p-3.5 bg-primary/5 border border-primary/20 rounded-2xl flex flex-col gap-2.5 text-xs animate-in fade-in">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-primary border-b border-primary/10 pb-1.5">
+                    <span>{editingIndex !== null ? `Editing Slot #${editingIndex + 1}` : "Add New Time Slot"}</span>
+                    {editingIndex !== null && (
+                      <span className="text-[10px] text-muted-foreground font-normal">Modifying this slot will preserve your other slots</span>
+                    )}
+                  </div>
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-1.5">
                       <span className="text-muted-foreground font-semibold">Start:</span>
@@ -478,7 +533,7 @@ export default function TherapistAvailabilityPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setAddingDay(null)}
+                        onClick={() => { setAddingDay(null); setEditingIndex(null); }}
                         className="rounded-xl text-xs h-8 font-semibold"
                       >
                         Cancel
@@ -486,10 +541,10 @@ export default function TherapistAvailabilityPage() {
                       <Button
                         size="sm"
                         disabled={!!currentConflictError}
-                        onClick={() => handleAddSlot(item.day)}
+                        onClick={() => handleSaveSlot(item.day)}
                         className="rounded-xl text-xs h-8 bg-primary hover:bg-primary/90 text-white font-bold disabled:opacity-50"
                       >
-                        Save Slot
+                        {editingIndex !== null ? "Update Slot" : "Save Slot"}
                       </Button>
                     </div>
                   </div>

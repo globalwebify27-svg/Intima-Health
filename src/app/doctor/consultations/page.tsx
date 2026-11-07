@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { 
   Video, VideoOff, Mic, MicOff, ScreenShare, PhoneOff, Check, 
-  User, Clipboard, Calendar, Clock, ChevronRight, X, Heart, ShieldAlert, FileText, Plus, Trash2, MapPin
+  User, Clipboard, Calendar, Clock, ChevronRight, X, Heart, ShieldAlert, FileText, Plus, Trash2, MapPin,
+  Brain, StickyNote, ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatTime12Hour } from "@/lib/utils";
@@ -99,6 +100,9 @@ function ConsultationsContent() {
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
   const [availableServices, setAvailableServices] = useState<any[]>([]);
   const [availableTherapists, setAvailableTherapists] = useState<any[]>([]);
+  const [patientHistoryConsultations, setPatientHistoryConsultations] = useState<any[]>([]);
+  const [patientHistoryTherapies, setPatientHistoryTherapies] = useState<any[]>([]);
+  const [loadingPatientHistory, setLoadingPatientHistory] = useState(false);
 
   const fetchConsultations = () => {
     setLoading(true);
@@ -163,6 +167,35 @@ function ConsultationsContent() {
       setAvailableServices([]);
     }
   }, [activeConsultation]);
+
+  useEffect(() => {
+    if (activeConsultation?.patientId?._id) {
+      const pId = activeConsultation.patientId._id;
+      setLoadingPatientHistory(true);
+      Promise.all([
+        fetch(`/api/consultations?patientId=${pId}&_t=${Date.now()}`).then((r) => r.json()).catch(() => ({})),
+        fetch(`/api/therapy-sessions?patientId=${pId}&_t=${Date.now()}`).then((r) => r.json()).catch(() => ({})),
+      ]).then(([cJson, tJson]) => {
+        if (cJson?.success && Array.isArray(cJson.data)) {
+          const past = cJson.data.filter((c: any) => c._id !== activeConsultation._id && c.status === "Completed" && c.notes);
+          setPatientHistoryConsultations(past);
+        } else {
+          setPatientHistoryConsultations([]);
+        }
+        if (tJson?.success && Array.isArray(tJson.data)) {
+          const sessionsWithNotes = tJson.data.filter((s: any) => s.therapistNotes || s.doctorNotes);
+          setPatientHistoryTherapies(sessionsWithNotes);
+        } else {
+          setPatientHistoryTherapies([]);
+        }
+      }).finally(() => {
+        setLoadingPatientHistory(false);
+      });
+    } else {
+      setPatientHistoryConsultations([]);
+      setPatientHistoryTherapies([]);
+    }
+  }, [activeConsultation?._id, activeConsultation?.patientId?._id]);
 
   const handleStartConsultation = async (consultation: Consultation & { prescribedTherapies?: string }) => {
     try {
@@ -772,6 +805,76 @@ function ConsultationsContent() {
                       <p className="text-xs text-muted-foreground leading-relaxed font-medium">
                         {activeConsultation.patientId.medicalHistory || "No past medical history recorded."}
                       </p>
+                    </div>
+
+                    {/* Shared Clinical Notes Section (Visible to Doctors & Therapists) */}
+                    <div className="pt-2 border-t border-border/60 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h5 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-primary" /> Shared Clinical Records & Notes
+                        </h5>
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          {patientHistoryTherapies.length + patientHistoryConsultations.length} Records
+                        </span>
+                      </div>
+
+                      {loadingPatientHistory ? (
+                        <p className="text-[11px] text-muted-foreground animate-pulse">Loading previous clinical notes...</p>
+                      ) : (patientHistoryTherapies.length === 0 && patientHistoryConsultations.length === 0) ? (
+                        <p className="text-[11px] text-muted-foreground italic">No previous clinical notes or therapy records found for this patient.</p>
+                      ) : (
+                        <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                          {/* Therapist Session Notes */}
+                          {patientHistoryTherapies.map((sess: any) => (
+                            <div key={sess._id} className="p-3 rounded-xl bg-violet-500/[0.06] border border-violet-500/20 text-xs space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-violet-700 dark:text-violet-300 flex items-center gap-1">
+                                  <Brain className="w-3.5 h-3.5" /> {sess.name}
+                                </span>
+                                <Badge className="text-[9px] bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30">
+                                  Therapist Note
+                                </Badge>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">
+                                Therapist: <strong className="text-foreground">{sess.therapistId?.name || "Therapist"}</strong>
+                                {sess.date && ` • ${sess.date}`}
+                              </p>
+                              {sess.therapistNotes && (
+                                <div className="p-2 rounded-lg bg-background border border-border text-[11px] text-foreground leading-relaxed whitespace-pre-wrap">
+                                  {sess.therapistNotes}
+                                </div>
+                              )}
+                              {sess.doctorNotes && (
+                                <p className="text-[10px] text-muted-foreground italic">
+                                  Referral note: "{sess.doctorNotes}"
+                                </p>
+                              )}
+                            </div>
+                          ))}
+
+                          {/* Previous Doctor Consultations */}
+                          {patientHistoryConsultations.map((consult: any) => (
+                            <div key={consult._id} className="p-3 rounded-xl bg-primary/[0.04] border border-primary/20 text-xs space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-primary flex items-center gap-1">
+                                  <StickyNote className="w-3.5 h-3.5" /> Previous Doctor Consultation
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {new Date(consult.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">
+                                Doctor: <strong className="text-foreground">{consult.doctorId?.name ? `Dr. ${consult.doctorId.name}` : "Doctor"}</strong>
+                              </p>
+                              {consult.notes && (
+                                <div className="p-2 rounded-lg bg-background border border-border text-[11px] text-foreground leading-relaxed whitespace-pre-wrap">
+                                  {consult.notes}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

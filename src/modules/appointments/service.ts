@@ -8,24 +8,37 @@ import { sendAppointmentCustomerEmail } from "@/lib/mail/service";
 import { PlatformServiceModel } from "@/modules/services/schema";
 
 export class AppointmentService {
+  // Helper to parse time string in 12h or 24h format to minutes from midnight
+  private static parseTimeToMinutes(timeStr?: string): number {
+    if (!timeStr) return -1;
+    const clean = timeStr.trim().toUpperCase();
+    const isPM = clean.includes("PM");
+    const isAM = clean.includes("AM");
+    const numericPart = clean.replace(/\s*(AM|PM)/i, "").trim();
+    const parts = numericPart.split(":");
+    if (parts.length < 2) return -1;
+    let hours = parseInt(parts[0], 10);
+    const minutes = parseInt(parts[1], 10);
+    if (isNaN(hours) || isNaN(minutes)) return -1;
+    if (isPM && hours < 12) hours += 12;
+    if (isAM && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  }
+
   // Helper to split availability blocks into custom-min slots
   private static generateTimeSlots(startStr: string, endStr: string, slotDuration = 30): string[] {
     const slots: string[] = [];
-    let [currHour, currMin] = startStr.split(":").map(Number);
-    const [endHour, endMin] = endStr.split(":").map(Number);
+    const startM = this.parseTimeToMinutes(startStr);
+    const endM = this.parseTimeToMinutes(endStr);
+    if (startM === -1 || endM === -1 || startM >= endM) return [];
 
-    const endTotalMinutes = endHour * 60 + endMin;
-
-    while (currHour * 60 + currMin < endTotalMinutes) {
-      const formattedHour = String(currHour).padStart(2, "0");
-      const formattedMin = String(currMin).padStart(2, "0");
-      slots.push(`${formattedHour}:${formattedMin}`);
-
-      currMin += slotDuration;
-      if (currMin >= 60) {
-        currHour += Math.floor(currMin / 60);
-        currMin = currMin % 60;
-      }
+    let current = startM;
+    while (current + slotDuration <= endM) {
+      const h24 = Math.floor(current / 60);
+      const m = current % 60;
+      const formatted = `${String(h24).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      slots.push(formatted);
+      current += slotDuration;
     }
 
     return slots;

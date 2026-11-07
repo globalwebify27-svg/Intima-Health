@@ -567,7 +567,7 @@ export default function SettingsPage() {
     }
   };
 
-  // Trigger all 5 email templates with test data to recipient
+  // Trigger all email templates with test data to recipient
   const handleTriggerAllTestEmails = async () => {
     const targetEmail = testRecipientEmail.trim() || contactNotificationEmail.trim();
     if (!targetEmail) {
@@ -587,7 +587,7 @@ export default function SettingsPage() {
 
       const json = await res.json();
       if (json.success) {
-        setSuccessMsg(json.message || `All 5 email templates dispatched to ${targetEmail}!`);
+        setSuccessMsg(json.message || `All email templates dispatched to ${targetEmail}!`);
       } else {
         setErrorMsg(json.message || "Failed to trigger all test emails. Please verify SMTP settings.");
       }
@@ -1407,12 +1407,12 @@ export default function SettingsPage() {
                         {testingAllMails ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            Triggering All 5...
+                            Triggering All Tests...
                           </>
                         ) : (
                           <>
                             <Mail className="w-3.5 h-3.5" />
-                            Trigger All 5 Test Emails
+                            Trigger All Test Emails
                           </>
                         )}
                       </Button>

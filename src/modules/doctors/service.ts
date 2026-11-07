@@ -3,6 +3,22 @@ import { IDoctor } from "./types";
 import { CreateDoctorSchema, UpdateDoctorSchema, UpdateAvailabilitySchema } from "./validators";
 import { UserModel, hashPassword } from "@/modules/auth/schema";
 
+function parseTimeToMinutes(timeStr?: string): number {
+  if (!timeStr) return -1;
+  const clean = timeStr.trim().toUpperCase();
+  const isPM = clean.includes("PM");
+  const isAM = clean.includes("AM");
+  const numericPart = clean.replace(/\s*(AM|PM)/i, "").trim();
+  const parts = numericPart.split(":");
+  if (parts.length < 2) return -1;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parseInt(parts[1], 10);
+  if (isNaN(hours) || isNaN(minutes)) return -1;
+  if (isPM && hours < 12) hours += 12;
+  if (isAM && hours === 12) hours = 0;
+  return hours * 60 + minutes;
+}
+
 function deduplicateAvailability(availability?: any[]): any[] | undefined {
   if (!availability || !Array.isArray(availability)) return availability;
   return availability.map((dayAvail) => {
@@ -11,7 +27,9 @@ function deduplicateAvailability(availability?: any[]): any[] | undefined {
     const uniqueSlots: any[] = [];
     for (const s of dayAvail.slots) {
       if (!s || !s.start || !s.end) continue;
-      const key = `${s.start.trim()}-${s.end.trim()}`;
+      const sMin = parseTimeToMinutes(s.start);
+      const eMin = parseTimeToMinutes(s.end);
+      const key = sMin !== -1 && eMin !== -1 ? `${sMin}-${eMin}` : `${s.start.trim()}-${s.end.trim()}`;
       if (!seen.has(key)) {
         seen.add(key);
         uniqueSlots.push({ start: s.start.trim(), end: s.end.trim() });
