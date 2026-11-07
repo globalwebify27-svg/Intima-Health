@@ -3,14 +3,15 @@ import { ClinicModel, IClinic } from "./schema";
 
 export class ClinicService {
   static async listClinics() {
-    return await ClinicModel.find().lean().exec();
+    return await ClinicModel.find().sort({ createdAt: -1 }).lean().exec();
   }
 
   static async getClinicById(id: string) {
-    const query = mongoose.Types.ObjectId.isValid(id)
-      ? { $or: [{ _id: new mongoose.Types.ObjectId(id) }, { _id: id }] }
-      : { _id: id };
-    return await ClinicModel.findOne(query as any).lean().exec();
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      const byId = await ClinicModel.findById(new mongoose.Types.ObjectId(id)).lean().exec();
+      if (byId) return byId;
+    }
+    return await ClinicModel.findOne({ _id: id } as any).lean().exec();
   }
 
   static async createClinic(data: Partial<IClinic>) {
@@ -19,20 +20,26 @@ export class ClinicService {
   }
 
   static async updateClinic(id: string, data: Partial<IClinic>) {
-    const query = mongoose.Types.ObjectId.isValid(id)
-      ? { $or: [{ _id: new mongoose.Types.ObjectId(id) }, { _id: id }] }
-      : { _id: id };
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      const updated = await ClinicModel.findByIdAndUpdate(
+        new mongoose.Types.ObjectId(id),
+        { $set: data },
+        { new: true, runValidators: true }
+      ).exec();
+      if (updated) return updated;
+    }
     return await ClinicModel.findOneAndUpdate(
-      query as any,
+      { _id: id } as any,
       { $set: data },
       { new: true, runValidators: true }
     ).exec();
   }
 
   static async deleteClinic(id: string) {
-    const query = mongoose.Types.ObjectId.isValid(id)
-      ? { $or: [{ _id: new mongoose.Types.ObjectId(id) }, { _id: id }] }
-      : { _id: id };
-    return await ClinicModel.findOneAndDelete(query as any).exec();
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      const deleted = await ClinicModel.findByIdAndDelete(new mongoose.Types.ObjectId(id)).exec();
+      if (deleted) return deleted;
+    }
+    return await ClinicModel.findOneAndDelete({ _id: id } as any).exec();
   }
 }

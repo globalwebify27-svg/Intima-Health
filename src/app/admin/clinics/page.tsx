@@ -76,32 +76,24 @@ export default function ClinicsAdminPage() {
   const handleCreateOrUpdate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    // Prevent accidental submit when user hits Enter on Step 1
-    if (step < 2) {
-      if (!name.trim() || !state.trim() || !city.trim() || !address.trim()) {
-        setSubmitError("Please fill out all required fields.");
-        return;
-      }
-      setSubmitError("");
-      setStep(2);
+    if (!name.trim() || !city.trim() || !address.trim()) {
+      setSubmitError("Please fill out clinic name, city, and address.");
       return;
     }
-
-    setSubmitting(true);
-    setSubmitError("");
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       setSubmitError("Please enter a valid email address.");
-      setSubmitting(false);
       return;
     }
 
     if (!phone.trim()) {
       setSubmitError("Please enter a valid phone number.");
-      setSubmitting(false);
       return;
     }
+
+    setSubmitting(true);
+    setSubmitError("");
 
     const body = {
       name: name.trim(),
@@ -133,7 +125,7 @@ export default function ClinicsAdminPage() {
       if (isEditMode) {
         setClinics((prev) =>
           prev.map((c) =>
-            c._id === editClinicId ? { ...c, ...body, ...(savedClinic || {}) } : c
+            String(c._id) === String(editClinicId) ? { ...c, ...body, ...(savedClinic || {}) } : c
           )
         );
       } else if (savedClinic) {
@@ -245,6 +237,8 @@ export default function ClinicsAdminPage() {
       cell: ({ row }) => {
         const clinic = row.original;
         const isOpen = activeMenuId === clinic._id;
+        const isNearBottom = row.index >= Math.max(0, clinics.length - 2);
+
         return (
           <div className="relative">
             <Button 
@@ -258,7 +252,9 @@ export default function ClinicsAdminPage() {
             {isOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setActiveMenuId(null)} />
-                <div className="absolute right-0 mt-1 w-36 bg-card border border-border shadow-xl rounded-xl py-1 z-40 flex flex-col">
+                <div className={`absolute right-0 w-40 bg-card border border-border shadow-2xl rounded-2xl py-1.5 z-40 flex flex-col ${
+                  isNearBottom ? "bottom-full mb-1.5" : "top-full mt-1.5"
+                }`}>
                   <button 
                     onClick={() => {
                       setActiveMenuId(null);
@@ -291,7 +287,7 @@ export default function ClinicsAdminPage() {
                       setActiveMenuId(null);
                       handleDeleteClick(clinic._id);
                     }} 
-                    className="w-full text-left px-4 py-2 text-xs text-red-500 hover:bg-red-50 font-medium transition-colors"
+                    className="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 font-medium transition-colors"
                   >
                     Delete Clinic
                   </button>
@@ -321,10 +317,12 @@ export default function ClinicsAdminPage() {
       {loading ? (
         <div className="p-12 text-center text-muted-foreground">Loading clinic list...</div>
       ) : (
-        <DataTable columns={columns} data={clinics} />
+        <div className="pb-28">
+          <DataTable columns={columns} data={clinics} />
+        </div>
       )}
 
-      {/* Multi-step Form Modal */}
+      {/* Clinic Create / Edit Form Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -342,13 +340,20 @@ export default function ClinicsAdminPage() {
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-lg bg-card border border-border shadow-2xl rounded-3xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
+              className="relative w-full max-w-xl bg-card border border-border shadow-2xl rounded-3xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
             >
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-5 border-b border-border">
-                <div>
-                  <h3 className="text-xl font-bold">{isEditMode ? "Edit Clinic" : "Add Clinic"}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Step {step} of 2</p>
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">{isEditMode ? "Edit Clinic Details" : "Add New Clinic"}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {isEditMode ? "Update clinic location, contact info, and status." : "Register a new clinic location to the platform."}
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -360,172 +365,125 @@ export default function ClinicsAdminPage() {
                 </button>
               </div>
 
-              {/* Step Indicators */}
-              <div className="flex px-6 py-3 bg-muted/30 border-b border-border gap-2">
-                {[1, 2].map((s) => (
-                  <div
-                    key={s}
-                    className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                      step >= s ? "bg-primary" : "bg-border"
-                    }`}
-                  />
-                ))}
-              </div>
-
-              {/* Body & Footer Form Wrap */}
+              {/* Body & Form */}
               <form onSubmit={handleCreateOrUpdate} className="flex flex-col flex-1 overflow-hidden">
-                <div className="p-6 overflow-y-auto space-y-5 flex-1">
+                <div className="p-6 overflow-y-auto space-y-4 flex-1">
                   {submitError && (
-                    <div className="p-3 bg-destructive/10 text-destructive text-sm font-medium rounded-xl border border-destructive/20">
-                      {submitError}
+                    <div className="p-3.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-xl border border-destructive/20 flex items-center gap-2">
+                      <span className="shrink-0 font-bold">Error:</span> {submitError}
                     </div>
                   )}
 
-                {/* STEP 1 */}
-                {step === 1 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="space-y-4"
-                  >
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Clinic Name *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Kelkar Manas Hospital & Clinic"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="w-full h-11 px-3.5 rounded-xl border border-border bg-background text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-sm font-bold">Clinic Name *</label>
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">State</label>
                       <input
                         type="text"
-                        placeholder="Pune Intimacy Clinic"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        placeholder="e.g. Maharashtra"
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                        className="w-full h-11 px-3.5 rounded-xl border border-border bg-background text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-sm font-bold">State *</label>
-                        <input
-                          type="text"
-                          placeholder="Maharashtra"
-                          value={state}
-                          onChange={(e) => setState(e.target.value)}
-                          className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-sm font-bold">City *</label>
-                        <input
-                          type="text"
-                          placeholder="Pune"
-                          value={city}
-                          onChange={(e) => setCity(e.target.value)}
-                          className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        />
-                      </div>
-                    </div>
-
                     <div className="space-y-1">
-                      <label className="text-sm font-bold">Full Address *</label>
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">City *</label>
                       <input
                         type="text"
-                        placeholder="Sector 4, Koregaon Park, Pune"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        placeholder="e.g. Akola"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        required
+                        className="w-full h-11 px-3.5 rounded-xl border border-border bg-background text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
-                  </motion.div>
-                )}
+                  </div>
 
-                {/* STEP 2 */}
-                {step === 2 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="space-y-4"
-                  >
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Full Address *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Station Road, Near Railway Overbridge, Akola"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      required
+                      className="w-full h-11 px-3.5 rounded-xl border border-border bg-background text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-sm font-bold">WhatsApp / Phone *</label>
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">WhatsApp / Phone *</label>
                       <input
                         type="text"
-                        placeholder="9876543210"
+                        placeholder="e.g. +91 7030414140"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        required
+                        className="w-full h-11 px-3.5 rounded-xl border border-border bg-background text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-sm font-bold">Email Address *</label>
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Email Address *</label>
                       <input
                         type="email"
-                        placeholder="pune@kelkarmanas.com"
+                        placeholder="e.g. clinic@kelkarmanas.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        required
+                        className="w-full h-11 px-3.5 rounded-xl border border-border bg-background text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
+                  </div>
 
-                    <div className="space-y-1">
-                      <label className="text-sm font-bold">Status</label>
-                      <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value as any)}
-                        className="w-full h-11 px-3.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      >
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                      </select>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as any)}
+                      className="w-full h-11 px-3.5 rounded-xl border border-border bg-background text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/20">
-                  {step > 1 ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setStep(step - 1)}
-                      disabled={submitting}
-                      className="rounded-xl h-11 px-4 gap-2"
-                    >
-                      <ArrowLeft className="w-4 h-4" /> Back
-                    </Button>
-                  ) : (
-                    <div />
-                  )}
-
-                  {step < 2 ? (
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        if (!name || !state || !city || !address) {
-                          setSubmitError("Please fill out all required fields.");
-                          return;
-                        }
-                        setSubmitError("");
-                        setStep(step + 1);
-                      }}
-                      className="rounded-xl h-11 px-5 gap-2 ml-auto"
-                    >
-                      Next <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  ) : (
-                    <Button
-                      type="submit"
-                      disabled={submitting || !phone || !email}
-                      className="rounded-xl h-11 px-5 gap-2 ml-auto"
-                    >
-                      {submitting ? "Saving..." : (
-                        <>
-                          <Check className="w-4 h-4" /> {isEditMode ? "Save Changes" : "Save Clinic"}
-                        </>
-                      )}
-                    </Button>
-                  )}
+                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-muted/20">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsModalOpen(false)}
+                    disabled={submitting}
+                    className="rounded-xl h-11 px-5 font-bold"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={submitting || !name || !city || !phone || !email}
+                    className="rounded-xl h-11 px-6 gap-2 font-bold bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/10"
+                  >
+                    {submitting ? "Saving..." : (
+                      <>
+                        <Check className="w-4 h-4" /> {isEditMode ? "Save Changes" : "Save Clinic"}
+                      </>
+                    )}
+                  </Button>
                 </div>
               </form>
             </motion.div>
