@@ -129,6 +129,12 @@ async function handleBooking(req: Request, id: string) {
         videoChannelName,
       });
       await appointment.save();
+
+      // Trigger automated notification schedule for Therapist and Patient
+      const { AppointmentNotificationService } = await import("@/modules/notifications/service");
+      AppointmentNotificationService.scheduleAppointmentNotifications(appointment._id.toString()).catch((notifErr) => {
+        console.error("[Therapy] Notification schedule error:", notifErr);
+      });
     } catch (aptErr) {
       console.warn("Non-critical appointment mirror warning:", aptErr);
     }

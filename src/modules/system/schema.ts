@@ -21,21 +21,25 @@ const AuditLogSchema = new Schema<IAuditLog>({
 // --- NOTIFICATION ---
 export interface INotification {
   recipientId: string;
-  recipientType: "PATIENT" | "DOCTOR" | "ADMIN";
+  recipientType: "PATIENT" | "DOCTOR" | "ADMIN" | "THERAPIST";
   channel: "Email" | "SMS" | "WhatsApp" | "Push";
   title: string;
   message: string;
   status: "Sent" | "Failed" | "Pending";
+  read?: boolean;
+  metadata?: any;
   createdAt?: Date;
 }
 
 const NotificationSchema = new Schema<INotification>({
-  recipientId: { type: String, required: true },
-  recipientType: { type: String, enum: ["PATIENT", "DOCTOR", "ADMIN"], required: true },
+  recipientId: { type: String, required: true, index: true },
+  recipientType: { type: String, enum: ["PATIENT", "DOCTOR", "ADMIN", "THERAPIST"], required: true },
   channel: { type: String, enum: ["Email", "SMS", "WhatsApp", "Push"], required: true },
   title: { type: String, required: true },
   message: { type: String, required: true },
   status: { type: String, enum: ["Sent", "Failed", "Pending"], default: "Pending" },
+  read: { type: Boolean, default: false, index: true },
+  metadata: { type: Schema.Types.Mixed },
 }, {
   timestamps: { createdAt: true, updatedAt: true },
 });

@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Menu, LogOut, Settings } from "lucide-react";
 import { useBookingModal } from "@/store/useBookingModal";
+import { NotificationBell } from "./NotificationBell";
 
 export interface SidebarLink {
   title: string;
@@ -168,14 +169,17 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
           </Link>
         </div>
 
-        {(clinicName || clinicLocation) && (
-          <div className="flex items-center gap-1.5 text-[10px] bg-muted/60 border border-border px-2 py-1 rounded-xl shadow-sm">
-            <span className="text-foreground font-bold max-w-[80px] sm:max-w-[120px] truncate">{clinicName || "KELKAR MANAS HEALTH CLINIC"}</span>
-            <span className="text-[9px] font-bold text-muted-foreground bg-card border border-border px-1.5 py-0.5 rounded-full shrink-0">
-              {clinicLocation || "Global"}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {(clinicName || clinicLocation) && (
+            <div className="flex items-center gap-1.5 text-[10px] bg-muted/60 border border-border px-2 py-1 rounded-xl shadow-sm">
+              <span className="text-foreground font-bold max-w-[80px] sm:max-w-[120px] truncate">{clinicName || "KELKAR MANAS HEALTH CLINIC"}</span>
+              <span className="text-[9px] font-bold text-muted-foreground bg-card border border-border px-1.5 py-0.5 rounded-full shrink-0">
+                {clinicLocation || "Global"}
+              </span>
+            </div>
+          )}
+          <NotificationBell />
+        </div>
       </div>
     </>
   );

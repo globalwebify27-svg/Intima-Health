@@ -6,6 +6,7 @@ import { BookAppointmentSchema, RescheduleAppointmentSchema } from "./validators
 import { sendAppointmentBookingMessage } from "@/lib/whatsapp";
 import { sendAppointmentCustomerEmail } from "@/lib/mail/service";
 import { PlatformServiceModel } from "@/modules/services/schema";
+import { AppointmentNotificationService } from "@/modules/notifications/service";
 
 export class AppointmentService {
   // Helper to parse time string in 12h or 24h format to minutes from midnight
@@ -206,6 +207,11 @@ export class AppointmentService {
       });
     }
 
+    // Schedule automated notifications for Doctors/Therapists and Patients (1d, 3h, 2h, 1h, 10m, at-time)
+    AppointmentNotificationService.scheduleAppointmentNotifications((created as any)._id.toString()).catch((err) => {
+      console.error("[Appointments] Automated notification scheduling error:", err);
+    });
+
     return created;
   }
 
@@ -241,6 +247,11 @@ export class AppointmentService {
       throw new Error("Failed to reschedule appointment.");
     }
 
+    // Reschedule automated notification schedule for updated date/time
+    AppointmentNotificationService.rescheduleAppointmentNotifications(id).catch((err) => {
+      console.error("[Appointments] Notification reschedule error:", err);
+    });
+
     return updated;
   }
 
@@ -253,6 +264,12 @@ export class AppointmentService {
     if (!updated) {
       throw new Error("Appointment not found.");
     }
+
+    // Cancel all pending scheduled notification reminders
+    AppointmentNotificationService.cancelAppointmentNotifications(id).catch((err) => {
+      console.error("[Appointments] Notification cancellation error:", err);
+    });
+
     return updated;
   }
 
@@ -264,6 +281,17 @@ export class AppointmentService {
     if (!updated) {
       throw new Error("Appointment not found.");
     }
+
+    if (status === "Cancelled" || status === "Completed") {
+      AppointmentNotificationService.cancelAppointmentNotifications(id).catch((err) => {
+        console.error("[Appointments] Notification cancel on status change error:", err);
+      });
+    } else if (status === "Rescheduled") {
+      AppointmentNotificationService.rescheduleAppointmentNotifications(id).catch((err) => {
+        console.error("[Appointments] Notification reschedule on status change error:", err);
+      });
+    }
+
     return updated;
   }
 

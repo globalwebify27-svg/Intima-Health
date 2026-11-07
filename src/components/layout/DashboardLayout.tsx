@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Sidebar, SidebarLink } from "./Sidebar";
-import { Bell, User, Building2 } from "lucide-react";
+import { User, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBookingModal } from "@/store/useBookingModal";
+import { NotificationBell } from "./NotificationBell";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -76,7 +77,8 @@ export function DashboardLayout({ children, links, roleName, basePath }: Dashboa
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <NotificationBell />
             {roleName === "Patient" && (
               <Button onClick={() => openBooking()} className="hidden sm:flex rounded-full px-5 font-bold shadow-md hover:-translate-y-0.5 transition-all">
                 Book Appointment
