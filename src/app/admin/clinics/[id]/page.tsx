@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatTime12Hour } from "@/lib/utils";
+import { formatPrescriptionText } from "@/lib/clinical-formatters";
 
 interface ClinicData {
   _id: string;
@@ -670,8 +671,10 @@ export default function ClinicDashboardPage({ params }: { params: Promise<{ id: 
                             <span>{c.doctorId?.name}</span>
                             <span className="text-muted-foreground">{new Date(c.createdAt).toLocaleDateString()}</span>
                           </div>
-                          {c.prescriptionSummary ? (
-                            <p className="text-muted-foreground">{c.prescriptionSummary}</p>
+                          {formatPrescriptionText(c.prescriptionSummary) ? (
+                            <p className="text-muted-foreground leading-relaxed break-words">
+                              {formatPrescriptionText(c.prescriptionSummary)}
+                            </p>
                           ) : (
                             <p className="text-muted-foreground italic">Prescribed therapies or medication summary not detailed.</p>
                           )}

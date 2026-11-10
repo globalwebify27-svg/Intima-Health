@@ -19,12 +19,13 @@ interface Appointment {
   paymentStatus?: string;
   serviceName?: string;
   feeAmount?: number;
+  entityType?: "appointment" | "therapy";
 }
 
 interface UpcomingAppointmentsSliderProps {
   upcomingApts: Appointment[];
   openBooking: () => void;
-  handlePayAppointment: (id: string, amount: number) => void;
+  handlePayAppointment: (id: string, amount: number, entityType?: "appointment" | "therapy") => void;
 }
 
 const parseDateTimeToMs = (dateStr?: string, timeStr?: string): number => {
@@ -176,7 +177,7 @@ export function UpcomingAppointmentsSlider({
                 })()
               ) : (
                 <Button 
-                  onClick={() => handlePayAppointment(upcomingApt._id, upcomingApt.feeAmount || 1200)} 
+                  onClick={() => handlePayAppointment(upcomingApt._id, upcomingApt.feeAmount || 1200, upcomingApt.entityType)} 
                   className="w-full rounded-xl h-11 font-bold mt-6 bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-500/10"
                 >
                   Pay Consultation Fee (₹{typeof upcomingApt.feeAmount === 'number' ? upcomingApt.feeAmount.toLocaleString() : "Error - Missing Fee"})

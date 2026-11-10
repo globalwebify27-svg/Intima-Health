@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { initiateHdfcCheckout } from "@/lib/payments/client";
 
 interface DigitalPrescription {
   _id: string;
@@ -57,12 +58,6 @@ interface ConfirmedOrder {
     receiverName?: string;
     receiverPhone?: string;
   };
-}
-
-declare global {
-  interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
-  }
 }
 
 interface CheckoutFormProps {
@@ -136,6 +131,18 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
   const [submittingOrder, setSubmittingOrder] = useState(false);
   const [orderError, setOrderError] = useState("");
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
+  const [pharmacyConfig, setPharmacyConfig] = useState<{
+    pharmacyName?: string;
+    licenseNumber?: string;
+    pharmacistInCharge?: string;
+    contactPhone?: string;
+    address?: string;
+    isActive?: boolean;
+    allowCOD?: boolean;
+    taxRatePercent?: number;
+    defaultDeliveryFee?: number;
+    freeDeliveryThreshold?: number;
+  } | null>(null);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -145,8 +152,17 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  // 1. Check patient authentication on mount & auto-populate
+  // 1. Check patient authentication & load Pharmacy Config on mount
   useEffect(() => {
+    fetch("/api/pharmacy/config")
+      .then((res) => res.json())
+      .then((cfgJson) => {
+        if (cfgJson.success && cfgJson.data) {
+          setPharmacyConfig(cfgJson.data);
+        }
+      })
+      .catch(() => {});
+
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
@@ -302,13 +318,14 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
     }
   };
 
-  // Financial calculations
+  // Financial calculations (live from Admin Pharmacy Config & PIN coverage)
   const itemsSubtotal = getTotal();
-  const taxRate = pinResult?.taxRatePercent ?? 12; // Dynamic GST configured in Admin Settings
+  const taxRate = pinResult?.taxRatePercent ?? pharmacyConfig?.taxRatePercent ?? 12;
   const taxAmount = Math.round((itemsSubtotal * taxRate) / 100);
-  const freeThreshold = pinResult?.freeDeliveryThreshold || 500;
-  const deliveryFee = itemsSubtotal >= freeThreshold ? 0 : (pinResult?.deliveryCharge ?? 50);
+  const freeThreshold = pinResult?.freeDeliveryThreshold ?? pharmacyConfig?.freeDeliveryThreshold ?? 500;
+  const deliveryFee = itemsSubtotal >= freeThreshold ? 0 : (pinResult?.deliveryCharge ?? pharmacyConfig?.defaultDeliveryFee ?? 50);
   const totalAmount = itemsSubtotal + taxAmount + deliveryFee;
+  const allowCOD = pinResult ? pinResult.allowCOD !== false : Boolean(pharmacyConfig?.allowCOD);
 
   // Validate Prescription step
   const handleProceedFromPrescription = () => {
@@ -546,99 +563,16 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
         return;
       }
 
-      // 4. Handle Online Payment via Razorpay
+      // 4. Handle Online Payment via HDFC SmartGateway
       try {
-        const razorpayRes = await fetch("/api/payments/razorpay/order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: totalAmount,
-            receipt: createdOrder.orderNumber || createdOrder._id,
-          }),
+        const { paymentUrl } = await initiateHdfcCheckout({
+          entityType: "order",
+          entityId: createdOrder._id,
         });
-
-        const rzpData = await razorpayRes.json();
-        if (!razorpayRes.ok || !rzpData.success || !rzpData.order) {
-          throw new Error(rzpData.error || "Failed to initialize payment gateway.");
-        }
-
-        // Dynamically ensure Razorpay checkout script is loaded
-        await new Promise<boolean>((resolve) => {
-          if (typeof window !== "undefined" && (window as unknown as { Razorpay?: unknown }).Razorpay) {
-            resolve(true);
-            return;
-          }
-          const script = document.createElement("script");
-          script.src = "https://checkout.razorpay.com/v1/checkout.js";
-          script.async = true;
-          script.onload = () => resolve(true);
-          script.onerror = () => resolve(false);
-          document.body.appendChild(script);
-        });
-
-        // Open Razorpay Checkout modal
-        if (typeof window !== "undefined" && window.Razorpay && rzpData.order) {
-          const keyToUse = rzpData.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TkVlKsA4NG7BFZ";
-
-          const options = {
-            key: keyToUse,
-            amount: rzpData.order.amount,
-            currency: rzpData.order.currency || "INR",
-            name: "Kelkar Manas Health Care",
-            description: `Medicine Order ${createdOrder.orderNumber}`,
-            order_id: rzpData.order.id,
-            prefill: {
-              name: fullName,
-              contact: finalPhone,
-            },
-            theme: {
-              color: "#7A2E7A",
-            },
-            modal: {
-              backdropclose: false,
-              escape: true,
-              handleback: true,
-              confirm_close: true,
-              ondismiss: () => {
-                setSubmittingOrder(false);
-              },
-            },
-            handler: async function (response: Record<string, unknown>) {
-              try {
-                await fetch("/api/payments/razorpay/verify", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    ...response,
-                    amount: totalAmount,
-                    patientId,
-                    orderId: createdOrder._id,
-                  }),
-                });
-              } catch (verifyErr) {
-                console.warn("Payment verification notice:", verifyErr);
-              }
-              setConfirmedOrder(createdOrder);
-              setStep("success");
-              clearCart();
-              setSubmittingOrder(false);
-            },
-          };
-
-          const rzpInstance = new window.Razorpay(options);
-          if ("on" in rzpInstance && typeof (rzpInstance as unknown as { on: (event: string, cb: (res: { error?: { description?: string } }) => void) => void }).on === "function") {
-            (rzpInstance as unknown as { on: (event: string, cb: (res: { error?: { description?: string } }) => void) => void }).on("payment.failed", function (resp: { error?: { description?: string } }) {
-              setOrderError(resp.error?.description || "Payment failed or was cancelled. You can choose Pay on Delivery below to complete your order.");
-              setSubmittingOrder(false);
-            });
-          }
-          rzpInstance.open();
-          return;
-        } else {
-          throw new Error("Unable to load Razorpay payment SDK. Please try Pay on Delivery or refresh.");
-        }
+        window.location.href = paymentUrl;
+        return;
       } catch (paymentErr: unknown) {
-        console.error("Razorpay flow error:", paymentErr);
+        console.error("HDFC SmartGateway flow error:", paymentErr);
         const msg = paymentErr instanceof Error ? paymentErr.message : "Payment gateway error. Please try Pay on Delivery.";
         setOrderError(`${msg} (You can also select Pay on Delivery below to place your order immediately)`);
         setSubmittingOrder(false);
@@ -684,9 +618,26 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
             <h1 className="text-3xl font-serif font-bold mb-2">Order Confirmed!</h1>
             <p className="text-muted-foreground text-sm">
               Your medicine delivery order has been received and forwarded to{" "}
-              <strong className="text-foreground">{pinResult?.pharmacyPartner || "Kelkar Manas Partner Pharmacy"}</strong>
-              {pinResult?.licenseNumber ? ` (Drug Licence No. ${pinResult.licenseNumber})` : ""}.
+              <strong className="text-foreground">
+                {pinResult?.pharmacyPartner || pharmacyConfig?.pharmacyName || "Kelkar Manas Partner Pharmacy"}
+              </strong>
+              {(pinResult?.licenseNumber || pharmacyConfig?.licenseNumber)
+                ? ` (Drug Licence No. ${pinResult?.licenseNumber || pharmacyConfig?.licenseNumber})`
+                : ""}.
             </p>
+            {(pinResult?.pharmacistInCharge || pharmacyConfig?.pharmacistInCharge || pinResult?.address || pharmacyConfig?.address || pinResult?.contactPhone || pharmacyConfig?.contactPhone) && (
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                {(pinResult?.pharmacistInCharge || pharmacyConfig?.pharmacistInCharge) && (
+                  <span>Pharmacist: {pinResult?.pharmacistInCharge || pharmacyConfig?.pharmacistInCharge} • </span>
+                )}
+                {(pinResult?.address || pharmacyConfig?.address) && (
+                  <span>{pinResult?.address || pharmacyConfig?.address} • </span>
+                )}
+                {(pinResult?.contactPhone || pharmacyConfig?.contactPhone) && (
+                  <span>Support: {pinResult?.contactPhone || pharmacyConfig?.contactPhone}</span>
+                )}
+              </p>
+            )}
           </div>
 
           <div className="bg-muted/40 p-5 rounded-2xl border text-left text-xs space-y-3">
@@ -746,6 +697,12 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
 
   return (
     <div className="space-y-6">
+      {pharmacyConfig?.isActive === false && (
+        <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/30 text-destructive text-sm font-medium flex items-center gap-2.5">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <span>Online medicine delivery & pharmacy fulfilment is temporarily paused by administration.</span>
+        </div>
+      )}
       {/* Dashboard Top Breadcrumb (if inside patient portal) */}
       {isDashboard && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/60">
@@ -1537,7 +1494,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                     </div>
                     <div>
                       <p className="font-bold text-sm">UPI, Debit/Credit Card, Net Banking</p>
-                      <p className="text-xs text-muted-foreground">Instant verification via Razorpay secure gateway</p>
+                      <p className="text-xs text-muted-foreground">Instant verification via HDFC SmartGateway</p>
                     </div>
                   </div>
                   <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs ${paymentMethod === "Online" ? "bg-primary text-white border-primary" : "border-muted-foreground/30"}`}>
@@ -1546,7 +1503,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                 </div>
 
                 {/* Option 2: Pay on Delivery (Cash or UPI) - Configured in Admin Settings */}
-                {pinResult?.allowCOD !== false && (
+                {allowCOD && (
                   <div 
                     onClick={() => setPaymentMethod("COD")}
                     className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${paymentMethod === "COD" ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-background hover:border-border/80"}`}

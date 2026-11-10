@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bell, Check, Clock, Video, Hospital, ExternalLink, X } from "lucide-react";
+import { Bell, Clock, Video } from "lucide-react";
 import Link from "next/link";
+import { formatNotificationDisplay } from "@/lib/notification-formatter";
 
 interface NotificationItem {
   _id: string;
@@ -57,8 +58,9 @@ export function NotificationBell() {
         ) {
           if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
             try {
-              new window.Notification(json.data[0].title, {
-                body: json.data[0].message,
+              const formattedPush = formatNotificationDisplay(json.data[0].title, json.data[0].message);
+              new window.Notification(formattedPush.title, {
+                body: formattedPush.message,
                 icon: "/logo.png",
               });
             } catch (e) {
@@ -159,13 +161,13 @@ export function NotificationBell() {
 
       {/* Notifications Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-card border border-border rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[85vh]">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-[400px] bg-card border border-border rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[85vh]">
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-muted/20">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-foreground">Notifications</span>
+              <span className="font-semibold text-sm tracking-tight text-foreground">Notifications</span>
               {unreadCount > 0 && (
-                <span className="text-[11px] font-extrabold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-semibold bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
                   {unreadCount} new
                 </span>
               )}
@@ -174,7 +176,7 @@ export function NotificationBell() {
               <button
                 onClick={markAllAsRead}
                 disabled={loading}
-                className="text-xs text-primary hover:underline font-bold"
+                className="text-xs text-primary hover:underline font-semibold"
               >
                 Mark all read
               </button>
@@ -191,6 +193,7 @@ export function NotificationBell() {
             ) : (
               notifications.map((n) => {
                 const isVideo = n.metadata?.type === "Video";
+                const formatted = formatNotificationDisplay(n.title, n.message);
                 return (
                   <div
                     key={n._id}
@@ -200,7 +203,7 @@ export function NotificationBell() {
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                      className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                         isVideo
                           ? "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300"
                           : "bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300"
@@ -209,17 +212,22 @@ export function NotificationBell() {
                       {isVideo ? <Video className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
                     </div>
 
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <p className={`text-xs ${n.read ? "font-semibold text-foreground" : "font-bold text-foreground"}`}>
-                          {n.title}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className={`text-[13px] leading-snug break-words ${n.read ? "font-medium text-foreground" : "font-semibold text-foreground"}`}>
+                          {formatted.title}
                         </p>
-                        <span className="text-[10px] text-muted-foreground shrink-0">
-                          {formatTimeAgo(n.createdAt)}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                          <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                            {formatTimeAgo(n.createdAt)}
+                          </span>
+                          {!n.read && (
+                            <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                          )}
+                        </div>
                       </div>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
-                        {n.message}
+                      <p className="text-xs text-muted-foreground leading-relaxed break-words">
+                        {formatted.message}
                       </p>
 
                       {/* Video join link if available */}
@@ -228,17 +236,13 @@ export function NotificationBell() {
                           <Link
                             href={n.metadata.videoLink}
                             target="_blank"
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline bg-primary/10 px-2.5 py-1 rounded-lg"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline bg-primary/10 px-2.5 py-1 rounded-lg"
                           >
-                            <Video className="w-3 h-3" /> Join Video Consultation
+                            <Video className="w-3.5 h-3.5" /> Join Video Consultation
                           </Link>
                         </div>
                       )}
                     </div>
-
-                    {!n.read && (
-                      <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2" />
-                    )}
                   </div>
                 );
               })
@@ -246,7 +250,7 @@ export function NotificationBell() {
           </div>
 
           {/* Footer Info */}
-          <div className="p-3 border-t border-border bg-muted/10 text-center text-[10px] text-muted-foreground">
+          <div className="px-4 py-3 border-t border-border bg-muted/10 text-center text-[11px] text-muted-foreground">
             Automated alerts sent via Email, WhatsApp & Push
           </div>
         </div>

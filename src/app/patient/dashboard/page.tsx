@@ -13,6 +13,7 @@ import { useBookingModal } from "@/store/useBookingModal";
 import { Badge } from "@/components/ui/badge";
 import { UpcomingAppointmentsSlider } from "@/components/patient/UpcomingAppointmentsSlider";
 import { DigitalPrescriptionsList } from "@/components/patient/DigitalPrescriptionsList";
+import { initiateHdfcCheckout } from "@/lib/payments/client";
 
 interface Appointment {
   _id: string;
@@ -28,6 +29,8 @@ interface Appointment {
   status: string;
   paymentStatus?: string;
   serviceName?: string;
+  feeAmount?: number;
+  entityType?: "appointment" | "therapy";
 }
 
 interface Consultation {
@@ -320,11 +323,17 @@ export default function PatientDashboard() {
 
         // Process doctor consultations / appointments
         const docApts: Appointment[] = (aptData.success && Array.isArray(aptData.data))
-          ? aptData.data.filter((a: any) => 
-              validStatuses.some(s => s.toLowerCase() === (a.status || "").toLowerCase().trim()) &&
-              a.status !== "Completed" && a.status !== "Checked Out" && a.status !== "Cancelled" &&
-              isStillUpcoming(a.date, a.time)
-            )
+          ? aptData.data
+              .filter((a: any) => 
+                validStatuses.some(s => s.toLowerCase() === (a.status || "").toLowerCase().trim()) &&
+                a.status !== "Completed" && a.status !== "Checked Out" && a.status !== "Cancelled" &&
+                isStillUpcoming(a.date, a.time)
+              )
+              .map((a: any) => ({
+                ...a,
+                paymentStatus: a.paymentStatus === "Paid" || Boolean(a.transactionId) ? "Paid" : (a.paymentStatus || "Pending"),
+                entityType: "appointment" as const,
+              }))
           : [];
 
         // Also process scheduled / booked therapy sessions as upcoming sessions
@@ -348,24 +357,32 @@ export default function PatientDashboard() {
                 time: ts.time,
                 type: ts.selectedMode === "Offline" ? "Walk-in" : "Video",
                 status: ts.status,
-                paymentStatus: ["Paid", "Completed"].includes(ts.status) ? "Paid" : "Pending",
+                paymentStatus:
+                  ts.paymentStatus === "Paid" ||
+                  ["Paid", "Completed"].includes(ts.status) ||
+                  Boolean(ts.transactionId)
+                    ? "Paid"
+                    : "Pending",
                 serviceName: ts.name || "Therapy Session",
                 feeAmount: ts.price,
+                entityType: "therapy" as const,
               }))
           : [];
 
-        // Combine and deduplicate mirror records
+        // Combine and deduplicate mirror records, preferring Paid status when either record is paid
         const combined = [...docApts, ...therapyApts];
-        const seen = new Set<string>();
-        const deduplicatedUpcoming: Appointment[] = [];
+        const dedupMap = new Map<string, Appointment>();
         for (const item of combined) {
           const normDate = normalizeDateToYMD(item.date);
           const key = `${normDate}_${(item.time || "").trim()}_${(item.serviceName || "").toLowerCase().trim()}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            deduplicatedUpcoming.push(item);
+          const existing = dedupMap.get(key);
+          if (!existing) {
+            dedupMap.set(key, item);
+          } else if (existing.paymentStatus !== "Paid" && item.paymentStatus === "Paid") {
+            dedupMap.set(key, { ...existing, ...item, paymentStatus: "Paid" });
           }
         }
+        const deduplicatedUpcoming = Array.from(dedupMap.values());
 
         deduplicatedUpcoming.sort(
           (a, b) => parseDateTimeToMs(a.date, a.time) - parseDateTimeToMs(b.date, b.time)
@@ -529,90 +546,34 @@ export default function PatientDashboard() {
 
   const handlePayTherapy = async (sessionId: string) => {
     try {
-      const res = await fetch("/api/therapy-sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "pay",
-          sessionId
-        }),
+      setPaymentProcessing(true);
+      const { paymentUrl } = await initiateHdfcCheckout({
+        entityType: "therapy",
+        entityId: sessionId,
       });
-
-      const data = await res.json();
-      if (data.success && patientId) {
-        alert("Payment processed successfully! Therapy session marked as Paid.");
-        window.location.reload();
-      } else {
-        alert(data.message || "Payment failed.");
-      }
-    } catch (err) {
+      window.location.href = paymentUrl;
+    } catch (err: any) {
       console.error("Payment error:", err);
+      alert(err?.message || "Failed to initiate payment.");
+      setPaymentProcessing(false);
     }
   };
 
-  const handlePayAppointment = async (appointmentId: string, amountToPay: number) => {
+  const handlePayAppointment = async (
+    appointmentId: string,
+    _amountToPay: number,
+    entityType: "appointment" | "therapy" = "appointment"
+  ) => {
     try {
       setPaymentProcessing(true);
-      
-      const orderRes = await fetch("/api/payments/razorpay/order", {
-          method: "POST",
-          body: JSON.stringify({ amount: amountToPay }),
-          headers: { "Content-Type": "application/json" }
+      const { paymentUrl } = await initiateHdfcCheckout({
+        entityType,
+        entityId: appointmentId,
       });
-      const orderData = await orderRes.json();
-
-      if (!orderData.success) {
-         throw new Error(orderData.error || "Failed to initialize payment");
-      }
-
-      const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
-          amount: orderData.order.amount,
-          currency: orderData.order.currency,
-          name: "Kelkar Manas Health Clinic",
-          description: "Consultation Fee",
-          order_id: orderData.order.id,
-          handler: async function (response: any) {
-              try {
-                const verifyRes = await fetch("/api/payments/razorpay/verify", {
-                    method: "POST",
-                    body: JSON.stringify({
-                        razorpay_order_id: response.razorpay_order_id,
-                        razorpay_payment_id: response.razorpay_payment_id,
-                        razorpay_signature: response.razorpay_signature,
-                        amount: amountToPay,
-                        patientId: patientId, 
-                        appointmentId: appointmentId
-                    }),
-                    headers: { "Content-Type": "application/json" }
-                });
-                const verifyData = await verifyRes.json();
-                
-                if (verifyData.success) {
-                    alert("Consultation fee paid successfully! You can now join the consultation room.");
-                    window.location.reload();
-                } else {
-                    alert("Payment Failed Verification. Please contact support.");
-                }
-              } catch (err: any) {
-                alert(err.message || "Error processing payment.");
-              }
-          },
-          theme: {
-              color: "#6b21a8" // primary color
-          }
-      };
-      
-      const rzp1 = new (window as any).Razorpay(options);
-      rzp1.on('payment.failed', function (response: any){
-        alert("Payment failed: " + response.error.description);
-      });
-      rzp1.open();
-
+      window.location.href = paymentUrl;
     } catch (err: any) {
       console.error("Payment error:", err);
-      alert(err.message || "Error initiating payment.");
-    } finally {
+      alert(err?.message || "Error initiating payment.");
       setPaymentProcessing(false);
     }
   };
@@ -622,29 +583,19 @@ export default function PatientDashboard() {
     setPaymentProcessing(true);
 
     try {
-      const res = await fetch(`/api/therapy-sessions/${therapyToBook._id}/book`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const { paymentUrl } = await initiateHdfcCheckout({
+        entityType: "therapy",
+        entityId: therapyToBook._id,
+        pendingSlot: {
           date: therapyDate,
           time: therapyTime,
           selectedMode: selectedTherapyMode,
-          paymentMethod: "Online",
-          transactionId: `TXN-${Date.now()}`
-        })
+        },
       });
-      const data = await res.json();
-      if (data.success) {
-        alert("Prepaid payment completed & therapy session scheduled successfully!");
-        closeTherapyModal();
-        if (patientId) fetchDashboardData(patientId);
-      } else {
-        alert(data.message || "Failed to book therapy session.");
-      }
-    } catch (err) {
+      window.location.href = paymentUrl;
+    } catch (err: any) {
       console.error(err);
-      alert("An error occurred during booking.");
-    } finally {
+      alert(err?.message || "An error occurred while initiating payment.");
       setPaymentProcessing(false);
     }
   };
@@ -725,7 +676,7 @@ export default function PatientDashboard() {
             <div className="text-2xl font-black mt-2 text-foreground flex items-center gap-3">
               {therapySessions.filter(s => (s.status as string) === "Recommended" || (s.status as string) === "Unpaid").length} Recommended
               <div className="text-[10px] text-green-600 font-bold bg-green-500/5 px-2 py-0.5 rounded-lg border border-green-500/10 h-fit">
-                {therapySessions.filter(s => s.status === "Booked").length} Upcoming
+                {therapySessions.filter(s => s.status === "Booked" || s.status === "Scheduled").length} Upcoming
               </div>
             </div>
             <p className="text-xs text-muted-foreground font-medium mt-1">

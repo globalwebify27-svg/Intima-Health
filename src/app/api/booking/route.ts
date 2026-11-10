@@ -182,7 +182,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Invalid service selected." }, { status: 400 });
     }
 
-    // 4. Book the appointment
+    // 4. Book the appointment (Online payments stay Pending until HDFC SmartGateway confirms CHARGED)
+    const effectiveMethod = paymentMethod === "Cash" ? "Cash" : "Online";
+    const isCashPayment = effectiveMethod === "Cash";
+
     const appointment = await AppointmentService.bookAppointment({
       patientId: patient._id.toString(),
       doctorId: doctor._id.toString(),
@@ -191,10 +194,10 @@ export async function POST(req: Request) {
       type: isVideo ? "Video" : "Walk-in",
       serviceName: serviceNameStr,
       notes: "Booked directly through public website booking form.",
-      skipNotification: false,
-      paymentMethod: paymentMethod || "Online",
-      paymentStatus: (isVideo || paymentMethod === "Online") ? "Paid" : "Pending",
-      transactionId: transactionId
+      skipNotification: !isCashPayment,
+      paymentMethod: effectiveMethod,
+      paymentStatus: "Pending",
+      transactionId: isCashPayment ? transactionId : undefined,
     }, email);
 
     // 5. Generate JWT & sign in automatically

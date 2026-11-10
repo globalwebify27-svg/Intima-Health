@@ -43,7 +43,8 @@ interface TherapySessionData {
   patientId?: PatientData;
   name: string;
   price: number;
-  status: "Unpaid" | "Paid" | "Booked" | "Recommended";
+  status: "Unpaid" | "Paid" | "Booked" | "Scheduled" | "Recommended";
+  paymentStatus?: "Pending" | "Paid";
   date?: string;
   time?: string;
   createdAt: string;
@@ -214,8 +215,9 @@ export default function PaymentsPage() {
     const matchDate = filterDate ? (ts.date === filterDate) : true;
     
     let matchStatus = true;
-    if (filterStatus === "Paid") matchStatus = ts.status === "Paid";
-    if (filterStatus === "Unpaid") matchStatus = ts.status === "Booked" || ts.status === "Unpaid";
+    const isPaid = ts.paymentStatus === "Paid" || ts.status === "Paid";
+    if (filterStatus === "Paid") matchStatus = isPaid;
+    if (filterStatus === "Unpaid") matchStatus = !isPaid && (ts.status === "Booked" || ts.status === "Unpaid" || ts.status === "Scheduled");
     if (filterStatus === "Cancelled") matchStatus = false;
 
     return matchSearch && matchDate && matchStatus;
@@ -417,7 +419,11 @@ export default function PaymentsPage() {
                       <td className="px-6 py-4">
                         {apt.paymentStatus === "Paid" ? (
                           <Badge variant="outline" className="font-medium bg-indigo-50 text-indigo-700 border-indigo-200">
-                            {apt.collectedBy === "Clinic Manager" || apt.paymentMethod === "Cash" ? "Counter (Cash/QR)" : "Razorpay Online"}
+                            {apt.collectedBy === "Clinic Manager" || apt.paymentMethod === "Cash"
+                              ? "Counter (Cash/QR)"
+                              : apt.collectedBy === "HDFC SmartGateway"
+                                ? "HDFC SmartGateway"
+                                : "Online Payment"}
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground text-xs">-</span>
@@ -504,12 +510,12 @@ export default function PaymentsPage() {
                         <span className="font-bold">₹{ts.price}</span>
                       </td>
                       <td className="p-4">
-                        <Badge variant={ts.status === "Paid" ? "default" : "secondary"}>
-                          {ts.status}
+                        <Badge variant={(ts.paymentStatus === "Paid" || ts.status === "Paid") ? "default" : "secondary"}>
+                          {ts.paymentStatus === "Paid" ? "Paid" : ts.status}
                         </Badge>
                       </td>
                       <td className="p-4 text-right">
-                        {ts.status === "Booked" ? (
+                        {ts.paymentStatus !== "Paid" && ts.status !== "Paid" && (ts.status === "Booked" || ts.status === "Scheduled") ? (
                           <Button
                             size="sm"
                             disabled={actionLoading === ts._id}

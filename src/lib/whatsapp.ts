@@ -112,13 +112,15 @@ export async function sendTemplateMessage({
       }
     }
 
-    // Audit Log
+    // Audit Log (store human-readable title & message instead of raw template key / Params JSON)
+    const { formatNotificationFromTemplate } = await import("@/lib/notification-formatter");
+    const formatted = formatNotificationFromTemplate(campaignName, templateParams);
     await NotificationModel.create({
       recipientId,
       recipientType,
       channel: "WhatsApp",
-      title: campaignName,
-      message: `Params: ${JSON.stringify(templateParams)}`,
+      title: formatted.title,
+      message: formatted.message,
       status: apiStatus,
     });
   } catch (error) {

@@ -322,45 +322,118 @@ export class AppointmentService {
       }
     }
 
-    // Auto-sync completed therapy sessions to Appointment records
+    // Auto-sync completed & paid therapy sessions + successful gateway payments to Appointment records
     if (filters.patientId) {
       try {
-        const { TherapySessionModel } = await import("@/modules/pharmacy/schema");
+        const { TherapySessionModel, PaymentModel } = await import("@/modules/pharmacy/schema");
         const { ObjectId } = await import("mongodb");
         const patientIdVariants: any[] = [filters.patientId];
         if (typeof filters.patientId === "string" && ObjectId.isValid(filters.patientId)) {
           patientIdVariants.push(new ObjectId(filters.patientId));
         }
 
-        const completedSessions = await TherapySessionModel.find({
+        // 1. Sync successful PaymentModel records linked directly to any of these appointments
+        const aptIds = list.map((apt) => (apt as any)._id).filter(Boolean);
+        if (aptIds.length > 0) {
+          const successfulPayments = await PaymentModel.find({
+            appointmentId: { $in: aptIds },
+            status: "Success",
+          })
+            .select("appointmentId gatewayTransactionId gatewayProvider")
+            .lean();
+
+          if (successfulPayments.length > 0) {
+            const payMap = new Map<string, any>();
+            for (const sp of successfulPayments) {
+              if (sp.appointmentId) payMap.set(String(sp.appointmentId), sp);
+            }
+            const toMarkPaidIds: any[] = [];
+            for (const apt of list) {
+              const sp = payMap.get(String((apt as any)._id));
+              if (sp && (apt as any).paymentStatus !== "Paid") {
+                toMarkPaidIds.push((apt as any)._id);
+                (apt as any).paymentStatus = "Paid";
+                if (!(apt as any).transactionId && sp.gatewayTransactionId) {
+                  (apt as any).transactionId = sp.gatewayTransactionId;
+                }
+              }
+            }
+            if (toMarkPaidIds.length > 0) {
+              await AppointmentModel.updateMany(
+                { _id: { $in: toMarkPaidIds } },
+                { $set: { paymentStatus: "Paid", updatedBy: "payment-sync" } }
+              );
+            }
+          }
+        }
+
+        // 2. Sync paid / completed therapy sessions to mirrored Appointment records
+        const syncedSessions = await TherapySessionModel.find({
           patientId: { $in: patientIdVariants },
-          status: "Completed",
+          $or: [
+            { status: { $in: ["Completed", "Paid"] } },
+            { paymentStatus: "Paid" },
+            { transactionId: { $exists: true, $ne: "" } },
+          ],
         }).lean();
 
-        if (completedSessions.length > 0) {
+        if (syncedSessions.length > 0) {
           const toCompleteIds: any[] = [];
-          for (const cs of completedSessions) {
+          const toMarkPaidFromTherapy: any[] = [];
+
+          for (const cs of syncedSessions) {
+            const isTherapyCompleted = cs.status === "Completed";
+            const isTherapyPaid =
+              cs.paymentStatus === "Paid" ||
+              cs.status === "Paid" ||
+              cs.status === "Completed" ||
+              Boolean(cs.transactionId);
+
             for (const apt of list) {
-              if (["Scheduled", "Checked In", "Engaged", "Rescheduled"].includes(apt.status)) {
-                const nameMatch = !!(cs.name && (apt as any).serviceName && cs.name.trim().toLowerCase() === (apt as any).serviceName.trim().toLowerCase());
-                const channelMatch = !!(cs.videoChannelName && (apt as any).videoChannelName && (apt as any).videoChannelName === cs.videoChannelName);
-                const notesMatch = !!(apt.notes && cs._id && apt.notes.includes(cs._id.toString()));
-                if (nameMatch || channelMatch || notesMatch) {
+              const nameMatch = !!(
+                cs.name &&
+                (apt as any).serviceName &&
+                cs.name.trim().toLowerCase() === (apt as any).serviceName.trim().toLowerCase()
+              );
+              const channelMatch = !!(
+                cs.videoChannelName &&
+                (apt as any).videoChannelName &&
+                (apt as any).videoChannelName === cs.videoChannelName
+              );
+              const notesMatch = !!(apt.notes && cs._id && apt.notes.includes(cs._id.toString()));
+              const slotMatch = !!(cs.date && cs.time && apt.date === cs.date && apt.time === cs.time);
+
+              if (nameMatch || channelMatch || notesMatch || slotMatch) {
+                if (isTherapyCompleted && ["Scheduled", "Checked In", "Engaged", "Rescheduled"].includes(apt.status)) {
                   toCompleteIds.push((apt as any)._id);
                   (apt as any).status = "Completed";
+                }
+                if (isTherapyPaid && (apt as any).paymentStatus !== "Paid") {
+                  toMarkPaidFromTherapy.push((apt as any)._id);
+                  (apt as any).paymentStatus = "Paid";
+                  if (!(apt as any).transactionId && cs.transactionId) {
+                    (apt as any).transactionId = cs.transactionId;
+                  }
                 }
               }
             }
           }
+
           if (toCompleteIds.length > 0) {
             await AppointmentModel.updateMany(
               { _id: { $in: toCompleteIds } },
               { $set: { status: "Completed", updatedBy: "therapy-session-sync" } }
             );
           }
+          if (toMarkPaidFromTherapy.length > 0) {
+            await AppointmentModel.updateMany(
+              { _id: { $in: toMarkPaidFromTherapy } },
+              { $set: { paymentStatus: "Paid", updatedBy: "therapy-session-sync" } }
+            );
+          }
         }
       } catch (syncErr) {
-        console.warn("[AppointmentService] Failed to sync completed therapy status:", syncErr);
+        console.warn("[AppointmentService] Failed to sync therapy/payment status:", syncErr);
       }
     }
 

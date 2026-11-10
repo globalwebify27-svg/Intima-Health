@@ -50,7 +50,7 @@ export async function GET(request: Request) {
           areaName: matchedPin.areaName,
           deliveryCharge: matchedPin.deliveryCharge ?? config.defaultDeliveryFee ?? 50,
           estimatedHours: matchedPin.estimatedHours || "24-48 Hours",
-          freeDeliveryThreshold: config.freeDeliveryThreshold || 500,
+          freeDeliveryThreshold: config.freeDeliveryThreshold ?? 500,
           taxRatePercent: config.taxRatePercent ?? 12,
           allowCOD: config.allowCOD !== false,
           city: "Akola",
@@ -64,10 +64,17 @@ export async function GET(request: Request) {
       });
     }
 
+    const activePins = pincodesList
+      .filter((p: { pinCode: string; isActive?: boolean }) => p.isActive !== false)
+      .map((p: { pinCode: string }) => p.pinCode)
+      .join(", ");
+
     return NextResponse.json({
       success: true,
       isServiceable: false,
-      message: `Delivery is currently not available for PIN code ${pinCode}. Kelkar Manas Health Care medicine delivery is currently serving Akola, Maharashtra (PIN codes: 444001, 444002, 444003, 444004, 444005, 444006).`,
+      message: activePins
+        ? `Delivery is currently not available for PIN code ${pinCode}. Active serviceable PIN codes: ${activePins}.`
+        : `Delivery is currently not available for PIN code ${pinCode}.`,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to verify PIN code serviceability.";

@@ -13,9 +13,9 @@ export async function GET(req: Request) {
     // Always sync website database payments (appointments + orders)
     await PaymentSyncService.syncWebsiteDatabasePayments();
 
-    // Optionally sync from payment gateway (Razorpay)
+    // Optionally sync pending payments from HDFC SmartGateway
     if (shouldSyncGateway) {
-      await PaymentSyncService.syncRazorpayGatewayPayments();
+      await PaymentSyncService.syncHdfcGatewayPayments();
     }
 
     const payments = await PaymentSyncService.getCentralizedPayments();
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     await connectDB();
     const [dbResult, gatewayResult] = await Promise.all([
       PaymentSyncService.syncWebsiteDatabasePayments(),
-      PaymentSyncService.syncRazorpayGatewayPayments(),
+      PaymentSyncService.syncHdfcGatewayPayments(),
     ]);
 
     const payments = await PaymentSyncService.getCentralizedPayments();

@@ -5,7 +5,8 @@ import { PatientModel } from "@/modules/patients/schema";
 import { DoctorModel } from "@/modules/doctors/schema";
 import { TherapistModel } from "@/modules/therapists/schema";
 import { ClinicModel } from "@/modules/clinics/schema";
-import Razorpay from "razorpay";
+import { fetchHdfcOrderStatus, isHdfcConfigured } from "@/lib/payments/hdfc-smartgateway";
+import { reconcileHdfcPayment } from "@/lib/payments/reconcile";
 
 export interface UnifiedPaymentItem {
   _id: string;
@@ -35,140 +36,53 @@ export interface UnifiedPaymentItem {
 
 export class PaymentSyncService {
   /**
-   * Syncs recent transactions directly from Razorpay Payment Gateway.
-   * Pulls captured, failed, and authorized payments and maps them to website records.
+   * Reconciles pending HDFC SmartGateway payments directly against the Order Status API.
    */
-  static async syncRazorpayGatewayPayments(): Promise<{ synced: number; errors: number }> {
+  static async syncHdfcGatewayPayments(): Promise<{ synced: number; errors: number }> {
     try {
-      const keyId = process.env.RAZORPAY_KEY_ID;
-      const keySecret = process.env.RAZORPAY_KEY_SECRET;
-
-      if (!keyId || !keySecret) {
-        console.warn("[PaymentSyncService] RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET missing. Skipping gateway pull.");
+      if (!isHdfcConfigured()) {
+        console.warn("[PaymentSyncService] HDFC SmartGateway credentials missing. Skipping gateway pull.");
         return { synced: 0, errors: 0 };
       }
 
-      const razorpay = new Razorpay({
-        key_id: keyId,
-        key_secret: keySecret,
-      });
-
       await connectDB();
 
-      // Fetch last 100 payments from Razorpay
-      const rzpResponse: any = await razorpay.payments.all({ count: 100 });
-      const items = rzpResponse?.items || [];
+      const pendingHdfcPayments = await PaymentModel.find({
+        gatewayProvider: "HDFC SmartGateway",
+        status: "Pending",
+        gatewayOrderId: { $exists: true, $ne: "" },
+      })
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .lean()
+        .exec();
 
       let syncedCount = 0;
       let errorCount = 0;
 
-      for (const item of items) {
+      for (const item of pendingHdfcPayments) {
         try {
-          const txnId = item.id;
-          const amountInRupees = (item.amount || 0) / 100;
-          const currency = item.currency || "INR";
-          const method = item.method ? item.method.toUpperCase() : "ONLINE";
-          const email = item.email || "";
-          const rawContact = item.contact || "";
-          const cleanPhone = rawContact.replace(/\D/g, "").slice(-10);
+          const orderId = item.gatewayOrderId || item.gatewayTransactionId;
+          if (!orderId) continue;
 
-          let status: "Success" | "Failed" | "Pending" | "Refunded" = "Pending";
-          if (item.status === "captured") status = "Success";
-          else if (item.status === "failed") status = "Failed";
-          else if (item.status === "refunded") status = "Refunded";
-          else if (item.status === "authorized") status = "Success"; // Authorized is ready for capture/paid
-
-          // Check if appointment or order is linked via notes or transaction ID
-          let appointmentId = item.notes?.appointmentId || undefined;
-          let orderId = item.notes?.orderId || undefined;
-          let patientId = item.notes?.patientId || undefined;
-
-          // 1. Look up appointment by transaction ID if not in notes
-          if (!appointmentId) {
-            const matchedApt = await AppointmentModel.findOne({
-              $or: [{ transactionId: txnId }, { transactionId: item.order_id }],
-            }).lean().exec();
-            if (matchedApt) {
-              appointmentId = matchedApt._id;
-              if (!patientId && matchedApt.patientId) {
-                patientId = matchedApt.patientId;
-              }
-            }
-          }
-
-          // 2. Look up order by payment ID / order ID if not in notes
-          if (!orderId) {
-            const matchedOrder = await OrderModel.findOne({
-              $or: [
-                { transactionId: txnId },
-                { "statusHistory.comment": { $regex: txnId } },
-              ],
-            }).lean().exec();
-            if (matchedOrder) {
-              orderId = matchedOrder._id;
-              if (!patientId && matchedOrder.patientId) {
-                patientId = matchedOrder.patientId;
-              }
-            }
-          }
-
-          // 3. Look up patient by contact or email if still missing
-          let resolvedPatient: any = null;
-          if (patientId) {
-            resolvedPatient = await PatientModel.findById(patientId).lean().exec();
-          } else if (cleanPhone || email) {
-            const query: any[] = [];
-            if (cleanPhone) query.push({ phone: new RegExp(cleanPhone + "$") });
-            if (email) query.push({ email: email.toLowerCase() });
-            resolvedPatient = await PatientModel.findOne({ $or: query }).lean().exec();
-            if (resolvedPatient) {
-              patientId = resolvedPatient._id;
-            }
-          }
-
-          // Context deduction
-          let context = "Online Payment";
-          if (appointmentId) context = "Appointment Consultation";
-          else if (orderId) context = "Pharmacy Order";
-          else if (item.description) context = item.description;
-
-          const customerName = resolvedPatient?.name || (item.notes?.patientName) || (email ? email.split("@")[0] : `Customer ${cleanPhone}`);
-
-          await PaymentModel.findOneAndUpdate(
-            { gatewayTransactionId: txnId },
-            {
-              $set: {
-                gatewayProvider: "Razorpay",
-                gatewayTransactionId: txnId,
-                amount: amountInRupees,
-                currency,
-                status,
-                paymentMethod: method === "UPI" ? "UPI" : method === "CARD" ? "Card" : `Online (${method})`,
-                appointmentId,
-                orderId,
-                patientId,
-                customerName,
-                customerPhone: resolvedPatient?.phone || cleanPhone || undefined,
-                customerEmail: resolvedPatient?.email || email || undefined,
-                context,
-                notes: item.notes || {},
-                createdAt: new Date(item.created_at * 1000),
-              },
-            },
-            { upsert: true, new: true }
+          const gatewayStatus = await fetchHdfcOrderStatus(
+            orderId,
+            item.patientId ? String(item.patientId) : undefined
           );
-
-          syncedCount++;
+          const reconciled = await reconcileHdfcPayment(gatewayStatus, "Admin Gateway Sync");
+          if (reconciled && reconciled.status !== "Pending") {
+            syncedCount++;
+          }
         } catch (itemErr) {
-          console.error(`[PaymentSyncService] Error processing Razorpay item ${item?.id}:`, itemErr);
+          console.error(`[PaymentSyncService] Error syncing HDFC order ${item?.gatewayOrderId}:`, itemErr);
           errorCount++;
         }
       }
 
-      console.log(`[PaymentSyncService] Gateway sync complete: ${syncedCount} synced, ${errorCount} errors.`);
+      console.log(`[PaymentSyncService] HDFC gateway sync complete: ${syncedCount} updated, ${errorCount} errors.`);
       return { synced: syncedCount, errors: errorCount };
     } catch (err) {
-      console.error("[PaymentSyncService] Fatal gateway sync error:", err);
+      console.error("[PaymentSyncService] Fatal HDFC gateway sync error:", err);
       return { synced: 0, errors: 1 };
     }
   }
@@ -215,7 +129,7 @@ export class PaymentSyncService {
             customerEmail: patient?.email,
             context,
             paymentMethod: apt.paymentMethod || "Online",
-            gatewayProvider: (apt.paymentMethod === "Cash" || apt.collectedBy === "Cash") ? "Cash / Counter" : "Razorpay",
+            gatewayProvider: (apt.paymentMethod === "Cash" || apt.collectedBy === "Cash") ? "Cash / Counter" : "HDFC SmartGateway",
             gatewayTransactionId: txnId,
             amount: apt.feeAmount || 0,
             currency: "INR",
@@ -267,7 +181,7 @@ export class PaymentSyncService {
             customerEmail: patient?.email,
             context,
             paymentMethod: order.paymentMethod || "Online",
-            gatewayProvider: order.paymentMethod === "Cash" ? "Cash / Counter" : "Razorpay",
+            gatewayProvider: order.paymentMethod === "Cash" ? "Cash / Counter" : "HDFC SmartGateway",
             gatewayTransactionId: txnId,
             amount: order.totalAmount || 0,
             currency: "INR",

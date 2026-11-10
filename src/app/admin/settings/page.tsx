@@ -757,7 +757,6 @@ export default function SettingsPage() {
             Branding & Logo
           </button>
 
-          {/* Hidden per requirement: Hide dummy / non-functional pharmacy delivery coverage settings
           <button
             onClick={() => { setActiveTab("pharmacy"); setSuccessMsg(""); setErrorMsg(""); }}
             className={`w-full px-4 py-3 rounded-2xl text-left text-sm font-bold transition flex items-center gap-3 ${
@@ -769,7 +768,6 @@ export default function SettingsPage() {
             <Truck className="w-4 h-4" />
             Pharmacy & Delivery Coverage
           </button>
-          */}
 
           <button
             onClick={() => { setActiveTab("notifications"); setSuccessMsg(""); setErrorMsg(""); }}
@@ -1051,14 +1049,258 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Tab 3: Pharmacy Partner & Delivery Matrix - Hidden per requirement: Do not keep dummy settings visible */}
-        {/* activeTab === "pharmacy" && (
-          <div className="lg:col-span-3 space-y-8">
-            <form onSubmit={handleSavePharmacyConfig} className="bg-card border border-border p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
-              ...
+        {/* Tab 3: Pharmacy Partner & Delivery Matrix */}
+        {activeTab === "pharmacy" && (
+          <div className="lg:col-span-3 min-w-0 w-full space-y-8">
+            <form onSubmit={handleSavePharmacyConfig} className="bg-card border border-border p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm space-y-6 min-w-0 overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-primary shrink-0" />
+                  <div>
+                    <h2 className="text-xl font-bold">Licensed Pharmacy Partner Credentials</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Displayed to customers during pharmacy checkout and on order confirmation receipts.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPharmacyConfig({ ...pharmacyConfig, isActive: !pharmacyConfig.isActive })}
+                  className={`self-start sm:self-auto px-3.5 py-1.5 rounded-full text-xs font-bold border transition cursor-pointer ${
+                    pharmacyConfig.isActive
+                      ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/25"
+                      : "bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/25"
+                  }`}
+                >
+                  {pharmacyConfig.isActive ? "● Fulfilment Active (Click to Pause)" : "● Fulfilment Paused (Click to Resume)"}
+                </button>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label>Pharmacy Legal Business Name *</Label>
+                  <Input
+                    required
+                    value={pharmacyConfig.pharmacyName}
+                    onChange={(e) => setPharmacyConfig({ ...pharmacyConfig, pharmacyName: e.target.value })}
+                    placeholder="Enter pharmacy legal business name"
+                    className="rounded-xl h-11"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Retail Drug Licence Number (Form 20B/21B) *</Label>
+                  <Input
+                    required
+                    value={pharmacyConfig.licenseNumber}
+                    onChange={(e) => setPharmacyConfig({ ...pharmacyConfig, licenseNumber: e.target.value })}
+                    placeholder="Enter retail drug licence number"
+                    className="rounded-xl h-11 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Registered Pharmacist In-Charge</Label>
+                  <Input
+                    value={pharmacyConfig.pharmacistInCharge}
+                    onChange={(e) => setPharmacyConfig({ ...pharmacyConfig, pharmacistInCharge: e.target.value })}
+                    placeholder="Enter pharmacist in-charge name & reg. no."
+                    className="rounded-xl h-11"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Official Support Mobile / WhatsApp</Label>
+                  <Input
+                    value={pharmacyConfig.contactPhone}
+                    onChange={(e) => setPharmacyConfig({ ...pharmacyConfig, contactPhone: e.target.value })}
+                    placeholder="Enter pharmacy support phone number"
+                    className="rounded-xl h-11"
+                  />
+                </div>
+
+                <div className="sm:col-span-2 space-y-1">
+                  <Label>Licensed Physical Pharmacy Address</Label>
+                  <Input
+                    value={pharmacyConfig.address}
+                    onChange={(e) => setPharmacyConfig({ ...pharmacyConfig, address: e.target.value })}
+                    placeholder="Enter physical pharmacy address"
+                    className="rounded-xl h-11"
+                  />
+                </div>
+              </div>
+
+              {/* Delivery Rates, Tax & Payment Rules */}
+              <div className="border-t border-border pt-6 space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                  <Truck className="w-4 h-4" /> Delivery Charges, Tax & Payment Rules
+                </h3>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Default Local Delivery Fee (₹)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={pharmacyConfig.defaultDeliveryFee}
+                      onChange={(e) => setPharmacyConfig({ ...pharmacyConfig, defaultDeliveryFee: Number(e.target.value) })}
+                      className="rounded-xl h-11 font-bold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Free Delivery Minimum Order (₹)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={pharmacyConfig.freeDeliveryThreshold}
+                      onChange={(e) => setPharmacyConfig({ ...pharmacyConfig, freeDeliveryThreshold: Number(e.target.value) })}
+                      className="rounded-xl h-11 font-bold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">GST Rate on Medicines (%)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={pharmacyConfig.taxRatePercent}
+                      onChange={(e) => setPharmacyConfig({ ...pharmacyConfig, taxRatePercent: Number(e.target.value) })}
+                      className="rounded-xl h-11 font-bold"
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-border bg-muted/20 cursor-pointer">
+                  <div>
+                    <p className="text-xs font-bold text-foreground">Enable Pay on Delivery (COD)</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Controls whether customers see and can place Cash/UPI on Delivery orders at pharmacy checkout.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={pharmacyConfig.allowCOD}
+                    onChange={(e) => setPharmacyConfig({ ...pharmacyConfig, allowCOD: e.target.checked })}
+                    className="h-4 w-4 accent-primary cursor-pointer shrink-0"
+                  />
+                </label>
+              </div>
+
+              {/* Serviceable PIN Codes Management */}
+              <div className="border-t border-border pt-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-primary" /> Serviceable Delivery Coverage (Akola, Maharashtra)
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Customers can only complete checkout for addresses located within active PIN codes.
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="self-start text-xs font-semibold">
+                    {pharmacyConfig.serviceablePincodes.filter(p => p.isActive).length} Active PINs
+                  </Badge>
+                </div>
+
+                {/* PIN Codes Table */}
+                <div className="border border-border rounded-2xl overflow-x-auto bg-background">
+                  <table className="w-full min-w-[600px] text-xs text-left">
+                    <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase font-bold text-[10px]">
+                      <tr>
+                        <th className="p-3">PIN Code</th>
+                        <th className="p-3">Area / Locality</th>
+                        <th className="p-3">Fee (₹)</th>
+                        <th className="p-3">Delivery SLA</th>
+                        <th className="p-3 text-center">Status</th>
+                        <th className="p-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {pharmacyConfig.serviceablePincodes.map((pin) => (
+                        <tr key={pin.pinCode} className="hover:bg-muted/20 transition-colors">
+                          <td className="p-3 font-mono font-bold text-primary">{pin.pinCode}</td>
+                          <td className="p-3 font-medium text-foreground">{pin.areaName}</td>
+                          <td className="p-3 font-semibold">₹{pin.deliveryCharge}</td>
+                          <td className="p-3 text-muted-foreground">{pin.estimatedHours}</td>
+                          <td className="p-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePinActive(pin.pinCode)}
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors ${
+                                pin.isActive
+                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {pin.isActive ? "Active" : "Inactive"}
+                            </button>
+                          </td>
+                          <td className="p-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePinCode(pin.pinCode)}
+                              className="text-destructive hover:text-destructive/80 p-1"
+                              title="Remove PIN code"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Add New PIN Code Form */}
+                <div className="p-4 bg-muted/30 rounded-2xl border border-border space-y-3">
+                  <span className="font-bold text-xs uppercase tracking-wider text-muted-foreground">Add New Serviceable PIN Code</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+                    <Input
+                      placeholder="Enter 6-digit PIN"
+                      value={newPin}
+                      maxLength={6}
+                      onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))}
+                      className="h-9 text-xs rounded-xl font-mono font-bold"
+                    />
+                    <Input
+                      placeholder="Enter locality name"
+                      value={newArea}
+                      onChange={(e) => setNewArea(e.target.value)}
+                      className="h-9 text-xs rounded-xl"
+                    />
+                    <Input
+                      placeholder="Enter delivery fee (₹)"
+                      type="number"
+                      min={0}
+                      value={newFee}
+                      onChange={(e) => setNewFee(e.target.value)}
+                      className="h-9 text-xs rounded-xl"
+                    />
+                    <Input
+                      placeholder="Enter delivery SLA"
+                      value={newTime}
+                      onChange={(e) => setNewTime(e.target.value)}
+                      className="h-9 text-xs rounded-xl"
+                    />
+                  </div>
+                  <Button type="button" onClick={handleAddPinCode} size="sm" variant="outline" className="rounded-xl gap-1 text-xs font-bold">
+                    <Plus className="w-3.5 h-3.5" /> Add PIN to Matrix
+                  </Button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-4 flex justify-end">
+                <Button type="submit" disabled={savingPharmacy} className="rounded-full px-8 font-bold gap-2 shadow-md">
+                  {savingPharmacy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save Pharmacy Settings & Coverage
+                </Button>
+              </div>
             </form>
           </div>
-        ) */}
+        )}
 
         {/* Tab 4: Notifications & Inquiries */}
         {activeTab === "notifications" && (

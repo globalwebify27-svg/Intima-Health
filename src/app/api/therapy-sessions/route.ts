@@ -57,6 +57,71 @@ export async function GET(request: Request) {
       .sort({ createdAt: -1 })
       .exec();
 
+    // Sync paid status from PaymentModel or mirrored paid Appointment records
+    if (sessions.length > 0) {
+      try {
+        const { PaymentModel } = await import("@/modules/pharmacy/schema");
+        const { AppointmentModel } = await import("@/modules/appointments/schema");
+
+        const sessionIds = sessions.map((s) => s._id);
+        const sessionPatientIds = [...new Set(sessions.map((s) => (s.patientId as any)?._id || s.patientId).filter(Boolean))];
+
+        const [successPayments, paidAppointments] = await Promise.all([
+          PaymentModel.find({ therapySessionId: { $in: sessionIds }, status: "Success" })
+            .select("therapySessionId gatewayTransactionId")
+            .lean(),
+          sessionPatientIds.length > 0
+            ? AppointmentModel.find({
+                patientId: { $in: sessionPatientIds },
+                paymentStatus: "Paid",
+              })
+                .select("patientId date time serviceName videoChannelName transactionId")
+                .lean()
+            : Promise.resolve([]),
+        ]);
+
+        const paidByGateway = new Map<string, string>();
+        for (const p of successPayments) {
+          if (p.therapySessionId) paidByGateway.set(String(p.therapySessionId), p.gatewayTransactionId);
+        }
+
+        const healIds: any[] = [];
+        for (const s of sessions) {
+          if (s.paymentStatus === "Paid") continue;
+
+          let matchedTxn = paidByGateway.get(String(s._id));
+          if (!matchedTxn && paidAppointments.length > 0) {
+            const sPatientId = String((s.patientId as any)?._id || s.patientId || "");
+            const matchedApt = paidAppointments.find((apt: any) => {
+              if (String(apt.patientId) !== sPatientId) return false;
+              const channelMatch = Boolean(s.videoChannelName && apt.videoChannelName && apt.videoChannelName === s.videoChannelName);
+              const slotNameMatch = Boolean(
+                s.date && s.time && apt.date === s.date && apt.time === s.time &&
+                (!s.name || !apt.serviceName || s.name.trim().toLowerCase() === apt.serviceName.trim().toLowerCase())
+              );
+              return channelMatch || slotNameMatch;
+            });
+            if (matchedApt) matchedTxn = (matchedApt as any).transactionId || "SYNCED_PAID";
+          }
+
+          if (matchedTxn || s.status === "Paid" || s.status === "Completed") {
+            s.paymentStatus = "Paid";
+            if (!s.transactionId && matchedTxn) s.transactionId = matchedTxn;
+            healIds.push(s._id);
+          }
+        }
+
+        if (healIds.length > 0) {
+          await TherapySessionModel.updateMany(
+            { _id: { $in: healIds } },
+            { $set: { paymentStatus: "Paid" } }
+          );
+        }
+      } catch (syncErr) {
+        console.warn("[TherapySessions GET] Failed to cross-sync payment status:", syncErr);
+      }
+    }
+
     // Ensure populated therapist profiles have their avatar resolved
     for (const s of sessions) {
       if (s.therapistId && !(s.therapistId as any).avatar) {
@@ -91,13 +156,25 @@ export async function POST(request: Request) {
     await connectDB();
     const body = await request.json();
 
-    // 1. Mark as Paid
+    // 1. Mark as Paid (staff counter collection only; patient online payments go through HDFC SmartGateway)
     if (body.action === "pay" && body.sessionId) {
+      const { getAuthToken, verifyJwt } = await import("@/lib/jwt");
+      const token = await getAuthToken(request);
+      const payload = token ? verifyJwt(token) : null;
+      const staffRoles = new Set(["CLINIC_MANAGER", "ADMIN", "CLINIC_ADMIN", "SUPER_ADMIN", "DOCTOR", "THERAPIST"]);
+      if (!payload || !staffRoles.has(payload.role as string)) {
+        return NextResponse.json(
+          { success: false, message: "Direct therapy payment marking is restricted to clinic staff. Please pay online via HDFC SmartGateway." },
+          { status: 403 }
+        );
+      }
+
       const existing = await TherapySessionModel.findById(body.sessionId);
       if (!existing) {
         return NextResponse.json({ success: false, message: "Session not found." }, { status: 404 });
       }
 
+      const txnId = body.transactionId || `PAY-${Date.now()}`;
       const channelName = existing.videoChannelName || `therapy_${existing._id}_${Date.now().toString(36)}`;
       const updated = await TherapySessionModel.findByIdAndUpdate(
         body.sessionId,
@@ -106,11 +183,31 @@ export async function POST(request: Request) {
             paymentStatus: "Paid",
             status: existing.date && existing.time ? "Scheduled" : "Paid",
             videoChannelName: channelName,
-            transactionId: body.transactionId || `PAY-${Date.now()}`,
+            transactionId: txnId,
           },
         },
         { new: true }
       ).populate("therapistId patientId");
+
+      // Sync any mirrored Appointment record so Patient Dashboard shows Paid consistently
+      if (existing.patientId && existing.date && existing.time) {
+        const { AppointmentModel } = await import("@/modules/appointments/schema");
+        await AppointmentModel.updateMany(
+          {
+            patientId: existing.patientId,
+            date: existing.date,
+            time: existing.time,
+            ...(existing.name ? { serviceName: existing.name } : {}),
+          },
+          {
+            $set: {
+              paymentStatus: "Paid",
+              transactionId: txnId,
+              collectedBy: "Clinic Manager",
+            },
+          }
+        );
+      }
 
       await logAuditEvent({
         userId: existing.patientId?.toString(),

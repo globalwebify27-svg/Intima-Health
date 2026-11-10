@@ -397,7 +397,7 @@ export async function POST(req: Request) {
           taxAmount: 0,
           deliveryCharge: 0,
           totalAmount: 620,
-          paymentMethod: "Online (Razorpay)",
+          paymentMethod: "Online (HDFC SmartGateway)",
           shippingAddress: "Civil Lines, Akola, Maharashtra 444001",
           estimatedDelivery: "Same Day Dispatch (Within 24 Hours)",
         });

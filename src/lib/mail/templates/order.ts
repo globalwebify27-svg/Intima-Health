@@ -65,7 +65,7 @@ export function generateOrderCustomerEmail(data: OrderEmailData): { subject: str
         <tr>
           <td style="padding-top: 6px; color: #8F7D8F;">Payment Method:</td>
           <td style="padding-top: 6px; font-weight: 600; text-align: right; color: #7A2E7A;">
-            ${data.paymentMethod === "COD" ? "Pay on Delivery (Cash/UPI)" : "Prepaid Online (Razorpay)"}
+            ${data.paymentMethod === "COD" ? "Pay on Delivery (Cash/UPI)" : "Prepaid Online (HDFC SmartGateway)"}
           </td>
         </tr>
         <tr>

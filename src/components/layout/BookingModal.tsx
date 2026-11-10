@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { useBookingModal } from "@/store/useBookingModal";
 import { useServices } from "@/store/useServices";
 import { getServiceIcon } from "@/lib/service-icons";
+import { initiateHdfcCheckout } from "@/lib/payments/client";
 
 const cities = [
   { id: "pune", name: "Pune", description: "Maharashtra's premium wellness hub" },
@@ -485,26 +486,28 @@ export function BookingModal() {
         if (!selectedService || !selectedService.price) {
           throw new Error("Could not determine service price. Please try selecting the service again.");
         }
-        
-        // Mock a transaction id
-        const mockTransactionId = "MOCK_TXN_ONLINE_" + Date.now();
 
-        // Book the appointment directly
+        // 1. Create pending appointment before redirecting to HDFC SmartGateway
         const res = await fetch("/api/booking", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...formData, transactionId: mockTransactionId })
+          body: JSON.stringify({ ...formData, paymentMethod: "Online" })
         });
         const bookingData = await res.json();
-        
-        if (!bookingData.success) {
+
+        if (!bookingData.success || !bookingData.data?._id) {
           throw new Error(bookingData.message || "Failed to submit booking.");
         }
 
-        setSuccessMsg("Appointment booked and paid successfully!");
-        setWhatsappMsg("Your appointment has been scheduled and confirmed.");
-        setSubmitting(false);
+        // 2. Initiate HDFC SmartGateway hosted payment session and redirect
+        const { paymentUrl } = await initiateHdfcCheckout({
+          entityType: "appointment",
+          entityId: bookingData.data._id,
+        });
+
         if (typeof window !== "undefined") window.dispatchEvent(new Event("refresh-dashboard"));
+        window.location.href = paymentUrl;
+        return;
       }
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred.");
@@ -515,7 +518,7 @@ export function BookingModal() {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-2.5 sm:p-4">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -531,10 +534,10 @@ export function BookingModal() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 350 }}
-            className="relative z-10 w-full max-w-2xl bg-card border border-border shadow-2xl rounded-3xl md:rounded-[2.5rem] flex flex-col max-h-[90vh] md:max-h-[85vh] overflow-hidden"
+            className="relative z-10 w-full max-w-2xl bg-card border border-border shadow-2xl rounded-3xl md:rounded-[2.5rem] flex flex-col max-h-[92dvh] md:max-h-[85vh] overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-5 md:p-6 border-b border-border">
+            <div className="shrink-0 flex items-center justify-between gap-3 p-4 sm:p-5 md:p-6 border-b border-border">
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl md:text-2xl font-bold font-serif text-foreground">
@@ -572,7 +575,7 @@ export function BookingModal() {
             </div>
 
             {/* Progress indicators - Desktop */}
-            <div className="hidden md:flex px-6 pt-4 pb-2 gap-1 items-center justify-between text-[10px] font-semibold text-muted-foreground border-b border-border/50">
+            <div className="hidden md:flex shrink-0 px-6 pt-4 pb-2 gap-1 items-center justify-between text-[10px] font-semibold text-muted-foreground border-b border-border/50">
               {stepsList.map((name, index) => {
                 const isActive = step >= index + 1;
                 return (
@@ -590,7 +593,7 @@ export function BookingModal() {
             </div>
 
             {/* Progress indicators - Mobile */}
-            <div className="md:hidden px-5 py-3 flex items-center justify-between border-b border-border/50 bg-muted/20">
+            <div className="md:hidden shrink-0 px-4 sm:px-5 py-3 flex items-center justify-between border-b border-border/50 bg-muted/20">
                <div className="text-xs font-bold text-foreground">
                  Step {step} of {stepsList.length}: <span className="text-primary">{stepsList[step - 1]}</span>
                </div>
@@ -602,7 +605,7 @@ export function BookingModal() {
             </div>
 
             {/* Content area */}
-            <div className="flex-1 overflow-y-auto p-6 md:p-8 min-h-[350px]">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 md:p-8">
               <AnimatePresence mode="wait">
                 {/* Step 1: Services */}
                 {currentView === 'services' && (
@@ -744,7 +747,7 @@ export function BookingModal() {
                               }
                             }}
                             disabled={!!isLocked}
-                            className={`w-full flex items-center p-4 rounded-2xl border text-left transition-all ${
+                            className={`w-full flex items-start gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-2xl border text-left transition-all ${
                               formData.clinic === clinic._id 
                                 ? "border-primary bg-primary/5 shadow-sm" 
                                 : isLocked
@@ -752,17 +755,17 @@ export function BookingModal() {
                                   : "border-border hover:border-primary/40 hover:bg-muted"
                             }`}
                           >
-                            <Building2 className={`w-5 h-5 mr-4 shrink-0 ${formData.clinic === clinic._id ? "text-primary" : "text-muted-foreground"}`} />
+                            <Building2 className={`w-5 h-5 mt-0.5 shrink-0 ${formData.clinic === clinic._id ? "text-primary" : "text-muted-foreground"}`} />
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <h4 className="text-sm font-bold truncate">{clinic.name}</h4>
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <h4 className="text-sm font-bold text-foreground break-words leading-snug">{clinic.name}</h4>
                                 {clinic.city && (
                                   <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-muted text-foreground/80 border border-border shrink-0">
                                     {clinic.city}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-muted-foreground text-xs mt-0.5 line-clamp-1">{clinic.address}</p>
+                              <p className="text-muted-foreground text-xs mt-1 break-words leading-relaxed">{clinic.address}</p>
                             </div>
                           </button>
                         );
@@ -808,15 +811,15 @@ export function BookingModal() {
                                 doc.name.split(' ').pop()?.[0]
                               )}
                             </div>
-                            <div className="flex-1">
-                              <h4 className="text-sm font-bold">{doc.name}</h4>
-                              <p className="text-xs text-muted-foreground">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-bold break-words">{doc.name}</h4>
+                              <p className="text-xs text-muted-foreground break-words">
                                 {[
                                   doc.qualifications?.join(", "),
                                   doc.specialization
                                 ].filter(Boolean).join(" • ")}
                               </p>
-                              <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{doc.bio}</p>
+                              <p className="text-[11px] text-muted-foreground mt-0.5 break-words leading-relaxed">{doc.bio}</p>
                             </div>
                             <div className="text-right">
                               <div className="flex items-center gap-0.5 mt-0.5">
@@ -1297,7 +1300,7 @@ export function BookingModal() {
             </div>
 
             {/* Footer Buttons */}
-            <div className="p-6 border-t border-border flex justify-between items-center bg-muted/10">
+            <div className="shrink-0 p-4 sm:p-6 border-t border-border flex justify-between items-center gap-3 bg-muted/10">
               {whatsappMsg ? (
                 <div />
               ) : step > 1 ? (

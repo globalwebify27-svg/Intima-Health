@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { AppointmentModel } from "@/modules/appointments/schema";
+import { getAuthToken, verifyJwt } from "@/lib/jwt";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,8 +12,19 @@ interface RouteParams {
   }>;
 }
 
+const ALLOWED_STAFF_ROLES = new Set(["CLINIC_MANAGER", "ADMIN", "CLINIC_ADMIN", "SUPER_ADMIN", "DOCTOR"]);
+
 export async function POST(request: Request, { params }: RouteParams) {
   try {
+    const token = await getAuthToken(request);
+    const payload = token ? verifyJwt(token) : null;
+    if (!payload || !ALLOWED_STAFF_ROLES.has(payload.role as string)) {
+      return NextResponse.json(
+        { success: false, message: "Direct payment confirmation is restricted to authorized clinic staff. Please use the online payment gateway." },
+        { status: 403 }
+      );
+    }
+
     await connectDB();
     const { id } = await params;
 
@@ -51,6 +63,26 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     if (!updated) {
       return NextResponse.json({ success: false, message: "Appointment not found." }, { status: 404 });
+    }
+
+    // Sync any corresponding TherapySession so prepaid status matches everywhere
+    if (updated.patientId && updated.date && updated.time) {
+      const { TherapySessionModel } = await import("@/modules/pharmacy/schema");
+      await TherapySessionModel.updateMany(
+        {
+          patientId: updated.patientId,
+          date: updated.date,
+          time: updated.time,
+          ...(updated.serviceName ? { name: updated.serviceName } : {}),
+        },
+        {
+          $set: {
+            paymentStatus: "Paid",
+            paymentMethod,
+            transactionId,
+          },
+        }
+      );
     }
 
     // Send WhatsApp notification for confirmed paid booking

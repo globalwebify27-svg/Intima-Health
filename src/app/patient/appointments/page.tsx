@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatTime12Hour } from "@/lib/utils";
 import { useBookingModal } from "@/store/useBookingModal";
 import { Video, MapPin, ExternalLink, Download } from "lucide-react";
+import { initiateHdfcCheckout } from "@/lib/payments/client";
 
 interface Appointment {
   _id: string;
@@ -148,19 +149,14 @@ const columns: ColumnDef<Appointment>[] = [
               className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white"
               onClick={async () => {
                 try {
-                  const res = await fetch(`/api/appointments/${appointmentId}/pay`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" }
+                  const { paymentUrl } = await initiateHdfcCheckout({
+                    entityType: "appointment",
+                    entityId: appointmentId,
                   });
-                  const data = await res.json();
-                  if (data.success) {
-                    alert("Consultation fee paid successfully!");
-                    window.location.reload();
-                  } else {
-                    alert(data.message || "Payment failed.");
-                  }
-                } catch (e) {
+                  window.location.href = paymentUrl;
+                } catch (e: any) {
                   console.error(e);
+                  alert(e?.message || "Failed to start payment session.");
                 }
               }}
             >

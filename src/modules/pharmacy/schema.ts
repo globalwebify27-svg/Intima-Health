@@ -325,14 +325,19 @@ const OrderSchema = new Schema<IOrder>({
 export interface IPayment {
   orderId?: Schema.Types.ObjectId;
   appointmentId?: Schema.Types.ObjectId;
+  therapySessionId?: Schema.Types.ObjectId;
   patientId?: Schema.Types.ObjectId;
   customerName?: string;
   customerPhone?: string;
   customerEmail?: string;
   context?: string;
   paymentMethod?: string;
-  gatewayProvider: string; // e.g. "Razorpay"
+  gatewayProvider: string; // e.g. "HDFC SmartGateway", "Razorpay", "Cash / Counter"
+  gatewayOrderId?: string;
+  gatewaySessionId?: string;
   gatewayTransactionId: string;
+  gatewayPaymentMethod?: string;
+  gatewayRawResponse?: Record<string, any>;
   amount: number;
   currency: string; // e.g. "INR"
   status: "Success" | "Failed" | "Pending" | "Refunded";
@@ -345,14 +350,19 @@ export interface IPayment {
 const PaymentSchema = new Schema<IPayment>({
   orderId: { type: Schema.Types.ObjectId, ref: "Order" },
   appointmentId: { type: Schema.Types.ObjectId, ref: "Appointment" },
+  therapySessionId: { type: Schema.Types.ObjectId, ref: "TherapySession" },
   patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: false },
   customerName: { type: String },
   customerPhone: { type: String },
   customerEmail: { type: String },
   context: { type: String },
   paymentMethod: { type: String, default: "Online" },
-  gatewayProvider: { type: String, required: true, default: "Razorpay" },
+  gatewayProvider: { type: String, required: true, default: "HDFC SmartGateway" },
+  gatewayOrderId: { type: String, sparse: true, index: true },
+  gatewaySessionId: { type: String },
   gatewayTransactionId: { type: String, required: true, unique: true },
+  gatewayPaymentMethod: { type: String },
+  gatewayRawResponse: { type: Schema.Types.Mixed },
   amount: { type: Number, required: true },
   currency: { type: String, default: "INR" },
   status: { type: String, enum: ["Success", "Failed", "Pending", "Refunded"], default: "Pending" },

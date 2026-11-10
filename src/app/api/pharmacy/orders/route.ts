@@ -345,6 +345,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (paymentMethod === "COD" && !isCounterDispense && config.allowCOD === false) {
+      return NextResponse.json(
+        { success: false, message: "Pay on Delivery (COD) is currently disabled by pharmacy administration. Please use online payment." },
+        { status: 400 }
+      );
+    }
+
     let matchedPin: any = null;
     if (!isCounterDispense && pinCode) {
       const pincodesList = (config.serviceablePincodes && config.serviceablePincodes.length > 0)
@@ -422,9 +429,9 @@ export async function POST(request: Request) {
       });
     }
 
-    const taxRate = config.taxRatePercent || 12;
+    const taxRate = config.taxRatePercent ?? 12;
     const taxAmount = isCounterDispense ? 0 : Math.round((itemsTotal * taxRate) / 100);
-    const freeThreshold = config.freeDeliveryThreshold || 500;
+    const freeThreshold = config.freeDeliveryThreshold ?? 500;
     const deliveryCharge = isCounterDispense ? 0 : (itemsTotal >= freeThreshold ? 0 : (matchedPin?.deliveryCharge ?? config.defaultDeliveryFee ?? 50));
     const totalPayable = isCounterDispense ? (totalAmount || itemsTotal) : (itemsTotal + taxAmount + deliveryCharge);
 

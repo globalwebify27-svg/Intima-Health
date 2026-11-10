@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { parsePrescribedMedicines, parsePrescribedTherapies } from "@/lib/clinical-formatters";
 
 interface PatientSummary {
   _id: string;
@@ -1238,56 +1239,124 @@ export default function AdminPatientsPage() {
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          {patientDetails.consultations.map((c: any) => (
-                            <div key={c._id} className="p-5 rounded-2xl border border-border bg-card space-y-3 shadow-2xs">
-                              <div className="flex items-center justify-between border-b border-border/60 pb-2">
-                                <div className="text-xs font-bold text-[#4A154B] flex items-center gap-2">
-                                  <Stethoscope className="w-4 h-4" />
-                                  <span>Consultation by {c.doctorId?.name || "Doctor"}</span>
+                          {patientDetails.consultations.map((c: any) => {
+                            const parsedMeds = parsePrescribedMedicines(c.prescriptionSummary);
+                            const parsedTherapies = parsePrescribedTherapies(c.prescribedTherapies);
+                            const hasMeds = parsedMeds.items.length > 0 || Boolean(parsedMeds.plainText);
+                            const hasTherapies = parsedTherapies.items.length > 0 || Boolean(parsedTherapies.plainText);
+
+                            return (
+                              <div key={c._id} className="p-5 rounded-2xl border border-border bg-card space-y-3.5 shadow-2xs">
+                                <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-2.5">
+                                  <div className="text-xs font-bold text-[#4A154B] flex items-center gap-2">
+                                    <Stethoscope className="w-4 h-4 shrink-0" />
+                                    <span>Consultation by {c.doctorId?.name || "Doctor"}</span>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground font-medium shrink-0">
+                                    {new Date(c.createdAt).toLocaleDateString("en-IN", {
+                                      day: "numeric",
+                                      month: "short",
+                                      year: "numeric",
+                                    })}
+                                  </div>
                                 </div>
-                                <div className="text-xs text-muted-foreground font-mono">
-                                  {new Date(c.createdAt).toLocaleDateString("en-IN", {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  })}
-                                </div>
+
+                                {c.notes && (
+                                  <div className="space-y-1.5">
+                                    <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                                      Clinical Doctor Notes
+                                    </div>
+                                    <p className="text-xs text-foreground bg-muted/25 p-3 rounded-xl whitespace-pre-wrap leading-relaxed break-words">
+                                      {c.notes}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {hasMeds && (
+                                  <div className="space-y-1.5">
+                                    <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                                      Prescription Summary
+                                    </div>
+                                    {parsedMeds.items.length > 0 ? (
+                                      <div className="bg-purple-50/60 dark:bg-purple-950/20 p-3 rounded-xl border border-purple-100 dark:border-purple-900/40 divide-y divide-purple-100/80 dark:divide-purple-900/30">
+                                        {parsedMeds.items.map((med, idx) => (
+                                          <div key={idx} className="py-2 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                                            <div>
+                                              <p className="text-xs font-semibold text-foreground">{med.drug}</p>
+                                              {med.instructions && (
+                                                <p className="text-[11px] text-muted-foreground mt-0.5">{med.instructions}</p>
+                                              )}
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                                              {med.dosage && (
+                                                <span className="px-2 py-0.5 rounded-md bg-background border border-border/70 font-medium text-foreground">
+                                                  Dosage: {med.dosage}
+                                                </span>
+                                              )}
+                                              {med.frequency && (
+                                                <span className="px-2 py-0.5 rounded-md bg-background border border-border/70 font-medium text-foreground">
+                                                  Freq: {med.frequency}
+                                                </span>
+                                              )}
+                                              {med.duration && (
+                                                <span className="px-2 py-0.5 rounded-md bg-background border border-border/70 font-medium text-foreground">
+                                                  Duration: {med.duration}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-foreground bg-purple-50/50 p-3 rounded-xl border border-purple-100 leading-relaxed break-words">
+                                        {parsedMeds.plainText}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+
+                                {hasTherapies && (
+                                  <div className="space-y-1.5">
+                                    <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                                      Recommended Therapies
+                                    </div>
+                                    {parsedTherapies.items.length > 0 ? (
+                                      <div className="bg-blue-50/60 dark:bg-blue-950/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/40 divide-y divide-blue-100/80 dark:divide-blue-900/30">
+                                        {parsedTherapies.items.map((th, idx) => (
+                                          <div key={idx} className="py-2 first:pt-0 last:pb-0 space-y-1">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                              <span className="text-xs font-semibold text-foreground">{th.name}</span>
+                                              <div className="flex items-center gap-1.5">
+                                                {th.recommendedMode && (
+                                                  <Badge variant="outline" className="text-[10px] bg-background border-blue-200 text-blue-700 font-semibold">
+                                                    {th.recommendedMode}
+                                                  </Badge>
+                                                )}
+                                                {th.price !== undefined && (
+                                                  <span className="text-[11px] font-bold text-foreground">
+                                                    ₹{th.price.toLocaleString("en-IN")}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                            {th.doctorNotes && (
+                                              <p className="text-[11px] text-muted-foreground italic break-words">
+                                                Guidance: &ldquo;{th.doctorNotes}&rdquo;
+                                              </p>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-foreground bg-blue-50/50 p-3 rounded-xl border border-blue-100 leading-relaxed break-words">
+                                        {parsedTherapies.plainText}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-
-                              {c.notes && (
-                                <div className="space-y-1">
-                                  <div className="text-[11px] font-bold text-muted-foreground uppercase">
-                                    Clinical Doctor Notes
-                                  </div>
-                                  <p className="text-xs text-foreground bg-muted/20 p-3 rounded-xl whitespace-pre-wrap">
-                                    {c.notes}
-                                  </p>
-                                </div>
-                              )}
-
-                              {c.prescriptionSummary && (
-                                <div className="space-y-1">
-                                  <div className="text-[11px] font-bold text-muted-foreground uppercase">
-                                    Prescription Summary
-                                  </div>
-                                  <p className="text-xs text-foreground bg-purple-50/50 p-3 rounded-xl border border-purple-100 font-mono">
-                                    {c.prescriptionSummary}
-                                  </p>
-                                </div>
-                              )}
-
-                              {c.prescribedTherapies && (
-                                <div className="space-y-1">
-                                  <div className="text-[11px] font-bold text-muted-foreground uppercase">
-                                    Recommended Therapies
-                                  </div>
-                                  <p className="text-xs text-foreground bg-blue-50/50 p-3 rounded-xl border border-blue-100">
-                                    {c.prescribedTherapies}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
