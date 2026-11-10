@@ -80,11 +80,13 @@ export default function PharmacyPrescriptionsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [fetchError, setFetchError] = useState("");
 
   const getMedsArray = (summary?: string): Medicine[] => {
     if (!summary) return [];
     try {
-      return JSON.parse(summary);
+      const parsed = JSON.parse(summary);
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -93,13 +95,15 @@ export default function PharmacyPrescriptionsPage() {
   const getTherapiesArray = (summary?: string): Therapy[] => {
     if (!summary) return [];
     try {
-      return JSON.parse(summary);
+      const parsed = JSON.parse(summary);
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
   };
 
   const fetchPrescriptions = async (filterClinicId?: string) => {
+    setFetchError("");
     try {
       // By default, pharmacy staff can see all prescriptions across the platform
       const targetCId = filterClinicId && filterClinicId !== "all" ? filterClinicId : "";
@@ -111,10 +115,10 @@ export default function PharmacyPrescriptionsPage() {
         : `/api/pharmacy/orders?_t=${Date.now()}`;
 
       const [res, ordersRes] = await Promise.all([
-        fetch(url, { cache: "no-store" }),
-        fetch(ordersUrl, { cache: "no-store" }).catch(() => null),
+        fetch(url, { cache: "no-store", credentials: "include" }),
+        fetch(ordersUrl, { cache: "no-store", credentials: "include" }).catch(() => null),
       ]);
-      const json = await res.json();
+      const json = await res.json().catch(() => ({ success: false, error: "Invalid server response." }));
 
       const fulfilledConsultIds = new Set<string>();
       if (ordersRes && ordersRes.ok) {
@@ -132,11 +136,17 @@ export default function PharmacyPrescriptionsPage() {
         } catch {}
       }
 
-      if (json.success && json.data) {
+      if (!res.ok || !json.success) {
+        setFetchError(json?.error || `Failed to load digital prescriptions (HTTP ${res.status}).`);
+      } else if (Array.isArray(json.data)) {
         const activeRx = json.data
           .filter((c: any) => {
-            const hasMeds = c.prescriptionSummary && c.prescriptionSummary !== "[]" && c.prescriptionSummary.trim() !== "";
-            const hasTherapies = c.prescribedTherapies && c.prescribedTherapies !== "[]" && c.prescribedTherapies.trim() !== "";
+            const hasMeds = typeof c.prescriptionSummary === "string"
+              ? c.prescriptionSummary !== "[]" && c.prescriptionSummary.trim() !== ""
+              : Array.isArray(c.prescriptionSummary) && c.prescriptionSummary.length > 0;
+            const hasTherapies = typeof c.prescribedTherapies === "string"
+              ? c.prescribedTherapies !== "[]" && c.prescribedTherapies.trim() !== ""
+              : Array.isArray(c.prescribedTherapies) && c.prescribedTherapies.length > 0;
             return hasMeds || hasTherapies;
           })
           .map((c: any) => {
@@ -145,6 +155,7 @@ export default function PharmacyPrescriptionsPage() {
               fetch(`/api/consultations/${c._id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({ prescriptionStatus: "Fulfilled" }),
               }).catch(() => {});
               return { ...c, prescriptionStatus: "Fulfilled" };
@@ -158,7 +169,7 @@ export default function PharmacyPrescriptionsPage() {
       const prodUrl = targetCId
         ? `/api/pharmacy/products?clinicId=${targetCId}`
         : `/api/pharmacy/products?_t=${Date.now()}`;
-      const prodRes = await fetch(prodUrl).catch(() => null);
+      const prodRes = await fetch(prodUrl, { cache: "no-store", credentials: "include" }).catch(() => null);
       if (prodRes && prodRes.ok) {
         const prodJson = await prodRes.json();
         if (prodJson.success && Array.isArray(prodJson.data)) {
@@ -167,6 +178,7 @@ export default function PharmacyPrescriptionsPage() {
       }
     } catch (err) {
       console.error("Error fetching prescriptions:", err);
+      setFetchError("Unable to load digital prescriptions. Please refresh or check your connection.");
     } finally {
       setLoading(false);
     }
@@ -377,8 +389,7 @@ export default function PharmacyPrescriptionsPage() {
 
 
 
-  const filteredPrescriptions = prescriptions.filter((record) => {
-    const isFulfilled = record.prescriptionStatus === "Fulfilled";
+  const searchAndClinicFiltered = prescriptions.filter((record) => {
     const patientName = record.patientId?.name || "Patient";
     const patientPhone = record.patientId?.phone || "";
     const doctorName = record.doctorId?.name || "Clinician";
@@ -405,20 +416,25 @@ export default function PharmacyPrescriptionsPage() {
         (record as any).clinicId ||
         (record.appointmentId as any)?.clinicId?._id ||
         (record.appointmentId as any)?.clinicId;
-      if (recordClinicId && String(recordClinicId) !== String(selectedClinicId)) {
+      if (!recordClinicId || String(recordClinicId) !== String(selectedClinicId)) {
         return false;
       }
     }
 
+    return true;
+  });
+
+  const filteredPrescriptions = searchAndClinicFiltered.filter((record) => {
+    const isFulfilled = record.prescriptionStatus === "Fulfilled";
     if (statusFilter === "Pending") return !isFulfilled;
     if (statusFilter === "Fulfilled") return isFulfilled;
     return true;
   });
 
   const counts = {
-    Pending: filteredPrescriptions.filter((p) => p.prescriptionStatus !== "Fulfilled").length,
-    Fulfilled: filteredPrescriptions.filter((p) => p.prescriptionStatus === "Fulfilled").length,
-    All: filteredPrescriptions.length,
+    Pending: searchAndClinicFiltered.filter((p) => p.prescriptionStatus !== "Fulfilled").length,
+    Fulfilled: searchAndClinicFiltered.filter((p) => p.prescriptionStatus === "Fulfilled").length,
+    All: searchAndClinicFiltered.length,
   };
 
   if (loading) {
@@ -439,6 +455,23 @@ export default function PharmacyPrescriptionsPage() {
           </p>
         </div>
       </div>
+
+      {fetchError && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <span>{fetchError}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setLoading(true);
+              fetchPrescriptions();
+            }}
+            className="rounded-xl shrink-0"
+          >
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* Search, Clinic & Status Filters */}
       <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-card p-4 rounded-2xl border border-border">

@@ -54,9 +54,14 @@ export async function GET(req: Request) {
         return NextResponse.json({ success: false, message: "Clinic Manager clinic not configured." }, { status: 403 });
       }
       clinicId = payload.clinicId;
-    } else if (payload.role === "PHARMACY_STAFF" || (payload.role as string) === "PHARMACY") {
+    } else if (
+      payload.role === "PHARMACY_STAFF" ||
+      (payload.role as string) === "PHARMACY" ||
+      (payload.role as string) === "PHARMACY_ADMIN" ||
+      (payload.role as string) === "PHARMACY_VENDOR"
+    ) {
       // Pharmacy staff accesses all prescriptions across the platform by default unless clinicId is explicitly specified
-      if (clinicId === "all") {
+      if (!clinicId || clinicId === "all") {
         clinicId = undefined;
       }
     }

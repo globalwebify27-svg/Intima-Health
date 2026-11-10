@@ -60,9 +60,9 @@ export default function PharmacyDashboard() {
         setProducts(productsJson.data || []);
       }
 
-      // 3. Fetch Prescriptions Count (Walk-in, Standalone & Video Consultations)
-      const rxUrl = cId ? `/api/consultations?clinicId=${cId}` : `/api/consultations`;
-      const rxRes = await fetch(rxUrl);
+      // 3. Fetch Prescriptions Count (Walk-in, Standalone & Video Consultations across platform)
+      const rxUrl = `/api/consultations?_t=${Date.now()}`;
+      const rxRes = await fetch(rxUrl, { cache: "no-store", credentials: "include" });
       const rxJson = await rxRes.json();
       if (rxJson.success && rxJson.data) {
         const activeRx = rxJson.data.filter((c: any) => {

@@ -1,4 +1,7 @@
 import { AppointmentModel } from "@/modules/appointments/schema";
+import "@/modules/clinics/schema";
+import "@/modules/doctors/schema";
+import "@/modules/patients/schema";
 import { ConsultationModel, IConsultation } from "./schema";
 
 export class ConsultationRepository {
