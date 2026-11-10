@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, MessageSquare, AlertCircle } from "lucide-react";
-import Image from "next/image";
 
 export default function LoginPage() {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
@@ -103,21 +102,9 @@ export default function LoginPage() {
           <h2 className="text-4xl font-serif font-medium mb-6 leading-tight">
             Take control of your absolute well-being.
           </h2>
-          <p className="text-lg text-muted-foreground mb-8">
+          <p className="text-lg text-muted-foreground">
             Access your personalized treatment plans, lab results, and connect with your dedicated care team—all in one secure place.
           </p>
-
-          <div className="flex items-center gap-4">
-            <div className="flex -space-x-4">
-              <div className="w-10 h-10 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-bold overflow-hidden relative">
-                <Image src="/images/doctor_2.png" alt="Doctor" fill className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
-              </div>
-              <div className="w-10 h-10 rounded-full bg-primary border-2 border-background flex items-center justify-center text-white text-xs font-bold">
-                +10k
-              </div>
-            </div>
-            <p className="text-sm font-medium text-foreground/80">Trusted by over 10,000 patient</p>
-          </div>
         </div>
       </div>
 

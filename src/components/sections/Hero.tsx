@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Star, Activity, HeartPulse, Shield, Zap, Brain, Stethoscope, Sparkles, Smile, Video, Building2 } from "lucide-react";
+import { ArrowRight, Activity, HeartPulse, Shield, Zap, Brain, Stethoscope, Sparkles, Smile, Video, Building2 } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { useBookingModal } from "@/store/useBookingModal";
 
@@ -111,46 +111,6 @@ export function Hero() {
                   <span>Walk-in Appointment</span>
                   <ArrowRight className="ml-1 h-5 w-5 shrink-0 text-primary group-hover:translate-x-1 transition-transform" />
                 </Button>
-              </motion.div>
-            </motion.div>
-
-            <motion.div variants={itemVariants} className="mt-12 flex items-center gap-4">
-              <div className="flex -space-x-3">
-                {[
-                  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-                  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
-                  "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100&h=100&fit=crop",
-                  "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop"
-                ].map((src, i) => (
-                  <div
-                    key={i}
-                    className="inline-block h-12 w-12 rounded-full border-2 border-background bg-muted overflow-hidden shadow-sm"
-                  >
-                    <img
-                      src={src}
-                      alt="Patient avatar"
-                      width={48}
-                      height={48}
-                      loading="lazy"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.2 }}
-                className="flex flex-col"
-              >
-                <div className="flex text-amber-500 mb-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <motion.div key={star} initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.2 + (star * 0.1) }}>
-                      <Star className="h-4 w-4 fill-current" />
-                    </motion.div>
-                  ))}
-                </div>
-                <span className="text-sm font-semibold text-foreground">Trusted by 10,000+ patients across India</span>
               </motion.div>
             </motion.div>
           </motion.div>
