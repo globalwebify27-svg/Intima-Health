@@ -101,7 +101,7 @@ export default function ContactClient({ initialContent }: ContactClientProps) {
     <div className="min-h-screen bg-background text-foreground">
 
       {/* Hero Section */}
-      <section className="relative pt-12 pb-16 lg:pt-16 lg:pb-24 bg-muted/30 overflow-hidden">
+      <section className="relative pt-8 pb-10 lg:pt-12 lg:pb-14 bg-muted/30 overflow-hidden">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <motion.div
             initial="hidden"
@@ -130,7 +130,7 @@ export default function ContactClient({ initialContent }: ContactClientProps) {
       </section>
 
       {/* Main Contact Section */}
-      <section className="py-20 bg-background">
+      <section className="py-10 lg:py-12 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
 
@@ -270,7 +270,7 @@ export default function ContactClient({ initialContent }: ContactClientProps) {
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                       className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
-                      placeholder="e.g. John"
+                      placeholder="Enter first name"
                     />
                   </div>
                   <div className="space-y-2">
@@ -281,7 +281,7 @@ export default function ContactClient({ initialContent }: ContactClientProps) {
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                       className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
-                      placeholder="e.g. Doe"
+                      placeholder="Enter last name"
                     />
                   </div>
                 </div>
@@ -294,7 +294,7 @@ export default function ContactClient({ initialContent }: ContactClientProps) {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
-                    placeholder="you@example.com"
+                    placeholder="Enter your email address"
                   />
                 </div>
 
@@ -322,7 +322,7 @@ export default function ContactClient({ initialContent }: ContactClientProps) {
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow resize-none"
-                    placeholder="How can we help you?"
+                    placeholder="Enter your message"
                   />
                 </div>
 
@@ -338,9 +338,9 @@ export default function ContactClient({ initialContent }: ContactClientProps) {
       </section>
 
       {/* Hospitals Section */}
-      <section className="py-24 bg-muted/30 border-t border-border">
+      <section className="py-10 lg:py-14 bg-muted/30 border-t border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <div className="text-center max-w-2xl mx-auto mb-8 lg:mb-10">
             <h2 className="text-3xl md:text-4xl font-serif mb-4">{data.hospitalsTitle || "Our Hospitals"}</h2>
             <p className="text-muted-foreground text-lg whitespace-pre-line">
               {data.hospitalsDesc || "We are proud to be associated with a network of four hospitals, providing comprehensive healthcare services with a strong focus on quality, compassion, and patient-centered care."}

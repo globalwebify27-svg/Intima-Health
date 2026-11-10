@@ -70,7 +70,7 @@ export function FeaturedProducts() {
   const { addItem } = useCart();
 
   return (
-    <section className="py-32 bg-background relative overflow-hidden">
+    <section className="py-12 lg:py-16 bg-background relative overflow-hidden">
       
       {/* Decorative Orbs (Static for scroll performance) */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
@@ -85,7 +85,7 @@ export function FeaturedProducts() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.6 }}
-          className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8"
+          className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6"
         >
           <div className="max-w-2xl">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6">

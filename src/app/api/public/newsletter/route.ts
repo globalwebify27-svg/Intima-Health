@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { connectDB } from "@/db/connect";
 import { NewsletterSubscriberModel } from "@/modules/newsletter/schema";
 import { z } from "zod";
 
 export const dynamic = 'force-dynamic';
-
 
 const newsletterSchema = z.object({
   email: z.string().email("Please provide a valid email address."),
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   try {
     await connectDB();
     const rawBody = await req.json();
-    
+
     const parsed = newsletterSchema.safeParse(rawBody);
     if (!parsed.success) {
       return NextResponse.json(
@@ -23,27 +23,41 @@ export async function POST(req: Request) {
       );
     }
 
-    const { email } = parsed.data;
+    const email = parsed.data.email.trim().toLowerCase();
 
-    let subscriber = await NewsletterSubscriberModel.findOne({ email }).exec();
-    
+    const subscriber = await NewsletterSubscriberModel.findOne({ email }).exec();
+
     if (subscriber) {
+      let modified = false;
+      if (!subscriber.unsubscribeToken) {
+        subscriber.unsubscribeToken = crypto.randomBytes(24).toString("hex");
+        modified = true;
+      }
       if (subscriber.status === "Unsubscribed") {
         subscriber.status = "Active";
+        subscriber.unsubscribedAt = undefined;
         await subscriber.save();
-        return NextResponse.json({ success: true, message: "Welcome back! You have been re-subscribed." });
+        return NextResponse.json({
+          success: true,
+          message: "Welcome back! You have been re-subscribed.",
+        });
       }
-      return NextResponse.json({ success: true, message: "You are already subscribed to our newsletter!" });
+      if (modified) await subscriber.save();
+      return NextResponse.json({
+        success: true,
+        message: "You are already subscribed to our newsletter!",
+      });
     }
 
     await NewsletterSubscriberModel.create({
       email,
-      status: "Active"
+      status: "Active",
+      unsubscribeToken: crypto.randomBytes(24).toString("hex"),
     });
 
     return NextResponse.json({
       success: true,
-      message: "Thank you for subscribing to our newsletter!"
+      message: "Thank you for subscribing to our newsletter!",
     });
   } catch (error: any) {
     return NextResponse.json(

@@ -89,7 +89,7 @@ export default function FaqClient({ initialFaqs }: FaqClientProps) {
               <Search className="w-5 h-5 text-muted-foreground absolute left-4 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search questions (e.g., appointment, timing, scheme, treatment)..."
+                placeholder="Search here..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-10 py-4 rounded-2xl bg-white border border-border shadow-md focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm sm:text-base font-medium transition-all"
@@ -114,7 +114,7 @@ export default function FaqClient({ initialFaqs }: FaqClientProps) {
       </section>
 
       {/* Main Content Area */}
-      <section className="py-16 lg:py-24 bg-background">
+      <section className="py-10 lg:py-14 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
           {/* Category Filter Pills */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-12 sm:mb-16">

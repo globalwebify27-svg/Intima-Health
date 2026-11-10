@@ -710,29 +710,29 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="space-y-6 max-w-6xl w-full min-w-0">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">System, Branding & Pharmacy Settings</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Manage administrator profile credentials, clinic branding logo, and licensed pharmacy delivery coverage.
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">System, Branding &amp; Settings</h1>
+        <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
+          Manage administrator profile credentials, clinic branding logo, notifications, SMTP mail server, and reviews integration.
         </p>
       </div>
 
       {successMsg && (
-        <div className="p-4 bg-emerald-50 text-emerald-700 text-sm font-medium rounded-2xl border border-emerald-200/50 flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5 shrink-0" /> {successMsg}
+        <div className="p-4 bg-emerald-50 text-emerald-700 text-xs sm:text-sm font-medium rounded-2xl border border-emerald-200/50 flex items-center gap-2 break-words">
+          <CheckCircle2 className="w-5 h-5 shrink-0" /> <span className="min-w-0">{successMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="p-4 bg-destructive/10 text-destructive text-sm font-medium rounded-2xl border border-destructive/20 flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 shrink-0" /> {errorMsg}
+        <div className="p-4 bg-destructive/10 text-destructive text-xs sm:text-sm font-medium rounded-2xl border border-destructive/20 flex items-center gap-2 break-words">
+          <AlertCircle className="w-5 h-5 shrink-0" /> <span className="min-w-0">{errorMsg}</span>
         </div>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-4">
+      <div className="grid gap-6 lg:gap-8 lg:grid-cols-4 min-w-0 w-full">
         {/* Navigation Tabs */}
-        <div className="bg-card border border-border p-4 rounded-3xl shadow-sm self-start flex flex-col gap-1.5">
+        <div className="bg-card border border-border p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-sm self-start flex flex-col gap-1.5 min-w-0 w-full">
           <button
             onClick={() => { setActiveTab("profile"); setSuccessMsg(""); setErrorMsg(""); }}
             className={`w-full px-4 py-3 rounded-2xl text-left text-sm font-bold transition flex items-center gap-3 ${
@@ -798,7 +798,7 @@ export default function SettingsPage() {
 
         {/* Tab 1: Profile Credentials */}
         {activeTab === "profile" && (
-          <div className="lg:col-span-3 bg-card border border-border p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
+          <div className="lg:col-span-3 min-w-0 w-full bg-card border border-border p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm space-y-6">
             <form onSubmit={handleUpdateProfile} className="space-y-6">
               <div className="flex items-center gap-2 border-b border-border pb-3">
                 <Settings className="w-5 h-5 text-primary" />
@@ -812,6 +812,7 @@ export default function SettingsPage() {
                     required
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
+                    placeholder="Enter your name"
                     className="rounded-xl h-11"
                   />
                 </div>
@@ -821,6 +822,7 @@ export default function SettingsPage() {
                   <Input
                     disabled
                     value={userEmail}
+                    placeholder="Enter your email address"
                     className="rounded-xl h-11 bg-muted/40 cursor-not-allowed text-muted-foreground"
                   />
                 </div>
@@ -843,7 +845,7 @@ export default function SettingsPage() {
                         type={showPassword ? "text" : "password"}
                         value={oldPassword}
                         onChange={(e) => setOldPassword(e.target.value)}
-                        placeholder="••••••••"
+                        placeholder="Enter current password"
                         className="rounded-xl h-11 pr-10"
                       />
                       <button
@@ -862,7 +864,7 @@ export default function SettingsPage() {
                       type={showPassword ? "text" : "password"}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="Enter new password"
                       className="rounded-xl h-11"
                     />
                   </div>
@@ -873,7 +875,7 @@ export default function SettingsPage() {
                       type={showPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="Confirm new password"
                       className="rounded-xl h-11"
                     />
                   </div>
@@ -891,8 +893,8 @@ export default function SettingsPage() {
 
         {/* Tab 2: Branding & Website Logo */}
         {activeTab === "branding" && (
-          <div className="lg:col-span-3 space-y-8">
-            <div className="bg-card border border-border p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
+          <div className="lg:col-span-3 min-w-0 w-full space-y-6 sm:space-y-8">
+            <div className="bg-card border border-border p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm space-y-6 min-w-0 overflow-hidden">
               
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-2">
@@ -910,11 +912,11 @@ export default function SettingsPage() {
 
               {/* Current Logo Preview Card */}
               <div className="p-6 rounded-2xl border border-border/80 bg-muted/20 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground shrink-0">
                     Current Logo Display
                   </span>
-                  <span className="text-xs font-mono text-muted-foreground">
+                  <span className="text-xs font-mono text-muted-foreground truncate min-w-0">
                     {logoUrl}
                   </span>
                 </div>
@@ -985,7 +987,7 @@ export default function SettingsPage() {
                   <Label htmlFor="customLogoUrl" className="text-xs font-semibold text-muted-foreground">
                     Or Enter Direct Logo URL / Path
                   </Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       id="customLogoUrl"
                       value={customLogoUrl}
@@ -993,8 +995,8 @@ export default function SettingsPage() {
                         setCustomLogoUrl(e.target.value);
                         setLogoUrl(e.target.value);
                       }}
-                      placeholder="/logo.png or https://example.com/logo.png"
-                      className="rounded-xl h-11 font-mono text-xs"
+                      placeholder="Enter logo path or URL"
+                      className="rounded-xl h-11 font-mono text-xs min-w-0"
                     />
                     <Button
                       type="button"
@@ -1060,9 +1062,9 @@ export default function SettingsPage() {
 
         {/* Tab 4: Notifications & Inquiries */}
         {activeTab === "notifications" && (
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 min-w-0 w-full space-y-6">
             {/* Card 1: Contact Form Inquiry Notification Recipient */}
-            <div className="bg-card border border-border p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
+            <div className="bg-card border border-border p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm space-y-6 min-w-0 overflow-hidden">
               <div>
                 <h2 className="text-xl font-bold flex items-center gap-2">
                   <Bell className="w-5 h-5 text-primary" />
@@ -1090,7 +1092,7 @@ export default function SettingsPage() {
                       type="text"
                       value={contactNotificationEmail}
                       onChange={(e) => setContactNotificationEmail(e.target.value)}
-                      placeholder="e.g. saahmed311@gmail.com, support@kelkarmanasclinic.com"
+                      placeholder="Enter recipient email addresses (comma-separated)"
                       className="rounded-xl h-11 flex-1 font-medium"
                       required
                     />
@@ -1157,7 +1159,7 @@ export default function SettingsPage() {
                         type="email"
                         value={testRecipientEmail}
                         onChange={(e) => setTestRecipientEmail(e.target.value)}
-                        placeholder="Enter custom test recipient email (e.g. saahmed311@gmail.com)"
+                        placeholder="Enter test recipient email address"
                         className="pl-9 pr-8 rounded-xl h-10 text-xs font-medium bg-background"
                       />
                       {testRecipientEmail && (
@@ -1218,7 +1220,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Card 2: SMTP Outgoing Mail Server Configuration */}
-            <div className="bg-card border border-border p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
+            <div className="bg-card border border-border p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm space-y-6 min-w-0 overflow-hidden">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
                 <div>
                   <h2 className="text-xl font-bold flex items-center gap-2">
@@ -1290,7 +1292,7 @@ export default function SettingsPage() {
                       type="text"
                       value={smtpHost}
                       onChange={(e) => setSmtpHost(e.target.value)}
-                      placeholder="smtp.hostinger.com"
+                      placeholder="Enter SMTP host address"
                       className="rounded-xl h-10 font-medium"
                       required
                     />
@@ -1311,7 +1313,7 @@ export default function SettingsPage() {
                         if (val === 465) setSmtpSecure(true);
                         else if (val === 587) setSmtpSecure(false);
                       }}
-                      placeholder="465"
+                      placeholder="Enter SMTP port"
                       className="rounded-xl h-10 font-medium"
                       required
                     />
@@ -1348,7 +1350,7 @@ export default function SettingsPage() {
                       type="text"
                       value={smtpUser}
                       onChange={(e) => setSmtpUser(e.target.value)}
-                      placeholder="support@kelkarmanasclinic.com"
+                      placeholder="Enter SMTP username or email"
                       className="rounded-xl h-10 font-medium"
                       required
                     />
@@ -1401,7 +1403,7 @@ export default function SettingsPage() {
                       type="text"
                       value={smtpFromName}
                       onChange={(e) => setSmtpFromName(e.target.value)}
-                      placeholder="Kelkar Manas Health Care"
+                      placeholder="Enter sender display name"
                       className="rounded-xl h-10 font-medium"
                       required
                     />
@@ -1417,7 +1419,7 @@ export default function SettingsPage() {
                       type="email"
                       value={smtpFromEmail}
                       onChange={(e) => setSmtpFromEmail(e.target.value)}
-                      placeholder="support@kelkarmanasclinic.com"
+                      placeholder="Enter sender email address"
                       className="rounded-xl h-10 font-medium"
                       required
                     />
@@ -1494,7 +1496,7 @@ export default function SettingsPage() {
 
         {/* Tab 5: Google Reviews Integration */}
         {activeTab === "google_reviews" && (
-          <div className="lg:col-span-3 bg-card border border-border p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
+          <div className="lg:col-span-3 min-w-0 w-full bg-card border border-border p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm space-y-6 overflow-hidden">
             <form onSubmit={handleSaveGoogleSettings} className="space-y-6">
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-2">
@@ -1562,26 +1564,26 @@ export default function SettingsPage() {
                     <div className="space-y-1.5">
                       <Label>Baner Clinic Widget Key or Embed Code</Label>
                       <Input
-                        placeholder="e.g. 5x8k2p9 or paste <div class='grwidget-embed' data-grwidget-key='...'></div>"
+                        placeholder="Enter widget key or embed code"
                         value={banerWidgetKey}
                         onChange={(e) => setBanerWidgetKey(e.target.value)}
                         className="rounded-xl h-11 font-mono text-xs"
                       />
-                      <p className="text-[11px] text-muted-foreground">
-                        Embed key for Baner Google Maps listing (https://maps.app.goo.gl/tiVums5eDVZ9jU6HA)
+                      <p className="text-[11px] text-muted-foreground break-all">
+                        Embed key for clinic Google Maps listing
                       </p>
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label>Bhosari Clinic Widget Key or Embed Code (Optional)</Label>
+                      <Label>Secondary Clinic Widget Key or Embed Code (Optional)</Label>
                       <Input
-                        placeholder="e.g. Optional second widget key for Bhosari Clinic"
+                        placeholder="Enter optional secondary widget key"
                         value={bhosariWidgetKey}
                         onChange={(e) => setBhosariWidgetKey(e.target.value)}
                         className="rounded-xl h-11 font-mono text-xs"
                       />
                       <p className="text-[11px] text-muted-foreground">
-                        Embed key for Bhosari Google Maps listing. If left empty, Baner widget will be displayed.
+                        Embed key for secondary Google Maps listing. If left empty, primary widget will be displayed.
                       </p>
                     </div>
                   </div>
@@ -1601,7 +1603,7 @@ export default function SettingsPage() {
                       <Label>Google Places API Key</Label>
                       <Input
                         type="password"
-                        placeholder="AIzaSy..."
+                        placeholder="Enter Google Places API key"
                         value={googleApiKey}
                         onChange={(e) => setGoogleApiKey(e.target.value)}
                         className="rounded-xl h-11 font-mono text-xs"
@@ -1613,9 +1615,9 @@ export default function SettingsPage() {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
-                        <Label>Baner Clinic Google Place ID</Label>
+                        <Label>Primary Clinic Google Place ID</Label>
                         <Input
-                          placeholder="ChIJ..."
+                          placeholder="Enter Google Place ID"
                           value={banerPlaceId}
                           onChange={(e) => setBanerPlaceId(e.target.value)}
                           className="rounded-xl h-11 font-mono text-xs"
@@ -1623,9 +1625,9 @@ export default function SettingsPage() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label>Bhosari Clinic Google Place ID (Optional)</Label>
+                        <Label>Secondary Clinic Google Place ID (Optional)</Label>
                         <Input
-                          placeholder="Optional Place ID"
+                          placeholder="Enter optional Google Place ID"
                           value={bhosariPlaceId}
                           onChange={(e) => setBhosariPlaceId(e.target.value)}
                           className="rounded-xl h-11 font-mono text-xs"

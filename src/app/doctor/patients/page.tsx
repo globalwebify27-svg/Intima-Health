@@ -207,7 +207,7 @@ export default function DoctorPatientsPage() {
         <div className="flex items-center gap-3">
           <Input 
             type="search" 
-            placeholder="Search by name, email or phone..." 
+            placeholder="Search here..." 
             className="w-full sm:w-64"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

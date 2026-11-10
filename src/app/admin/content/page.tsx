@@ -266,7 +266,7 @@ export default function ContentPage() {
               <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search questions, answers, or topics..."
+                placeholder="Search here..."
                 value={faqSearch}
                 onChange={(e) => setFaqSearch(e.target.value)}
                 className="w-full h-9 pl-9 pr-3 rounded-xl border border-border bg-background text-xs outline-none focus:ring-2 focus:ring-primary/20"
@@ -603,11 +603,11 @@ export default function ContentPage() {
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-muted-foreground">Google Maps URL</label>
-                                <input type="text" value={contactData.googleMaps || ""} onChange={e => updateField("googleMaps", e.target.value)} placeholder="https://maps.google.com/..." className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                                <input type="text" value={contactData.googleMaps || ""} onChange={e => updateField("googleMaps", e.target.value)} placeholder="Enter Google Maps URL" className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-muted-foreground">Google Reviews URL</label>
-                                <input type="text" value={contactData.googleReviews || ""} onChange={e => updateField("googleReviews", e.target.value)} placeholder="https://g.page/r/.../review" className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                                <input type="text" value={contactData.googleReviews || ""} onChange={e => updateField("googleReviews", e.target.value)} placeholder="Enter Google Reviews URL" className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
                             </div>
                           </div>
@@ -626,7 +626,7 @@ export default function ContentPage() {
                             </div>
                             <div className="space-y-2">
                               <label className="text-xs font-bold text-muted-foreground">Hospital Names (comma-separated)</label>
-                              <textarea rows={3} value={contactData.hospitalNames || ""} onChange={e => updateField("hospitalNames", e.target.value)} placeholder="Kelkar Hospital, Sanmitra Hospital, Ashakiran Hospital" className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
+                              <textarea rows={3} value={contactData.hospitalNames || ""} onChange={e => updateField("hospitalNames", e.target.value)} placeholder="Enter hospital names (comma-separated)" className="w-full p-3 rounded-xl border border-border bg-background outline-none resize-y" />
                             </div>
                           </div>
                         </div>
@@ -680,7 +680,7 @@ export default function ContentPage() {
                                 type="text" 
                                 value={aboutData.storyImage || "/images/kelkar_hospital.jpeg"} 
                                 onChange={e => updateField("storyImage", e.target.value)} 
-                                placeholder="/images/kelkar_hospital.jpeg"
+                                placeholder="Enter image path or URL"
                                 className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none text-sm" 
                               />
                             </div>
@@ -877,11 +877,11 @@ export default function ContentPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-muted-foreground">Google Maps Link</label>
-                                <input type="text" value={contactData.googleMaps || ""} onChange={e => updateField("googleMaps", e.target.value)} placeholder="https://maps.google.com/..." className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                                <input type="text" value={contactData.googleMaps || ""} onChange={e => updateField("googleMaps", e.target.value)} placeholder="Enter Google Maps URL" className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
                               <div className="space-y-2">
                                 <label className="text-xs font-bold text-muted-foreground">Google Reviews Link</label>
-                                <input type="text" value={contactData.googleReviews || ""} onChange={e => updateField("googleReviews", e.target.value)} placeholder="https://g.page/r/.../review" className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
+                                <input type="text" value={contactData.googleReviews || ""} onChange={e => updateField("googleReviews", e.target.value)} placeholder="Enter Google Reviews URL" className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none" />
                               </div>
                             </div>
                           </div>

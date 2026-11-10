@@ -140,26 +140,26 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 w-full min-w-0">
       {/* Header */}
-      <div className="bg-card border border-border shadow-sm rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex gap-4 items-center">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
-            <BarChart3 className="w-7 h-7" />
+      <div className="bg-card border border-border shadow-sm rounded-3xl p-4 sm:p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 min-w-0">
+        <div className="flex gap-3 sm:gap-4 items-center min-w-0">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+            <BarChart3 className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
-            <p className="text-muted-foreground mt-1 text-sm font-medium">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Reports &amp; Analytics</h1>
+            <p className="text-muted-foreground mt-1 text-xs sm:text-sm font-medium">
               Comprehensive overview of your platform performance.
             </p>
           </div>
         </div>
         {/* Filters */}
-        <div className="flex gap-4 flex-wrap items-center">
+        <div className="flex gap-3 flex-wrap items-center w-full md:w-auto">
           <select
             value={selectedClinic}
             onChange={(e) => setSelectedClinic(e.target.value)}
-            className="h-9 px-3 rounded-xl border border-border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="h-9 px-3 rounded-xl border border-border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 w-full sm:w-auto max-w-full"
           >
             <option value="all">All Clinics</option>
             {clinics.map(c => (
@@ -167,14 +167,14 @@ export default function ReportsPage() {
             ))}
           </select>
           
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
             {RANGE_OPTIONS.map(opt => (
               <Button
                 key={opt.value}
                 variant={range === opt.value ? "default" : "outline"}
                 size="sm"
                 onClick={() => setRange(opt.value)}
-                className="rounded-xl text-xs h-9 px-4"
+                className="rounded-xl text-xs h-8 sm:h-9 px-3 sm:px-4"
               >
                 {opt.label}
               </Button>
@@ -184,7 +184,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 min-w-0">
         {summaryCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -193,9 +193,9 @@ export default function ReportsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.08 }}
-              className="p-6 bg-card rounded-2xl border border-border shadow-sm"
+              className="p-4 sm:p-6 bg-card rounded-2xl border border-border shadow-sm min-w-0"
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className={`p-2.5 rounded-xl ${stat.bg}`}>
                   <Icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
@@ -208,38 +208,38 @@ export default function ReportsPage() {
       </div>
 
       {/* Revenue Trend + Appointment Status */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 min-w-0">
         {/* Revenue Trend (2/3 width) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="lg:col-span-2 p-6 bg-card rounded-2xl border border-border shadow-sm"
+          className="lg:col-span-2 p-4 sm:p-6 bg-card rounded-2xl border border-border shadow-sm min-w-0 w-full overflow-hidden"
         >
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-bold">Revenue Trend</h3>
               <p className="text-xs text-muted-foreground mt-1">Monthly revenue (last 6 months)</p>
             </div>
-            <div className="p-2 bg-emerald-500/10 rounded-lg">
+            <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
               <TrendingUp className="w-4 h-4 text-emerald-600" />
             </div>
           </div>
-          <div className="flex items-end gap-4 h-[250px] pt-4">
+          <div className="flex items-end gap-1.5 sm:gap-4 h-[220px] sm:h-[250px] pt-4 w-full min-w-0">
             {stats.monthlyRevenue.map((m, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                <span className="text-[10px] font-bold text-primary whitespace-nowrap">
+              <div key={i} className="flex-1 min-w-0 flex flex-col items-center gap-1.5 sm:gap-2 h-full justify-end">
+                <span className="text-[9px] sm:text-[10px] font-bold text-primary whitespace-nowrap truncate max-w-full">
                   {m.revenue > 0 ? `₹${(m.revenue / 1000).toFixed(1)}k` : "–"}
                 </span>
                 <motion.div
                   initial={{ height: 0 }}
                   animate={{ height: `${Math.max((m.revenue / maxRevenue) * 100, 3)}%` }}
                   transition={{ delay: 0.4 + i * 0.1, duration: 0.5 }}
-                  className="w-full rounded-xl bg-gradient-to-t from-primary to-primary/60 min-h-[3px]"
+                  className="w-full rounded-lg sm:rounded-xl bg-gradient-to-t from-primary to-primary/60 min-h-[3px]"
                 />
-                <div className="text-center">
-                  <span className="text-[10px] text-muted-foreground font-medium block">{m.month}</span>
-                  <span className="text-[9px] text-muted-foreground/60">{m.count} appts</span>
+                <div className="text-center w-full min-w-0">
+                  <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium block truncate">{m.month}</span>
+                  <span className="text-[8px] sm:text-[9px] text-muted-foreground/60 block truncate">{m.count} appts</span>
                 </div>
               </div>
             ))}
@@ -251,7 +251,7 @@ export default function ReportsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="p-6 bg-card rounded-2xl border border-border shadow-sm"
+          className="p-4 sm:p-6 bg-card rounded-2xl border border-border shadow-sm min-w-0 w-full overflow-hidden"
         >
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold">Status Breakdown</h3>
@@ -292,13 +292,13 @@ export default function ReportsPage() {
       </div>
 
       {/* Service Breakdown + Top Doctors */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 min-w-0">
         {/* Service Popularity */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="p-6 bg-card rounded-2xl border border-border shadow-sm"
+          className="p-4 sm:p-6 bg-card rounded-2xl border border-border shadow-sm min-w-0 w-full overflow-hidden"
         >
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -343,7 +343,7 @@ export default function ReportsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="p-6 bg-card rounded-2xl border border-border shadow-sm"
+          className="p-4 sm:p-6 bg-card rounded-2xl border border-border shadow-sm min-w-0 w-full overflow-hidden"
         >
           <div className="flex items-center justify-between mb-6">
             <div>

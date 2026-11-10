@@ -322,7 +322,7 @@ export default function BookingPage() {
                         value={formData.firstName}
                         onChange={(e) => updateForm('firstName', e.target.value)}
                         className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50" 
-                        placeholder="John" 
+                        placeholder="Enter first name" 
                       />
                     </div>
                     <div className="space-y-2">
@@ -332,7 +332,7 @@ export default function BookingPage() {
                         value={formData.lastName}
                         onChange={(e) => updateForm('lastName', e.target.value)}
                         className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50" 
-                        placeholder="Doe" 
+                        placeholder="Enter last name" 
                       />
                     </div>
                   </div>
@@ -345,7 +345,7 @@ export default function BookingPage() {
                         value={formData.email}
                         onChange={(e) => updateForm('email', e.target.value)}
                         className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50" 
-                        placeholder="john@example.com" 
+                        placeholder="Enter your email address" 
                       />
                     </div>
                     <div className="space-y-2">
@@ -362,7 +362,7 @@ export default function BookingPage() {
                         }}
                         maxLength={10}
                         className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50" 
-                        placeholder="9876543210" 
+                        placeholder="Enter your phone number" 
                       />
                     </div>
                   </div>

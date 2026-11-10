@@ -444,7 +444,7 @@ export default function PharmacyInventoryPage() {
             setSearchQuery(e.target.value);
             setCurrentPage(1);
           }}
-          placeholder="Search medicines by name or category..."
+          placeholder="Search here..."
           className="pl-10 h-10 rounded-xl bg-card border-border/80 text-sm focus:ring-2 focus:ring-primary/20 w-full"
         />
         {searchQuery && (

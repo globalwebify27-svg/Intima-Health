@@ -9,7 +9,7 @@ export function SelfAssessmentCTA() {
   const { openBooking } = useBookingModal();
 
   return (
-    <section className="py-20 lg:py-28 bg-background px-6 lg:px-12 relative overflow-hidden">
+    <section className="py-10 lg:py-14 bg-background px-6 lg:px-12 relative overflow-hidden">
       <div className="container mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

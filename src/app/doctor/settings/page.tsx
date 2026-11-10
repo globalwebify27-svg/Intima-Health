@@ -301,6 +301,7 @@ export default function DoctorSettingsPage() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
                   className="rounded-xl h-11 border-border/60"
                   required
                 />
@@ -313,6 +314,7 @@ export default function DoctorSettingsPage() {
                   type="text"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Enter your phone number"
                   className="rounded-xl h-11 border-border/60"
                   required
                 />

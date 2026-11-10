@@ -62,7 +62,7 @@ export default function PEPage() {
     <div className="min-h-screen bg-background text-foreground">
       
       {/* Hero Section */}
-      <section className="relative pt-12 pb-20 lg:pt-16 lg:pb-32 overflow-hidden bg-muted/30">
+      <section className="relative pt-8 pb-10 lg:pt-12 lg:pb-14 overflow-hidden bg-muted/30">
         <div className="absolute top-0 right-0 w-full lg:w-1/2 h-full bg-indigo-500/5 -z-10 lg:rounded-bl-[120px]" />
         
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -118,9 +118,9 @@ export default function PEPage() {
       </section>
 
       {/* Understanding Section */}
-      <section className="py-24 bg-background">
+      <section className="py-10 lg:py-14 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <div className="text-center max-w-2xl mx-auto mb-8 lg:mb-10">
             <h2 className="text-3xl md:text-5xl font-serif mb-6">Primary vs. Secondary PE</h2>
             <p className="text-muted-foreground text-lg">
               Understanding the root cause is the first step toward effective treatment.
@@ -154,7 +154,7 @@ export default function PEPage() {
       </section>
 
       {/* Treatments Section */}
-      <section className="py-24 bg-muted/50 border-y border-border">
+      <section className="py-10 lg:py-14 bg-muted/50 border-y border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col-reverse lg:flex-row items-center gap-16">
             
@@ -206,7 +206,7 @@ export default function PEPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-primary text-primary-foreground text-center">
+      <section className="py-10 lg:py-14 bg-primary text-primary-foreground text-center">
         <div className="container mx-auto px-4">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}

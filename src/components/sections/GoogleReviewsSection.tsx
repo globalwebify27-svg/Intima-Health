@@ -144,7 +144,7 @@ export function GoogleReviewsSection() {
 
   return (
     <section 
-      className="py-16 sm:py-24 bg-gradient-to-b from-background via-muted/20 to-background border-t border-border/40 overflow-hidden"
+      className="py-10 sm:py-14 bg-gradient-to-b from-background via-muted/20 to-background border-t border-border/40 overflow-hidden"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >

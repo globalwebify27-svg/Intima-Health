@@ -493,7 +493,7 @@ export default function AdminPatientsPage() {
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by Patient Name, Phone Number, Email, or Patient ID..."
+            placeholder="Search here..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full h-11 pl-10 pr-4 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/70"

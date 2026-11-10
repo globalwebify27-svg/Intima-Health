@@ -48,7 +48,7 @@ export default async function BlogPostPage({
   return (
     <div className="min-h-screen bg-background text-foreground pb-24">
       {/* Article Header */}
-      <section className="relative pt-12 pb-16 lg:pt-20 lg:pb-24 bg-muted/30 border-b border-border">
+      <section className="relative pt-8 pb-10 lg:pt-12 lg:pb-14 bg-muted/30 border-b border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
           <Link
             href="/blog"
@@ -90,7 +90,7 @@ export default async function BlogPostPage({
       </section>
 
       {/* Article Content */}
-      <section className="py-16">
+      <section className="py-10 lg:py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
           <div
             className="prose prose-lg dark:prose-invert prose-headings:font-serif prose-headings:font-medium prose-a:text-primary max-w-none"

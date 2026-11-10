@@ -26,7 +26,7 @@ export default async function BlogPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
-      <section className="relative pt-12 pb-16 lg:pt-16 lg:pb-24 bg-muted/30 overflow-hidden border-b border-border">
+      <section className="relative pt-8 pb-10 lg:pt-12 lg:pb-14 bg-muted/30 overflow-hidden border-b border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="max-w-3xl mx-auto">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-6">
@@ -45,7 +45,7 @@ export default async function BlogPage() {
       </section>
 
       {/* Articles Grid */}
-      <section className="py-20 bg-background">
+      <section className="py-10 lg:py-14 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           {posts.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">

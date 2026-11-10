@@ -46,7 +46,7 @@ export default function ResearchPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
-      <section className="relative pt-12 pb-16 lg:pt-16 lg:pb-24 bg-muted/30 overflow-hidden border-b border-border">
+      <section className="relative pt-8 pb-10 lg:pt-12 lg:pb-14 bg-muted/30 overflow-hidden border-b border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <motion.div 
             initial="hidden"
@@ -70,7 +70,7 @@ export default function ResearchPage() {
       </section>
 
       {/* Studies List */}
-      <section className="py-20 bg-background">
+      <section className="py-10 lg:py-14 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
             <div className="mb-12 border-b border-border pb-6 flex items-center justify-between">
@@ -119,7 +119,7 @@ export default function ResearchPage() {
       </section>
 
       {/* Medical Board Banner */}
-      <section className="py-20 bg-muted/30 border-t border-border">
+      <section className="py-10 lg:py-14 bg-muted/30 border-t border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-serif mb-6">Backed by our Medical Advisory Board</h2>

@@ -28,7 +28,7 @@ export default function ClientPage({ data, hospitals }: { data: any; hospitals?:
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
-      <section className="relative pt-12 pb-20 lg:pt-16 lg:pb-28 overflow-hidden bg-muted/30">
+      <section className="relative pt-8 pb-10 lg:pt-12 lg:pb-14 overflow-hidden bg-muted/30">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -z-10 rounded-bl-[120px]" />
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -73,9 +73,9 @@ export default function ClientPage({ data, hospitals }: { data: any; hospitals?:
       </section>
 
       {/* Understanding & Overview Section */}
-      <section className="py-20 bg-background">
+      <section className="py-10 lg:py-12 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="text-center max-w-3xl mx-auto mb-8 lg:mb-10">
             <h2 className="text-3xl md:text-4xl font-serif mb-6">Overview & Clinical Approach</h2>
             <p className="text-muted-foreground text-lg leading-relaxed">
               {data.description}
@@ -115,7 +115,7 @@ export default function ClientPage({ data, hospitals }: { data: any; hospitals?:
       </section>
 
       {/* Treatment Plan Section */}
-      <section className="py-20 bg-muted/40 border-y border-border">
+      <section className="py-10 lg:py-12 bg-muted/40 border-y border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-serif mb-4">Our Specialized <span className="text-primary italic">Care Plan</span></h2>
@@ -147,7 +147,7 @@ export default function ClientPage({ data, hospitals }: { data: any; hospitals?:
       <TopicFaqSection slug={data.slug} title={data.title} faqs={data.faqs} />
 
       {/* CTA Section */}
-      <section className="py-20 bg-primary text-primary-foreground text-center">
+      <section className="py-10 lg:py-12 bg-primary text-primary-foreground text-center">
         <div className="container mx-auto px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="max-w-2xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-serif mb-4">

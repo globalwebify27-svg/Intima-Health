@@ -38,7 +38,7 @@ const reasons = [
 
 export function WhyChooseUs() {
   return (
-    <section className="py-24 lg:py-32 bg-[#FCFBFC] border-y border-border/40 overflow-hidden relative">
+    <section className="py-10 lg:py-14 bg-[#FCFBFC] border-y border-border/40 overflow-hidden relative">
       {/* Soft decorative background elements */}
       <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/[0.03] via-transparent to-transparent pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-secondary/[0.04] via-transparent to-transparent pointer-events-none" />

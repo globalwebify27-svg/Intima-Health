@@ -47,7 +47,7 @@ export default function SexualProblemsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Header */}
-      <section className="relative pt-12 pb-16 lg:pt-16 lg:pb-24 overflow-hidden bg-muted/30 border-b border-border/40">
+      <section className="relative pt-8 pb-10 lg:pt-12 lg:pb-14 overflow-hidden bg-muted/30 border-b border-border/40">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center max-w-4xl">
           <motion.div initial="hidden" animate="visible" variants={fadeIn}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 text-secondary-foreground font-semibold text-sm mb-6 border border-secondary/20">
@@ -96,7 +96,7 @@ export default function SexualProblemsPage() {
       </section>
 
       {/* Main Tabbed Content */}
-      <section className="py-16 lg:py-24 bg-background">
+      <section className="py-10 lg:py-14 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           {activeTab === "sexual-problems" && (
             <div>
@@ -235,7 +235,7 @@ export default function SexualProblemsPage() {
       </section>
 
       {/* Booking CTA Section */}
-      <section className="py-20 bg-muted/40 border-t border-border/50">
+      <section className="py-10 lg:py-12 bg-muted/40 border-t border-border/50">
         <div className="container mx-auto px-4 text-center max-w-2xl">
           <h2 className="text-3xl md:text-4xl font-serif mb-4">Confidential Consultations</h2>
           <p className="text-muted-foreground mb-8 text-base">

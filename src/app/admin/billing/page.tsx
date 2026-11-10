@@ -373,7 +373,7 @@ function BillingContent() {
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by Bill #, Customer Name, Phone..."
+            placeholder="Search here..."
             className="pl-10 rounded-xl h-10 text-xs font-medium"
           />
         </div>

@@ -61,23 +61,23 @@ export function DashboardLayout({ children, links, roleName, basePath }: Dashboa
   }, []);
 
   return (
-    <div className="min-h-screen bg-muted/20 w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-muted/20 w-full max-w-full overflow-x-clip">
       <Sidebar links={links} roleName={roleName} basePath={basePath} clinicName={clinicName} clinicLocation={clinicLocation} />
       
-      <div className="flex flex-col lg:pl-72 w-full max-w-full min-w-0 overflow-x-hidden">
+      <div className="flex flex-col lg:pl-72 w-full max-w-full min-w-0 overflow-x-clip">
         {/* Top Header */}
         <header className="hidden lg:flex h-16 items-center justify-between px-8 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-30">
-          <div className="flex items-center gap-2 text-sm">
-            <div className="flex items-center gap-2 text-sm bg-muted/60 border border-border px-3.5 py-1.5 rounded-2xl shadow-sm">
+          <div className="flex items-center gap-2 text-sm min-w-0">
+            <div className="flex items-center gap-2 text-sm bg-muted/60 border border-border px-3.5 py-1.5 rounded-2xl shadow-sm min-w-0">
               <Building2 className="w-4 h-4 text-primary shrink-0" />
-              <span className="text-foreground font-bold">{clinicName || "KELKAR MANAS HEALTH CLINIC"}</span>
-              <span className="text-xs font-bold text-muted-foreground bg-card border border-border px-2 py-0.5 rounded-full">
+              <span className="text-foreground font-bold truncate">{clinicName || "KELKAR MANAS HEALTH CLINIC"}</span>
+              <span className="text-xs font-bold text-muted-foreground bg-card border border-border px-2 py-0.5 rounded-full shrink-0">
                 {clinicLocation || "Global"}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <NotificationBell />
             {roleName === "Patient" && (
               <Button onClick={() => openBooking()} className="hidden sm:flex rounded-full px-5 font-bold shadow-md hover:-translate-y-0.5 transition-all">
@@ -91,7 +91,7 @@ export function DashboardLayout({ children, links, roleName, basePath }: Dashboa
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 pt-20 lg:pt-8 min-h-screen w-full max-w-full min-w-0 overflow-x-hidden">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 pt-20 sm:pt-20 lg:pt-8 min-h-screen w-full max-w-full min-w-0 overflow-x-clip">
           <div className="mx-auto max-w-7xl w-full min-w-0">
             {children}
           </div>

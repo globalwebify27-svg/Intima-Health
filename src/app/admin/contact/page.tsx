@@ -69,31 +69,34 @@ export default function AdminContactPage() {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6 w-full min-w-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold font-serif text-foreground">Contact Submissions</h1>
-          <p className="text-muted-foreground mt-1">Manage all public inquiries from the contact form.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold font-serif text-foreground">Contact Submissions</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">Manage all public inquiries from the contact form.</p>
         </div>
-        <Button onClick={fetchSubmissions} variant="outline" className="rounded-xl border-border/60 shadow-sm text-sm font-semibold h-10 px-4">
+        <Button onClick={fetchSubmissions} variant="outline" className="rounded-xl border-border/60 shadow-sm text-xs sm:text-sm font-semibold h-9 sm:h-10 px-4 w-full sm:w-auto">
           Refresh List
         </Button>
       </div>
 
       {/* Notification Recipient Alert */}
-      <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-        <div className="flex items-center gap-3">
+      <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 min-w-0">
+        <div className="flex items-start sm:items-center gap-3 min-w-0 w-full">
           <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <Bell className="w-4 h-4" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">Owner Notification Recipient</p>
-            <p className="text-sm font-bold text-foreground">
-              New inquiries are emailed to: <span className="text-primary font-mono">{notifEmail}</span>
+            <p className="text-xs sm:text-sm font-bold text-foreground break-words">
+              New inquiries are emailed to:{" "}
+              <span className="text-primary font-mono break-all">
+                {notifEmail.split(",").map((e) => e.trim()).filter(Boolean).join(", ")}
+              </span>
             </p>
           </div>
         </div>
-        <Link href="/admin/settings">
+        <Link href="/admin/settings" className="shrink-0">
           <Button variant="outline" size="sm" className="rounded-xl text-xs font-semibold gap-1.5 h-8 border-primary/30 text-primary hover:bg-primary/5">
             <Settings className="w-3.5 h-3.5" /> Edit in Settings
           </Button>
@@ -121,8 +124,8 @@ export default function AdminContactPage() {
           <p className="text-muted-foreground">You haven't received any contact inquiries yet.</p>
         </div>
       ) : (
-        <div className="bg-card rounded-[2rem] border border-border shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-card rounded-2xl sm:rounded-[2rem] border border-border shadow-sm overflow-hidden w-full min-w-0">
+          <div className="w-full overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-muted/40 text-muted-foreground uppercase tracking-wider text-[10px] font-bold">
                 <tr>

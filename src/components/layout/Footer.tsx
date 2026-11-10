@@ -7,7 +7,7 @@ export function Footer() {
     <footer className="relative flex flex-col w-full">
       
       {/* Top Tone: Light Section for Newsletter */}
-      <div className="bg-[#FCFBFC] text-foreground py-20 border-t border-border/40 relative z-20">
+      <div className="bg-[#FCFBFC] text-foreground py-12 border-t border-border/40 relative z-20">
         <div className="container mx-auto px-6 lg:px-12">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
             
@@ -27,14 +27,14 @@ export function Footer() {
       </div>
 
       {/* Bottom Tone: Deep Burgundy Section for Links & Contact */}
-      <div className="bg-[#3d113e] text-white pt-20 pb-12 relative overflow-hidden z-10">
+      <div className="bg-[#3d113e] text-white pt-12 pb-10 relative overflow-hidden z-10">
         
         {/* Soft radial glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-white/5 rounded-[100%] blur-[120px] pointer-events-none" />
 
         <div className="container mx-auto px-6 lg:px-12 relative z-10">
           
-          <div className="grid grid-cols-2 md:grid-cols-12 gap-12 mb-16">
+          <div className="grid grid-cols-2 md:grid-cols-12 gap-8 lg:gap-12 mb-10">
             
             {/* Hospital Contact Info Column */}
             <div className="col-span-2 md:col-span-5 lg:col-span-5">

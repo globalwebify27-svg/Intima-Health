@@ -166,6 +166,7 @@ export default function PatientProfilePage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your name"
                 className="rounded-xl h-11 border-border/60"
                 required
               />
@@ -178,6 +179,7 @@ export default function PatientProfilePage() {
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                placeholder="Enter WhatsApp number"
                 className="rounded-xl h-11 border-border/60"
                 required
               />
@@ -208,7 +210,7 @@ export default function PatientProfilePage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email (e.g. name@gmail.com)"
+                placeholder="Enter your email address"
                 className="rounded-xl h-11 border-border/60 bg-background"
               />
               <p className="text-[11px] text-muted-foreground leading-relaxed">
@@ -290,7 +292,7 @@ export default function PatientProfilePage() {
                 value={emergencyContactName}
                 onChange={(e) => setEmergencyContactName(e.target.value)}
                 className="rounded-xl h-11 border-border/60"
-                placeholder="Name"
+                placeholder="Enter contact name"
               />
             </div>
 
@@ -302,7 +304,7 @@ export default function PatientProfilePage() {
                 value={emergencyContactPhone}
                 onChange={(e) => setEmergencyContactPhone(e.target.value)}
                 className="rounded-xl h-11 border-border/60"
-                placeholder="Phone"
+                placeholder="Enter contact phone number"
               />
             </div>
           </div>

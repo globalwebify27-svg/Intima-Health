@@ -71,7 +71,7 @@ export default function DiagnosticsPage() {
     <div className="min-h-screen bg-background text-foreground">
       
       {/* Hero Section */}
-      <section className="relative pt-12 pb-20 lg:pt-16 lg:pb-32 overflow-hidden bg-background">
+      <section className="relative pt-8 pb-10 lg:pt-12 lg:pb-14 overflow-hidden bg-background">
         <div className="absolute top-0 right-0 w-full lg:w-1/2 h-full bg-secondary/10 -z-10 lg:rounded-bl-[120px]" />
         
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -128,9 +128,9 @@ export default function DiagnosticsPage() {
       </section>
 
       {/* How it Works Section */}
-      <section className="py-24 bg-muted/30">
+      <section className="py-10 lg:py-14 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <div className="text-center max-w-2xl mx-auto mb-8 lg:mb-10">
             <h2 className="text-3xl md:text-5xl font-serif mb-6">Lab testing, simplified.</h2>
             <p className="text-muted-foreground text-lg">
               Get clinical-level insights from the comfort of your couch.

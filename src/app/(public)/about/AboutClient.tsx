@@ -192,7 +192,7 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
     <div className="min-h-screen bg-background text-foreground">
       
       {/* 1. HERO SECTION */}
-      <section className="relative pt-12 pb-20 lg:pt-20 lg:pb-28 overflow-hidden bg-gradient-to-b from-primary/[0.04] via-background to-background border-b border-border/50">
+      <section className="relative pt-8 pb-10 lg:pt-12 lg:pb-14 overflow-hidden bg-gradient-to-b from-primary/[0.04] via-background to-background border-b border-border/50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
             
@@ -293,7 +293,7 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
       </section>
 
       {/* 2. HISTORY & CASHLESS SCHEMES EDITORIAL */}
-      <section id="story" className="py-20 lg:py-28 bg-muted/20 border-b border-border">
+      <section id="story" className="py-10 lg:py-14 bg-muted/20 border-b border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
             
@@ -379,9 +379,9 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
       </section>
 
       {/* 3. CORE GUIDING VALUES */}
-      <section className="py-20 lg:py-28 bg-background border-b border-border">
+      <section className="py-10 lg:py-14 bg-background border-b border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="text-center max-w-3xl mx-auto mb-8 lg:mb-10">
             <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-primary mb-3 block">
               Our Core Philosophy
             </span>
@@ -414,7 +414,7 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
       </section>
 
       {/* 4. REDESIGNED DOCTOR SECTION WITH STUNNING DOCTOR CARDS */}
-      <section id="doctors" className="py-20 lg:py-28 bg-muted/20 border-b border-border scroll-mt-20">
+      <section id="doctors" className="py-10 lg:py-14 bg-muted/20 border-b border-border scroll-mt-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
           
           {/* Header & Filter Controls */}
@@ -623,7 +623,7 @@ export default function AboutClient({ initialAboutData, initialClinics, initialD
       </section>
 
       {/* 5. BOTTOM CTA BANNER */}
-      <section className="py-20 lg:py-24 bg-background text-center">
+      <section className="py-10 lg:py-14 bg-background text-center">
         <div className="container mx-auto px-4 max-w-3xl">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-6">
             <Heart className="w-7 h-7" />

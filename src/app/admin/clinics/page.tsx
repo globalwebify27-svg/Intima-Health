@@ -378,7 +378,7 @@ export default function ClinicsAdminPage() {
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Clinic Name *</label>
                     <input
                       type="text"
-                      placeholder="e.g. Kelkar Manas Hospital & Clinic"
+                      placeholder="Enter clinic name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
@@ -391,7 +391,7 @@ export default function ClinicsAdminPage() {
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">State</label>
                       <input
                         type="text"
-                        placeholder="e.g. Maharashtra"
+                        placeholder="Enter state"
                         value={state}
                         onChange={(e) => setState(e.target.value)}
                         className="w-full h-11 px-3.5 rounded-xl border border-border bg-background text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -402,7 +402,7 @@ export default function ClinicsAdminPage() {
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">City *</label>
                       <input
                         type="text"
-                        placeholder="e.g. Akola"
+                        placeholder="Enter city"
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
                         required
@@ -415,7 +415,7 @@ export default function ClinicsAdminPage() {
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Full Address *</label>
                     <input
                       type="text"
-                      placeholder="e.g. Station Road, Near Railway Overbridge, Akola"
+                      placeholder="Enter your address"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                       required
@@ -428,7 +428,7 @@ export default function ClinicsAdminPage() {
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">WhatsApp / Phone *</label>
                       <input
                         type="text"
-                        placeholder="e.g. +91 7030414140"
+                        placeholder="Enter WhatsApp number"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         required
@@ -440,7 +440,7 @@ export default function ClinicsAdminPage() {
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Email Address *</label>
                       <input
                         type="email"
-                        placeholder="e.g. clinic@kelkarmanas.com"
+                        placeholder="Enter your email address"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required

@@ -59,7 +59,7 @@ export function FeaturedExperts() {
 
   if (loading) {
     return (
-      <section className="py-24 lg:py-32 relative bg-primary/[0.02]">
+      <section className="py-12 lg:py-16 relative bg-primary/[0.02]">
         <div className="container mx-auto px-6 text-center flex flex-col items-center justify-center min-h-[300px]">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
           <p className="text-muted-foreground font-medium text-lg animate-pulse">Loading our expert team...</p>
@@ -73,7 +73,7 @@ export function FeaturedExperts() {
   }
 
   return (
-    <section className="py-24 lg:py-32 relative overflow-hidden bg-primary/[0.02]">
+    <section className="py-12 lg:py-16 relative overflow-hidden bg-primary/[0.02]">
       
       {/* Floating Medical SVGs in Background */}
       <motion.div
@@ -106,7 +106,7 @@ export function FeaturedExperts() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-3xl mx-auto mb-20"
+          className="text-center max-w-3xl mx-auto mb-10"
         >
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6">
             Care led by <span className="text-primary">industry authorities.</span>
@@ -185,7 +185,7 @@ export function FeaturedExperts() {
           ))}
         </motion.div>
         
-        <div className="mt-20 text-center">
+        <div className="mt-10 text-center">
           <Link href="/doctors" className={buttonVariants({ variant: "ghost", className: "text-primary font-bold text-lg group hover:bg-primary/5 rounded-full px-8 py-6" })}>
             See the full clinical team <ArrowRight className="ml-3 h-5 w-5 transform group-hover:translate-x-1 transition-transform" />
           </Link>

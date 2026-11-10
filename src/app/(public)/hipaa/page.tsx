@@ -59,7 +59,7 @@ export default async function HIPAAPage() {
   return (
     <div className="bg-[#FAF9F6] min-h-screen text-[#1A1A1A]">
       {/* Hero Header */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#4A154B] via-[#350d36] to-[#1E081F] text-white py-16 md:py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#4A154B] via-[#350d36] to-[#1E081F] text-white py-10 md:py-14">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
 
         <div className="container mx-auto px-6 max-w-6xl relative z-10">

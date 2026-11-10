@@ -31,7 +31,7 @@ const itemVariants: Variants = {
 export function Hero() {
   const { openBooking } = useBookingModal();
   return (
-    <section className="relative overflow-hidden bg-background pt-8 lg:pt-24 pb-16">
+    <section className="relative overflow-hidden bg-background pt-6 lg:pt-12 pb-10 lg:pb-12">
       {/* Static Magic Background Orbs for better scroll performance */}
       <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
       <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/3 w-[600px] h-[600px] bg-secondary/5 rounded-full blur-[100px] -z-10 pointer-events-none" />

@@ -1020,7 +1020,7 @@ export function BookingModal() {
                                         updateForm('firstName', val);
                                       }}
                                       className="bg-background/50 border border-border/60 hover:border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-xl pl-9 pr-3 py-2.5 text-xs w-full transition-all focus:outline-none" 
-                                      placeholder="First Name" 
+                                      placeholder="Enter first name" 
                                     />
                                   </div>
                                   <div className="relative">
@@ -1035,7 +1035,7 @@ export function BookingModal() {
                                         updateForm('lastName', val);
                                       }}
                                       className="bg-background/50 border border-border/60 hover:border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-xl pl-9 pr-3 py-2.5 text-xs w-full transition-all focus:outline-none" 
-                                      placeholder="Last Name" 
+                                      placeholder="Enter last name" 
                                     />
                                   </div>
                                 </div>
@@ -1059,7 +1059,7 @@ export function BookingModal() {
                                         if (emailError) setEmailError("");
                                       }}
                                       className={`bg-background/50 border ${emailError ? 'border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20' : 'border-border/60 hover:border-primary/40 focus:border-primary focus:ring-primary/30'} rounded-xl pl-9 pr-3 py-2.5 text-xs w-full transition-all focus:outline-none focus:ring-1`} 
-                                      placeholder="Email (Optional)" 
+                                      placeholder="Enter your email address (optional)" 
                                     />
                                     {emailError && <span className="text-[10px] text-rose-500 font-medium mt-1.5 px-1">{emailError}</span>}
                                   </div>
@@ -1083,7 +1083,7 @@ export function BookingModal() {
                                         disabled={otpStep === 'verified' || loadingOtp}
                                         maxLength={10}
                                         className="bg-background/80 border border-border/60 hover:border-primary/40 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-xl pl-9 pr-3 py-2.5 text-xs w-full transition-all focus:outline-none flex-1 disabled:opacity-60" 
-                                        placeholder="WhatsApp Number" 
+                                        placeholder="Enter WhatsApp number" 
                                       />
                                       {otpStep === 'phone' && (
                                         <button 
@@ -1163,7 +1163,7 @@ export function BookingModal() {
                                     disabled={otpStep === 'verified' || loadingOtp}
                                     maxLength={10}
                                     className="bg-background border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary flex-1 disabled:opacity-50" 
-                                    placeholder="WhatsApp Number" 
+                                    placeholder="Enter WhatsApp number" 
                                   />
                                   {otpStep === 'phone' && (
                                     <button 
@@ -1189,14 +1189,14 @@ export function BookingModal() {
                                       value={formData.firstName}
                                       disabled
                                       className="bg-muted border border-border rounded-xl px-3 py-2 text-xs opacity-70 cursor-not-allowed" 
-                                      placeholder="First Name" 
+                                      placeholder="Enter first name" 
                                     />
                                     <input 
                                       type="text" 
                                       value={formData.lastName}
                                       disabled
                                       className="bg-muted border border-border rounded-xl px-3 py-2 text-xs opacity-70 cursor-not-allowed" 
-                                      placeholder="Last Name" 
+                                      placeholder="Enter last name" 
                                     />
                                   </div>
                                 )}

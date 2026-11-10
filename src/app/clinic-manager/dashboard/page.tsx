@@ -917,7 +917,7 @@ export default function ClinicManagerDashboardPage() {
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="Name"
+                        placeholder="Enter patient name"
                         className="w-full h-9 px-2.5 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                       />
                     </div>
@@ -928,7 +928,7 @@ export default function ClinicManagerDashboardPage() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Email"
+                        placeholder="Enter your email address"
                         className="w-full h-9 px-2.5 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                       />
                     </div>
@@ -939,7 +939,7 @@ export default function ClinicManagerDashboardPage() {
                         required
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="WhatsApp phone"
+                        placeholder="Enter WhatsApp number"
                         className="w-full h-9 px-2.5 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                       />
                     </div>

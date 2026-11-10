@@ -97,7 +97,7 @@ export default function DoctorsClient({ initialClinics, initialDoctors }: Doctor
     <div className="min-h-screen bg-background text-foreground">
       
       {/* Hero Section */}
-      <section className="relative pt-20 pb-10 lg:pt-28 lg:pb-16 overflow-hidden">
+      <section className="relative pt-8 pb-8 lg:pt-12 lg:pb-12 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <Image
@@ -136,7 +136,7 @@ export default function DoctorsClient({ initialClinics, initialDoctors }: Doctor
       </section>
 
       {/* Doctors Grid Section */}
-      <section className="pt-6 pb-24 bg-background">
+      <section className="pt-6 pb-12 lg:pb-16 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           
           {/* Filters */}
@@ -265,7 +265,7 @@ export default function DoctorsClient({ initialClinics, initialDoctors }: Doctor
       </section>
 
       {/* Philosophy Section */}
-      <section className="py-24 bg-foreground text-background">
+      <section className="py-12 lg:py-16 bg-foreground text-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-4xl">
           <Award className="w-12 h-12 mx-auto text-primary mb-8" />
           <h2 className="text-3xl md:text-5xl font-serif mb-8 leading-tight">

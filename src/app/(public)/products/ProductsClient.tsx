@@ -93,7 +93,7 @@ export default function ProductsClient({ initialProducts = [] }: { initialProduc
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header Section */}
-      <section className="pt-12 pb-16 bg-muted/30 border-b border-border">
+      <section className="pt-8 pb-10 bg-muted/30 border-b border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <h1 className="text-4xl md:text-5xl font-serif font-medium mb-6">
@@ -108,7 +108,7 @@ export default function ProductsClient({ initialProducts = [] }: { initialProduc
       </section>
 
       {/* Main Content */}
-      <section className="py-16">
+      <section className="py-10 lg:py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row gap-12">
             {/* Mobile Filter Sticky Header */}

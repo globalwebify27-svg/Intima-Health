@@ -227,6 +227,7 @@ export default function TherapistSettingsPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="rounded-xl h-11 border-border/60"
+                  placeholder="Enter your name"
                   required
                 />
               </div>
@@ -240,6 +241,7 @@ export default function TherapistSettingsPage() {
                   type="text"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Enter your phone number"
                   className="rounded-xl h-11 border-border/60"
                   required
                 />
@@ -290,7 +292,7 @@ export default function TherapistSettingsPage() {
                   value={registrationNumber}
                   onChange={(e) => setRegistrationNumber(e.target.value)}
                   className="rounded-xl h-11 border-border/60"
-                  placeholder="e.g. RCI-CR-2021-8841"
+                  placeholder="Enter RCI / license number"
                   required
                 />
               </div>

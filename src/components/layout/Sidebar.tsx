@@ -151,10 +151,10 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
       </aside>
 
       {/* Mobile Sidebar (Sheet) */}
-      <div className="lg:hidden flex h-16 items-center px-4 border-b border-border bg-card fixed top-0 w-full z-40 shadow-sm justify-between">
-        <div className="flex items-center">
+      <div className="lg:hidden flex h-16 items-center px-3 sm:px-4 border-b border-border bg-card fixed top-0 inset-x-0 z-40 shadow-sm justify-between gap-2 max-w-full overflow-hidden">
+        <div className="flex items-center min-w-0">
           <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-            <SheetTrigger render={<Button variant="ghost" size="icon" className="mr-1" />}>
+            <SheetTrigger render={<Button variant="ghost" size="icon" className="mr-1 shrink-0" />}>
               <Menu className="h-6 w-6" />
               <span className="sr-only">Toggle navigation menu</span>
             </SheetTrigger>
@@ -164,15 +164,15 @@ export function Sidebar({ links, roleName, basePath, clinicName, clinicLocation 
               <SidebarContent onNavigate={() => setOpenMobile(false)} />
             </SheetContent>
           </Sheet>
-          <Link href="/" className="flex items-center ml-2">
-            <Image src={logoUrl || "/logo.png"} alt="Kelkar Manas Health Clinic" width={140} height={32} className="object-contain" priority />
+          <Link href="/" className="flex items-center ml-1 sm:ml-2 shrink-0">
+            <Image src={logoUrl || "/logo.png"} alt="Kelkar Manas Health Clinic" width={120} height={30} className="h-8 w-auto object-contain" priority />
           </Link>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0 min-w-0">
           {(clinicName || clinicLocation) && (
-            <div className="flex items-center gap-1.5 text-[10px] bg-muted/60 border border-border px-2 py-1 rounded-xl shadow-sm">
-              <span className="text-foreground font-bold max-w-[80px] sm:max-w-[120px] truncate">{clinicName || "KELKAR MANAS HEALTH CLINIC"}</span>
+            <div className="hidden xs:flex sm:flex items-center gap-1.5 text-[10px] bg-muted/60 border border-border px-2 py-1 rounded-xl shadow-sm max-w-[140px]">
+              <span className="text-foreground font-bold truncate">{clinicName || "KELKAR MANAS"}</span>
               <span className="text-[9px] font-bold text-muted-foreground bg-card border border-border px-1.5 py-0.5 rounded-full shrink-0">
                 {clinicLocation || "Global"}
               </span>

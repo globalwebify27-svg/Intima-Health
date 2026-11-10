@@ -160,7 +160,7 @@ export default function LoginPage() {
                     <span className="absolute left-3 top-3.5 text-sm font-medium text-muted-foreground">+91</span>
                     <Input
                       id="phone"
-                      placeholder="98765 43210"
+                      placeholder="Enter WhatsApp number"
                       type="tel"
                       value={phone}
                       onChange={(e) => {
@@ -194,7 +194,7 @@ export default function LoginPage() {
                     <MessageSquare className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="otp"
-                      placeholder="6-digit code"
+                      placeholder="Enter verification code"
                       type="text"
                       maxLength={6}
                       value={otp}

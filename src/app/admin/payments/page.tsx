@@ -250,11 +250,11 @@ export default function AdminPaymentsPage() {
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-6 pb-16 w-full min-w-0">
       
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0">
+        <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             Payment Transactions
           </h1>
@@ -263,13 +263,13 @@ export default function AdminPaymentsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={handleManualGatewaySync}
             disabled={syncing}
-            className="rounded-xl font-bold text-xs h-9 px-3 gap-2 border-primary/30 text-primary hover:bg-primary/10 shadow-2xs"
+            className="rounded-xl font-bold text-xs h-9 px-3 gap-2 border-primary/30 text-primary hover:bg-primary/10 shadow-2xs w-full sm:w-auto justify-center"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin text-primary" : ""}`} />
             {syncing ? "Syncing Gateway..." : "Sync Gateway Records"}
@@ -278,7 +278,7 @@ export default function AdminPaymentsPage() {
           <Button
             size="sm"
             onClick={() => setIsExportModalOpen(true)}
-            className="rounded-xl font-bold text-xs h-9 px-4 gap-2 bg-primary hover:bg-primary/90 text-white shadow-xs"
+            className="rounded-xl font-bold text-xs h-9 px-4 gap-2 bg-primary hover:bg-primary/90 text-white shadow-xs w-full sm:w-auto justify-center"
           >
             <Download className="w-3.5 h-3.5" /> Export Report
           </Button>
@@ -286,7 +286,7 @@ export default function AdminPaymentsPage() {
       </div>
 
       {/* KPI Stats Overview Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 min-w-0">
         <div className="p-4 bg-card rounded-2xl border border-border/80 shadow-2xs space-y-1">
           <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
             <DollarSign className="w-3.5 h-3.5 text-primary" /> Total Verified Revenue
@@ -335,26 +335,26 @@ export default function AdminPaymentsPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-card p-4 rounded-3xl border border-border/80 shadow-2xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="bg-card p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-border/80 shadow-2xs space-y-3 w-full min-w-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 min-w-0">
           
           {/* Search Input */}
-          <div className="relative sm:col-span-2">
+          <div className="relative sm:col-span-2 min-w-0">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search Patient, Phone, Specialist, or Transaction ID..."
+              placeholder="Search here..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-background border border-border/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+              className="w-full min-w-0 pl-10 pr-4 py-2 text-xs sm:text-sm bg-background border border-border/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
             />
           </div>
 
           {/* Date Range Start */}
-          <div className="flex items-center gap-2 bg-background border border-border/90 rounded-xl px-3 py-1.5">
+          <div className="flex items-center gap-2 bg-background border border-border/90 rounded-xl px-3 py-1.5 min-w-0 w-full overflow-hidden">
             <span className="text-[11px] font-bold text-muted-foreground shrink-0">From:</span>
             <input
               type="date"
@@ -363,12 +363,12 @@ export default function AdminPaymentsPage() {
                 setStartDate(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full text-xs bg-transparent focus:outline-none text-foreground"
+              className="w-full min-w-0 flex-1 text-xs bg-transparent focus:outline-none text-foreground"
             />
           </div>
 
           {/* Date Range End */}
-          <div className="flex items-center gap-2 bg-background border border-border/90 rounded-xl px-3 py-1.5">
+          <div className="flex items-center gap-2 bg-background border border-border/90 rounded-xl px-3 py-1.5 min-w-0 w-full overflow-hidden">
             <span className="text-[11px] font-bold text-muted-foreground shrink-0">To:</span>
             <input
               type="date"
@@ -377,13 +377,13 @@ export default function AdminPaymentsPage() {
                 setEndDate(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full text-xs bg-transparent focus:outline-none text-foreground"
+              className="w-full min-w-0 flex-1 text-xs bg-transparent focus:outline-none text-foreground"
             />
           </div>
         </div>
 
         {/* Dropdown Quick Filters */}
-        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/40">
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/40 min-w-0">
           <span className="text-[11px] font-bold text-muted-foreground mr-1">Filter By:</span>
 
           {/* Status Dropdown */}
@@ -393,7 +393,7 @@ export default function AdminPaymentsPage() {
               setSelectedStatus(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-xs bg-background border border-border/80 rounded-xl px-3 py-1.5 text-foreground font-semibold cursor-pointer focus:ring-2 focus:ring-primary/20"
+            className="text-xs bg-background border border-border/80 rounded-xl px-3 py-1.5 text-foreground font-semibold cursor-pointer focus:ring-2 focus:ring-primary/20 max-w-full"
           >
             <option value="All">All Statuses</option>
             <option value="Success">Success</option>
@@ -409,7 +409,7 @@ export default function AdminPaymentsPage() {
               setSelectedContext(e.target.value);
               setCurrentPage(1);
             }}
-            className="text-xs bg-background border border-border/80 rounded-xl px-3 py-1.5 text-foreground font-semibold cursor-pointer focus:ring-2 focus:ring-primary/20"
+            className="text-xs bg-background border border-border/80 rounded-xl px-3 py-1.5 text-foreground font-semibold cursor-pointer focus:ring-2 focus:ring-primary/20 max-w-full"
           >
             <option value="All">All Contexts</option>
             <option value="Appointments">Appointments Only</option>
@@ -425,7 +425,7 @@ export default function AdminPaymentsPage() {
                 setSelectedClinic(e.target.value);
                 setCurrentPage(1);
               }}
-              className="text-xs bg-background border border-border/80 rounded-xl px-3 py-1.5 text-foreground font-semibold cursor-pointer focus:ring-2 focus:ring-primary/20"
+              className="text-xs bg-background border border-border/80 rounded-xl px-3 py-1.5 text-foreground font-semibold cursor-pointer focus:ring-2 focus:ring-primary/20 max-w-full"
             >
               <option value="All">All Clinics</option>
               {clinics.map((c) => (
@@ -464,8 +464,8 @@ export default function AdminPaymentsPage() {
           Loading centralized payment records...
         </div>
       ) : (
-        <div className="bg-card rounded-3xl border border-border shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-card rounded-2xl sm:rounded-3xl border border-border shadow-xs overflow-hidden w-full min-w-0">
+          <div className="w-full overflow-x-auto">
             <table className="min-w-full text-left text-xs sm:text-sm">
               <thead className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/40 border-b border-border/80">
                 <tr>
@@ -639,7 +639,7 @@ export default function AdminPaymentsPage() {
 
           {/* Pagination Footer */}
           {filteredPayments.length > pageSize && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/20">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-border bg-muted/20">
               <span className="text-xs font-semibold text-muted-foreground">
                 Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, filteredPayments.length)} of {filteredPayments.length} transactions
               </span>

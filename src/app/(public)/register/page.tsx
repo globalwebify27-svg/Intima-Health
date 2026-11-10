@@ -185,7 +185,7 @@ export default function RegisterPage() {
                   <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                   <Input 
                     id="firstName" 
-                    placeholder="John" 
+                    placeholder="Enter first name" 
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     className="pl-10 h-11 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
@@ -197,7 +197,7 @@ export default function RegisterPage() {
                 <Label htmlFor="lastName" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Last name</Label>
                 <Input 
                   id="lastName" 
-                  placeholder="Doe" 
+                  placeholder="Enter last name" 
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   className="h-11 bg-muted/30 border-border/60 focus-visible:ring-primary/20"
@@ -212,7 +212,7 @@ export default function RegisterPage() {
                 <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                 <Input 
                   id="email" 
-                  placeholder="name@example.com" 
+                  placeholder="Enter your email address" 
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -228,7 +228,7 @@ export default function RegisterPage() {
                 <Phone className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                 <Input 
                   id="phone" 
-                  placeholder="9876543210" 
+                  placeholder="Enter WhatsApp number" 
                   type="tel" 
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}

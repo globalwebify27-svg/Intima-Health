@@ -159,19 +159,19 @@ export default function AdminDashboard() {
   const maxRevenue = Math.max(...stats.monthlyRevenue.map(m => m.revenue), 1);
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
-          <p className="text-muted-foreground mt-2">Monitor your platform&apos;s overall performance and metrics.</p>
+    <div className="space-y-6 sm:space-y-8 w-full min-w-0">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 min-w-0">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard Overview</h1>
+          <p className="text-muted-foreground mt-1 sm:mt-2 text-xs sm:text-sm">Monitor your platform&apos;s overall performance and metrics.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 w-full md:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={handleTriggerDailyReport}
             disabled={sendingReport}
-            className="h-10 border-purple-200 hover:border-purple-300 hover:bg-purple-50 text-purple-950 gap-2 font-medium"
+            className="h-10 border-purple-200 hover:border-purple-300 hover:bg-purple-50 text-purple-950 gap-2 font-medium w-full sm:w-auto justify-center"
           >
             {sendingReport ? (
               <Loader2 className="w-4 h-4 animate-spin text-purple-700" />
@@ -184,7 +184,7 @@ export default function AdminDashboard() {
           <select
             value={selectedClinic}
             onChange={(e) => setSelectedClinic(e.target.value)}
-            className="h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 w-full sm:w-auto max-w-full"
           >
             <option value="all">All Clinics (Global)</option>
             {clinics.map(c => (
@@ -195,11 +195,11 @@ export default function AdminDashboard() {
       </div>
 
       {reportStatus && (
-        <div className="p-3.5 rounded-xl border border-purple-200 bg-purple-50/70 text-purple-900 text-sm flex items-center justify-between">
-          <span>{reportStatus}</span>
+        <div className="p-3.5 rounded-xl border border-purple-200 bg-purple-50/70 text-purple-900 text-xs sm:text-sm flex items-center justify-between gap-2">
+          <span className="break-words min-w-0">{reportStatus}</span>
           <button
             onClick={() => setReportStatus(null)}
-            className="text-xs text-purple-600 hover:text-purple-800 font-semibold ml-4"
+            className="text-xs text-purple-600 hover:text-purple-800 font-semibold ml-2 shrink-0"
           >
             Dismiss
           </button>
@@ -207,7 +207,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Stat Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 min-w-0">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -216,9 +216,9 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="p-6 bg-card rounded-2xl border border-border shadow-sm"
+              className="p-4 sm:p-6 bg-card rounded-2xl border border-border shadow-sm min-w-0"
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className={`p-2.5 rounded-xl ${stat.bg}`}>
                   <Icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
@@ -233,36 +233,36 @@ export default function AdminDashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 min-w-0">
         {/* Revenue Chart */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="p-6 bg-card rounded-2xl border border-border shadow-sm"
+          className="p-4 sm:p-6 bg-card rounded-2xl border border-border shadow-sm min-w-0 w-full overflow-hidden"
         >
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-bold">Revenue Trend</h3>
               <p className="text-xs text-muted-foreground mt-1">Last 6 months</p>
             </div>
-            <div className="p-2 bg-emerald-500/10 rounded-lg">
+            <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
               <TrendingUp className="w-4 h-4 text-emerald-600" />
             </div>
           </div>
-          <div className="flex items-end gap-3 h-[280px] pt-4">
+          <div className="flex items-end gap-1.5 sm:gap-3 h-[240px] sm:h-[280px] pt-4 w-full min-w-0">
             {stats.monthlyRevenue.map((m, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                <span className="text-[10px] font-bold text-primary">
+              <div key={i} className="flex-1 min-w-0 flex flex-col items-center gap-1.5 sm:gap-2 h-full justify-end">
+                <span className="text-[9px] sm:text-[10px] font-bold text-primary truncate max-w-full">
                   {m.revenue > 0 ? `₹${(m.revenue / 1000).toFixed(1)}k` : ""}
                 </span>
                 <motion.div
                   initial={{ height: 0 }}
                   animate={{ height: `${Math.max((m.revenue / maxRevenue) * 100, 4)}%` }}
                   transition={{ delay: 0.5 + i * 0.1, duration: 0.5 }}
-                  className="w-full rounded-xl bg-gradient-to-t from-primary to-primary/60 min-h-[4px]"
+                  className="w-full rounded-lg sm:rounded-xl bg-gradient-to-t from-primary to-primary/60 min-h-[4px]"
                 />
-                <span className="text-[10px] text-muted-foreground font-medium">{m.month}</span>
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium truncate max-w-full">{m.month}</span>
               </div>
             ))}
           </div>
@@ -273,7 +273,7 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="p-6 bg-card rounded-2xl border border-border shadow-sm"
+          className="p-4 sm:p-6 bg-card rounded-2xl border border-border shadow-sm min-w-0 w-full overflow-hidden"
         >
           <div className="flex items-center justify-between mb-6">
             <div>

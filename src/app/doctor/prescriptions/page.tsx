@@ -340,7 +340,7 @@ export default function DoctorPrescriptionsPage() {
                     type="text"
                     value={searchQuery}
                     onChange={e => handleSearchChange(e.target.value)}
-                    placeholder="Type patient name or mobile number..."
+                    placeholder="Search here..."
                     className="w-full h-11 pl-10 pr-4 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                     autoComplete="off"
                   />

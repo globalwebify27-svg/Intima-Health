@@ -145,7 +145,7 @@ export default function StaffLoginPage() {
                   <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                   <Input 
                     id="email" 
-                    placeholder="doctor@kelkarmanas.com" 
+                    placeholder="Enter your email address" 
                     type="email" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -166,6 +166,7 @@ export default function StaffLoginPage() {
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                   <Input 
                     id="password" 
+                    placeholder="Enter your password"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

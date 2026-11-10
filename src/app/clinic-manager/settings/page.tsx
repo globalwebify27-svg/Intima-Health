@@ -184,6 +184,7 @@ export default function SettingsPage() {
                     required
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
+                    placeholder="Enter your name"
                     className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
@@ -194,6 +195,7 @@ export default function SettingsPage() {
                     type="email"
                     disabled
                     value={userEmail}
+                    placeholder="Enter your email address"
                     className="w-full h-11 px-3.5 rounded-xl border border-border bg-muted/30 text-muted-foreground text-sm cursor-not-allowed"
                   />
                 </div>
@@ -215,7 +217,7 @@ export default function SettingsPage() {
                       type="password"
                       value={oldPassword}
                       onChange={(e) => setOldPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="Enter current password"
                       className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
@@ -226,7 +228,7 @@ export default function SettingsPage() {
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="Enter new password"
                       className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
@@ -237,7 +239,7 @@ export default function SettingsPage() {
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="Confirm new password"
                       className="w-full h-11 px-3.5 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>

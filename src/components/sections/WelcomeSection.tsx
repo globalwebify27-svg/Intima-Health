@@ -5,7 +5,7 @@ import { Sparkles, HeartHandshake } from "lucide-react";
 
 export function WelcomeSection() {
   return (
-    <section className="py-20 lg:py-28 bg-[#FCFBFC] border-y border-border/40 relative overflow-hidden">
+    <section className="py-10 lg:py-14 bg-[#FCFBFC] border-y border-border/40 relative overflow-hidden">
       {/* Ambient background glows matching Hero & WhyChooseUs */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/[0.03] rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/[0.05] rounded-full blur-[120px] pointer-events-none" />

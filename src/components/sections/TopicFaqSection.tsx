@@ -31,7 +31,7 @@ export function TopicFaqSection({ slug, title, faqs: cmsFaqs }: TopicFaqSectionP
   }
 
   return (
-    <section className="py-20 lg:py-24 bg-background border-t border-border/60 relative overflow-hidden">
+    <section className="py-10 lg:py-14 bg-background border-t border-border/60 relative overflow-hidden">
       {/* Subtle ambient background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
 

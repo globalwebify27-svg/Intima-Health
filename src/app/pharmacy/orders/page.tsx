@@ -294,7 +294,7 @@ export default function PharmacyOrdersPage() {
         <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
-            placeholder="Search by patient name, phone, ref..." 
+            placeholder="Search here..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-10 rounded-xl"

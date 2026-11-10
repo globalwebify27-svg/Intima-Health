@@ -101,7 +101,7 @@ const cardVariants: Variants = {
 
 export function Conditions() {
   return (
-    <section className="py-24 lg:py-32 bg-primary/[0.02] relative overflow-hidden border-b border-border/40">
+    <section className="py-10 lg:py-14 bg-primary/[0.02] relative overflow-hidden border-b border-border/40">
       {/* Subtle Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] bg-primary/5 rounded-full blur-[150px] -z-10 pointer-events-none" />
 
@@ -112,7 +112,7 @@ export function Conditions() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6 }}
-          className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8"
+          className="flex flex-col md:flex-row md:items-end justify-between mb-8 lg:mb-10 gap-6"
         >
           <div className="max-w-2xl">
             <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-primary mb-3 block">
@@ -191,7 +191,7 @@ export function Conditions() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-12 rounded-2xl bg-white p-5 border border-primary/15 shadow-xs max-w-3xl mx-auto flex items-center justify-center gap-3 text-center"
+          className="mt-8 rounded-2xl bg-white p-4 sm:p-5 border border-primary/15 shadow-xs max-w-3xl mx-auto flex items-center justify-center gap-3 text-center"
         >
           <Info className="w-4 h-4 text-primary shrink-0" />
           <p className="text-xs sm:text-sm font-medium text-muted-foreground">

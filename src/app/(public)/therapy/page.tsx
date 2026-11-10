@@ -43,7 +43,7 @@ export default function TherapyPage() {
     <div className="min-h-screen bg-background text-foreground">
       
       {/* Hero Section */}
-      <section className="relative pt-12 pb-20 lg:pt-16 lg:pb-32 overflow-hidden bg-background">
+      <section className="relative pt-8 pb-10 lg:pt-12 lg:pb-14 overflow-hidden bg-background">
         {/* Soft Background Pattern */}
         <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30 -z-10" />
         
@@ -79,9 +79,9 @@ export default function TherapyPage() {
       </section>
 
       {/* Focus Areas Section */}
-      <section className="py-24 bg-muted/30">
+      <section className="py-10 lg:py-14 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <div className="text-center max-w-2xl mx-auto mb-8 lg:mb-10">
             <h2 className="text-3xl md:text-5xl font-serif mb-6">What We Treat</h2>
             <p className="text-muted-foreground text-lg">
               Therapy is not one-size-fits-all. Our specialists tailor their approach to your specific relationship dynamics and personal goals.
@@ -115,7 +115,7 @@ export default function TherapyPage() {
       </section>
 
       {/* Meet the Therapist / Philosophy */}
-      <section className="py-24 bg-background">
+      <section className="py-10 lg:py-14 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col-reverse lg:flex-row items-center gap-16">
             
@@ -171,7 +171,7 @@ export default function TherapyPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-primary text-primary-foreground text-center">
+      <section className="py-10 lg:py-14 bg-primary text-primary-foreground text-center">
         <div className="container mx-auto px-4">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}

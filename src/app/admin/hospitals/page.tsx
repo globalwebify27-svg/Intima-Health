@@ -622,7 +622,7 @@ export default function AdminHospitalsPage() {
                               type="text"
                               value={image}
                               onChange={(e) => setImage(e.target.value)}
-                              placeholder="/images/ashakiran_center.jpg or /uploads/..."
+                              placeholder="Enter image path or URL"
                               className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs focus:outline-none"
                             />
                           </div>
@@ -641,7 +641,7 @@ export default function AdminHospitalsPage() {
                           required
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          placeholder="Ashakiran Rehabilitation Centre"
+                          placeholder="Enter hospital name"
                           className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none"
                         />
                       </div>
@@ -653,7 +653,7 @@ export default function AdminHospitalsPage() {
                           required
                           value={slug}
                           onChange={(e) => setSlug(e.target.value)}
-                          placeholder="ashakiran-rehabilitation-centre"
+                          placeholder="Enter URL slug"
                           className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none font-mono text-xs"
                         />
                       </div>
@@ -733,7 +733,7 @@ export default function AdminHospitalsPage() {
                         type="text"
                         value={founderInfo}
                         onChange={(e) => setFounderInfo(e.target.value)}
-                        placeholder="Founder: Dr. Deepak Kelkar. Location: Kelkar Hospital, Ramdas Peth, Akola..."
+                        placeholder="Enter founder and leadership information"
                         className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none"
                       />
                     </div>
@@ -763,7 +763,7 @@ export default function AdminHospitalsPage() {
                         required
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        placeholder="Near Kelkar Hospital, RAMDAS PETH, Akola"
+                        placeholder="Enter your address"
                         className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none"
                       />
                     </div>
@@ -776,7 +776,7 @@ export default function AdminHospitalsPage() {
                         type="text"
                         value={phonesText}
                         onChange={(e) => setPhonesText(e.target.value)}
-                        placeholder="+91 7030414140, +91 8805097227"
+                        placeholder="Enter phone numbers (comma-separated)"
                         className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none"
                       />
                     </div>
@@ -789,7 +789,7 @@ export default function AdminHospitalsPage() {
                         type="text"
                         value={googleMapDirectionUrl}
                         onChange={(e) => setGoogleMapDirectionUrl(e.target.value)}
-                        placeholder="https://www.google.com/maps/dir/?api=1&destination=..."
+                        placeholder="Enter Google Maps directions URL"
                         className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none font-mono text-xs"
                       />
                     </div>
@@ -802,7 +802,7 @@ export default function AdminHospitalsPage() {
                         type="text"
                         value={googleMapEmbed}
                         onChange={(e) => setGoogleMapEmbed(e.target.value)}
-                        placeholder="https://www.google.com/maps/embed?pb=..."
+                        placeholder="Enter Google Maps embed URL"
                         className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none font-mono text-xs"
                       />
                     </div>

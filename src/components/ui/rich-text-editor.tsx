@@ -43,6 +43,7 @@ import {
   Check,
   AlertCircle,
   Sparkles,
+  MousePointerClick,
 } from "lucide-react";
 
 interface RichTextEditorProps {
@@ -112,6 +113,13 @@ export function RichTextEditor({
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showTableDialog, setShowTableDialog] = useState(false);
+  const [showButtonDialog, setShowButtonDialog] = useState(false);
+
+  // CTA Button state
+  const [buttonLabel, setButtonLabel] = useState("Book Consultation");
+  const [buttonUrl, setButtonUrl] = useState("https://kelkarmanasclinic.com");
+  const [buttonColor, setButtonColor] = useState("#7A2E7A");
+  const [buttonAlign, setButtonAlign] = useState<"left" | "center" | "right">("center");
 
   // Link state
   const [linkUrl, setLinkUrl] = useState("");
@@ -417,6 +425,34 @@ export function RichTextEditor({
       }
     }
     handleEditorChange();
+  };
+
+  // CTA Button Handlers
+  const openButtonDialog = () => {
+    saveSelection();
+    setButtonLabel("Learn More");
+    setButtonUrl("https://kelkarmanasclinic.com");
+    setButtonColor("#7A2E7A");
+    setButtonAlign("center");
+    setShowButtonDialog(true);
+  };
+
+  const handleInsertButton = () => {
+    if (!buttonLabel.trim() || !buttonUrl.trim()) return;
+    restoreSelection();
+    const cleanUrl = buttonUrl.trim();
+    const safeLabel = buttonLabel.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const btnHtml = `<div style="text-align: ${buttonAlign}; margin: 18px 0;"><a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: ${buttonColor}; color: #ffffff; font-weight: 700; font-size: 14px; padding: 12px 28px; text-decoration: none; border-radius: 9999px;">${safeLabel}</a></div><p><br></p>`;
+
+    try {
+      exec("insertHTML", btnHtml);
+    } catch {
+      if (editorRef.current) {
+        editorRef.current.innerHTML += btnHtml;
+      }
+    }
+    handleEditorChange();
+    setShowButtonDialog(false);
   };
 
   // Word & character counts
@@ -836,6 +872,15 @@ export function RichTextEditor({
                 >
                   <TableIcon className="w-4 h-4" />
                 </button>
+                <button
+                  type="button"
+                  title="Insert Action Button"
+                  onClick={openButtonDialog}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors ml-0.5"
+                >
+                  <MousePointerClick className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Button</span>
+                </button>
               </div>
 
               {/* Helper Notice & Clear Format */}
@@ -1183,6 +1228,121 @@ export function RichTextEditor({
                 className="px-4 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
               >
                 Insert Table
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL: INSERT CTA BUTTON --- */}
+      {showButtonDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-card w-full max-w-md rounded-2xl shadow-2xl border border-border p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <MousePointerClick className="w-4 h-4 text-primary" />
+                Insert Call-to-Action Button
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowButtonDialog(false)}
+                className="p-1 hover:bg-muted rounded-full transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">Button Text *</label>
+                <input
+                  type="text"
+                  value={buttonLabel}
+                  onChange={(e) => setButtonLabel(e.target.value)}
+                  placeholder="Enter button label"
+                  className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">Destination URL *</label>
+                <input
+                  type="text"
+                  value={buttonUrl}
+                  onChange={(e) => setButtonUrl(e.target.value)}
+                  placeholder="Enter button link URL"
+                  className="w-full h-10 px-3 rounded-xl border border-border bg-background outline-none text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Button Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={buttonColor}
+                      onChange={(e) => setButtonColor(e.target.value)}
+                      className="w-10 h-10 rounded-lg border border-border cursor-pointer p-0.5 bg-background"
+                    />
+                    <input
+                      type="text"
+                      value={buttonColor}
+                      onChange={(e) => setButtonColor(e.target.value)}
+                      className="flex-1 h-10 px-2.5 rounded-xl border border-border bg-background text-xs font-mono outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Alignment</label>
+                  <select
+                    value={buttonAlign}
+                    onChange={(e) => setButtonAlign(e.target.value as any)}
+                    className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm outline-none"
+                  >
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Live Button Preview */}
+              <div className="p-4 rounded-xl border border-border bg-muted/20">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-2">
+                  Button Preview
+                </span>
+                <div style={{ textAlign: buttonAlign }}>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      backgroundColor: buttonColor,
+                      color: "#ffffff",
+                      fontWeight: 700,
+                      fontSize: "14px",
+                      padding: "10px 24px",
+                      borderRadius: "9999px",
+                    }}
+                  >
+                    {buttonLabel || "Button"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              <button
+                type="button"
+                onClick={() => setShowButtonDialog(false)}
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-border hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleInsertButton}
+                disabled={!buttonLabel.trim() || !buttonUrl.trim()}
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                Insert Button
               </button>
             </div>
           </div>

@@ -16,7 +16,7 @@ const indicators = [
 
 export function SeekHelpSection() {
   return (
-    <section className="py-20 lg:py-28 bg-[#FAF8FA] border-y border-border/40 relative overflow-hidden">
+    <section className="py-10 lg:py-14 bg-[#FAF8FA] border-y border-border/40 relative overflow-hidden">
       {/* Ambient background glows */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-primary/[0.03] rounded-full blur-[140px] pointer-events-none" />
 
@@ -29,12 +29,12 @@ export function SeekHelpSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.5 }}
-            className="text-center mb-14"
+            className="text-center mb-8 lg:mb-10"
           >
             <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-primary mb-3 block">
               Guidance &amp; Early Intervention
             </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground mb-6 leading-[1.15]">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground mb-4 leading-[1.15]">
               When Should You Seek <br />
               <span className="text-primary">Professional Help?</span>
             </h2>
@@ -44,7 +44,7 @@ export function SeekHelpSection() {
           </motion.div>
 
           {/* 8 Indicators Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 mb-6">
             {indicators.map((item, idx) => (
               <motion.div
                 key={idx}

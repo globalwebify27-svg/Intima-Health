@@ -370,13 +370,7 @@ export default function PaymentsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder={
-                activeTab === "therapy"
-                  ? "Search patient or therapy..."
-                  : activeTab === "consultations"
-                  ? "Search patient or doctor..."
-                  : "Search patient..."
-              }
+              placeholder="Search here..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-10 pl-9 pr-4 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"

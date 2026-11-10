@@ -56,7 +56,7 @@ const faqs = [
 
 export function HomeFaqSection() {
   return (
-    <section className="py-24 lg:py-32 bg-[#FCFBFC] border-b border-border/40 relative overflow-hidden">
+    <section className="py-10 lg:py-14 bg-[#FCFBFC] border-b border-border/40 relative overflow-hidden">
       {/* Ambient background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-primary/[0.03] rounded-full blur-[140px] pointer-events-none" />
 
@@ -67,7 +67,7 @@ export function HomeFaqSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.5 }}
-          className="text-center max-w-3xl mx-auto mb-16"
+          className="text-center max-w-3xl mx-auto mb-8 lg:mb-10"
         >
           <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-primary mb-3 block">
             Common Questions

@@ -999,7 +999,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                       id="name"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="(e.g., Name)"
+                      placeholder="Enter your name"
                       className="rounded-xl h-11"
                       required
                     />
@@ -1113,7 +1113,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                                     setNewPhone(raw);
                                     setShowOtpBox(false);
                                   }}
-                                  placeholder="(e.g., XXX XXX XXXX)"
+                                  placeholder="Enter phone number"
                                   className="rounded-xl h-11 pl-11 font-mono font-medium bg-background"
                                 />
                               </div>
@@ -1237,7 +1237,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                                 setIsGuestPhoneVerified(false);
                                 setShowOtpBox(false);
                               }}
-                              placeholder="(e.g., XXX XXX XXXX)"
+                              placeholder="Enter WhatsApp number"
                               className="rounded-xl h-11 pl-11 font-mono font-medium"
                               required
                             />
@@ -1370,7 +1370,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                             id="receiverName"
                             value={receiverName}
                             onChange={(e) => setReceiverName(e.target.value)}
-                            placeholder="(e.g., Name)"
+                            placeholder="Enter receiver name"
                             className="rounded-xl h-11 bg-background"
                             required={isDifferentReceiver}
                           />
@@ -1392,7 +1392,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                                 raw = raw.slice(0, 10);
                                 setReceiverPhone(raw);
                               }}
-                              placeholder="(e.g., XXX XXX XXXX)"
+                              placeholder="Enter receiver phone number"
                               className="rounded-xl h-11 pl-11 font-mono font-medium bg-background"
                               required={isDifferentReceiver}
                             />
@@ -1411,7 +1411,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                     id="street"
                     value={street}
                     onChange={(e) => setStreet(e.target.value)}
-                    placeholder="(e.g., Flat No. XX, Building Name, Area Name)"
+                    placeholder="Enter your address"
                     className="rounded-xl h-11"
                     required
                   />
@@ -1436,7 +1436,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                             setPinError(val.length > 0 ? "Please enter a 6-digit PIN code." : "");
                           }
                         }}
-                        placeholder="(e.g., 444001)"
+                        placeholder="Enter PIN code"
                         className="rounded-xl h-11 font-mono font-medium placeholder:font-sans placeholder:font-normal placeholder:text-muted-foreground/60"
                         required
                       />
@@ -1474,7 +1474,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                     id="landmark"
                     value={landmark}
                     onChange={(e) => setLandmark(e.target.value)}
-                    placeholder="(e.g., Near Landmark, School, or Market)"
+                    placeholder="Enter landmark (optional)"
                     className="rounded-xl h-11"
                   />
                 </div>

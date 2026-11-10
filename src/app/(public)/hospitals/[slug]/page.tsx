@@ -94,7 +94,7 @@ export default async function HospitalInfoPage({
       </div>
 
       {/* Hero Header */}
-      <section className="relative pt-10 pb-16 lg:pt-14 lg:pb-20 bg-muted/20 border-b border-border/40">
+      <section className="relative pt-8 pb-10 lg:pt-12 lg:pb-14 bg-muted/20 border-b border-border/40">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
             <div className="flex-1">
@@ -160,7 +160,7 @@ export default async function HospitalInfoPage({
       </section>
 
       {/* Main Content Details */}
-      <section className="py-12 lg:py-20">
+      <section className="py-10 lg:py-14">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
             
@@ -414,7 +414,7 @@ export default async function HospitalInfoPage({
       </section>
 
       {/* Hospital Network Switcher */}
-      <section className="py-16 bg-muted/30 border-t border-border">
+      <section className="py-10 lg:py-12 bg-muted/30 border-t border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
           <div className="text-center mb-10">
             <h2 className="text-2xl sm:text-3xl font-serif font-medium mb-2">Our Healthcare & Rehabilitation Network</h2>

@@ -555,7 +555,7 @@ export default function StaffDirectoryPage() {
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Pune Clinic Staff"
+                      placeholder="Enter your name"
                       className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                     />
                   </div>
@@ -567,7 +567,7 @@ export default function StaffDirectoryPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="staff@kelkarmanas.com"
+                      placeholder="Enter your email address"
                       className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                     />
                   </div>
@@ -582,7 +582,7 @@ export default function StaffDirectoryPage() {
                         required={!isEditMode}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
+                        placeholder="Enter your password"
                         className="w-full h-10 pl-3 pr-10 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                       />
                       <button
@@ -746,7 +746,7 @@ export default function StaffDirectoryPage() {
                           required
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          placeholder="9123456789"
+                          placeholder="Enter your phone number"
                           className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                         />
                       </div>
@@ -771,7 +771,7 @@ export default function StaffDirectoryPage() {
                           required
                           value={registrationNumber}
                           onChange={(e) => setRegistrationNumber(e.target.value)}
-                          placeholder={activeTab === "THERAPIST" ? "RCI-CR-2021-8841" : "MCI-123456"}
+                          placeholder="Enter registration number"
                           className="w-full h-10 px-3 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                         />
                       </div>
