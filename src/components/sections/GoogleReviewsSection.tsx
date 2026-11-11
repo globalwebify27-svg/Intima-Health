@@ -151,7 +151,7 @@ export function GoogleReviewsSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header with Official Google Badge */}
-        <div className="text-center space-y-4 max-w-3xl mx-auto">
+        <div className="flex flex-col items-center text-center gap-4 max-w-3xl mx-auto">
           {/* Eyebrow */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-background border border-border shadow-sm">
             {/* Official Google Multicolor G Logo */}
@@ -177,14 +177,6 @@ export function GoogleReviewsSection() {
               Google Maps Verified Clinic
             </span>
           </div>
-
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-foreground">
-            What Our Patients Say About Kelkar Manas
-          </h2>
-
-          <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
-            Real customer reviews for our Baner and Bhosari clinics, connected directly through Google.
-          </p>
 
           {/* Rating Summary Block */}
           <div className="inline-flex flex-wrap items-center justify-center gap-3 p-3 sm:px-6 bg-card border border-border/80 rounded-2xl shadow-sm">

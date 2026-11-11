@@ -254,7 +254,7 @@ export interface IOrder {
   shippingAddress: string;
   shippingDetails?: IShippingDetails;
   paymentId?: Schema.Types.ObjectId;
-  paymentMethod?: "Online" | "COD";
+  paymentMethod?: "Online" | "COD" | "Cash" | "Send Link in WhatsApp";
   paymentStatus?: "Pending" | "Paid" | "Failed" | "Refunded";
   prescriptionSource?: "DIGITAL_CONSULTATION" | "UPLOADED_DOCUMENT" | "OTC_NO_RX";
   consultationId?: Schema.Types.ObjectId;
@@ -291,7 +291,7 @@ const OrderSchema = new Schema<IOrder>({
   shippingAddress: { type: String, required: true },
   shippingDetails: { type: ShippingDetailsSchema },
   paymentId: { type: Schema.Types.ObjectId, ref: "Payment" },
-  paymentMethod: { type: String, enum: ["Online", "COD"], default: "Online" },
+  paymentMethod: { type: String, enum: ["Online", "COD", "Cash", "Send Link in WhatsApp"], default: "Online" },
   paymentStatus: { type: String, enum: ["Pending", "Paid", "Failed", "Refunded"], default: "Pending" },
   prescriptionSource: { 
     type: String, 

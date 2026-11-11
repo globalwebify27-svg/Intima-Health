@@ -102,8 +102,8 @@ export function generateDailyAdminReportEmail(data: DailyAdminReportData): { sub
       </td>
       <td style="padding: 10px 8px; border-bottom: 1px solid #ECE4EB; font-size: 13px; font-weight: 700; text-align: right; color: #2D242D;">
         ₹${order.totalAmount.toLocaleString()}
-        <br><span style="font-size: 10px; font-weight: normal; color: ${order.paymentMethod === 'COD' ? '#D97706' : '#2E7D32'};">
-          ${order.paymentMethod === 'COD' ? 'COD' : 'Paid Online'}
+        <br><span style="font-size: 10px; font-weight: normal; color: ${order.paymentMethod === 'COD' || order.paymentMethod === 'Send Link in WhatsApp' ? '#D97706' : '#2E7D32'};">
+          ${order.paymentMethod === 'COD' ? 'COD' : order.paymentMethod === 'Cash' ? 'Cash' : order.paymentMethod === 'Send Link in WhatsApp' ? 'WhatsApp Link' : 'Paid Online'}
         </span>
       </td>
     </tr>
