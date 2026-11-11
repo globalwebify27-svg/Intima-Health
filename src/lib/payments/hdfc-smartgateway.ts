@@ -180,11 +180,13 @@ export async function createHdfcSession(input: CreateHdfcSessionInput): Promise<
 
   const data = await response.json().catch(() => null);
   if (!response.ok || !data) {
-    const errMsg =
+    console.error("[HDFC Session] Gateway error:", response.status, data);
+    const detail = data?.error_info?.developer_message || data?.user_message;
+    const baseMsg =
       data?.error_message ||
       data?.message ||
       `HDFC SmartGateway session creation failed (HTTP ${response.status}).`;
-    throw new Error(errMsg);
+    throw new Error(detail && detail !== baseMsg ? `${baseMsg} (${detail})` : baseMsg);
   }
 
   if (!data.payment_links?.web) {
@@ -207,11 +209,13 @@ export async function fetchHdfcOrderStatus(orderId: string, customerId?: string)
 
   const data = await response.json().catch(() => null);
   if (!response.ok || !data) {
-    const errMsg =
+    console.error("[HDFC Status] Gateway error:", response.status, data);
+    const detail = data?.error_info?.developer_message || data?.user_message;
+    const baseMsg =
       data?.error_message ||
       data?.message ||
       `Failed to fetch HDFC order status (HTTP ${response.status}).`;
-    throw new Error(errMsg);
+    throw new Error(detail && detail !== baseMsg ? `${baseMsg} (${detail})` : baseMsg);
   }
 
   return data as HdfcOrderStatusResponse;
