@@ -99,10 +99,16 @@ function PaymentStatusContent() {
     }
   };
 
+  const showRetry =
+    effectiveStatus !== "Success" &&
+    Boolean(effectiveEntityId || data?.orderId || orderId) &&
+    effectiveEntityType !== "unknown";
+  const showRefresh = effectiveStatus === "Pending" && Boolean(orderId);
+
   if (loading) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center px-4 py-16">
-        <div className="max-w-md w-full bg-card border border-border rounded-3xl p-8 text-center shadow-lg space-y-4">
+      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-8 sm:py-12">
+        <div className="max-w-md w-full bg-card border border-border rounded-3xl p-6 sm:p-8 text-center shadow-lg space-y-4">
           <div className="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
             <RefreshCw className="w-7 h-7 text-primary animate-spin" />
           </div>
@@ -116,20 +122,20 @@ function PaymentStatusContent() {
   }
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center px-4 py-16 bg-muted/20">
-      <div className="max-w-lg w-full bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
-        <div className="text-center space-y-3">
+    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-3 sm:px-6 py-6 sm:py-12 bg-muted/20">
+      <div className="max-w-lg w-full bg-card border border-border rounded-3xl p-5 sm:p-8 shadow-xl space-y-5 overflow-hidden">
+        <div className="text-center space-y-2.5 sm:space-y-3">
           {effectiveStatus === "Success" ? (
-            <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-              <CheckCircle2 className="w-9 h-9" />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 sm:w-9 sm:h-9" />
             </div>
           ) : effectiveStatus === "Pending" ? (
-            <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center">
-              <Clock className="w-9 h-9" />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center">
+              <Clock className="w-8 h-8 sm:w-9 sm:h-9" />
             </div>
           ) : (
-            <div className="w-16 h-16 mx-auto rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center">
-              <XCircle className="w-9 h-9" />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center">
+              <XCircle className="w-8 h-8 sm:w-9 sm:h-9" />
             </div>
           )}
 
@@ -141,7 +147,7 @@ function PaymentStatusContent() {
                 : "Payment Not Completed"}
           </h1>
 
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
             {effectiveStatus === "Success"
               ? "Your payment has been verified with HDFC SmartGateway and your booking/order is confirmed."
               : effectiveStatus === "Pending"
@@ -153,80 +159,91 @@ function PaymentStatusContent() {
         </div>
 
         {(data || orderId) && (
-          <div className="bg-muted/40 border border-border rounded-2xl p-4 space-y-2.5 text-sm">
+          <div className="bg-muted/40 border border-border rounded-2xl p-3.5 sm:p-4 space-y-2.5 text-xs sm:text-sm overflow-hidden">
             {data?.context && (
-              <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Purpose</span>
-                <span className="font-semibold text-right">{data.context}</span>
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">Purpose</span>
+                <span className="font-semibold text-right break-words min-w-0">{data.context}</span>
               </div>
             )}
             {data?.amount !== undefined && (
-              <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Amount</span>
-                <span className="font-bold text-base">₹{Number(data.amount).toLocaleString("en-IN")}</span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">Amount</span>
+                <span className="font-bold text-sm sm:text-base">₹{Number(data.amount).toLocaleString("en-IN")}</span>
               </div>
             )}
             {(data?.orderId || orderId) && (
-              <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Gateway Order ID</span>
-                <span className="font-mono text-xs">{data?.orderId || orderId}</span>
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">Gateway Order ID</span>
+                <span className="font-mono text-[11px] sm:text-xs text-right break-all min-w-0">
+                  {data?.orderId || orderId}
+                </span>
               </div>
             )}
             {data?.transactionId && data.transactionId !== data.orderId && (
-              <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Transaction ID</span>
-                <span className="font-mono text-xs">{data.transactionId}</span>
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">Transaction ID</span>
+                <span className="font-mono text-[11px] sm:text-xs text-right break-all min-w-0">
+                  {data.transactionId}
+                </span>
               </div>
             )}
             {data?.paymentMethod && (
-              <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Method</span>
-                <span className="font-medium">{data.paymentMethod}</span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">Method</span>
+                <span className="font-medium text-right break-words min-w-0">{data.paymentMethod}</span>
               </div>
             )}
-            <div className="flex justify-between gap-4 pt-2 border-t border-border/60">
-              <span className="text-muted-foreground flex items-center gap-1.5">
+            <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/60">
+              <span className="text-muted-foreground flex items-center gap-1.5 shrink-0">
                 <ShieldCheck className="w-4 h-4 text-primary" /> Gateway
               </span>
-              <span className="font-medium">HDFC SmartGateway</span>
+              <span className="font-medium text-right">HDFC SmartGateway</span>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs text-center">
+          <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs text-center break-words">
             {error}
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-2">
-          {effectiveStatus !== "Success" && (effectiveEntityId || data?.orderId || orderId) && effectiveEntityType !== "unknown" && (
-            <Button
-              onClick={handleRetryPayment}
-              disabled={retrying}
-              className="flex-1 rounded-xl gap-2"
-            >
-              <CreditCard className="w-4 h-4" />
-              {retrying ? "Redirecting..." : "Retry Payment"}
-            </Button>
-          )}
+        <div className="space-y-2.5 pt-1">
+          {(showRetry || showRefresh) && (
+            <div className={`grid gap-2.5 ${showRetry && showRefresh ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
+              {showRetry && (
+                <Button
+                  onClick={handleRetryPayment}
+                  disabled={retrying}
+                  className="w-full h-11 rounded-xl gap-2"
+                >
+                  <CreditCard className="w-4 h-4 shrink-0" />
+                  <span>{retrying ? "Redirecting..." : "Retry Payment"}</span>
+                </Button>
+              )}
 
-          {effectiveStatus === "Pending" && orderId && (
-            <Button variant="outline" onClick={loadStatus} className="flex-1 rounded-xl gap-2">
-              <RefreshCw className="w-4 h-4" /> Refresh Status
-            </Button>
+              {showRefresh && (
+                <Button variant="outline" onClick={loadStatus} className="w-full h-11 rounded-xl gap-2">
+                  <RefreshCw className="w-4 h-4 shrink-0" />
+                  <span>Refresh Status</span>
+                </Button>
+              )}
+            </div>
           )}
 
           {effectiveEntityType === "order" ? (
-            <Link href="/pharmacy" className="flex-1">
-              <Button variant={effectiveStatus === "Success" ? "default" : "outline"} className="w-full rounded-xl gap-2">
-                Continue in Pharmacy <ArrowRight className="w-4 h-4" />
+            <Link href="/pharmacy" className="block w-full">
+              <Button variant={effectiveStatus === "Success" ? "default" : "outline"} className="w-full h-11 rounded-xl gap-2">
+                <span>Continue in Pharmacy</span>
+                <ArrowRight className="w-4 h-4 shrink-0" />
               </Button>
             </Link>
           ) : (
-            <Link href="/patient/dashboard" className="flex-1">
-              <Button variant={effectiveStatus === "Success" ? "default" : "outline"} className="w-full rounded-xl gap-2">
-                Go to Patient Portal <ArrowRight className="w-4 h-4" />
+            <Link href="/patient/dashboard" className="block w-full">
+              <Button variant={effectiveStatus === "Success" ? "default" : "outline"} className="w-full h-11 rounded-xl gap-2">
+                <span>Go to Patient Portal</span>
+                <ArrowRight className="w-4 h-4 shrink-0" />
               </Button>
             </Link>
           )}
