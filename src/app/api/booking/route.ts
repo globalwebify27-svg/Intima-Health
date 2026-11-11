@@ -182,23 +182,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Invalid service selected." }, { status: 400 });
     }
 
-    // 4. Book the appointment (Online payments stay Pending until HDFC SmartGateway confirms CHARGED)
+    // 4. Book immediately only for Cash; for Online payments, validate & hold slot until HDFC confirms CHARGED
     const effectiveMethod = paymentMethod === "Cash" ? "Cash" : "Online";
     const isCashPayment = effectiveMethod === "Cash";
 
-    const appointment = await AppointmentService.bookAppointment({
-      patientId: patient._id.toString(),
-      doctorId: doctor._id.toString(),
-      date,
-      time: formattedTime,
-      type: isVideo ? "Video" : "Walk-in",
-      serviceName: serviceNameStr,
-      notes: "Booked directly through public website booking form.",
-      skipNotification: !isCashPayment,
-      paymentMethod: effectiveMethod,
-      paymentStatus: "Pending",
-      transactionId: isCashPayment ? transactionId : undefined,
-    }, email);
+    let appointment = null;
+    let pendingBooking = null;
+
+    if (isCashPayment) {
+      appointment = await AppointmentService.bookAppointment({
+        patientId: patient._id.toString(),
+        doctorId: doctor._id.toString(),
+        date,
+        time: formattedTime,
+        type: isVideo ? "Video" : "Walk-in",
+        serviceName: serviceNameStr,
+        notes: "Booked directly through public website booking form.",
+        skipNotification: false,
+        paymentMethod: "Cash",
+        paymentStatus: "Pending",
+        transactionId,
+      }, email);
+    } else {
+      pendingBooking = await AppointmentService.validateSlotAndComputeFee(
+        {
+          patientId: patient._id.toString(),
+          doctorId: doctor._id.toString(),
+          date,
+          time: formattedTime,
+          type: isVideo ? "Video" : "Walk-in",
+          serviceName: serviceNameStr,
+          notes: "Booked directly through public website booking form.",
+        },
+        patient._id.toString(),
+        email
+      );
+    }
 
     // 5. Generate JWT & sign in automatically
     const token = signJwt({
@@ -211,8 +230,12 @@ export async function POST(req: Request) {
 
     const response = NextResponse.json({
       success: true,
-      message: "Appointment booked successfully.",
-      data: appointment
+      message: isCashPayment
+        ? "Appointment booked successfully."
+        : "Slot reserved for payment. Complete payment to confirm your appointment.",
+      requiresPayment: !isCashPayment,
+      data: appointment,
+      pendingBooking,
     });
 
     // Set cookie to log in

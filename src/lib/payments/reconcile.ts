@@ -11,7 +11,7 @@ export interface ReconcileResult {
   payment: any;
   status: "Success" | "Failed" | "Pending" | "Refunded";
   alreadyProcessed: boolean;
-  entityType: "order" | "appointment" | "therapy" | "unknown";
+  entityType: "order" | "appointment" | "therapy" | "appointment_booking" | "unknown";
   entityId?: string;
   amountMismatch?: boolean;
 }
@@ -66,16 +66,19 @@ export async function reconcileHdfcPayment(
   payment.updatedBy = updatedBy;
   await payment.save();
 
-  const entityType: ReconcileResult["entityType"] = payment.orderId
+  let entityType: ReconcileResult["entityType"] = payment.orderId
     ? "order"
     : payment.appointmentId
       ? "appointment"
-      : payment.therapySessionId
-        ? "therapy"
-        : "unknown";
-  const entityId =
+      : (payment.notes as any)?.pendingBooking
+        ? "appointment_booking"
+        : payment.therapySessionId
+          ? "therapy"
+          : "unknown";
+  let entityId =
     payment.orderId?.toString() ||
     payment.appointmentId?.toString() ||
+    ((payment.notes as any)?.pendingBooking ? payment._id.toString() : undefined) ||
     payment.therapySessionId?.toString();
 
   if (resolvedStatus !== "Success") {
@@ -110,8 +113,89 @@ export async function reconcileHdfcPayment(
     }
   }
 
-  // Reconcile Appointment
-  if (payment.appointmentId) {
+  // Reconcile Appointment (already created, or deferred booking hold)
+  const pendingBooking = (payment.notes as any)?.pendingBooking;
+  if (!payment.appointmentId && pendingBooking) {
+    const claimed = await PaymentModel.findOneAndUpdate(
+      {
+        _id: payment._id,
+        appointmentId: { $exists: false },
+        "notes.bookingClaimed": { $ne: true },
+      },
+      { $set: { "notes.bookingClaimed": true } },
+      { new: true }
+    ).exec();
+
+    if (claimed) {
+      const existingSlotApt = await AppointmentModel.findOne({
+        doctorId: pendingBooking.doctorId,
+        date: pendingBooking.date,
+        time: pendingBooking.time,
+        status: { $ne: "Cancelled" },
+      }).exec();
+
+      if (existingSlotApt && String(existingSlotApt.patientId) !== String(pendingBooking.patientId)) {
+        await PaymentModel.updateOne(
+          { _id: payment._id },
+          { $set: { "notes.slotConflictAfterHoldExpiry": true } }
+        );
+        console.error(
+          `[HDFC Reconcile] Slot conflict after hold expiry for payment ${payment._id} (${pendingBooking.date} ${pendingBooking.time})`
+        );
+      } else {
+        const createdApt =
+          existingSlotApt ||
+          (await AppointmentModel.create({
+            patientId: pendingBooking.patientId,
+            doctorId: pendingBooking.doctorId,
+            clinicId: pendingBooking.clinicId,
+            date: pendingBooking.date,
+            time: pendingBooking.time,
+            type: pendingBooking.type,
+            serviceName: pendingBooking.serviceName,
+            notes: pendingBooking.notes,
+            status: "Scheduled",
+            paymentMethod: "Online",
+            paymentStatus: "Paid",
+            transactionId: txnId,
+            collectedBy: "HDFC SmartGateway",
+            feeAmount: pendingBooking.feeAmount ?? payment.amount,
+            createdBy: pendingBooking.createdBy,
+          }));
+
+        if (existingSlotApt && existingSlotApt.paymentStatus !== "Paid") {
+          existingSlotApt.paymentStatus = "Paid";
+          existingSlotApt.paymentMethod = "Online";
+          existingSlotApt.transactionId = txnId;
+          existingSlotApt.collectedBy = "HDFC SmartGateway";
+          await existingSlotApt.save();
+        }
+
+        payment.appointmentId = createdApt._id as any;
+        await payment.save();
+
+        entityType = "appointment";
+        entityId = createdApt._id.toString();
+
+        const aptId = createdApt._id.toString();
+        sendAppointmentBookingMessage(aptId, true).catch((err) =>
+          console.error("[HDFC Reconcile] WhatsApp notification error:", err)
+        );
+        sendAppointmentCustomerEmail(aptId).catch((err) =>
+          console.error("[HDFC Reconcile] Customer email error:", err)
+        );
+        AppointmentNotificationService.scheduleAppointmentNotifications(aptId).catch((err) =>
+          console.error("[HDFC Reconcile] Automated notification schedule error:", err)
+        );
+      }
+    } else {
+      const refreshed = await PaymentModel.findById(payment._id).select("appointmentId").lean().exec();
+      if (refreshed?.appointmentId) {
+        entityType = "appointment";
+        entityId = refreshed.appointmentId.toString();
+      }
+    }
+  } else if (payment.appointmentId) {
     const apt = await AppointmentModel.findById(payment.appointmentId).exec();
     if (apt && apt.paymentStatus !== "Paid") {
       apt.paymentStatus = "Paid";
@@ -145,6 +229,9 @@ export async function reconcileHdfcPayment(
       );
       sendAppointmentCustomerEmail(aptId).catch((err) =>
         console.error("[HDFC Reconcile] Customer email error:", err)
+      );
+      AppointmentNotificationService.scheduleAppointmentNotifications(aptId).catch((err) =>
+        console.error("[HDFC Reconcile] Automated notification schedule error:", err)
       );
     }
   }

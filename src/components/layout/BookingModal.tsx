@@ -487,7 +487,7 @@ export function BookingModal() {
           throw new Error("Could not determine service price. Please try selecting the service again.");
         }
 
-        // 1. Create pending appointment before redirecting to HDFC SmartGateway
+        // 1. Validate slot & reserve hold without creating confirmed appointment yet
         const res = await fetch("/api/booking", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -495,15 +495,22 @@ export function BookingModal() {
         });
         const bookingData = await res.json();
 
-        if (!bookingData.success || !bookingData.data?._id) {
+        if (!bookingData.success || (!bookingData.pendingBooking && !bookingData.data?._id)) {
           throw new Error(bookingData.message || "Failed to submit booking.");
         }
 
-        // 2. Initiate HDFC SmartGateway hosted payment session and redirect
-        const { paymentUrl } = await initiateHdfcCheckout({
-          entityType: "appointment",
-          entityId: bookingData.data._id,
-        });
+        // 2. Initiate HDFC SmartGateway hosted payment session (holds slot for 5 mins; books on success)
+        const { paymentUrl } = await initiateHdfcCheckout(
+          bookingData.pendingBooking
+            ? {
+                entityType: "appointment_booking",
+                pendingBooking: bookingData.pendingBooking,
+              }
+            : {
+                entityType: "appointment",
+                entityId: bookingData.data._id,
+              }
+        );
 
         if (typeof window !== "undefined") window.dispatchEvent(new Event("refresh-dashboard"));
         window.location.href = paymentUrl;

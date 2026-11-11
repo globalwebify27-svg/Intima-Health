@@ -8,7 +8,40 @@ import { sendAppointmentCustomerEmail } from "@/lib/mail/service";
 import { PlatformServiceModel } from "@/modules/services/schema";
 import { AppointmentNotificationService } from "@/modules/notifications/service";
 
+export const APPOINTMENT_SLOT_HOLD_MS = 5 * 60 * 1000;
+
+export interface PendingOnlineBookingPayload {
+  patientId: string;
+  doctorId: string;
+  clinicId?: string;
+  date: string;
+  time: string;
+  type: "Video" | "Walk-in";
+  serviceName?: string;
+  feeAmount: number;
+  notes?: string;
+  createdBy?: string;
+}
+
 export class AppointmentService {
+  private static normalizeTime24(timeStr: string): string {
+    const t = timeStr.trim();
+    if (t.includes(" AM") || t.includes(" PM") || t.includes(" am") || t.includes(" pm")) {
+      const [timePart, modifier] = t.split(/\s+/);
+      const [rawHours, minutes] = timePart.split(":");
+      let hours = rawHours;
+      if (hours === "12") hours = "00";
+      if (modifier.toUpperCase() === "PM") {
+        hours = String(parseInt(hours, 10) + 12);
+      }
+      return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
+    }
+    if (t.includes(":")) {
+      const parts = t.split(":");
+      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
+    }
+    return t;
+  }
   // Helper to parse time string in 12h or 24h format to minutes from midnight
   private static parseTimeToMinutes(timeStr?: string): number {
     if (!timeStr) return -1;
@@ -46,7 +79,11 @@ export class AppointmentService {
   }
 
   // Get available slots for a doctor on a specific date
-  static async calculateAvailableSlots(doctorId: string, dateStr: string): Promise<ISlot[]> {
+  static async calculateAvailableSlots(
+    doctorId: string,
+    dateStr: string,
+    excludePatientId?: string
+  ): Promise<ISlot[]> {
     const doctor = await DoctorRepository.findById(doctorId);
     if (!doctor) {
       throw new Error("Doctor not found.");
@@ -77,26 +114,29 @@ export class AppointmentService {
     }
     const uniqueStartTimes = Array.from(new Set(potentialStartTimes)).sort();
 
-    // Get active bookings
+    // Get active bookings + active temporary payment holds (5-min slot hold)
     const bookings = await AppointmentRepository.findBookedAppointments(doctorId, dateStr);
-    const bookedTimes = new Set(bookings.map(b => {
-      const t = b.time.trim();
-      if (t.includes(" AM") || t.includes(" PM") || t.includes(" am") || t.includes(" pm")) {
-        const [timePart, modifier] = t.split(/\s+/);
-        const [rawHours, minutes] = timePart.split(":");
-        let hours = rawHours;
-        if (hours === "12") hours = "00";
-        if (modifier.toUpperCase() === "PM") {
-          hours = String(parseInt(hours, 10) + 12);
-        }
-        return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
+    const bookedTimes = new Set(bookings.map((b) => this.normalizeTime24(b.time)));
+
+    const { PaymentModel } = await import("@/modules/pharmacy/schema");
+    const targetDateNormalized = dateStr.split("T")[0];
+    const activeHolds = await PaymentModel.find({
+      status: "Pending",
+      "notes.pendingBooking.doctorId": String(doctorId),
+      "notes.pendingBooking.date": targetDateNormalized,
+      "notes.holdExpiresAt": { $gt: new Date() },
+      ...(excludePatientId ? { patientId: { $ne: excludePatientId } } : {}),
+    })
+      .select("notes.pendingBooking.time")
+      .lean()
+      .exec();
+
+    for (const hold of activeHolds) {
+      const heldTime = (hold as { notes?: { pendingBooking?: { time?: string } } })?.notes?.pendingBooking?.time;
+      if (heldTime) {
+        bookedTimes.add(this.normalizeTime24(heldTime));
       }
-      if (t.includes(":")) {
-        const parts = t.split(":");
-        return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
-      }
-      return t;
-    }));
+    }
 
     // Construct slot objects
     let slots = uniqueStartTimes.map(time => {
@@ -152,24 +192,33 @@ export class AppointmentService {
     return slots;
   }
 
-  // Book a new appointment
-  static async bookAppointment(input: any, createdBy?: string): Promise<IAppointment> {
+  static async validateSlotAndComputeFee(
+    input: {
+      patientId: string;
+      doctorId: string;
+      date: string;
+      time: string;
+      type: "Video" | "Walk-in";
+      serviceName?: string;
+      notes?: string;
+    },
+    excludePatientId?: string,
+    createdBy?: string
+  ): Promise<PendingOnlineBookingPayload> {
     const validated = BookAppointmentSchema.parse(input);
-
     const doctor = await DoctorRepository.findById(validated.doctorId);
     if (!doctor) {
       throw new Error("Doctor not found.");
     }
 
-    // Verify slots availability
-    const slots = await this.calculateAvailableSlots(validated.doctorId, validated.date);
-    const chosenSlot = slots.find(s => s.start === validated.time);
-    
+    const slots = await this.calculateAvailableSlots(validated.doctorId, validated.date, excludePatientId);
+    const chosenSlot = slots.find((s) => s.start === validated.time);
+
     if (!chosenSlot) {
       throw new Error("The selected time slot is outside the doctor's available schedule.");
     }
     if (!chosenSlot.available) {
-      throw new Error("The selected time slot is already booked.");
+      throw new Error("This time slot is currently booked or held by another patient.");
     }
 
     let calculatedFee = (doctor as any).consultationFee || 0;
@@ -180,21 +229,39 @@ export class AppointmentService {
       }
     }
 
-
-    const created = await AppointmentRepository.create({
-      patientId: validated.patientId as any,
-      doctorId: validated.doctorId as any,
-      clinicId: doctor.clinicId as any,
+    return {
+      patientId: validated.patientId,
+      doctorId: validated.doctorId,
+      clinicId: doctor.clinicId ? String(doctor.clinicId) : undefined,
       date: validated.date,
       time: validated.time,
       type: validated.type,
       serviceName: validated.serviceName,
+      feeAmount: calculatedFee,
       notes: validated.notes,
+      createdBy,
+    };
+  }
+
+  // Book a new appointment
+  static async bookAppointment(input: any, createdBy?: string): Promise<IAppointment> {
+    const validated = BookAppointmentSchema.parse(input);
+    const prepared = await this.validateSlotAndComputeFee(validated, validated.patientId, createdBy);
+
+    const created = await AppointmentRepository.create({
+      patientId: prepared.patientId as any,
+      doctorId: prepared.doctorId as any,
+      clinicId: prepared.clinicId as any,
+      date: prepared.date,
+      time: prepared.time,
+      type: prepared.type,
+      serviceName: prepared.serviceName,
+      notes: prepared.notes,
       status: "Scheduled",
       paymentMethod: validated.paymentMethod || "Online",
       paymentStatus: validated.paymentStatus || "Pending",
       transactionId: validated.transactionId,
-      feeAmount: calculatedFee,
+      feeAmount: prepared.feeAmount,
       createdBy,
     });
 

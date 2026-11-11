@@ -89,6 +89,12 @@ export async function POST(request: Request, { params }: RouteParams) {
     const { sendAppointmentBookingMessage } = await import("@/lib/whatsapp");
     await sendAppointmentBookingMessage(id, true);
 
+    // Schedule automated reminder notifications now that payment is confirmed
+    const { AppointmentNotificationService } = await import("@/modules/notifications/service");
+    AppointmentNotificationService.scheduleAppointmentNotifications(id).catch((err) =>
+      console.error("[Appointment Pay] Automated notification schedule error:", err)
+    );
+
     // Fetch the whatsapp message sent
     let whatsappMessage = "";
     try {

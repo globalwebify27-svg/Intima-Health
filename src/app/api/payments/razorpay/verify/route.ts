@@ -48,6 +48,10 @@ export async function POST(req: Request) {
             paymentStatus: "Paid",
             transactionId: razorpay_payment_id,
          });
+         const { AppointmentNotificationService } = await import("@/modules/notifications/service");
+         AppointmentNotificationService.scheduleAppointmentNotifications(appointmentId).catch((err) =>
+           console.error("[Razorpay Verify] Automated notification schedule error:", err)
+         );
       }
 
       // If medicine order payment, update Order record

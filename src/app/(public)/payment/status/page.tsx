@@ -25,7 +25,7 @@ interface PaymentStatusData {
   paymentMethod?: string;
   gatewayProvider: string;
   context?: string;
-  entityType: "order" | "appointment" | "therapy" | "unknown";
+  entityType: "order" | "appointment" | "therapy" | "appointment_booking" | "unknown";
   entityId?: string;
   entityDetails?: Record<string, any> | null;
   createdAt?: string;
@@ -83,13 +83,14 @@ function PaymentStatusContent() {
   const effectiveEntityId = data?.entityId || fallbackEntityId;
 
   const handleRetryPayment = async () => {
-    if (!effectiveEntityId || effectiveEntityType === "unknown") return;
+    if (effectiveEntityType === "unknown" || (!effectiveEntityId && !data?.orderId && !orderId)) return;
     setRetrying(true);
     setError("");
     try {
       const { paymentUrl } = await initiateHdfcCheckout({
         entityType: effectiveEntityType,
         entityId: effectiveEntityId,
+        retryOrderId: effectiveEntityType === "appointment_booking" ? (data?.orderId || orderId) : undefined,
       });
       window.location.href = paymentUrl;
     } catch (err: any) {
@@ -144,8 +145,10 @@ function PaymentStatusContent() {
             {effectiveStatus === "Success"
               ? "Your payment has been verified with HDFC SmartGateway and your booking/order is confirmed."
               : effectiveStatus === "Pending"
-                ? "Your bank is still confirming the transaction. Please wait a moment and check again."
-                : reason || error || "Your payment was cancelled or declined. You can retry safely below."}
+                ? effectiveEntityType === "appointment_booking"
+                  ? "Your selected slot is temporarily held while awaiting payment confirmation. You can refresh status or retry payment below—your booking will be confirmed only after payment succeeds."
+                  : "Your bank is still confirming the transaction. Please wait a moment and check again."
+                : reason || error || "Your payment was cancelled or declined. Your booking is not confirmed until payment succeeds—you can retry below."}
           </p>
         </div>
 
@@ -197,7 +200,7 @@ function PaymentStatusContent() {
         )}
 
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
-          {effectiveStatus !== "Success" && effectiveEntityId && effectiveEntityType !== "unknown" && (
+          {effectiveStatus !== "Success" && (effectiveEntityId || data?.orderId || orderId) && effectiveEntityType !== "unknown" && (
             <Button
               onClick={handleRetryPayment}
               disabled={retrying}

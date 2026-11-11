@@ -45,7 +45,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     }
 
     let entityDetails: Record<string, unknown> | null = null;
-    let entityType: "order" | "appointment" | "therapy" | "unknown" = "unknown";
+    let entityType: "order" | "appointment" | "therapy" | "appointment_booking" | "unknown" = "unknown";
     let entityId: string | undefined;
 
     if (payment.orderId) {
@@ -64,6 +64,16 @@ export async function GET(_req: Request, { params }: RouteParams) {
         .lean()
         .exec();
       if (apt) entityDetails = apt as unknown as Record<string, unknown>;
+    } else if ((payment.notes as Record<string, unknown> | undefined)?.pendingBooking) {
+      entityType = "appointment_booking";
+      entityId = payment._id.toString();
+      const notesObj = payment.notes as Record<string, unknown>;
+      const pendingBooking = notesObj.pendingBooking as Record<string, unknown>;
+      entityDetails = {
+        ...pendingBooking,
+        holdExpiresAt: notesObj.holdExpiresAt,
+        paymentStatus: payment.status,
+      };
     } else if (payment.therapySessionId) {
       entityType = "therapy";
       entityId = payment.therapySessionId.toString();

@@ -74,6 +74,15 @@ const MILESTONE_LABELS: Record<NotificationMilestone, { badge: string; heading: 
   },
 };
 
+function stripDrPrefix(name: string): string {
+  return (name || "").replace(/^(dr\.?\s*)+/i, "").trim();
+}
+
+function formatSpecialistName(name: string, role: "Doctor" | "Therapist"): string {
+  const clean = stripDrPrefix(name);
+  return role === "Doctor" ? `Dr. ${clean}` : clean;
+}
+
 export function generateDoctorTherapistReminderEmail(data: ReminderEmailData): { subject: string; html: string } {
   const isVideo = data.type === "Video";
   const mInfo = MILESTONE_LABELS[data.milestone] || {
@@ -85,6 +94,7 @@ export function generateDoctorTherapistReminderEmail(data: ReminderEmailData): {
 
   const subject = `[${mInfo.badge}] Appointment with ${data.patientName} at ${data.time} (${data.date})`;
   const actionUrl = data.videoLink || (isVideo ? "https://kelkarmanasclinic.com/doctor/consultations" : "https://kelkarmanasclinic.com/doctor/dashboard");
+  const greetingName = formatSpecialistName(data.recipientName, data.specialistRole);
 
   const bodyHtml = `
     <div style="text-align: center; margin-bottom: 24px;">
@@ -92,7 +102,7 @@ export function generateDoctorTherapistReminderEmail(data: ReminderEmailData): {
         ${emailIcons.clock(mInfo.alertColor, 13)} ${mInfo.badge}
       </span>
       <h2 style="font-family: Georgia, serif; font-size: 22px; color: #2D242D; margin: 12px 0 6px 0;">
-        Hello, ${data.specialistRole === "Doctor" ? "Dr. " : ""}${data.recipientName}
+        Hello, ${greetingName}
       </h2>
       <p style="font-size: 14px; color: #6E5C6E; margin: 0; line-height: 1.5;">
         ${mInfo.heading}. Please review the consultation schedule below.
@@ -160,7 +170,8 @@ export function generatePatientReminderEmail(data: ReminderEmailData): { subject
     alertColor: "#1E40AF",
   };
 
-  const subject = `[${mInfo.badge}] Appointment with ${data.specialistRole === "Doctor" ? "Dr. " : ""}${data.specialistName} at ${data.time} (${data.date})`;
+  const specialistDisplay = formatSpecialistName(data.specialistName, data.specialistRole);
+  const subject = `[${mInfo.badge}] Appointment with ${specialistDisplay} at ${data.time} (${data.date})`;
   const actionUrl = data.videoLink || (isVideo ? "https://kelkarmanasclinic.com/patient/consultations" : "https://kelkarmanasclinic.com/patient/appointments");
 
   const bodyHtml = `
@@ -182,7 +193,7 @@ export function generatePatientReminderEmail(data: ReminderEmailData): { subject
         <tr>
           <td style="padding: 8px 0; font-size: 13px; color: #8F7D8F; width: 38%;">${emailIcons.stethoscope("#8F7D8F", 14)} Specialist:</td>
           <td style="padding: 8px 0; font-size: 14px; font-weight: 700; color: #2D242D;">
-            ${data.specialistRole === "Doctor" ? "Dr. " : ""}${data.specialistName}
+            ${specialistDisplay}
             ${data.specialization ? `<br><span style="font-size: 12px; font-weight: normal; color: #7A2E7A;">${data.specialization}</span>` : ""}
           </td>
         </tr>
@@ -234,7 +245,7 @@ export function generatePatientReminderEmail(data: ReminderEmailData): { subject
     subject,
     html: wrapEmailLayout({
       title: "Appointment Reminder",
-      previewText: `${mInfo.badge}: Appointment with ${data.specialistRole === "Doctor" ? "Dr. " : ""}${data.specialistName} at ${data.time}`,
+      previewText: `${mInfo.badge}: Appointment with ${specialistDisplay} at ${data.time}`,
       bodyHtml,
     }),
   };

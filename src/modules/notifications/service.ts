@@ -170,6 +170,11 @@ export class AppointmentNotificationService {
         return;
       }
 
+      // Do not schedule reminders for unpaid Online bookings until payment is confirmed
+      if (apt.paymentMethod === "Online" && apt.paymentStatus !== "Paid") {
+        return;
+      }
+
       const patient = apt.patientId as any;
       if (!patient) return;
 
@@ -406,11 +411,19 @@ export class AppointmentNotificationService {
         processedCount++;
 
         try {
-          // Double check that the underlying appointment is still active
+          // Double check that the underlying appointment is still active and paid (if Online)
           const apt = await AppointmentModel.findById(notif.appointmentId).lean().exec();
           if (!apt || apt.status === "Cancelled" || apt.status === "Completed") {
             notif.status = "Cancelled";
             notif.failureReason = "Appointment cancelled or completed";
+            await notif.save();
+            cancelledCount++;
+            continue;
+          }
+
+          if (apt.paymentMethod === "Online" && apt.paymentStatus !== "Paid") {
+            notif.status = "Cancelled";
+            notif.failureReason = "Online payment not completed";
             await notif.save();
             cancelledCount++;
             continue;
@@ -501,9 +514,8 @@ export class AppointmentNotificationService {
           if (isPatient && notif.channels.includes("WhatsApp") && notif.recipientPhone) {
             try {
               const patientName = notif.metadata.patientName;
-              const doctorName = notif.metadata.specialistRole === "Doctor"
-                ? `Dr. ${notif.metadata.specialistName}`
-                : notif.metadata.specialistName;
+              // AiSensy appointment_reminder template already includes "Dr. {{2}}"
+              const doctorName = notif.metadata.specialistName.replace(/^(dr\.?\s*)+/i, "").trim();
               const mode = notif.metadata.appointmentType === "Video" ? "Video Consultation" : "In-Clinic Visit";
               const clinicLocation = notif.metadata.appointmentType === "Video"
                 ? (notif.metadata.videoLink || "Video Link in Portal")

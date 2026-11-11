@@ -1,6 +1,21 @@
+export interface PendingAppointmentBookingInput {
+  patientId: string;
+  doctorId: string;
+  clinicId?: string;
+  date: string;
+  time: string;
+  type: "Video" | "Walk-in";
+  serviceName?: string;
+  feeAmount: number;
+  notes?: string;
+  createdBy?: string;
+}
+
 export interface InitiateHdfcCheckoutParams {
-  entityType: "order" | "appointment" | "therapy";
-  entityId: string;
+  entityType: "order" | "appointment" | "therapy" | "appointment_booking";
+  entityId?: string;
+  pendingBooking?: PendingAppointmentBookingInput;
+  retryOrderId?: string;
   returnTo?: string;
   pendingSlot?: {
     date?: string;

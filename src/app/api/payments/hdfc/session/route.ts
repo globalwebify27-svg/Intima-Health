@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/db/connect";
 import { AppointmentModel } from "@/modules/appointments/schema";
 import { OrderModel, PaymentModel, TherapySessionModel } from "@/modules/pharmacy/schema";
-import "@/modules/patients/schema";
+import { PatientModel } from "@/modules/patients/schema";
+import { AppointmentService, APPOINTMENT_SLOT_HOLD_MS, PendingOnlineBookingPayload } from "@/modules/appointments/service";
 import "@/modules/doctors/schema";
 import {
   createHdfcSession,
@@ -59,14 +60,16 @@ export async function POST(req: Request) {
 
     await connectDB();
     const body = await req.json();
-    const { entityType, entityId, returnTo, pendingSlot } = body as {
-      entityType: "order" | "appointment" | "therapy";
-      entityId: string;
+    const { entityType, entityId, returnTo, pendingSlot, pendingBooking, retryOrderId } = body as {
+      entityType: "order" | "appointment" | "therapy" | "appointment_booking";
+      entityId?: string;
       returnTo?: string;
       pendingSlot?: { date?: string; time?: string; selectedMode?: "Online" | "Offline" };
+      pendingBooking?: PendingOnlineBookingPayload;
+      retryOrderId?: string;
     };
 
-    if (!entityType || !entityId) {
+    if (!entityType || (!entityId && entityType !== "appointment_booking")) {
       return NextResponse.json(
         { success: false, error: "entityType and entityId are required." },
         { status: 400 }
@@ -74,7 +77,7 @@ export async function POST(req: Request) {
     }
 
     let amount = 0;
-    let customerId = `CUST_${entityId}`;
+    let customerId = `CUST_${entityId || "BOOK"}`;
     let customerName = "Patient";
     let customerEmail: string | undefined;
     let customerPhone: string | undefined;
@@ -82,12 +85,14 @@ export async function POST(req: Request) {
     let context = "Website Payment";
     let description = "Kelkar Manas Healthcare Payment";
     let prefix = "KM";
-    let notes: Record<string, unknown> = { entityType, entityId };
+    let udf2Value = entityId || "";
+    const notes: Record<string, unknown> = { entityType, entityId };
     if (returnTo) notes.returnTo = returnTo;
 
     if (entityType === "order") {
       prefix = "ORD";
-      const order = await OrderModel.findById(entityId).populate("patientId", "name phone email").exec();
+      const orderIdStr = entityId!;
+      const order = await OrderModel.findById(orderIdStr).populate("patientId", "name phone email").exec();
       if (!order) {
         return NextResponse.json({ success: false, error: "Order not found." }, { status: 404 });
       }
@@ -100,11 +105,11 @@ export async function POST(req: Request) {
       customerName = order.shippingDetails?.fullName || (order.patientId as any)?.name || "Customer";
       customerPhone = order.shippingDetails?.phone || (order.patientId as any)?.phone;
       customerEmail = (order.patientId as any)?.email;
-      context = `Pharmacy Order (${order.orderNumber || entityId.slice(-6)})`;
+      context = `Pharmacy Order (${order.orderNumber || orderIdStr.slice(-6)})`;
       description = `Pharmacy Order ${order.orderNumber || ""}`.trim();
     } else if (entityType === "appointment") {
       prefix = "APT";
-      const apt = await AppointmentModel.findById(entityId)
+      const apt = await AppointmentModel.findById(entityId!)
         .populate("patientId", "name phone email")
         .populate("doctorId", "name consultationFee")
         .exec();
@@ -122,6 +127,82 @@ export async function POST(req: Request) {
       customerEmail = (apt.patientId as any)?.email;
       context = `Appointment (${apt.type || "Consultation"}${apt.serviceName ? ` • ${apt.serviceName}` : ""})`;
       description = `${apt.serviceName || "Consultation Fee"}`;
+    } else if (entityType === "appointment_booking") {
+      prefix = "APT";
+      let resolvedPending = pendingBooking;
+
+      if (!resolvedPending && (retryOrderId || entityId)) {
+        const prevPayment = await PaymentModel.findOne(
+          retryOrderId
+            ? { $or: [{ gatewayOrderId: retryOrderId }, { gatewayTransactionId: retryOrderId }] }
+            : { _id: entityId }
+        ).exec();
+
+        if (!prevPayment) {
+          return NextResponse.json({ success: false, error: "Previous payment session not found." }, { status: 404 });
+        }
+        if (prevPayment.status === "Success" || prevPayment.appointmentId) {
+          return NextResponse.json(
+            { success: false, error: "This appointment is already confirmed and paid." },
+            { status: 400 }
+          );
+        }
+        resolvedPending = (prevPayment.notes as { pendingBooking?: PendingOnlineBookingPayload })?.pendingBooking;
+      }
+
+      if (!resolvedPending?.patientId || !resolvedPending?.doctorId || !resolvedPending?.date || !resolvedPending?.time) {
+        return NextResponse.json(
+          { success: false, error: "Pending booking details are required to start payment." },
+          { status: 400 }
+        );
+      }
+
+      // Re-validate slot availability (allowing this patient's own active hold) & recompute fee
+      const validatedPending = await AppointmentService.validateSlotAndComputeFee(
+        resolvedPending,
+        resolvedPending.patientId,
+        resolvedPending.createdBy
+      );
+
+      // Supersede any prior pending hold by this same patient for the same slot
+      await PaymentModel.updateMany(
+        {
+          patientId: validatedPending.patientId,
+          status: "Pending",
+          "notes.pendingBooking.doctorId": validatedPending.doctorId,
+          "notes.pendingBooking.date": validatedPending.date,
+          "notes.pendingBooking.time": validatedPending.time,
+        },
+        {
+          $set: {
+            status: "Failed",
+            "notes.supersededByRetry": true,
+          },
+        }
+      );
+
+      const patientDoc = await PatientModel.findById(validatedPending.patientId)
+        .select("name phone email")
+        .lean()
+        .exec();
+
+      if (!patientDoc) {
+        return NextResponse.json({ success: false, error: "Patient profile not found." }, { status: 404 });
+      }
+
+      const holdExpiresAt = new Date(Date.now() + APPOINTMENT_SLOT_HOLD_MS);
+      notes.pendingBooking = validatedPending;
+      notes.holdExpiresAt = holdExpiresAt.toISOString();
+
+      amount = Number(validatedPending.feeAmount || 0);
+      patientId = validatedPending.patientId;
+      customerId = String(validatedPending.patientId);
+      customerName = patientDoc.name || "Patient";
+      customerPhone = patientDoc.phone;
+      customerEmail = patientDoc.email;
+      udf2Value = validatedPending.doctorId;
+      context = `Appointment (${validatedPending.type || "Consultation"}${validatedPending.serviceName ? ` • ${validatedPending.serviceName}` : ""})`;
+      description = `${validatedPending.serviceName || "Consultation Fee"}`;
     } else if (entityType === "therapy") {
       prefix = "THP";
       const session = await TherapySessionModel.findById(entityId)
@@ -223,7 +304,7 @@ export async function POST(req: Request) {
         description,
         returnUrl,
         udf1: entityType,
-        udf2: entityId,
+        udf2: udf2Value,
         udf3: payment._id.toString(),
       });
 
