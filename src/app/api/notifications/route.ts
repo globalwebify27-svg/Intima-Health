@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { connectDB } from "@/db/connect";
 import { NotificationModel } from "@/modules/system/schema";
 import { verifyJwt } from "@/lib/jwt";
@@ -7,12 +7,12 @@ import { AppointmentNotificationService } from "@/modules/notifications/service"
 
 export const dynamic = "force-dynamic";
 
+const LAZY_DISPATCH_COOLDOWN_MS = 30_000;
+let lastLazyDispatchAt = 0;
+
 export async function GET(req: Request) {
   try {
     await connectDB();
-
-    // Also lazily trigger any due scheduled notifications in background
-    AppointmentNotificationService.dispatchDueNotifications().catch(() => {});
 
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
@@ -23,6 +23,18 @@ export async function GET(req: Request) {
     const payload: any = verifyJwt(token);
     if (!payload || !payload.userId) {
       return NextResponse.json({ success: false, message: "Invalid token" }, { status: 401 });
+    }
+
+    const nowMs = Date.now();
+    if (nowMs - lastLazyDispatchAt >= LAZY_DISPATCH_COOLDOWN_MS) {
+      lastLazyDispatchAt = nowMs;
+      after(async () => {
+        try {
+          await AppointmentNotificationService.dispatchDueNotifications({ limit: 10 });
+        } catch (err) {
+          console.error("[Notifications] Lazy dispatch error:", err);
+        }
+      });
     }
 
     const recipientIds = [

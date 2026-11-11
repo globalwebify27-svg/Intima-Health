@@ -23,6 +23,36 @@ interface NotificationItem {
   createdAt: string;
 }
 
+interface NotificationsApiResponse {
+  success: boolean;
+  data?: NotificationItem[];
+  unreadCount?: number;
+}
+
+let inflightFetch: Promise<NotificationsApiResponse | null> | null = null;
+let lastFetchResult: { ts: number; data: NotificationsApiResponse } | null = null;
+
+async function fetchNotificationsDeduped(): Promise<NotificationsApiResponse | null> {
+  const now = Date.now();
+  if (lastFetchResult && now - lastFetchResult.ts < 2000) {
+    return lastFetchResult.data;
+  }
+  if (inflightFetch) {
+    return inflightFetch;
+  }
+  inflightFetch = fetch("/api/notifications")
+    .then(async (res) => {
+      if (!res.ok) return null;
+      const json: NotificationsApiResponse = await res.json();
+      lastFetchResult = { ts: Date.now(), data: json };
+      return json;
+    })
+    .finally(() => {
+      inflightFetch = null;
+    });
+  return inflightFetch;
+}
+
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -42,9 +72,8 @@ export function NotificationBell() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch("/api/notifications");
-      if (!res.ok) return;
-      const json = await res.json();
+      const json = await fetchNotificationsDeduped();
+      if (!json) return;
       if (json.success && Array.isArray(json.data)) {
         setNotifications(json.data);
         setUnreadCount(json.unreadCount || 0);

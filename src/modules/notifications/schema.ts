@@ -19,8 +19,9 @@ export interface IScheduledNotification {
   recipientPhone?: string;
   milestone: NotificationMilestone;
   scheduledFor: Date;
-  status: "Pending" | "Sent" | "Cancelled" | "Failed";
+  status: "Pending" | "Processing" | "Sent" | "Cancelled" | "Failed";
   channels: Array<"Email" | "WhatsApp" | "Push">;
+  processingStartedAt?: Date;
   sentAt?: Date;
   failureReason?: string;
   metadata: {
@@ -64,11 +65,12 @@ const ScheduledNotificationSchema = new Schema<IScheduledNotification>(
     scheduledFor: { type: Date, required: true, index: true },
     status: {
       type: String,
-      enum: ["Pending", "Sent", "Cancelled", "Failed"],
+      enum: ["Pending", "Processing", "Sent", "Cancelled", "Failed"],
       default: "Pending",
       index: true,
     },
     channels: [{ type: String, enum: ["Email", "WhatsApp", "Push"] }],
+    processingStartedAt: { type: Date },
     sentAt: { type: Date },
     failureReason: { type: String },
     metadata: {
