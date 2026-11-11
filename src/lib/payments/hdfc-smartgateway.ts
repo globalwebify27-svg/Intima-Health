@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import https from "https";
 
 const SANDBOX_BASE_URL = "https://smartgateway.hdfcuat.bank.in";
 const PRODUCTION_BASE_URL = "https://smartgateway.hdfc.bank.in";
@@ -137,6 +138,77 @@ export function generateHdfcOrderId(prefix = "KM"): string {
   return `${cleanPrefix}${ts}${rand}`.slice(0, 20);
 }
 
+interface HdfcErrorPayload {
+  error_message?: string;
+  message?: string;
+  user_message?: string;
+  error_info?: {
+    developer_message?: string;
+  };
+}
+
+function formatHdfcError(data: unknown, fallback: string): string {
+  const err = (data && typeof data === "object" ? data : {}) as HdfcErrorPayload;
+  const detail = err.error_info?.developer_message || err.user_message;
+  const baseMsg = err.error_message || err.message || fallback;
+  return detail && detail !== baseMsg ? `${baseMsg} (${detail})` : baseMsg;
+}
+
+/**
+ * Executes an HTTPS request to HDFC SmartGateway pinned to IPv4 (family: 4) so
+ * hosts with IPv6 enabled still send from their whitelisted IPv4 address.
+ */
+function hdfcRequestJson(
+  urlStr: string,
+  options: { method: "GET" | "POST"; headers: Record<string, string>; body?: string }
+): Promise<{ ok: boolean; status: number; data: Record<string, unknown> | null }> {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(urlStr);
+    const headers: Record<string, string | number> = { ...options.headers };
+    if (options.body) {
+      headers["Content-Length"] = Buffer.byteLength(options.body, "utf8");
+    }
+
+    const req = https.request(
+      {
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+        port: parsed.port || 443,
+        path: `${parsed.pathname}${parsed.search}`,
+        method: options.method,
+        headers,
+        family: 4,
+        timeout: 15000,
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+        res.on("end", () => {
+          const raw = Buffer.concat(chunks).toString("utf8");
+          let data: Record<string, unknown> | null = null;
+          try {
+            data = raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
+          } catch {
+            data = null;
+          }
+          const status = res.statusCode || 500;
+          resolve({ ok: status >= 200 && status < 300, status, data });
+        });
+      }
+    );
+
+    req.on("timeout", () => {
+      req.destroy(new Error("HDFC SmartGateway request timed out."));
+    });
+    req.on("error", reject);
+
+    if (options.body) {
+      req.write(options.body);
+    }
+    req.end();
+  });
+}
+
 /**
  * Creates a Hosted Payment Page session via HDFC SmartGateway POST /session.
  */
@@ -171,29 +243,24 @@ export async function createHdfcSession(input: CreateHdfcSessionInput): Promise<
   if (input.udf2) payload.udf2 = input.udf2.slice(0, 128);
   if (input.udf3) payload.udf3 = input.udf3.slice(0, 128);
 
-  const response = await fetch(`${cfg.baseUrl}/session`, {
+  const response = await hdfcRequestJson(`${cfg.baseUrl}/session`, {
     method: "POST",
     headers: buildHdfcHeaders(input.customerId),
     body: JSON.stringify(payload),
-    cache: "no-store",
   });
 
-  const data = await response.json().catch(() => null);
+  const data = response.data;
   if (!response.ok || !data) {
     console.error("[HDFC Session] Gateway error:", response.status, data);
-    const detail = data?.error_info?.developer_message || data?.user_message;
-    const baseMsg =
-      data?.error_message ||
-      data?.message ||
-      `HDFC SmartGateway session creation failed (HTTP ${response.status}).`;
-    throw new Error(detail && detail !== baseMsg ? `${baseMsg} (${detail})` : baseMsg);
+    throw new Error(formatHdfcError(data, `HDFC SmartGateway session creation failed (HTTP ${response.status}).`));
   }
 
-  if (!data.payment_links?.web) {
+  const paymentLinks = data.payment_links as { web?: string } | undefined;
+  if (!paymentLinks?.web) {
     throw new Error("HDFC SmartGateway did not return a payment link (payment_links.web).");
   }
 
-  return data as HdfcSessionResponse;
+  return data as unknown as HdfcSessionResponse;
 }
 
 /**
@@ -201,24 +268,18 @@ export async function createHdfcSession(input: CreateHdfcSessionInput): Promise<
  */
 export async function fetchHdfcOrderStatus(orderId: string, customerId?: string): Promise<HdfcOrderStatusResponse> {
   const cfg = getHdfcConfig();
-  const response = await fetch(`${cfg.baseUrl}/orders/${encodeURIComponent(orderId)}`, {
+  const response = await hdfcRequestJson(`${cfg.baseUrl}/orders/${encodeURIComponent(orderId)}`, {
     method: "GET",
     headers: buildHdfcHeaders(customerId),
-    cache: "no-store",
   });
 
-  const data = await response.json().catch(() => null);
+  const data = response.data;
   if (!response.ok || !data) {
     console.error("[HDFC Status] Gateway error:", response.status, data);
-    const detail = data?.error_info?.developer_message || data?.user_message;
-    const baseMsg =
-      data?.error_message ||
-      data?.message ||
-      `Failed to fetch HDFC order status (HTTP ${response.status}).`;
-    throw new Error(detail && detail !== baseMsg ? `${baseMsg} (${detail})` : baseMsg);
+    throw new Error(formatHdfcError(data, `Failed to fetch HDFC order status (HTTP ${response.status}).`));
   }
 
-  return data as HdfcOrderStatusResponse;
+  return data as unknown as HdfcOrderStatusResponse;
 }
 
 function rfc3986Encode(str: string): string {
