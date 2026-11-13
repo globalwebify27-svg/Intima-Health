@@ -1,12 +1,13 @@
 "use client";
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { LayoutDashboard, ShoppingBag, Pill, PackageSearch, Settings } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Pill, PackageSearch, CreditCard } from "lucide-react";
 
 const pharmacyLinks = [
   { title: "Dashboard", href: "/pharmacy/dashboard", icon: LayoutDashboard },
   { title: "Pharmacy Online Orders", href: "/pharmacy/orders", icon: ShoppingBag },
   { title: "Prescriptions", href: "/pharmacy/prescriptions", icon: Pill },
+  { title: "Payments", href: "/pharmacy/payments", icon: CreditCard },
   { title: "Inventory", href: "/pharmacy/inventory", icon: PackageSearch },
 ];
 

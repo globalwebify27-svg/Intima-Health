@@ -16,7 +16,9 @@ import {
   AlertCircle,
   Trash2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Banknote,
+  CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -76,6 +78,7 @@ export default function PrescriptionsPage() {
   const [dispenseItems, setDispenseItems] = useState<Array<{ productId: string; quantity: number; price: number; name: string; stock: number }>>([]);
   const [checkoutStep, setCheckoutStep] = useState<"items" | "payment">("items");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [transactionRef, setTransactionRef] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -143,6 +146,7 @@ export default function PrescriptionsPage() {
       totalAmount,
       status: "Delivered",
       paymentMethod,
+      transactionId: paymentMethod === "Online" && transactionRef.trim() ? transactionRef.trim() : undefined,
       shippingAddress: "Clinic Counter Dispense",
       shippingDetails: {
         fullName: dispenseConsultation.patientId?.name || "Patient",
@@ -180,6 +184,7 @@ export default function PrescriptionsPage() {
         setDispenseConsultation(null);
         setDispenseItems([]);
         setCheckoutStep("items");
+        setTransactionRef("");
         setSuccessMsg("");
         setErrorMsg("");
         fetchPrescriptions();
@@ -562,35 +567,48 @@ export default function PrescriptionsPage() {
                   
                   <div className="space-y-3">
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Select Payment Method</label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {["Cash", "Online", "Send Link in WhatsApp"].map((method) => (
-                        <div 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {["Cash", "Online"].map((method) => (
+                        <button
+                          type="button"
                           key={method}
                           onClick={() => setPaymentMethod(method)}
-                          className={`p-3 border rounded-xl cursor-pointer text-center font-medium text-sm transition-all ${
+                          className={`p-3 border rounded-xl cursor-pointer flex items-center justify-center gap-2 font-medium text-sm transition-all ${
                             paymentMethod === method 
                               ? "border-primary bg-primary/10 text-primary" 
                               : "border-border hover:border-primary/50 text-muted-foreground"
                           }`}
                         >
-                          {method}
-                        </div>
+                          {method === "Cash" ? <Banknote className="w-4 h-4 shrink-0" /> : <CreditCard className="w-4 h-4 shrink-0" />}
+                          <span>{method}</span>
+                        </button>
                       ))}
                     </div>
                     {paymentMethod === "Cash" && (
-                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-xl">
-                        💵 Collect cash at the counter. Order will be marked as Paid & Delivered immediately.
-                      </p>
+                      <div className="flex items-start gap-2.5 text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl">
+                        <Banknote className="w-4 h-4 shrink-0 text-primary mt-0.5" />
+                        <span>Collect cash at the counter. Order will be marked as Paid &amp; Delivered immediately.</span>
+                      </div>
                     )}
                     {paymentMethod === "Online" && (
-                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-xl">
-                        💳 Collect payment via clinic UPI / QR / Card machine. Order will be marked as Paid & Delivered immediately.
-                      </p>
-                    )}
-                    {paymentMethod === "Send Link in WhatsApp" && (
-                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-xl">
-                        📱 A digital payment invoice link will be sent to patient ({dispenseConsultation.patientId?.name || "Patient"}: {dispenseConsultation.patientId?.phone || "registered mobile"}).
-                      </p>
+                      <div className="space-y-2.5">
+                        <div className="flex items-start gap-2.5 text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl">
+                          <CreditCard className="w-4 h-4 shrink-0 text-primary mt-0.5" />
+                          <span>Collect payment via clinic UPI / QR / Card machine. Order will be marked as Paid &amp; Delivered immediately.</span>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                            UPI / Card Reference ID (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={transactionRef}
+                            onChange={(e) => setTransactionRef(e.target.value)}
+                            placeholder="e.g. UTR / UPI Ref / Card Auth Code"
+                            className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          />
+                        </div>
+                      </div>
                     )}
                   </div>
 

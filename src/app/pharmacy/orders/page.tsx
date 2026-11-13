@@ -69,6 +69,14 @@ export default function PharmacyOrdersPage() {
 
   // Status Change State
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<{
+    orderId: string;
+    orderNumber: string;
+    patientName: string;
+    items: OrderItem[];
+    newStatus: "CALL_COMPLETED" | "FULFILLED";
+    comment: string;
+  } | null>(null);
 
   const fetchOrders = () => {
     setLoading(true);
@@ -427,7 +435,10 @@ export default function PharmacyOrdersPage() {
 
                     {doctor && (
                       <div className="pt-1 text-[11px] text-muted-foreground border-t border-border/40">
-                        Prescribed by: <strong className="text-foreground">Dr. {doctor.name}</strong>
+                        Prescribed by:{" "}
+                        <strong className="text-foreground">
+                          Dr. {(doctor.name || "").replace(/^(dr\.?\s*)+/i, "").trim()}
+                        </strong>
                       </div>
                     )}
                   </div>
@@ -480,7 +491,16 @@ export default function PharmacyOrdersPage() {
                         <Button 
                           size="sm"
                           disabled={updatingOrderId === order._id}
-                          onClick={() => handleUpdateStatus(order._id, "CALL_COMPLETED", "Phone call verification completed with patient")}
+                          onClick={() =>
+                            setPendingAction({
+                              orderId: order._id,
+                              orderNumber: order.orderNumber || order._id.slice(-8).toUpperCase(),
+                              patientName,
+                              items: order.items || [],
+                              newStatus: "CALL_COMPLETED",
+                              comment: "Phone call verification completed with patient",
+                            })
+                          }
                           className="flex-1 rounded-xl text-xs font-bold h-9 bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
                         >
                           <PhoneCall className="w-3.5 h-3.5" /> Call Verified
@@ -491,7 +511,16 @@ export default function PharmacyOrdersPage() {
                         <Button 
                           size="sm"
                           disabled={updatingOrderId === order._id}
-                          onClick={() => handleUpdateStatus(order._id, "FULFILLED", "Medicine verified and dispensed by clinic pharmacy")}
+                          onClick={() =>
+                            setPendingAction({
+                              orderId: order._id,
+                              orderNumber: order.orderNumber || order._id.slice(-8).toUpperCase(),
+                              patientName,
+                              items: order.items || [],
+                              newStatus: "FULFILLED",
+                              comment: "Medicine verified and dispensed by clinic pharmacy",
+                            })
+                          }
                           className="flex-1 rounded-xl text-xs font-bold h-9 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
                         >
                           <ShieldCheck className="w-3.5 h-3.5" /> Fulfil / Dispense
@@ -523,6 +552,112 @@ export default function PharmacyOrdersPage() {
           })}
         </div>
       )}
+
+      {/* VERIFY / FULFIL CONFIRMATION POPUP */}
+      <Dialog open={Boolean(pendingAction)} onOpenChange={(open) => { if (!open) setPendingAction(null); }}>
+        <DialogContent className="max-w-md rounded-2xl p-5 sm:p-6 gap-4">
+          <DialogHeader className="text-left space-y-0">
+            <div className="flex items-start gap-3.5 pr-6">
+              <div
+                className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center ${
+                  pendingAction?.newStatus === "FULFILLED"
+                    ? "bg-emerald-500/10 text-emerald-600"
+                    : "bg-blue-500/10 text-blue-600"
+                }`}
+              >
+                {pendingAction?.newStatus === "FULFILLED" ? (
+                  <ShieldCheck className="w-5 h-5" />
+                ) : (
+                  <PhoneCall className="w-5 h-5" />
+                )}
+              </div>
+              <div className="space-y-1">
+                <DialogTitle className="text-base font-bold text-foreground leading-snug">
+                  {pendingAction?.newStatus === "FULFILLED"
+                    ? "Confirm Order Fulfilment"
+                    : "Confirm Call Verification"}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+                  {pendingAction?.newStatus === "FULFILLED"
+                    ? "Please verify the patient and medicine details below before marking this order as dispensed."
+                    : "Confirm telephone verification has been completed with the patient for this order."}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {pendingAction && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-muted/40 border border-border/80 text-xs">
+                <div>
+                  <span className="text-muted-foreground">Order: </span>
+                  <span className="font-mono font-bold text-foreground">{pendingAction.orderNumber}</span>
+                </div>
+                <div className="truncate">
+                  <span className="text-muted-foreground">Patient: </span>
+                  <span className="font-semibold text-foreground">{pendingAction.patientName}</span>
+                </div>
+              </div>
+
+              {pendingAction.items.length > 0 && (
+                <div className="border border-border rounded-xl overflow-hidden">
+                  <div className="px-3.5 py-2 bg-muted/30 border-b border-border/70 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <Pill className="w-3.5 h-3.5 text-primary" />
+                    <span>Ordered Medicines ({pendingAction.items.length})</span>
+                  </div>
+                  <div className="divide-y divide-border/60 max-h-44 overflow-y-auto">
+                    {pendingAction.items.map((item, idx) => (
+                      <div key={idx} className="px-3.5 py-2.5 text-xs flex justify-between items-center gap-3 bg-card">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground truncate">
+                            {item.name || item.productId?.name || "Medication"}
+                          </p>
+                          {item.dosage && (
+                            <p className="text-[11px] text-muted-foreground truncate mt-0.5">{item.dosage}</p>
+                          )}
+                        </div>
+                        <span className="text-[11px] font-bold text-foreground bg-muted px-2 py-0.5 rounded-md shrink-0">
+                          Qty: {item.quantity || 1}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="flex-row justify-end gap-2 pt-3 border-t border-border/60">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPendingAction(null)}
+              className="rounded-xl h-9 px-4 text-xs font-semibold border-border text-foreground hover:bg-muted"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={!pendingAction || updatingOrderId === pendingAction.orderId}
+              onClick={async () => {
+                if (!pendingAction) return;
+                const action = pendingAction;
+                setPendingAction(null);
+                await handleUpdateStatus(action.orderId, action.newStatus, action.comment);
+              }}
+              className={`rounded-xl h-9 px-4 text-xs text-white font-bold ${
+                pendingAction?.newStatus === "FULFILLED"
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {pendingAction?.newStatus === "FULFILLED"
+                ? "Confirm & Mark Fulfilled"
+                : "Confirm Call Verified"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* CANCELLATION CONFIRMATION POPUP */}
       <Dialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>

@@ -109,7 +109,7 @@ export class ConsultationRepository {
       const [appointments, doctorsInClinic, unassignedDoctors] = await Promise.all([
         AppointmentModel.find({ clinicId: clinicMatch }).select("_id").lean().exec(),
         DoctorModel.find({ clinicId: clinicMatch }).select("_id").lean().exec(),
-        DoctorModel.find({ $or: [{ clinicId: null }, { clinicId: { $exists: false } }, { clinicId: "" }] }).select("_id").lean().exec(),
+        DoctorModel.find({ $or: [{ clinicId: null }, { clinicId: { $exists: false } }] }).select("_id").lean().exec(),
       ]);
 
       const appointmentIds = appointments.map((a: any) => a._id);

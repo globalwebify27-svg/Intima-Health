@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { cookies } from "next/headers";
 import { connectDB } from "@/db/connect";
-import { OrderModel, ProductModel } from "@/modules/pharmacy/schema";
+import { OrderModel, PaymentModel, ProductModel } from "@/modules/pharmacy/schema";
 import { PharmacyConfigModel, DEFAULT_AKOLA_PINCODES } from "@/modules/pharmacy/settings-schema";
 import { PatientModel } from "@/modules/patients/schema";
 import { ConsultationModel } from "@/modules/consultations/schema";
@@ -91,6 +91,7 @@ export async function POST(request: Request) {
       consultationId,
       uploadedPrescriptionUrl,
       paymentMethod = "COD",
+      transactionId,
       isRefillOrder = false,
       parentOrderId,
       remainingRefills,
@@ -468,8 +469,8 @@ export async function POST(request: Request) {
 
       if (existingOrder) {
         existingOrder.status = "Delivered";
-        existingOrder.paymentStatus = (paymentMethod === "Send Link in WhatsApp") ? "Pending" : "Paid";
-        existingOrder.paymentMethod = paymentMethod;
+        existingOrder.paymentStatus = "Paid";
+        existingOrder.paymentMethod = paymentMethod === "Cash" ? "Cash" : "Online";
         if (validatedItems.length > 0) existingOrder.items = validatedItems as any;
         existingOrder.totalAmount = totalPayable;
         existingOrder.pricing = {
@@ -489,9 +490,34 @@ export async function POST(request: Request) {
         existingOrder.statusHistory.push({
           status: "Delivered",
           timestamp: new Date(),
-          comment: `Order dispensed and settled in clinic pharmacy counter. Total: ₹${totalPayable.toLocaleString()} (${paymentMethod}).`,
+          comment: `Order dispensed and settled in clinic pharmacy counter. Total: ₹${totalPayable.toLocaleString()} (${existingOrder.paymentMethod}${transactionId ? `, Ref: ${transactionId}` : ""}).`,
           updatedBy: "Pharmacy Staff",
         });
+
+        const gatewayTxnId = (typeof transactionId === "string" && transactionId.trim())
+          ? transactionId.trim()
+          : `ORD-${existingOrder._id.toString()}`;
+        const counterPayment = await PaymentModel.findOneAndUpdate(
+          { orderId: existingOrder._id },
+          {
+            $set: {
+              orderId: existingOrder._id,
+              patientId: existingOrder.patientId,
+              customerName: shippingDetails?.fullName || existingOrder.shippingDetails?.fullName || "In-Clinic Patient",
+              customerPhone: shippingDetails?.phone || existingOrder.shippingDetails?.phone,
+              context: `Pharmacy Order (${existingOrder.orderNumber || existingOrder._id.toString().slice(-6)})`,
+              paymentMethod: existingOrder.paymentMethod,
+              gatewayProvider: existingOrder.paymentMethod === "Cash" ? "Cash / Counter" : "In-Clinic UPI / Card",
+              gatewayTransactionId: gatewayTxnId,
+              amount: totalPayable,
+              currency: "INR",
+              status: "Success",
+              updatedBy: "Pharmacy Staff",
+            },
+          },
+          { upsert: true, new: true }
+        ).exec();
+        existingOrder.paymentId = counterPayment._id as any;
         await existingOrder.save();
 
         return NextResponse.json({
@@ -525,8 +551,8 @@ export async function POST(request: Request) {
         state: "Maharashtra",
         pinCode: "444001"
       },
-      paymentMethod,
-      paymentStatus: isCounterDispense ? (paymentMethod === "Send Link in WhatsApp" ? "Pending" : "Paid") : "Pending",
+      paymentMethod: isCounterDispense ? (paymentMethod === "Cash" ? "Cash" : "Online") : paymentMethod,
+      paymentStatus: isCounterDispense ? "Paid" : "Pending",
       prescriptionSource: requiresPrescription ? prescriptionSource : "OTC_NO_RX",
       consultationId: consultationId || undefined,
       uploadedPrescriptionUrl: uploadedPrescriptionUrl || undefined,
@@ -558,6 +584,29 @@ export async function POST(request: Request) {
     });
 
     await order.save();
+
+    if (isCounterDispense) {
+      const resolvedMethod = paymentMethod === "Cash" ? "Cash" : "Online";
+      const gatewayTxnId = (typeof transactionId === "string" && transactionId.trim())
+        ? transactionId.trim()
+        : `ORD-${order._id.toString()}`;
+      const counterPayment = await PaymentModel.create({
+        orderId: order._id,
+        patientId: finalPatientId,
+        customerName: shippingDetails?.fullName || "In-Clinic Patient",
+        customerPhone: shippingDetails?.phone,
+        context: `Pharmacy Order (${order.orderNumber})`,
+        paymentMethod: resolvedMethod,
+        gatewayProvider: resolvedMethod === "Cash" ? "Cash / Counter" : "In-Clinic UPI / Card",
+        gatewayTransactionId: gatewayTxnId,
+        amount: totalPayable,
+        currency: "INR",
+        status: "Success",
+        createdBy: "Pharmacy Staff",
+      });
+      order.paymentId = counterPayment._id as any;
+      await order.save();
+    }
 
     sendOrderCustomerEmail(order._id.toString()).catch((e: unknown) => {
       console.error("[Orders] Customer receipt email error:", e);
