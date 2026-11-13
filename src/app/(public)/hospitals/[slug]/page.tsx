@@ -304,8 +304,9 @@ export default async function HospitalInfoPage({
 
                   <div className="flex flex-wrap gap-3">
                     {centre.requiredDocuments.list.map((doc, i) => (
-                      <div key={i} className="px-5 py-2.5 rounded-full bg-white dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 font-bold text-sm text-amber-950 dark:text-amber-100 shadow-xs">
-                        ✓ {doc}
+                      <div key={i} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 font-bold text-sm text-amber-950 dark:text-amber-100 shadow-xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>{doc}</span>
                       </div>
                     ))}
                   </div>

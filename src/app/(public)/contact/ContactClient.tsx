@@ -159,8 +159,8 @@ export default function ContactClient({ initialContent }: ContactClientProps) {
                       <h4 className="font-semibold text-lg mb-1">Mobile Numbers</h4>
                       <p className="text-muted-foreground text-sm mb-1">Appointment / Contact</p>
                       <div className="flex flex-col gap-1 mt-2">
-                        <a href="tel:+918484931874" className="text-primary font-medium hover:underline text-lg">📞 +91 8484931874</a>
-                        <a href="tel:+917028088838" className="text-primary font-medium hover:underline text-lg">📞 +91 7028088838</a>
+                        <a href="tel:+918484931874" className="text-primary font-medium hover:underline text-lg">+91 8484931874</a>
+                        <a href="tel:+917028088838" className="text-primary font-medium hover:underline text-lg">+91 7028088838</a>
                       </div>
                     </div>
                   </motion.div>
@@ -177,13 +177,13 @@ export default function ContactClient({ initialContent }: ContactClientProps) {
                           href={`mailto:${data.email1 || "dkdeepakkelkar736@gmail.com"}`} 
                           className="text-primary font-medium hover:underline text-base break-all"
                         >
-                          ✉️ {data.email1 || "dkdeepakkelkar736@gmail.com"}
+                          {data.email1 || "dkdeepakkelkar736@gmail.com"}
                         </a>
                         <a 
                           href={`mailto:${data.email2 || "kelkar_anand@hotmail.com"}`} 
                           className="text-primary font-medium hover:underline text-base break-all"
                         >
-                          ✉️ {data.email2 || "kelkar_anand@hotmail.com"}
+                          {data.email2 || "kelkar_anand@hotmail.com"}
                         </a>
                       </div>
                     </div>

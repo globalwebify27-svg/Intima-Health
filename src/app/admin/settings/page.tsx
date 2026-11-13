@@ -28,7 +28,8 @@ import {
   Server,
   Key,
   RefreshCw,
-  Star
+  Star,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1411,7 +1412,7 @@ export default function SettingsPage() {
                           className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1"
                           title="Clear test email"
                         >
-                          ✕
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>

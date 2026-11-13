@@ -6,7 +6,7 @@ import {
   ShieldCheck, ArrowRight, CreditCard, ShoppingBag, 
   CheckCircle2, AlertCircle, Upload, FileText, 
   Truck, Building2, Loader2, UserCheck,
-  Banknote, Edit3, Phone, UserPlus, Users
+  Banknote, Edit3, Phone, UserPlus, Users, Check
 } from "lucide-react";
 import { useCart } from "@/store/useCart";
 import { Button } from "@/components/ui/button";
@@ -779,7 +779,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                         Prescription Attached from Patient Portal
                       </span>
                       <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold shadow-sm">
-                        ✓
+                        <Check className="w-3.5 h-3.5" />
                       </span>
                     </div>
 
@@ -860,7 +860,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                                 </p>
                               </div>
                               <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs ${selectedDigitalRxId === rx._id ? "bg-primary text-white border-primary" : "border-muted-foreground/30"}`}>
-                                {selectedDigitalRxId === rx._id && "✓"}
+                                {selectedDigitalRxId === rx._id && <Check className="w-3 h-3" />}
                               </span>
                             </div>
                           ))}
@@ -1498,7 +1498,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                     </div>
                   </div>
                   <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs ${paymentMethod === "Online" ? "bg-primary text-white border-primary" : "border-muted-foreground/30"}`}>
-                    {paymentMethod === "Online" && "✓"}
+                    {paymentMethod === "Online" && <Check className="w-3 h-3" />}
                   </span>
                 </div>
 
@@ -1518,7 +1518,7 @@ export function CheckoutForm({ isDashboard = false }: CheckoutFormProps) {
                       </div>
                     </div>
                     <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs ${paymentMethod === "COD" ? "bg-primary text-white border-primary" : "border-muted-foreground/30"}`}>
-                      {paymentMethod === "COD" && "✓"}
+                      {paymentMethod === "COD" && <Check className="w-3 h-3" />}
                     </span>
                   </div>
                 )}

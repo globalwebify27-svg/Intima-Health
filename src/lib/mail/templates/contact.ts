@@ -67,7 +67,7 @@ export function generateContactInquiryAdminEmail(data: ContactNotificationEmailD
     <div style="text-align: center; margin-bottom: 16px;">
       <a href="mailto:${data.email}?subject=${encodeURIComponent("Re: " + (data.subject || "Your Inquiry at Kelkar Manas Health Care"))}" 
          style="display: inline-block; background-color: #7A2E7A; color: #ffffff !important; font-weight: 600; font-size: 14px; padding: 12px 28px; text-decoration: none; border-radius: 9999px; margin-right: 8px; box-shadow: 0 2px 8px rgba(122, 46, 122, 0.25);">
-        ✉ Reply to Sender
+        Reply to Sender
       </a>
       <a href="${portalUrl}" 
          style="display: inline-block; background-color: #F4ECF4; color: #7A2E7A !important; font-weight: 600; font-size: 14px; padding: 12px 24px; text-decoration: none; border-radius: 9999px; border: 1px solid #E2D9E2;">

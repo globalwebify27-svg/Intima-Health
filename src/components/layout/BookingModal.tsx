@@ -952,7 +952,7 @@ export function BookingModal() {
                           )}
 
                           <div className="space-y-2">
-                            <p className="text-xs font-bold text-foreground">📲 Get the Mobile App</p>
+                            <p className="text-xs font-bold text-foreground">Get the Mobile App</p>
                             <p className="text-[11px] text-muted-foreground leading-relaxed">
                               Download our mobile app to track your appointment history, view digital prescriptions, and join your video consultations directly.
                             </p>

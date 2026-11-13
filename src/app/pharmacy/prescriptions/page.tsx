@@ -1,10 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pill, FileSignature, CheckCircle, CheckCircle2, AlertCircle, Trash2, X, Calendar, User, UserCheck, Phone, Mail, Activity, Search } from "lucide-react";
+import { Pill, FileSignature, CheckCircle, CheckCircle2, AlertCircle, Trash2, X, Calendar, User, UserCheck, Phone, Mail, Activity, Search, Banknote, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+
+interface FulfilledOrderInfo {
+  orderNumber?: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  totalAmount?: number;
+  status?: string;
+  settledAt?: string;
+}
 
 interface Medicine {
   drug: string;
@@ -77,10 +86,12 @@ export default function PharmacyPrescriptionsPage() {
   const [dispenseItems, setDispenseItems] = useState<Array<{ productId: string; quantity: number; price: number; name: string; stock: number }>>([]);
   const [checkoutStep, setCheckoutStep] = useState<"items" | "payment">("items");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [transactionRef, setTransactionRef] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [fetchError, setFetchError] = useState("");
+  const [fulfilledOrdersMap, setFulfilledOrdersMap] = useState<Record<string, FulfilledOrderInfo>>({});
 
   const getMedsArray = (summary?: string): Medicine[] => {
     if (!summary) return [];
@@ -121,6 +132,7 @@ export default function PharmacyPrescriptionsPage() {
       const json = await res.json().catch(() => ({ success: false, error: "Invalid server response." }));
 
       const fulfilledConsultIds = new Set<string>();
+      const nextFulfilledMap: Record<string, FulfilledOrderInfo> = {};
       if (ordersRes && ordersRes.ok) {
         try {
           const ordersJson = await ordersRes.json();
@@ -129,12 +141,24 @@ export default function PharmacyPrescriptionsPage() {
               const s = (o.status || "").toUpperCase();
               if (s === "FULFILLED" || s === "DELIVERED") {
                 const consultId = typeof o.consultationId === "object" ? o.consultationId?._id : o.consultationId;
-                if (consultId) fulfilledConsultIds.add(String(consultId));
+                if (consultId) {
+                  const idStr = String(consultId);
+                  fulfilledConsultIds.add(idStr);
+                  nextFulfilledMap[idStr] = {
+                    orderNumber: o.orderNumber,
+                    paymentMethod: o.paymentMethod,
+                    paymentStatus: o.paymentStatus,
+                    totalAmount: o.totalAmount,
+                    status: o.status,
+                    settledAt: o.updatedAt || o.createdAt,
+                  };
+                }
               }
             });
           }
         } catch {}
       }
+      setFulfilledOrdersMap(nextFulfilledMap);
 
       if (!res.ok || !json.success) {
         setFetchError(json?.error || `Failed to load digital prescriptions (HTTP ${res.status}).`);
@@ -240,6 +264,7 @@ export default function PharmacyPrescriptionsPage() {
       totalAmount,
       status: "Delivered",
       paymentMethod,
+      transactionId: paymentMethod === "Online" && transactionRef.trim() ? transactionRef.trim() : undefined,
       shippingAddress: "Clinic Counter Dispense",
       shippingDetails: {
         fullName: dispenseConsultation.patientId?.name || "Patient",
@@ -277,9 +302,10 @@ export default function PharmacyPrescriptionsPage() {
         setDispenseConsultation(null);
         setDispenseItems([]);
         setCheckoutStep("items");
+        setTransactionRef("");
         setSuccessMsg("");
         setErrorMsg("");
-        fetchPrescriptions(clinicId!);
+        fetchPrescriptions(selectedClinicId);
       }, 1500);
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred.");
@@ -493,7 +519,7 @@ export default function PharmacyPrescriptionsPage() {
               onChange={(e) => setSelectedClinicId(e.target.value)}
               className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
-              <option value="all">🏥 All Clinics (Platform-wide)</option>
+              <option value="all">All Clinics (Platform-wide)</option>
               {clinics.map((c) => (
                 <option key={c._id} value={c._id}>
                   {c.name} {c.city ? `(${c.city})` : ""}
@@ -629,7 +655,20 @@ export default function PharmacyPrescriptionsPage() {
       </div>
 
       {/* --- MODAL: DISPENSE PRESCRIPTION & CREATE PHARMACY ORDER --- */}
-      {showDispenseModal && dispenseConsultation && (
+      {showDispenseModal && dispenseConsultation && (() => {
+        const isAlreadyFulfilled = dispenseConsultation.prescriptionStatus === "Fulfilled";
+        const fulfilledOrder = fulfilledOrdersMap[dispenseConsultation._id];
+        const settledTimestamp = fulfilledOrder?.settledAt || dispenseConsultation.createdAt;
+        const formattedSettledAt = settledTimestamp
+          ? new Date(settledTimestamp).toLocaleString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "—";
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-card border border-border rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4">
             <button 
@@ -638,6 +677,7 @@ export default function PharmacyPrescriptionsPage() {
                 setDispenseConsultation(null);
                 setDispenseItems([]);
                 setCheckoutStep("items");
+                setTransactionRef("");
                 setSuccessMsg("");
                 setErrorMsg("");
               }}
@@ -646,9 +686,18 @@ export default function PharmacyPrescriptionsPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2 border-b border-border pb-3">
-              <Pill className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-bold">Dispense Medicines & Settle Order</h3>
+            <div className="flex items-center justify-between gap-2 border-b border-border pb-3 pr-8">
+              <div className="flex items-center gap-2">
+                <Pill className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-bold">
+                  {isAlreadyFulfilled ? "Prescription Order Details" : "Dispense Medicines & Settle Order"}
+                </h3>
+              </div>
+              {isAlreadyFulfilled && (
+                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Fulfilled &amp; Paid
+                </Badge>
+              )}
             </div>
 
             <div className="bg-muted/30 border border-border/40 p-4 rounded-xl space-y-2 text-xs">
@@ -674,7 +723,7 @@ export default function PharmacyPrescriptionsPage() {
               )}
 
               {/* Items Selected list */}
-              {checkoutStep === "items" ? (
+              {isAlreadyFulfilled || checkoutStep === "items" ? (
                 <>
                   {dispenseItems.length > 0 && (
                     <div className="border border-border rounded-2xl overflow-hidden bg-muted/10">
@@ -685,7 +734,7 @@ export default function PharmacyPrescriptionsPage() {
                             <th className="p-3">Price</th>
                             <th className="p-3">Qty</th>
                             <th className="p-3">Total</th>
-                            <th className="p-3 text-right">Remove</th>
+                            {!isAlreadyFulfilled && <th className="p-3 text-right">Remove</th>}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border text-foreground">
@@ -694,25 +743,31 @@ export default function PharmacyPrescriptionsPage() {
                               <td className="p-3 font-bold">{item.name}</td>
                               <td className="p-3">₹{item.price}</td>
                               <td className="p-3">
-                                <input
-                                  type="number"
-                                  min={1}
-                                  max={item.stock}
-                                  value={item.quantity}
-                                  onChange={(e) => updateDispenseItemQty(item.productId, parseInt(e.target.value))}
-                                  className="w-16 h-8 px-2 rounded border border-border bg-background text-center focus:outline-none"
-                                />
+                                {isAlreadyFulfilled ? (
+                                  <span className="font-semibold">{item.quantity}</span>
+                                ) : (
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={item.stock}
+                                    value={item.quantity}
+                                    onChange={(e) => updateDispenseItemQty(item.productId, parseInt(e.target.value))}
+                                    className="w-16 h-8 px-2 rounded border border-border bg-background text-center focus:outline-none"
+                                  />
+                                )}
                               </td>
                               <td className="p-3 font-bold">₹{item.price * item.quantity}</td>
-                              <td className="p-3 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => removeDispenseItem(item.productId)}
-                                  className="text-rose-500 hover:text-rose-700"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
+                              {!isAlreadyFulfilled && (
+                                <td className="p-3 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeDispenseItem(item.productId)}
+                                    className="text-rose-500 hover:text-rose-700"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              )}
                             </tr>
                           ))}
                         </tbody>
@@ -722,25 +777,69 @@ export default function PharmacyPrescriptionsPage() {
 
                   {/* Total Calculation */}
                   <div className="flex justify-between items-center bg-primary/5 p-4 rounded-xl border border-primary/20">
-                    <span className="text-sm font-bold text-primary">Dispensed Order Bill Total:</span>
+                    <span className="text-sm font-bold text-primary">
+                      {isAlreadyFulfilled ? "Settled Order Bill Total:" : "Dispensed Order Bill Total:"}
+                    </span>
                     <span className="text-lg font-black text-primary">
-                      ₹{dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+                      ₹{fulfilledOrder?.totalAmount ?? dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
                     </span>
                   </div>
 
-                  <Button 
-                    type="button" 
-                    onClick={() => {
-                      if (dispenseItems.length === 0) {
-                        setErrorMsg("Please add at least one medicine to dispense.");
-                        return;
-                      }
-                      setCheckoutStep("payment");
-                    }} 
-                    className="w-full h-11 text-white font-bold rounded-xl mt-2"
-                  >
-                    Proceed to Payment
-                  </Button>
+                  {isAlreadyFulfilled && (
+                    <div className="bg-muted/30 border border-border rounded-xl p-4 space-y-2 text-xs">
+                      <div className="font-bold text-foreground uppercase tracking-wider text-[11px]">
+                        Payment &amp; Settlement Details
+                      </div>
+                      <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+                        <div className="text-muted-foreground">Order Number</div>
+                        <div className="font-mono font-semibold text-right text-foreground">
+                          {fulfilledOrder?.orderNumber || "—"}
+                        </div>
+                        <div className="text-muted-foreground">Payment Method</div>
+                        <div className="font-semibold text-right text-foreground">
+                          {fulfilledOrder?.paymentMethod || "Counter Settlement"}
+                        </div>
+                        <div className="text-muted-foreground">Payment Status</div>
+                        <div className="font-semibold text-right text-emerald-600">
+                          {fulfilledOrder?.paymentStatus || "Paid"}
+                        </div>
+                        <div className="text-muted-foreground">Date &amp; Time</div>
+                        <div className="font-semibold text-right text-foreground">
+                          {formattedSettledAt}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {isAlreadyFulfilled ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowDispenseModal(false);
+                        setDispenseConsultation(null);
+                        setDispenseItems([]);
+                        setCheckoutStep("items");
+                      }}
+                      className="w-full h-11 font-bold rounded-xl mt-2"
+                    >
+                      Close
+                    </Button>
+                  ) : (
+                    <Button 
+                      type="button" 
+                      onClick={() => {
+                        if (dispenseItems.length === 0) {
+                          setErrorMsg("Please add at least one medicine to dispense.");
+                          return;
+                        }
+                        setCheckoutStep("payment");
+                      }} 
+                      className="w-full h-11 text-white font-bold rounded-xl mt-2"
+                    >
+                      Proceed to Payment
+                    </Button>
+                  )}
                 </>
               ) : (
                 <div className="space-y-4">
@@ -753,35 +852,48 @@ export default function PharmacyPrescriptionsPage() {
                   
                   <div className="space-y-3">
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Select Payment Method</label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {["Cash", "Online", "Send Link in WhatsApp"].map((method) => (
-                        <div 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {["Cash", "Online"].map((method) => (
+                        <button
+                          type="button"
                           key={method}
                           onClick={() => setPaymentMethod(method)}
-                          className={`p-3 border rounded-xl cursor-pointer text-center font-medium text-sm transition-all ${
+                          className={`p-3 border rounded-xl cursor-pointer flex items-center justify-center gap-2 font-medium text-sm transition-all ${
                             paymentMethod === method 
                               ? "border-primary bg-primary/10 text-primary" 
                               : "border-border hover:border-primary/50 text-muted-foreground"
                           }`}
                         >
-                          {method}
-                        </div>
+                          {method === "Cash" ? <Banknote className="w-4 h-4 shrink-0" /> : <CreditCard className="w-4 h-4 shrink-0" />}
+                          <span>{method}</span>
+                        </button>
                       ))}
                     </div>
                     {paymentMethod === "Cash" && (
-                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-xl">
-                        💵 Collect cash at the counter. Order will be marked as Paid & Delivered immediately.
-                      </p>
+                      <div className="flex items-start gap-2.5 text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl">
+                        <Banknote className="w-4 h-4 shrink-0 text-primary mt-0.5" />
+                        <span>Collect cash at the counter. Order will be marked as Paid &amp; Delivered immediately.</span>
+                      </div>
                     )}
                     {paymentMethod === "Online" && (
-                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-xl">
-                        💳 Collect payment via clinic UPI / QR / Card machine. Order will be marked as Paid & Delivered immediately.
-                      </p>
-                    )}
-                    {paymentMethod === "Send Link in WhatsApp" && (
-                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-xl">
-                        📱 A digital payment invoice link will be sent to patient ({dispenseConsultation.patientId?.name || "Patient"}: {dispenseConsultation.patientId?.phone || "registered mobile"}).
-                      </p>
+                      <div className="space-y-2.5">
+                        <div className="flex items-start gap-2.5 text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl">
+                          <CreditCard className="w-4 h-4 shrink-0 text-primary mt-0.5" />
+                          <span>Collect payment via clinic UPI / QR / Card machine. Order will be marked as Paid &amp; Delivered immediately.</span>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                            UPI / Card Reference ID (Optional)
+                          </label>
+                          <Input
+                            type="text"
+                            value={transactionRef}
+                            onChange={(e) => setTransactionRef(e.target.value)}
+                            placeholder="e.g. UTR / UPI Ref / Card Auth Code"
+                            className="h-10 rounded-xl text-sm"
+                          />
+                        </div>
+                      </div>
                     )}
                   </div>
 
@@ -803,7 +915,8 @@ export default function PharmacyPrescriptionsPage() {
             </form>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
