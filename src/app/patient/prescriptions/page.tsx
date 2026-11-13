@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { 
   Pill, FileText, Activity, PhoneCall, 
   CheckCircle2, Clock, ExternalLink, AlertCircle,
-  ShieldCheck, Loader2, XCircle
+  ShieldCheck, Loader2, XCircle, Eye, Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -599,33 +599,29 @@ export default function PatientPrescriptionsPage() {
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-2 pt-2 w-full max-w-full min-w-0">
+                {/* Actions: Responsive 2-column grid on mobile, flex row on desktop */}
+                <div className="grid grid-cols-2 gap-2 pt-2 w-full max-w-full min-w-0 sm:flex sm:flex-row">
                   {isValid ? (
                     existingOrder ? (
                       <Button 
-                        variant="secondary"
-                        className="flex-1 h-11 rounded-xl font-bold gap-2 text-xs border border-primary/20 text-primary hover:bg-primary/10 shadow-sm w-full sm:w-auto min-w-0"
+                        variant="outline"
+                        className="h-11 rounded-xl font-bold gap-2 text-xs border-border hover:bg-muted text-foreground shadow-xs w-full sm:flex-1 min-w-0"
                         onClick={() => router.push(`/patient/orders/${existingOrder._id}`)}
                       >
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> 
-                        <span className="truncate">
-                          {isOrderFulfilled 
-                            ? `Order Delivered & Dispensed (${existingOrder.orderNumber || "Details"})`
-                            : `View Order Details (${existingOrder.orderNumber || "Active"})`}
-                        </span>
+                        <Eye className="w-4 h-4 text-primary shrink-0" /> 
+                        <span className="truncate">View Order</span>
                       </Button>
                     ) : (
                       <Button 
-                        className="flex-1 h-11 rounded-xl font-bold gap-2 shadow-sm text-xs bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto min-w-0"
+                        className="h-11 rounded-xl font-bold gap-2 shadow-sm text-xs bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:flex-1 min-w-0"
                         onClick={() => openMedicineSelector(consult)}
                       >
-                        <PhoneCall className="w-4 h-4 shrink-0" />
-                        <span className="truncate">Medicine Order Request</span>
+                        <Pill className="w-4 h-4 shrink-0" />
+                        <span className="truncate">Order Medicines</span>
                       </Button>
                     )
                   ) : (
-                    <Link href="/booking" className="flex-1 w-full min-w-0">
+                    <Link href="/booking" className="w-full col-span-2 sm:col-span-1 sm:flex-1 min-w-0">
                       <Button variant="outline" className="w-full h-11 rounded-xl font-bold text-xs gap-1.5 border-primary text-primary">
                         Prescription Expired — Book Reassessment
                       </Button>
@@ -634,12 +630,12 @@ export default function PatientPrescriptionsPage() {
                   
                   <Button 
                     variant="outline" 
-                    className="h-11 px-3 sm:w-11 sm:p-0 shrink-0 rounded-xl flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                    className="h-11 px-3 sm:px-4 rounded-xl flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground w-full sm:w-auto shrink-0 shadow-xs"
                     onClick={() => handleDownloadPrescription(consult)}
                     title="Download Official Prescription"
                   >
-                    <FileText className="w-4 h-4 shrink-0" />
-                    <span className="sm:hidden">Download Rx PDF</span>
+                    <Download className="w-4 h-4 shrink-0" />
+                    <span className="truncate">Download Rx</span>
                   </Button>
                 </div>
               </div>
