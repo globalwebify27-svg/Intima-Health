@@ -94,6 +94,9 @@ async function handleCallback(req: Request) {
     const redirectUrl = new URL(`${origin}/payment/status`);
     redirectUrl.searchParams.set("order_id", orderId);
     redirectUrl.searchParams.set("status", statusQuery);
+    if (reconciled?.payment?.amount) {
+      redirectUrl.searchParams.set("amount", String(reconciled.payment.amount));
+    }
     if (reconciled?.entityType) redirectUrl.searchParams.set("entityType", reconciled.entityType);
     if (reconciled?.entityId) redirectUrl.searchParams.set("entityId", reconciled.entityId);
 

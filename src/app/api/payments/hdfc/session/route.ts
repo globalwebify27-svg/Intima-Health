@@ -77,7 +77,7 @@ export async function POST(req: Request) {
     }
 
     let amount = 0;
-    let customerId = `CUST_${entityId || "BOOK"}`;
+    let customerId = "";
     let customerName = "Patient";
     let customerEmail: string | undefined;
     let customerPhone: string | undefined;
@@ -85,7 +85,6 @@ export async function POST(req: Request) {
     let context = "Website Payment";
     let description = "Kelkar Manas Healthcare Payment";
     let prefix = "KM";
-    let udf2Value = entityId || "";
     const notes: Record<string, unknown> = { entityType, entityId };
     if (returnTo) notes.returnTo = returnTo;
 
@@ -200,7 +199,6 @@ export async function POST(req: Request) {
       customerName = patientDoc.name || "Patient";
       customerPhone = patientDoc.phone;
       customerEmail = patientDoc.email;
-      udf2Value = validatedPending.doctorId;
       context = `Appointment (${validatedPending.type || "Consultation"}${validatedPending.serviceName ? ` • ${validatedPending.serviceName}` : ""})`;
       description = `${validatedPending.serviceName || "Consultation Fee"}`;
     } else if (entityType === "therapy") {
@@ -264,6 +262,21 @@ export async function POST(req: Request) {
       );
     }
 
+    // Ensure unique customer ID per customer (satisfying HDFC audit rule 1)
+    let finalCustomerId = "";
+    if (patientId) {
+      finalCustomerId = `CUST_${String(patientId).replace(/[^A-Za-z0-9]/g, "")}`;
+    } else if (customerPhone) {
+      const cleanPhone = customerPhone.replace(/\D/g, "").slice(-10);
+      if (cleanPhone.length >= 10) {
+        finalCustomerId = `CUST_${cleanPhone}`;
+      }
+    }
+    if (!finalCustomerId) {
+      finalCustomerId = `CUST_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    }
+    finalCustomerId = finalCustomerId.slice(0, 50);
+
     const hdfcOrderId = generateHdfcOrderId(prefix);
     const appOrigin = resolveAppOrigin(req);
     const returnUrl = `${appOrigin}/api/payments/hdfc/callback`;
@@ -296,7 +309,7 @@ export async function POST(req: Request) {
         orderId: hdfcOrderId,
         amount,
         currency: "INR",
-        customerId,
+        customerId: finalCustomerId,
         customerEmail: customerEmail && !customerEmail.endsWith("@noemail-intima.com") ? customerEmail : undefined,
         customerPhone,
         firstName,
@@ -304,7 +317,6 @@ export async function POST(req: Request) {
         description,
         returnUrl,
         udf1: entityType,
-        udf2: udf2Value,
         udf3: payment._id.toString(),
       });
 

@@ -28,7 +28,6 @@ export interface CreateHdfcSessionInput {
   description?: string;
   returnUrl: string;
   udf1?: string;
-  udf2?: string;
   udf3?: string;
 }
 
@@ -240,7 +239,6 @@ export async function createHdfcSession(input: CreateHdfcSessionInput): Promise<
   if (input.lastName) payload.last_name = input.lastName.slice(0, 64);
   if (input.description) payload.description = input.description.slice(0, 128);
   if (input.udf1) payload.udf1 = input.udf1.slice(0, 128);
-  if (input.udf2) payload.udf2 = input.udf2.slice(0, 128);
   if (input.udf3) payload.udf3 = input.udf3.slice(0, 128);
 
   const response = await hdfcRequestJson(`${cfg.baseUrl}/session`, {

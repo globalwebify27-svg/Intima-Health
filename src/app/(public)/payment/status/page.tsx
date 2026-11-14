@@ -35,6 +35,7 @@ function PaymentStatusContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("order_id") || "";
   const urlStatus = searchParams.get("status") || "";
+  const urlAmount = searchParams.get("amount") || "";
   const reason = searchParams.get("reason") || "";
   const fallbackEntityType = (searchParams.get("entityType") || "unknown") as PaymentStatusData["entityType"];
   const fallbackEntityId = searchParams.get("entityId") || "";
@@ -45,6 +46,9 @@ function PaymentStatusContent() {
   const [retrying, setRetrying] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<PaymentStatusData | null>(null);
+
+  const displayAmount = data?.amount !== undefined ? data.amount : urlAmount ? Number(urlAmount) : undefined;
+  const displayOrderId = data?.orderId || orderId;
 
   const loadStatus = useCallback(async () => {
     if (!orderId) {
@@ -141,7 +145,7 @@ function PaymentStatusContent() {
 
           <h1 className="text-2xl sm:text-3xl font-serif font-bold">
             {effectiveStatus === "Success"
-              ? "Payment Confirmed"
+              ? "Payment Successful"
               : effectiveStatus === "Pending"
                 ? "Payment Pending"
                 : "Payment Not Completed"}
@@ -158,29 +162,56 @@ function PaymentStatusContent() {
           </p>
         </div>
 
-        {(data || orderId) && (
+        {effectiveStatus === "Success" && (
+          <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm flex items-center justify-between">
+            <span className="text-muted-foreground font-medium">Success Message:</span>
+            <span className="font-bold text-emerald-700 dark:text-emerald-300">Transaction Successful</span>
+          </div>
+        )}
+
+        {(data || displayOrderId || displayAmount !== undefined) && (
           <div className="bg-muted/40 border border-border rounded-2xl p-3.5 sm:p-4 space-y-2.5 text-xs sm:text-sm overflow-hidden">
-            {data?.context && (
+            {displayOrderId && (
               <div className="flex items-start justify-between gap-3">
-                <span className="text-muted-foreground shrink-0">Purpose</span>
-                <span className="font-semibold text-right break-words min-w-0">{data.context}</span>
-              </div>
-            )}
-            {data?.amount !== undefined && (
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-muted-foreground shrink-0">Amount</span>
-                <span className="font-bold text-sm sm:text-base">₹{Number(data.amount).toLocaleString("en-IN")}</span>
-              </div>
-            )}
-            {(data?.orderId || orderId) && (
-              <div className="flex items-start justify-between gap-3">
-                <span className="text-muted-foreground shrink-0">Gateway Order ID</span>
-                <span className="font-mono text-[11px] sm:text-xs text-right break-all min-w-0">
-                  {data?.orderId || orderId}
+                <span className="text-muted-foreground shrink-0 font-medium">Order Number</span>
+                <span className="font-mono text-[11px] sm:text-xs font-semibold text-right break-all min-w-0">
+                  {displayOrderId}
                 </span>
               </div>
             )}
-            {data?.transactionId && data.transactionId !== data.orderId && (
+            {displayAmount !== undefined && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground shrink-0 font-medium">Amount</span>
+                <span className="font-bold text-sm sm:text-base text-primary">
+                  ₹{Number(displayAmount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground shrink-0 font-medium">Transaction Status</span>
+              <span
+                className={`font-semibold px-2 py-0.5 rounded-full text-xs ${
+                  effectiveStatus === "Success"
+                    ? "bg-emerald-500/10 text-emerald-600"
+                    : effectiveStatus === "Pending"
+                      ? "bg-amber-500/10 text-amber-600"
+                      : "bg-rose-500/10 text-rose-600"
+                }`}
+              >
+                {effectiveStatus === "Success"
+                  ? "Success"
+                  : effectiveStatus === "Pending"
+                    ? "Pending"
+                    : "Failed"}
+              </span>
+            </div>
+            {data?.context && (
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">Purpose</span>
+                <span className="font-medium text-right break-words min-w-0">{data.context}</span>
+              </div>
+            )}
+            {data?.transactionId && data.transactionId !== displayOrderId && (
               <div className="flex items-start justify-between gap-3">
                 <span className="text-muted-foreground shrink-0">Transaction ID</span>
                 <span className="font-mono text-[11px] sm:text-xs text-right break-all min-w-0">
@@ -190,7 +221,7 @@ function PaymentStatusContent() {
             )}
             {data?.paymentMethod && (
               <div className="flex items-center justify-between gap-3">
-                <span className="text-muted-foreground shrink-0">Method</span>
+                <span className="text-muted-foreground shrink-0">Payment Method</span>
                 <span className="font-medium text-right break-words min-w-0">{data.paymentMethod}</span>
               </div>
             )}
