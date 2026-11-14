@@ -61,13 +61,37 @@ export default function DoctorsClient({ initialClinics, initialDoctors }: Doctor
       .finally(() => setLoading(false));
   }, [selectedState, selectedCity, selectedClinic, initialDoctors]);
 
-  // Derived filter options
-  const availableStates = Array.from(new Set(clinics.map(c => c.state).filter(Boolean))).sort();
-  const availableCities = Array.from(new Set(clinics.filter(c => !selectedState || c.state === selectedState).map(c => c.city).filter(Boolean))).sort();
-  const availableClinics = clinics.filter(c => 
-    (!selectedState || c.state === selectedState) && 
-    (!selectedCity || c.city === selectedCity)
-  ).sort((a, b) => a.name.localeCompare(b.name));
+  // Derived filter options with sanitization to strip any tab or extra whitespace
+  const availableStates = Array.from(
+    new Set(
+      clinics
+        .map((c) => (typeof c.state === "string" ? c.state.trim() : ""))
+        .filter(Boolean)
+    )
+  ).sort();
+
+  const availableCities = Array.from(
+    new Set(
+      clinics
+        .filter(
+          (c) =>
+            !selectedState ||
+            (typeof c.state === "string" && c.state.trim() === selectedState.trim())
+        )
+        .map((c) => (typeof c.city === "string" ? c.city.trim() : ""))
+        .filter(Boolean)
+    )
+  ).sort();
+
+  const availableClinics = clinics
+    .filter(
+      (c) =>
+        (!selectedState ||
+          (typeof c.state === "string" && c.state.trim() === selectedState.trim())) &&
+        (!selectedCity ||
+          (typeof c.city === "string" && c.city.trim() === selectedCity.trim()))
+    )
+    .sort((a, b) => a.name.trim().localeCompare(b.name.trim()));
 
   // Reset dependent filters when parent changes
   const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

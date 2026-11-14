@@ -18,7 +18,27 @@ interface RouteParams {
 export async function GET(req: Request, { params }: RouteParams) {
   try {
     await connectDB();
+
+    const { getAuthToken } = await import("@/lib/jwt");
+    const token = await getAuthToken(req);
+    if (!token) {
+      return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
+    }
+    const payload = verifyJwt(token);
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ success: false, message: "Unauthorized. Invalid session." }, { status: 401 });
+    }
+
     const { id } = await params;
+
+    // Role-based authorization: patients can only access their own profile
+    if (payload.role === "PATIENT") {
+      const user = await UserModel.findById(payload.userId).select("patientId").lean().exec();
+      if (!user?.patientId || String(user.patientId) !== id) {
+        return NextResponse.json({ success: false, message: "Forbidden. Access denied." }, { status: 403 });
+      }
+    }
+
     const patient = await PatientModel.findById(id).exec();
     
     if (!patient) {
