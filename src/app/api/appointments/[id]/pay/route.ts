@@ -85,6 +85,41 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
+    // Immediately record / update payment in PaymentModel for Centralized Admin Ledger
+    try {
+      const { PaymentModel } = await import("@/modules/pharmacy/schema");
+      const { PatientModel } = await import("@/modules/patients/schema");
+      const patientDoc = await PatientModel.findById(updated.patientId).lean().exec();
+
+      await PaymentModel.findOneAndUpdate(
+        { appointmentId: updated._id },
+        {
+          $set: {
+            appointmentId: updated._id,
+            patientId: updated.patientId,
+            customerName: patientDoc?.name || "Patient",
+            customerPhone: patientDoc?.phone || "",
+            customerEmail: patientDoc?.email || "",
+            context: `Appointment (${updated.type || "Consultation"}${updated.serviceName ? ` • ${updated.serviceName}` : ""})`,
+            paymentMethod: paymentMethod || "Cash",
+            gatewayProvider: "Cash / Counter",
+            gatewayOrderId: transactionId,
+            gatewayTransactionId: transactionId,
+            amount: updated.feeAmount || amount || 0,
+            currency: "INR",
+            status: "Success",
+            updatedBy: payload.email || "Clinic Staff",
+          },
+          $setOnInsert: {
+            createdAt: new Date(),
+          },
+        },
+        { upsert: true, new: true }
+      );
+    } catch (paySyncErr: any) {
+      console.error("[Appointment Pay] PaymentModel sync error:", paySyncErr.message);
+    }
+
     // Send WhatsApp notification for confirmed paid booking
     const { sendAppointmentBookingMessage } = await import("@/lib/whatsapp");
     await sendAppointmentBookingMessage(id, true);

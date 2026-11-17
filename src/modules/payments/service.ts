@@ -96,10 +96,11 @@ export class PaymentSyncService {
       await connectDB();
       let importedCount = 0;
 
-      // 1. Sync Paid Appointments
-      const paidAppointments = await AppointmentModel.find({
+      // 1. Sync Appointments (Paid and Pending)
+      const appointmentsToSync = await AppointmentModel.find({
         $or: [
           { paymentStatus: "Paid" },
+          { paymentStatus: "Pending" },
           { transactionId: { $exists: true, $ne: "" } },
         ],
       })
@@ -109,7 +110,7 @@ export class PaymentSyncService {
         .lean()
         .exec();
 
-      for (const apt of paidAppointments) {
+      for (const apt of appointmentsToSync) {
         const txnId = apt.transactionId || `APT-${apt._id.toString()}`;
         const existing = await PaymentModel.findOne({
           $or: [{ gatewayTransactionId: txnId }, { appointmentId: apt._id }],
@@ -119,6 +120,8 @@ export class PaymentSyncService {
         const doctor = apt.doctorId as any;
         const clinic = apt.clinicId as any;
         const context = `Appointment (${apt.type || "Consultation"}${apt.serviceName ? ` • ${apt.serviceName}` : ""})`;
+        const isPaid = apt.paymentStatus === "Paid";
+        const status = isPaid ? "Success" : "Pending";
 
         if (!existing) {
           await PaymentModel.create({
@@ -130,21 +133,26 @@ export class PaymentSyncService {
             context,
             paymentMethod: apt.paymentMethod || "Online",
             gatewayProvider: (apt.paymentMethod === "Cash" || apt.collectedBy === "Cash") ? "Cash / Counter" : "HDFC SmartGateway",
+            gatewayOrderId: txnId,
             gatewayTransactionId: txnId,
             amount: apt.feeAmount || 0,
             currency: "INR",
-            status: "Success",
+            status,
             createdAt: apt.createdAt || new Date(),
           });
           importedCount++;
         } else {
-          // Heal missing fields if null
+          // Heal missing fields if null or update status if changed
           let changed = false;
           if (!existing.appointmentId) { existing.appointmentId = apt._id; changed = true; }
           if (!existing.patientId && patient?._id) { existing.patientId = patient._id; changed = true; }
           if (!existing.customerName && patient?.name) { existing.customerName = patient.name; changed = true; }
           if (!existing.customerPhone && patient?.phone) { existing.customerPhone = patient.phone; changed = true; }
           if (!existing.context) { existing.context = context; changed = true; }
+          if (isPaid && existing.status !== "Success") {
+            existing.status = "Success";
+            changed = true;
+          }
           if (changed) await existing.save();
         }
       }

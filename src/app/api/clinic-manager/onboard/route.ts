@@ -80,6 +80,37 @@ export async function POST(req: Request) {
         paymentMethod: paymentMethod || "Cash",
         paymentStatus: paymentStatus || "Paid"
       }, payload.email);
+
+      // Create Payment record immediately so it appears in Admin & Clinic Manager payment ledgers
+      if (appointment) {
+        try {
+          const { PaymentModel } = await import("@/modules/pharmacy/schema");
+          const aptDoc = appointment as any;
+          const aptId = aptDoc._id.toString();
+          const txnId = aptDoc.transactionId || `WALKIN-${aptId.slice(-8).toUpperCase()}`;
+          const isPaid = (paymentStatus || "Paid") === "Paid";
+          const fee = Number(aptDoc.feeAmount || 0);
+
+          await PaymentModel.create({
+            appointmentId: aptDoc._id,
+            patientId: patient._id,
+            customerName: patient.name,
+            customerPhone: patient.phone,
+            customerEmail: patient.email,
+            context: `Walk-in Appointment (${aptDoc.type || "Consultation"}${aptDoc.serviceName ? ` • ${aptDoc.serviceName}` : ""})`,
+            paymentMethod: paymentMethod || "Cash",
+            gatewayProvider: (paymentMethod === "Cash" || isPaid) ? "Cash / Counter" : "HDFC SmartGateway",
+            gatewayOrderId: txnId,
+            gatewayTransactionId: txnId,
+            amount: fee,
+            currency: "INR",
+            status: isPaid ? "Success" : "Pending",
+            createdBy: payload.email,
+          });
+        } catch (pErr: any) {
+          console.error("[Onboard] Payment creation notice:", pErr.message);
+        }
+      }
     }
 
     return NextResponse.json({
