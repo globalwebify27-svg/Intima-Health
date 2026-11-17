@@ -221,12 +221,22 @@ export class AppointmentService {
       throw new Error("This time slot is currently booked or held by another patient.");
     }
 
-    let calculatedFee = (doctor as any).consultationFee || 0;
+    const docObj = doctor as any;
+    let calculatedFee = Number(docObj.fees || docObj.consultationFee || 0);
     if (validated.serviceName) {
-      const serviceRecord = await PlatformServiceModel.findOne({ name: validated.serviceName });
+      const serviceRecord = await PlatformServiceModel.findOne({
+        name: { $regex: new RegExp(validated.serviceName, "i") },
+      });
       if (serviceRecord && serviceRecord.price) {
         calculatedFee = serviceRecord.price;
       }
+    }
+    if (calculatedFee <= 0) {
+      const sName = validated.serviceName || (validated.type === "Video" ? "Online Consultation" : "Walk-in Consultation");
+      const serviceRecord = await PlatformServiceModel.findOne({
+        name: { $regex: new RegExp(sName, "i") },
+      });
+      calculatedFee = Number(serviceRecord?.price || 1000);
     }
 
     return {

@@ -78,7 +78,7 @@ export class AppointmentRepository {
     if (filters.paymentStatus && filters.paymentStatus !== "all") query.paymentStatus = filters.paymentStatus;
 
     return await AppointmentModel.find(query)
-      .populate({ path: "doctorId", select: "name specialization clinicId consultationFee" })
+      .populate({ path: "doctorId", select: "name specialization clinicId fees consultationFee" })
       .populate({ path: "patientId", select: "name phone email" })
       .populate({ path: "clinicId", select: "name address" })
       .sort({ date: -1, time: -1 })

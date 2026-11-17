@@ -110,7 +110,7 @@ export async function POST(req: Request) {
       prefix = "APT";
       const apt = await AppointmentModel.findById(entityId!)
         .populate("patientId", "name phone email")
-        .populate("doctorId", "name consultationFee")
+        .populate("doctorId", "name consultationFee fees")
         .exec();
       if (!apt) {
         return NextResponse.json({ success: false, error: "Appointment not found." }, { status: 404 });
@@ -118,7 +118,31 @@ export async function POST(req: Request) {
       if (apt.paymentStatus === "Paid") {
         return NextResponse.json({ success: false, error: "Appointment fee is already paid." }, { status: 400 });
       }
-      amount = Number(apt.feeAmount || (apt.doctorId as any)?.consultationFee || 0);
+
+      const doc = apt.doctorId as any;
+      let aptFee = Number(apt.feeAmount || 0);
+      if (aptFee <= 0) {
+        aptFee = Number(doc?.fees || doc?.consultationFee || 0);
+      }
+      if (aptFee <= 0) {
+        const { PlatformServiceModel } = await import("@/modules/services/schema");
+        const sName = apt.serviceName || (apt.type === "Video" ? "Online Consultation" : "Walk-in Consultation");
+        const svc = await PlatformServiceModel.findOne({
+          name: { $regex: new RegExp(sName, "i") },
+        }).lean().exec();
+        aptFee = Number(svc?.price || 1000);
+      }
+
+      // Self-heal appointment record so feeAmount is persisted
+      if (!apt.feeAmount || apt.feeAmount <= 0) {
+        apt.feeAmount = aptFee;
+        if (!apt.serviceName) {
+          apt.serviceName = apt.type === "Video" ? "Online Consultation" : "Walk-in Consultation";
+        }
+        await apt.save();
+      }
+
+      amount = aptFee;
       patientId = (apt.patientId as any)?._id || apt.patientId;
       customerId = patientId ? String(patientId) : customerId;
       customerName = (apt.patientId as any)?.name || "Patient";

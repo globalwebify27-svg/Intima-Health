@@ -76,6 +76,7 @@ export async function POST(req: Request) {
         date,
         time,
         type: type || "Walk-in",
+        serviceName: type === "Video" ? "Online Consultation" : "Walk-in Consultation",
         notes: "Scheduled by clinic manager as walk-in.",
         paymentMethod: paymentMethod || "Cash",
         paymentStatus: paymentStatus || "Paid"

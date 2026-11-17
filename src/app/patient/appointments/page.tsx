@@ -69,7 +69,8 @@ const columns: ColumnDef<Appointment>[] = [
     header: "Payment",
     cell: ({ row }) => {
       const pStatus = row.original.paymentStatus || "Pending";
-      const feeAmount = row.original.feeAmount;
+      const doctor = row.original.doctorId as any;
+      const feeAmount = row.original.feeAmount || doctor?.fees || doctor?.consultationFee || 1000;
 
       const handleDownloadReceipt = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -90,7 +91,7 @@ const columns: ColumnDef<Appointment>[] = [
       }
       return (
         <Badge variant="destructive">
-          Pending{feeAmount ? ` (₹${feeAmount.toLocaleString()})` : ""}
+          Pending (₹{Number(feeAmount).toLocaleString("en-IN")})
         </Badge>
       );
     }
