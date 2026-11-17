@@ -12,11 +12,19 @@ import {
   DollarSign,
   XCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Banknote,
+  QrCode,
+  Send,
+  X,
+  ExternalLink,
+  ShieldCheck,
+  Smartphone
 } from "lucide-react";
 import { formatTime12Hour } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { initiateHdfcCheckout } from "@/lib/payments/client";
 
 interface PatientData {
   _id: string;
@@ -67,6 +75,17 @@ interface OrderData {
   createdAt: string;
 }
 
+interface PaymentModalTarget {
+  type: "appointment" | "therapy";
+  id: string;
+  patientName: string;
+  patientPhone?: string;
+  serviceTitle: string;
+  date?: string;
+  time?: string;
+  amount: number;
+}
+
 export default function PaymentsPage() {
   const router = useRouter();
   const [clinicId, setClinicId] = useState<string | null>(null);
@@ -89,10 +108,18 @@ export default function PaymentsPage() {
   const [pharmacyOrders, setPharmacyOrders] = useState<OrderData[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Action state
+  // Action & Feedback state
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Payment Selection Modal State
+  const [paymentModalItem, setPaymentModalItem] = useState<PaymentModalTarget | null>(null);
+  const [selectedPaymentMode, setSelectedPaymentMode] = useState<"gateway" | "cash" | "pos" | "whatsapp">("gateway");
+  const [posRef, setPosRef] = useState("");
+  const [modalProcessing, setModalProcessing] = useState(false);
+  const [modalError, setModalError] = useState("");
+  const [modalSuccess, setModalSuccess] = useState("");
 
   const fetchData = async () => {
     try {
@@ -102,35 +129,34 @@ export default function PaymentsPage() {
         router.push("/staff-login");
         return;
       }
-      
+
       const cId = meJson.user.clinicId;
       setClinicId(cId);
 
       if (cId) {
-        // Fetch Therapy Sessions
-        const therapyRes = await fetch(`/api/therapy-sessions?clinicId=${cId}`);
-        const therapyJson = await therapyRes.json();
-        if (therapyJson.success) {
-          // Filter out Recommended therapies since they haven't been booked yet
-          setTherapySessions(therapyJson.data.filter((t: any) => t.status !== "Recommended"));
+        // Fetch appointments
+        const resApt = await fetch(`/api/appointments?clinicId=${cId}&_t=${Date.now()}`);
+        const jsonApt = await resApt.json();
+        if (jsonApt.success) {
+          setConsultations(jsonApt.data);
         }
 
-        // Fetch Pharmacy Orders
-        const pharmacyRes = await fetch(`/api/pharmacy/orders?clinicId=${cId}`);
-        const pharmacyJson = await pharmacyRes.json();
-        if (pharmacyJson.success) {
-          setPharmacyOrders(pharmacyJson.data);
+        // Fetch therapy sessions
+        const resTherapy = await fetch(`/api/therapy-sessions?clinicId=${cId}&_t=${Date.now()}`);
+        const jsonTherapy = await resTherapy.json();
+        if (jsonTherapy.success) {
+          setTherapySessions(jsonTherapy.data);
         }
 
-        // Fetch All Consultation Appointments
-        const aptRes = await fetch(`/api/appointments?clinicId=${cId}`);
-        const aptJson = await aptRes.json();
-        if (aptJson.success) {
-          setConsultations(aptJson.data);
+        // Fetch pharmacy orders
+        const resOrd = await fetch(`/api/pharmacy/orders?clinicId=${cId}&_t=${Date.now()}`);
+        const jsonOrd = await resOrd.json();
+        if (jsonOrd.success) {
+          setPharmacyOrders(jsonOrd.data);
         }
       }
     } catch (err) {
-      console.error("Failed to load billing data:", err);
+      console.error("Failed to load payment logs:", err);
     } finally {
       setLoading(false);
     }
@@ -140,55 +166,165 @@ export default function PaymentsPage() {
     fetchData();
   }, []);
 
-  const handlePayTherapy = async (sessionId: string) => {
-    if (!confirm("Confirm payment receipt at the counter?")) return;
-    
-    setActionLoading(sessionId);
-    setSuccessMsg("");
-    setErrorMsg("");
-
-    try {
-      const res = await fetch("/api/therapy-sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "pay", sessionId }),
-      });
-      const json = await res.json();
-      if (!json.success) {
-        throw new Error(json.message || "Failed to process payment.");
-      }
-      setSuccessMsg("Therapy session marked as Paid successfully.");
-      await fetchData();
-    } catch (err: any) {
-      setErrorMsg(err.message || "An error occurred.");
-    } finally {
-      setActionLoading(null);
-    }
+  const openAppointmentPaymentModal = (apt: AppointmentData) => {
+    setPaymentModalItem({
+      type: "appointment",
+      id: apt._id,
+      patientName: apt.patientId?.name || "Patient",
+      patientPhone: apt.patientId?.phone || "",
+      serviceTitle: `Doctor Consultation (${apt.doctorId?.name || "Specialist"})`,
+      date: apt.date,
+      time: apt.time,
+      amount: apt.feeAmount || 1499,
+    });
+    setSelectedPaymentMode("gateway");
+    setPosRef("");
+    setModalError("");
+    setModalSuccess("");
   };
 
-  const handlePayAppointment = async (appointmentId: string) => {
-    if (!confirm("Confirm payment receipt at the counter?")) return;
-    
-    setActionLoading(appointmentId);
-    setSuccessMsg("");
-    setErrorMsg("");
+  const openTherapyPaymentModal = (ts: TherapySessionData) => {
+    setPaymentModalItem({
+      type: "therapy",
+      id: ts._id,
+      patientName: ts.patientId?.name || "Patient",
+      patientPhone: ts.patientId?.phone || "",
+      serviceTitle: `Therapy: ${ts.name}`,
+      date: ts.date,
+      time: ts.time,
+      amount: ts.price,
+    });
+    setSelectedPaymentMode("gateway");
+    setPosRef("");
+    setModalError("");
+    setModalSuccess("");
+  };
+
+  const handleExecutePayment = async () => {
+    if (!paymentModalItem) return;
+    setModalProcessing(true);
+    setModalError("");
+    setModalSuccess("");
 
     try {
-      const res = await fetch(`/api/appointments/${appointmentId}/pay`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ collectedBy: "Clinic Manager" }),
-      });
-      const json = await res.json();
-      if (!json.success) {
-        throw new Error(json.message || "Failed to process payment.");
+      // 1. Online Payment Gateway (HDFC SmartGateway)
+      if (selectedPaymentMode === "gateway") {
+        const { paymentUrl } = await initiateHdfcCheckout({
+          entityType: paymentModalItem.type === "appointment" ? "appointment" : "therapy",
+          entityId: paymentModalItem.id,
+          returnTo: "/clinic-manager/payments",
+        });
+        window.location.href = paymentUrl;
+        return;
       }
-      setSuccessMsg("Consultation marked as Paid successfully.");
-      await fetchData();
+
+      // 2. Send Payment Link on WhatsApp
+      if (selectedPaymentMode === "whatsapp") {
+        if (paymentModalItem.type === "appointment") {
+          const res = await fetch(`/api/appointments/${paymentModalItem.id}/send-invoice-whatsapp`, {
+            method: "POST",
+          });
+          const json = await res.json();
+          if (!json.success) {
+            throw new Error(json.message || "Failed to dispatch WhatsApp link.");
+          }
+          setModalSuccess("Payment details & invoice link dispatched to patient WhatsApp!");
+        } else {
+          const phone = (paymentModalItem.patientPhone || "").replace(/\D/g, "").slice(-10);
+          if (phone) {
+            const text = encodeURIComponent(
+              `Hello ${paymentModalItem.patientName}, please complete your therapy fee of ₹${paymentModalItem.amount} for "${paymentModalItem.serviceTitle}". Thank you, Kelkar Manas Health Clinic.`
+            );
+            window.open(`https://wa.me/91${phone}?text=${text}`, "_blank");
+            setModalSuccess("WhatsApp chat opened with payment request!");
+          } else {
+            throw new Error("Patient phone number not found.");
+          }
+        }
+        setTimeout(() => {
+          setPaymentModalItem(null);
+        }, 2000);
+        return;
+      }
+
+      // 3. Counter Cash Collection
+      if (selectedPaymentMode === "cash") {
+        if (paymentModalItem.type === "appointment") {
+          const res = await fetch(`/api/appointments/${paymentModalItem.id}/pay`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              collectedBy: "Clinic Manager", 
+              paymentMethod: "Cash",
+              amount: paymentModalItem.amount 
+            }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message || "Failed to confirm cash receipt.");
+        } else {
+          const res = await fetch("/api/therapy-sessions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              action: "pay", 
+              sessionId: paymentModalItem.id, 
+              paymentMethod: "Cash" 
+            }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message || "Failed to confirm cash receipt.");
+        }
+
+        setModalSuccess(`Payment of ₹${paymentModalItem.amount} collected in Cash successfully!`);
+        await fetchData();
+        setTimeout(() => {
+          setPaymentModalItem(null);
+        }, 1200);
+        return;
+      }
+
+      // 4. Counter POS / UPI Machine
+      if (selectedPaymentMode === "pos") {
+        const txnId = posRef.trim() || `POS-${Date.now()}`;
+        if (paymentModalItem.type === "appointment") {
+          const res = await fetch(`/api/appointments/${paymentModalItem.id}/pay`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              collectedBy: "Clinic Manager (POS/UPI)", 
+              paymentMethod: "Online",
+              transactionId: txnId,
+              amount: paymentModalItem.amount 
+            }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message || "Failed to record POS payment.");
+        } else {
+          const res = await fetch("/api/therapy-sessions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              action: "pay", 
+              sessionId: paymentModalItem.id, 
+              paymentMethod: "Online",
+              transactionId: txnId 
+            }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message || "Failed to record POS payment.");
+        }
+
+        setModalSuccess(`Payment of ₹${paymentModalItem.amount} recorded via POS/UPI successfully!`);
+        await fetchData();
+        setTimeout(() => {
+          setPaymentModalItem(null);
+        }, 1200);
+        return;
+      }
     } catch (err: any) {
-      setErrorMsg(err.message || "An error occurred.");
+      setModalError(err.message || "Failed to process payment.");
     } finally {
-      setActionLoading(null);
+      setModalProcessing(false);
     }
   };
 
@@ -288,7 +424,7 @@ export default function PaymentsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Payments & Counter Bills</h1>
         <p className="text-muted-foreground mt-1 text-sm font-medium">
-          Review counter therapy session billing and track medication prescription order transactions.
+          Review counter therapy session billing and track consultation & prescription order transactions.
         </p>
       </div>
 
@@ -304,80 +440,78 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {/* Navigation tabs & search */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border p-4 rounded-2xl shadow-sm">
-        <div className="flex gap-2">
+      {/* Tabs */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              setActiveTab("consultations");
-              setSearchQuery("");
-            }}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
-              activeTab === "consultations"
-                ? "bg-primary text-white"
-                : "bg-muted/50 hover:bg-muted text-muted-foreground"
+            onClick={() => setActiveTab("consultations")}
+            className={`px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+              activeTab === "consultations" 
+                ? "bg-primary text-white shadow-sm" 
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
             }`}
           >
             <Activity className="w-4 h-4" />
-            Consultations
+            <span>Consultations</span>
           </button>
+          
           <button
-            onClick={() => {
-              setActiveTab("therapy");
-              setSearchQuery("");
-            }}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
-              activeTab === "therapy"
-                ? "bg-primary text-white"
-                : "bg-muted/50 hover:bg-muted text-muted-foreground"
+            onClick={() => setActiveTab("therapy")}
+            className={`px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+              activeTab === "therapy" 
+                ? "bg-primary text-white shadow-sm" 
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
             }`}
           >
-            <Activity className="w-4 h-4" />
-            Therapy Sessions Desk
+            <DollarSign className="w-4 h-4" />
+            <span>Therapy Sessions</span>
           </button>
+
           <button
-            onClick={() => {
-              setActiveTab("pharmacy");
-              setSearchQuery("");
-            }}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
-              activeTab === "pharmacy"
-                ? "bg-primary text-white"
-                : "bg-muted/50 hover:bg-muted text-muted-foreground"
+            onClick={() => setActiveTab("pharmacy")}
+            className={`px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+              activeTab === "pharmacy" 
+                ? "bg-primary text-white shadow-sm" 
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
             }`}
           >
             <ShoppingBag className="w-4 h-4" />
-            Pharmacy Orders
+            <span>Prescription Orders</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-          <select 
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="h-10 px-3 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 shrink-0 font-medium"
-          >
-            <option value="All">All Statuses</option>
-            <option value="Paid">Paid / Settled</option>
-            <option value="Unpaid">Unpaid / Pending</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
-          <input 
-            type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            className="h-10 px-3 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 shrink-0"
-          />
-          <div className="relative w-full md:w-80">
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search here..."
+              placeholder="Search patient, doctor, order..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-9 pr-4 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full h-10 pl-9 pr-4 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
+
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="h-10 px-3 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+
+          {activeTab !== "pharmacy" && (
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="h-10 px-3 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="All">All Statuses</option>
+              <option value="Paid">Paid</option>
+              <option value="Unpaid">Pending</option>
+              {activeTab === "consultations" && <option value="Cancelled">Cancelled</option>}
+            </select>
+          )}
         </div>
       </div>
 
@@ -386,13 +520,13 @@ export default function PaymentsPage() {
         <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
           {filteredConsultations.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">
-              No pending cash consultations found.
+              No consultation records found matching filters.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold">
-                  <tr>
+              <table className="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     <th className="px-6 py-4">Patient</th>
                     <th className="px-6 py-4">Doctor & Appt Time</th>
                     <th className="px-6 py-4">Type</th>
@@ -420,8 +554,8 @@ export default function PaymentsPage() {
                         {apt.paymentStatus === "Paid" ? (
                           <Badge variant="outline" className="font-medium bg-indigo-50 text-indigo-700 border-indigo-200">
                             {apt.collectedBy === "Clinic Manager" || apt.paymentMethod === "Cash"
-                              ? "Counter (Cash/QR)"
-                              : apt.collectedBy === "HDFC SmartGateway"
+                              ? "Counter (Cash)"
+                              : apt.paymentMethod === "Online" || apt.collectedBy === "HDFC SmartGateway"
                                 ? "HDFC SmartGateway"
                                 : "Online Payment"}
                           </Badge>
@@ -455,11 +589,11 @@ export default function PaymentsPage() {
                         ) : (
                           <Button
                             size="sm"
-                            onClick={() => handlePayAppointment(apt._id)}
+                            onClick={() => openAppointmentPaymentModal(apt)}
                             disabled={actionLoading === apt._id}
                             className="font-bold shadow-none bg-primary/10 text-primary hover:bg-primary hover:text-white"
                           >
-                            {actionLoading === apt._id ? "Processing..." : "Collect Payment"}
+                            Collect Payment
                           </Button>
                         )}
                       </td>
@@ -519,8 +653,8 @@ export default function PaymentsPage() {
                           <Button
                             size="sm"
                             disabled={actionLoading === ts._id}
-                            onClick={() => handlePayTherapy(ts._id)}
-                            className="text-xs font-bold text-white rounded-lg px-3.5 py-1.5 h-auto"
+                            onClick={() => openTherapyPaymentModal(ts)}
+                            className="text-xs font-bold text-white rounded-lg px-3.5 py-1.5 h-auto bg-primary hover:bg-primary/90"
                           >
                             Collect ₹{ts.price}
                           </Button>
@@ -534,6 +668,7 @@ export default function PaymentsPage() {
                   ))}
                 </tbody>
               </table>
+              {renderPagination(totalTherapy, filteredTherapy.length)}
             </div>
           )}
         </div>
@@ -594,6 +729,198 @@ export default function PaymentsPage() {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* --- PAYMENT OPTIONS MODAL (PAYMENT GATEWAY / CASH / POS / WHATSAPP) --- */}
+      {paymentModalItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in-50 duration-200">
+          <div className="bg-card border border-border rounded-3xl w-full max-w-lg p-6 shadow-2xl relative space-y-5 my-auto">
+            {/* Close Button */}
+            <button 
+              onClick={() => setPaymentModalItem(null)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1 rounded-lg transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div className="flex items-center gap-2.5 border-b border-border pb-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Collect Payment & Settle Bill</h3>
+                <p className="text-xs text-muted-foreground">Choose payment method to settle this appointment fee.</p>
+              </div>
+            </div>
+
+            {/* Bill Summary */}
+            <div className="bg-muted/30 border border-border/60 rounded-2xl p-4 flex justify-between items-center">
+              <div>
+                <div className="font-bold text-sm text-foreground">{paymentModalItem.patientName}</div>
+                <div className="text-xs text-muted-foreground">{paymentModalItem.patientPhone || "No contact"}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{paymentModalItem.serviceTitle}</div>
+              </div>
+              <div className="text-right">
+                <span className="text-[11px] font-semibold text-muted-foreground block">Amount Due</span>
+                <span className="text-2xl font-black text-primary">₹{paymentModalItem.amount}</span>
+              </div>
+            </div>
+
+            {modalError && (
+              <div className="p-3 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 text-xs font-semibold rounded-xl border border-rose-200/50 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" /> {modalError}
+              </div>
+            )}
+
+            {modalSuccess && (
+              <div className="p-3 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 text-xs font-semibold rounded-xl border border-emerald-200/50 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" /> {modalSuccess}
+              </div>
+            )}
+
+            {/* Payment Method Selector */}
+            <div className="space-y-2.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                Select Payment Method
+              </label>
+
+              {/* 1. HDFC SmartGateway Option */}
+              <div 
+                onClick={() => setSelectedPaymentMode("gateway")}
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 ${
+                  selectedPaymentMode === "gateway"
+                    ? "border-primary bg-primary/10 ring-1 ring-primary"
+                    : "border-border hover:border-primary/40 bg-card"
+                }`}
+              >
+                <div className="w-9 h-9 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-foreground">HDFC SmartGateway (Cards / UPI / NetBanking)</span>
+                    <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">Online PG</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Launch official payment gateway to pay securely via Credit/Debit card, UPI, or NetBanking.
+                  </p>
+                </div>
+              </div>
+
+              {/* 2. Cash at Counter Option */}
+              <div 
+                onClick={() => setSelectedPaymentMode("cash")}
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 ${
+                  selectedPaymentMode === "cash"
+                    ? "border-primary bg-primary/10 ring-1 ring-primary"
+                    : "border-border hover:border-primary/40 bg-card"
+                }`}
+              >
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <Banknote className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-foreground">Cash (Counter Collection)</span>
+                    <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Cash</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Collect cash directly at clinic desk and immediately settle bill with invoice.
+                  </p>
+                </div>
+              </div>
+
+              {/* 3. Counter UPI / POS Card Machine Option */}
+              <div 
+                onClick={() => setSelectedPaymentMode("pos")}
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 ${
+                  selectedPaymentMode === "pos"
+                    ? "border-primary bg-primary/10 ring-1 ring-primary"
+                    : "border-border hover:border-primary/40 bg-card"
+                }`}
+              >
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-foreground">Counter UPI / POS Machine</span>
+                    <Badge variant="outline" className="text-[10px] bg-indigo-500/10 text-indigo-600 border-indigo-500/30">Desk POS</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Patient scanned clinic counter QR code or swiped physical POS card machine.
+                  </p>
+                  {selectedPaymentMode === "pos" && (
+                    <div className="mt-2.5 pt-2 border-t border-border/50">
+                      <input
+                        type="text"
+                        placeholder="Enter UPI / POS UTR Ref ID (Optional)"
+                        value={posRef}
+                        onChange={(e) => setPosRef(e.target.value)}
+                        className="w-full h-8 px-2.5 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 4. WhatsApp Payment Link Option */}
+              <div 
+                onClick={() => setSelectedPaymentMode("whatsapp")}
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 ${
+                  selectedPaymentMode === "whatsapp"
+                    ? "border-primary bg-primary/10 ring-1 ring-primary"
+                    : "border-border hover:border-primary/40 bg-card"
+                }`}
+              >
+                <div className="w-9 h-9 rounded-xl bg-green-500/10 text-green-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <Send className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-foreground">Send Payment Link on WhatsApp</span>
+                    <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-600 border-green-500/30">WhatsApp</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Dispatch the payment link & invoice directly to the patient's phone ({paymentModalItem.patientPhone || "registered mobile"}).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPaymentModalItem(null)}
+                className="rounded-xl h-10 px-4 text-xs font-semibold"
+              >
+                Cancel
+              </Button>
+
+              <Button
+                type="button"
+                disabled={modalProcessing}
+                onClick={handleExecutePayment}
+                className="rounded-xl h-10 px-5 text-xs font-bold text-white bg-primary hover:bg-primary/90 shadow-sm"
+              >
+                {modalProcessing ? (
+                  "Processing..."
+                ) : selectedPaymentMode === "gateway" ? (
+                  "Launch Payment Gateway →"
+                ) : selectedPaymentMode === "cash" ? (
+                  "Confirm Cash Payment"
+                ) : selectedPaymentMode === "pos" ? (
+                  "Confirm POS / UPI Settlement"
+                ) : (
+                  "Send WhatsApp Link"
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
