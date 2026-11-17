@@ -236,8 +236,13 @@ export class AppointmentService {
       const serviceRecord = await PlatformServiceModel.findOne({
         name: { $regex: new RegExp(sName, "i") },
       });
-      calculatedFee = Number(serviceRecord?.price || 1000);
+      calculatedFee = Number(serviceRecord?.price || (validated.type === "Video" ? 999 : 1499));
     }
+    if (calculatedFee <= 0) {
+      calculatedFee = validated.type === "Video" ? 999 : 1499;
+    }
+
+    const finalServiceName = validated.serviceName || (validated.type === "Video" ? "Online Consultation" : "Walk-in Consultation");
 
     return {
       patientId: validated.patientId,
@@ -246,7 +251,7 @@ export class AppointmentService {
       date: validated.date,
       time: validated.time,
       type: validated.type,
-      serviceName: validated.serviceName,
+      serviceName: finalServiceName,
       feeAmount: calculatedFee,
       notes: validated.notes,
       createdBy,
@@ -257,6 +262,9 @@ export class AppointmentService {
   static async bookAppointment(input: any, createdBy?: string): Promise<IAppointment> {
     const validated = BookAppointmentSchema.parse(input);
     const prepared = await this.validateSlotAndComputeFee(validated, validated.patientId, createdBy);
+
+    const isPaid = (validated.paymentStatus === "Paid");
+    const txnId = validated.transactionId || (isPaid ? `CASH-${Date.now().toString(36).toUpperCase()}` : undefined);
 
     const created = await AppointmentRepository.create({
       patientId: prepared.patientId as any,
@@ -270,10 +278,39 @@ export class AppointmentService {
       status: "Scheduled",
       paymentMethod: validated.paymentMethod || "Online",
       paymentStatus: validated.paymentStatus || "Pending",
-      transactionId: validated.transactionId,
+      transactionId: txnId,
       feeAmount: prepared.feeAmount,
       createdBy,
     });
+
+    // Immediately record payment so it appears in Admin Portal & Clinic Manager ledgers
+    try {
+      const { PaymentModel } = await import("@/modules/pharmacy/schema");
+      const { PatientModel } = await import("@/modules/patients/schema");
+      const aptDoc = created as any;
+      const aptId = aptDoc._id.toString();
+      const finalTxnId = aptDoc.transactionId || `APT-${aptId.slice(-8).toUpperCase()}`;
+      const patientDoc = await PatientModel.findById(prepared.patientId).select("name phone email").lean().exec();
+
+      await PaymentModel.create({
+        appointmentId: aptDoc._id,
+        patientId: prepared.patientId,
+        customerName: patientDoc?.name || "Patient",
+        customerPhone: patientDoc?.phone,
+        customerEmail: patientDoc?.email,
+        context: `Appointment (${prepared.type || "Consultation"} • ${prepared.serviceName || "Consultation"})`,
+        paymentMethod: aptDoc.paymentMethod || "Online",
+        gatewayProvider: (aptDoc.paymentMethod === "Cash" || isPaid) ? "Cash / Counter" : "HDFC SmartGateway",
+        gatewayOrderId: finalTxnId,
+        gatewayTransactionId: finalTxnId,
+        amount: Number(prepared.feeAmount || 1000),
+        currency: "INR",
+        status: isPaid ? "Success" : "Pending",
+        createdBy: createdBy || "system",
+      });
+    } catch (paySyncErr: any) {
+      console.error("[AppointmentService] Failed to auto-create payment record:", paySyncErr.message);
+    }
 
     // Send WhatsApp notification (contains appointment details and payment link)
     if (!input.skipNotification) {

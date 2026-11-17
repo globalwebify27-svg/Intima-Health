@@ -19,7 +19,8 @@ import {
   X,
   ExternalLink,
   ShieldCheck,
-  Smartphone
+  Smartphone,
+  Phone
 } from "lucide-react";
 import { formatTime12Hour } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -523,7 +524,9 @@ export default function PaymentsPage() {
               No consultation records found matching filters.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              {/* Desktop Consultations Table */}
+              <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/40 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -601,8 +604,83 @@ export default function PaymentsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
+
+              {/* Mobile Consultations Cards */}
+              <div className="block md:hidden divide-y divide-border">
+                {paginatedCons.map((apt: AppointmentData) => (
+                  <div key={apt._id} className="p-4 space-y-3 hover:bg-muted/10 transition">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h4 className="font-bold text-foreground text-base leading-tight">
+                          {apt.patientId?.name || "Unknown"}
+                        </h4>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
+                          {apt.patientId?.phone || "No phone"}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          apt.paymentStatus === "Paid"
+                            ? "default"
+                            : apt.status === "Cancelled"
+                            ? "destructive"
+                            : "secondary"
+                        }
+                        className={
+                          apt.paymentStatus === "Paid"
+                            ? "bg-emerald-500/10 text-emerald-600"
+                            : apt.status === "Cancelled"
+                            ? "bg-rose-500/10 text-rose-600"
+                            : "bg-amber-500/10 text-amber-600"
+                        }
+                      >
+                        {apt.status === "Cancelled" ? "Cancelled" : apt.paymentStatus || "Pending"}
+                      </Badge>
+                    </div>
+
+                    <div className="bg-muted/20 p-2.5 rounded-xl border border-border/50 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>Consultant Doctor:</span>
+                        <span className="font-semibold text-foreground">{apt.doctorId?.name || "Doctor"}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>Schedule:</span>
+                        <span className="font-medium text-foreground">{apt.date} at {apt.time} ({apt.type})</span>
+                      </div>
+                      <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                        <span className="text-muted-foreground font-semibold">Total Fee:</span>
+                        <span className="font-bold text-sm text-primary">₹{apt.feeAmount || 1000}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      {apt.paymentStatus === "Paid" ? (
+                        <div className="w-full h-9 rounded-xl bg-emerald-500/10 text-emerald-600 text-xs font-bold flex items-center justify-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4" /> Payment Settled
+                        </div>
+                      ) : apt.status === "Cancelled" ? (
+                        <div className="w-full h-9 rounded-xl bg-muted/40 text-muted-foreground text-xs font-semibold flex items-center justify-center gap-1.5">
+                          <XCircle className="w-4 h-4 text-rose-500" /> Appointment Cancelled
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => openAppointmentPaymentModal(apt)}
+                          disabled={actionLoading === apt._id}
+                          className="w-full h-9 rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-sm"
+                        >
+                          Collect Payment
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               {renderPagination(totalCons, filteredConsultations.length)}
-            </div>
+            </>
           )}
         </div>
       )}
@@ -615,7 +693,9 @@ export default function PaymentsPage() {
               No therapy sessions found matching filters.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              {/* Desktop Consultations Table */}
+              <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-border bg-muted/30 text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -668,8 +748,71 @@ export default function PaymentsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
+
+              {/* Mobile Therapy Sessions Cards */}
+              <div className="block md:hidden divide-y divide-border">
+                {paginatedTherapy.map((ts: TherapySessionData) => (
+                  <div key={ts._id} className="p-4 space-y-3 hover:bg-muted/10 transition">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h4 className="font-bold text-foreground text-base leading-tight">
+                          {ts.patientId?.name || "Patient"}
+                        </h4>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
+                          {ts.patientId?.phone || "No phone"}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={ts.paymentStatus === "Paid" ? "default" : "secondary"}
+                        className={
+                          ts.paymentStatus === "Paid"
+                            ? "bg-emerald-500/10 text-emerald-600"
+                            : "bg-amber-500/10 text-amber-600"
+                        }
+                      >
+                        {ts.paymentStatus || "Pending"}
+                      </Badge>
+                    </div>
+
+                    <div className="bg-muted/20 p-2.5 rounded-xl border border-border/50 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>Therapy Program:</span>
+                        <span className="font-semibold text-foreground">{ts.name}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>Scheduled:</span>
+                        <span className="font-medium text-foreground">{ts.date || "Flexible"} at {ts.time || "Pending"}</span>
+                      </div>
+                      <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                        <span className="text-muted-foreground font-semibold">Billing Amount:</span>
+                        <span className="font-bold text-sm text-primary">₹{ts.price}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      {ts.paymentStatus === "Pending" ? (
+                        <Button
+                          size="sm"
+                          onClick={() => openTherapyPaymentModal(ts)}
+                          disabled={actionLoading === ts._id}
+                          className="w-full h-9 rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-sm"
+                        >
+                          Collect Payment
+                        </Button>
+                      ) : (
+                        <div className="w-full h-9 rounded-xl bg-emerald-500/10 text-emerald-600 text-xs font-bold flex items-center justify-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4" /> Payment Settled
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               {renderPagination(totalTherapy, filteredTherapy.length)}
-            </div>
+            </>
           )}
         </div>
       )}

@@ -67,7 +67,6 @@ export interface HdfcOrderStatusResponse {
   customer_email?: string;
   customer_phone?: string;
   udf1?: string;
-  udf2?: string;
   udf3?: string;
   payment_gateway_response?: Record<string, unknown>;
 }

@@ -163,9 +163,25 @@ function PaymentStatusContent() {
         </div>
 
         {effectiveStatus === "Success" && (
-          <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm flex items-center justify-between">
-            <span className="text-muted-foreground font-medium">Success Message:</span>
-            <span className="font-bold text-emerald-700 dark:text-emerald-300">Transaction Successful</span>
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-900 dark:text-emerald-200 space-y-2">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="font-semibold text-muted-foreground">Success Message:</span>
+              <span className="font-bold text-emerald-700 dark:text-emerald-300">Transaction Successful</span>
+            </div>
+            {displayOrderId && (
+              <div className="flex items-center justify-between text-xs sm:text-sm pt-1 border-t border-emerald-500/20">
+                <span className="font-semibold text-muted-foreground">Order Number:</span>
+                <span className="font-mono font-bold text-foreground">{displayOrderId}</span>
+              </div>
+            )}
+            {displayAmount !== undefined && (
+              <div className="flex items-center justify-between text-xs sm:text-sm pt-1 border-t border-emerald-500/20">
+                <span className="font-semibold text-muted-foreground">Amount:</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-300 text-base">
+                  ₹{Number(displayAmount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            )}
           </div>
         )}
 

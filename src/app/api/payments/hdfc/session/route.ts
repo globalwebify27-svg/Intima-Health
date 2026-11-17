@@ -130,7 +130,10 @@ export async function POST(req: Request) {
         const svc = await PlatformServiceModel.findOne({
           name: { $regex: new RegExp(sName, "i") },
         }).lean().exec();
-        aptFee = Number(svc?.price || 1000);
+        aptFee = Number(svc?.price || (apt.type === "Video" ? 999 : 1499));
+      }
+      if (aptFee <= 0) {
+        aptFee = apt.type === "Video" ? 999 : 1499;
       }
 
       // Self-heal appointment record so feeAmount is persisted

@@ -122,6 +122,7 @@ export class PaymentSyncService {
         const context = `Appointment (${apt.type || "Consultation"}${apt.serviceName ? ` • ${apt.serviceName}` : ""})`;
         const isPaid = apt.paymentStatus === "Paid";
         const status = isPaid ? "Success" : "Pending";
+        const computedFee = Number(apt.feeAmount || doctor?.fees || doctor?.consultationFee || (apt.type === "Video" ? 999 : 1499));
 
         if (!existing) {
           await PaymentModel.create({
@@ -135,7 +136,7 @@ export class PaymentSyncService {
             gatewayProvider: (apt.paymentMethod === "Cash" || apt.collectedBy === "Cash") ? "Cash / Counter" : "HDFC SmartGateway",
             gatewayOrderId: txnId,
             gatewayTransactionId: txnId,
-            amount: apt.feeAmount || 0,
+            amount: computedFee,
             currency: "INR",
             status,
             createdAt: apt.createdAt || new Date(),
@@ -149,6 +150,10 @@ export class PaymentSyncService {
           if (!existing.customerName && patient?.name) { existing.customerName = patient.name; changed = true; }
           if (!existing.customerPhone && patient?.phone) { existing.customerPhone = patient.phone; changed = true; }
           if (!existing.context) { existing.context = context; changed = true; }
+          if ((!existing.amount || existing.amount <= 0) && computedFee > 0) {
+            existing.amount = computedFee;
+            changed = true;
+          }
           if (isPaid && existing.status !== "Success") {
             existing.status = "Success";
             changed = true;

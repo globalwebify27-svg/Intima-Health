@@ -17,7 +17,8 @@ import {
   Banknote, 
   CreditCard,
   RefreshCw,
-  Filter
+  Filter,
+  Phone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -467,8 +468,9 @@ export default function PrescriptionsPage() {
             No completed prescriptions found matching search filters.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-border bg-muted/30 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   <th className="p-4">Patient Name</th>
@@ -563,7 +565,84 @@ export default function PrescriptionsPage() {
                 })}
               </tbody>
             </table>
-            
+            </div>
+
+            {/* Mobile Cards (block md:hidden) */}
+            <div className="block md:hidden divide-y divide-border">
+              {paginated.map((c) => {
+                const hasMeds = Boolean(
+                  c.prescriptionSummary && 
+                  c.prescriptionSummary !== "[]" && 
+                  c.prescriptionSummary.trim() !== ""
+                );
+
+                const displayDate = c.appointmentId?.date 
+                  ? c.appointmentId.date 
+                  : (c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Recent");
+
+                const displayTime = c.appointmentId?.time 
+                  ? c.appointmentId.time 
+                  : (c.createdAt ? new Date(c.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "N/A");
+
+                const isDispensed = c.prescriptionStatus === "Fulfilled";
+
+                return (
+                  <div key={c._id} className="p-4 space-y-3 hover:bg-muted/10 transition">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h4 className="font-bold text-foreground text-base leading-tight">
+                          {c.patientId?.name || "Patient"}
+                        </h4>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 font-medium">
+                          <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
+                          {c.patientId?.phone || "No phone"}
+                        </p>
+                      </div>
+                      {isDispensed ? (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 flex items-center gap-1 shrink-0">
+                          <CheckCircle2 className="w-3 h-3" /> Delivered
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/30 shrink-0">
+                          Pending Dispense
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="bg-muted/20 p-2.5 rounded-xl border border-border/50 text-xs space-y-1">
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>Consultant Doctor:</span>
+                        <span className="font-semibold text-foreground">{c.doctorId?.name || "Specialist"}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>Date &amp; Time:</span>
+                        <span className="font-medium text-foreground">{displayDate} &bull; {displayTime}</span>
+                      </div>
+                      <div className="pt-1 border-t border-border/40">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-0.5">Medications:</span>
+                        <div className="font-medium text-foreground/90 text-xs line-clamp-2">
+                          {hasMeds ? renderPrescriptionSummary(c.prescriptionSummary) : "No medications noted"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {!isDispensed && (
+                      <Button
+                        size="sm"
+                        className="w-full h-9 rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-sm flex items-center justify-center gap-1.5"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openDispenseModal(c);
+                        }}
+                      >
+                        <ShoppingBag className="w-4 h-4" /> Create &amp; Fulfill Order
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
             <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/10">
               <div className="text-sm text-muted-foreground">
                 Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filtered.length)} of {filtered.length} entries
@@ -591,7 +670,7 @@ export default function PrescriptionsPage() {
                 </Button>
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 

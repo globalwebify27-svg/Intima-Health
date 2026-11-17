@@ -381,6 +381,9 @@ export default function ClinicManagerDashboardPage() {
       date: selectedDate,
       time: selectedTime,
       type: appointmentType,
+      serviceName: appointmentType === "Video" ? "Online Consultation" : "Walk-in Consultation",
+      paymentMethod,
+      paymentStatus,
       notes: "Booked at Clinic Manager counter."
     };
 
@@ -474,33 +477,33 @@ export default function ClinicManagerDashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="bg-card border border-border shadow-sm rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex gap-4 items-center">
-          <div className="w-16 h-16 rounded-full border border-border bg-primary/10 flex items-center justify-center text-primary shrink-0">
-            <Building2 className="w-8 h-8" />
+      <div className="bg-card border border-border shadow-sm rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-5 sm:gap-6">
+        <div className="flex gap-3.5 sm:gap-4 items-center">
+          <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl sm:rounded-full border border-border bg-primary/10 flex items-center justify-center text-primary shrink-0">
+            <Building2 className="w-7 h-7 sm:w-8 sm:h-8" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{clinicName || "Pune Intimacy Clinic"}</h1>
-            <p className="text-muted-foreground mt-1 text-sm font-medium">
-              Control Panel & Onsite Actions
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{clinicName || "Pune Intimacy Clinic"}</h1>
+            <p className="text-muted-foreground mt-0.5 sm:mt-1 text-xs sm:text-sm font-medium">
+              Control Panel &amp; Onsite Actions
             </p>
           </div>
         </div>
 
         {/* Header Action Buttons */}
-        <div className="flex flex-row items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 shrink-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
           <Button
             onClick={() => { resetForms(); setShowInstantModal(true); }}
-            className="text-white font-bold h-11 px-5 rounded-2xl flex items-center gap-2 shrink-0"
+            className="text-white font-bold h-11 px-5 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 w-full sm:w-auto shadow-sm"
           >
-            <Zap className="w-4 h-4" /> Instant Appointment
+            <Zap className="w-4 h-4 shrink-0" /> Instant Appointment
           </Button>
           <Button
             variant="outline"
             onClick={() => { resetForms(); setShowBookModal(true); }}
-            className="font-bold h-11 px-5 rounded-2xl flex items-center gap-2 shrink-0"
+            className="font-bold h-11 px-5 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 w-full sm:w-auto"
           >
-            <Plus className="w-4 h-4" /> Book Existing
+            <Plus className="w-4 h-4 shrink-0" /> Book Existing
           </Button>
         </div>
       </div>
@@ -576,33 +579,117 @@ export default function ClinicManagerDashboardPage() {
                 No upcoming appointments today.
               </div>
             ) : (
-              <div className="divide-y divide-border overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/20 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      <th className="p-3">Patient</th>
-                      <th className="p-3">Time & Type</th>
-                      <th className="p-3 text-center">Status</th>
-                      <th className="p-3 text-center">Payment Status</th>
-                      <th className="p-3 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border text-xs">
-                    {scheduledToday.map((apt) => (
-                      <tr key={apt._id} className="hover:bg-muted/10 transition">
-                        <td className="p-3">
-                          <div className="font-bold text-foreground">{apt.patientId?.name || "Patient"}</div>
-                          <div className="text-muted-foreground flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" /> {apt.patientId?.phone || "No phone"}</div>
-                        </td>
-                        <td className="p-3">
-                          <div className="font-medium text-foreground flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-muted-foreground" /> {formatTime12Hour(apt.time)}</div>
-                          <div className="text-muted-foreground flex items-center gap-1 mt-0.5">
+              <div>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/20 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        <th className="p-3">Patient</th>
+                        <th className="p-3">Time &amp; Type</th>
+                        <th className="p-3 text-center">Status</th>
+                        <th className="p-3 text-center">Payment Status</th>
+                        <th className="p-3 text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border text-xs">
+                      {scheduledToday.map((apt) => (
+                        <tr key={apt._id} className="hover:bg-muted/10 transition">
+                          <td className="p-3">
+                            <div className="font-bold text-foreground">{apt.patientId?.name || "Patient"}</div>
+                            <div className="text-muted-foreground flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" /> {apt.patientId?.phone || "No phone"}</div>
+                          </td>
+                          <td className="p-3">
+                            <div className="font-medium text-foreground flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-muted-foreground" /> {formatTime12Hour(apt.time)}</div>
+                            <div className="text-muted-foreground flex items-center gap-1 mt-0.5">
+                              {apt.serviceName || apt.type}
+                            </div>
+                          </td>
+                          <td className="p-3 flex justify-center">
+                            <select
+                              className="h-8 w-28 rounded-lg border border-input bg-transparent px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-medium text-center"
+                              value={apt.status}
+                              disabled={actionLoading === apt._id || apt.status === "Engaged" || apt.type === "Video"}
+                              onChange={(e) => {
+                                if (e.target.value === "Rescheduled") {
+                                  setRescheduleApt(apt);
+                                  setShowRescheduleModal(true);
+                                } else {
+                                  handleUpdateStatus(apt._id, e.target.value);
+                                }
+                              }}
+                            >
+                              <option value="Scheduled">Scheduled</option>
+                              <option value="Checked In">Checked In</option>
+                              <option value="Engaged">Engaged</option>
+                              <option value="Checked Out">Checked Out</option>
+                              <option value="Completed">Completed</option>
+                              <option value="Cancelled">Cancelled</option>
+                              <option value="Rescheduled">Rescheduled</option>
+                            </select>
+                          </td>
+                          <td className="p-3 text-center">
+                            <div className="flex flex-col items-center justify-center gap-2">
+                              {apt.paymentMethod === "Cash" && apt.paymentStatus !== "Paid" && (
+                                <Button onClick={() => handleCollectCash(apt._id)} size="sm" className="h-7 text-[10px] px-3 bg-amber-600 hover:bg-amber-700 text-white shadow-sm shadow-amber-500/10">
+                                  Payment Confirm
+                                </Button>
+                              )}
+                              {apt.paymentStatus === "Paid" && (
+                                 <span className="text-[10px] font-bold text-emerald-600 inline-flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5"/> Paid</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            {apt.paymentStatus === "Paid" && (
+                              <div className="flex justify-center items-center gap-2">
+                                <button className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-full hover:bg-muted" onClick={() => window.open(`/api/appointments/${apt._id}/invoice`, "_blank")} title="Download PDF Invoice">
+                                  <Download className="w-4 h-4"/>
+                                </button>
+                                <button className="text-[#25D366] hover:text-[#20bd5a] transition-colors p-1.5 rounded-full hover:bg-[#25D366]/10" onClick={() => handleSendWhatsAppInvoice(apt._id)} disabled={actionLoading === apt._id + "_wa"} title="Send Invoice via WhatsApp">
+                                  {actionLoading === apt._id + "_wa" ? (
+                                    <span className="w-4 h-4 rounded-full border-2 border-[#25D366] border-t-transparent animate-spin inline-block"></span>
+                                  ) : (
+                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                                    </svg>
+                                  )}
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards View (Optimized for Small Screens) */}
+                <div className="block md:hidden space-y-3">
+                  {scheduledToday.map((apt) => (
+                    <div key={apt._id} className="p-3.5 rounded-2xl border border-border bg-muted/10 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-bold text-sm text-foreground">{apt.patientId?.name || "Patient"}</div>
+                          <div className="text-muted-foreground text-xs flex items-center gap-1 mt-0.5">
+                            <Phone className="w-3 h-3 text-primary" /> {apt.patientId?.phone || "No phone"}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-xs text-foreground flex items-center gap-1 justify-end">
+                            <Clock className="w-3 h-3 text-primary" /> {formatTime12Hour(apt.time)}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
                             {apt.serviceName || apt.type}
                           </div>
-                        </td>
-                        <td className="p-3 flex justify-center">
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-medium text-muted-foreground">Status:</span>
                           <select
-                            className="h-8 w-28 rounded-lg border border-input bg-transparent px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-medium text-center"
+                            className="h-8 rounded-lg border border-input bg-card px-2 text-xs shadow-sm font-medium"
                             value={apt.status}
                             disabled={actionLoading === apt._id || apt.status === "Engaged" || apt.type === "Video"}
                             onChange={(e) => {
@@ -622,41 +709,41 @@ export default function ClinicManagerDashboardPage() {
                             <option value="Cancelled">Cancelled</option>
                             <option value="Rescheduled">Rescheduled</option>
                           </select>
-                        </td>
-                        <td className="p-3 text-center">
-                          <div className="flex flex-col items-center justify-center gap-2">
-                            {apt.paymentMethod === "Cash" && apt.paymentStatus !== "Paid" && (
-                              <Button onClick={() => handleCollectCash(apt._id)} size="sm" className="h-7 text-[10px] px-3 bg-amber-600 hover:bg-amber-700 text-white shadow-sm shadow-amber-500/10">
-                                Payment Confirm
-                              </Button>
-                            )}
-                            {apt.paymentStatus === "Paid" && (
-                               <span className="text-[10px] font-bold text-emerald-600 inline-flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5"/> Paid</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-3">
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {apt.paymentMethod === "Cash" && apt.paymentStatus !== "Paid" && (
+                            <Button onClick={() => handleCollectCash(apt._id)} size="sm" className="h-7 text-[10px] px-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold">
+                              Collect Cash
+                            </Button>
+                          )}
                           {apt.paymentStatus === "Paid" && (
-                            <div className="flex justify-center items-center gap-2">
-                              <button className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-full hover:bg-muted" onClick={() => window.open(`/api/appointments/${apt._id}/invoice`, "_blank")} title="Download PDF Invoice">
-                                <Download className="w-4 h-4"/>
+                            <span className="text-[11px] font-bold text-emerald-600 inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Paid
+                            </span>
+                          )}
+
+                          {apt.paymentStatus === "Paid" && (
+                            <div className="flex items-center gap-1">
+                              <button className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted" onClick={() => window.open(`/api/appointments/${apt._id}/invoice`, "_blank")} title="Download PDF Invoice">
+                                <Download className="w-3.5 h-3.5"/>
                               </button>
-                              <button className="text-[#25D366] hover:text-[#20bd5a] transition-colors p-1.5 rounded-full hover:bg-[#25D366]/10" onClick={() => handleSendWhatsAppInvoice(apt._id)} disabled={actionLoading === apt._id + "_wa"} title="Send Invoice via WhatsApp">
+                              <button className="text-[#25D366] hover:text-[#20bd5a] p-1 rounded-lg hover:bg-[#25D366]/10" onClick={() => handleSendWhatsAppInvoice(apt._id)} disabled={actionLoading === apt._id + "_wa"} title="Send Invoice via WhatsApp">
                                 {actionLoading === apt._id + "_wa" ? (
-                                  <span className="w-4 h-4 rounded-full border-2 border-[#25D366] border-t-transparent animate-spin inline-block"></span>
+                                  <span className="w-3.5 h-3.5 rounded-full border-2 border-[#25D366] border-t-transparent animate-spin inline-block"></span>
                                 ) : (
-                                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
                                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
                                   </svg>
                                 )}
                               </button>
                             </div>
                           )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -773,8 +860,8 @@ export default function ClinicManagerDashboardPage() {
 
       {/* --- MODAL 2: BOOK EXISTING APPOINTMENT --- */}
       {showBookModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-card border border-border rounded-3xl w-full max-w-lg p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-card border border-border rounded-2xl sm:rounded-3xl w-full max-w-lg p-4 sm:p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto space-y-4">
             <button 
               onClick={() => setShowBookModal(false)}
               className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
@@ -867,6 +954,30 @@ export default function ClinicManagerDashboardPage() {
                     ))}
                   </select>
                 </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payment Method</label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="Cash">Cash (At Clinic)</option>
+                    <option value="Online">Online / HDFC</option>
+                    <option value="UPI">UPI / QR Code</option>
+                    <option value="Card">POS Card</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payment Status</label>
+                  <select
+                    value={paymentStatus}
+                    onChange={(e) => setPaymentStatus(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="Paid">Paid</option>
+                    <option value="Pending">Pending</option>
+                  </select>
+                </div>
               </div>
 
               <Button type="submit" disabled={submitting} className="w-full h-11 text-white font-bold rounded-xl mt-2">
@@ -879,8 +990,8 @@ export default function ClinicManagerDashboardPage() {
 
       {/* --- MODAL 3: INSTANT APPOINTMENT --- */}
       {showInstantModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-card border border-border rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-card border border-border rounded-2xl sm:rounded-3xl w-full max-w-2xl p-4 sm:p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto space-y-4">
             <button 
               onClick={() => setShowInstantModal(false)}
               className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"

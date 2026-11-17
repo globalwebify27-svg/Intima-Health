@@ -1265,8 +1265,9 @@ export default function ClinicManagerPatientsPage() {
             No patients found matching the search criteria.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-border bg-muted/30 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   <th className="p-4">Patient Profile</th>
@@ -1365,6 +1366,82 @@ export default function ClinicManagerPatientsPage() {
                 })}
               </tbody>
             </table>
+            </div>
+
+            {/* Mobile Card View (block md:hidden) */}
+            <div className="block md:hidden divide-y divide-border">
+              {paginated.map((p) => {
+                const initials = p.name
+                  ? p.name
+                      .trim()
+                      .split(/\s+/)
+                      .map((part) => part[0])
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase()
+                  : "PT";
+
+                return (
+                  <div
+                    key={p._id}
+                    className="p-4 space-y-3 hover:bg-muted/10 transition cursor-pointer"
+                    onClick={() => setSelectedPatient(p)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-primary/10 text-primary font-bold text-sm flex items-center justify-center shrink-0">
+                          {initials}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-foreground text-base leading-tight">{p.name}</h3>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            ID: P-{p._id.slice(-4).toUpperCase()} &bull; {p.gender || "Unspecified"}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary shrink-0">
+                        {p._totalVisits || 1} Visits
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-1 text-xs text-muted-foreground bg-muted/20 p-2.5 rounded-xl border border-border/50">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span className="font-medium text-foreground">{p.phone}</span>
+                      </div>
+                      {p.email && (
+                        <div className="flex items-center gap-1.5 truncate mt-0.5">
+                          <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="truncate">{p.email}</span>
+                        </div>
+                      )}
+                      {p.dob && (
+                        <div className="text-[11px] text-muted-foreground mt-1">
+                          DOB: <strong className="text-foreground">{p.dob}</strong>
+                        </div>
+                      )}
+                      {p.allergies && (
+                        <div className="text-[11px] font-medium text-amber-600 truncate mt-0.5">
+                          Allergies: {Array.isArray(p.allergies) ? p.allergies.join(", ") : p.allergies}
+                        </div>
+                      )}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full rounded-xl border border-primary/40 text-primary hover:bg-primary hover:text-white font-bold text-xs h-9 shadow-sm transition"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPatient(p);
+                      }}
+                    >
+                      View Patient File &rarr;
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
 
             {/* Pagination Toolbar */}
             <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/10">
@@ -1395,7 +1472,7 @@ export default function ClinicManagerPatientsPage() {
                 </Button>
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

@@ -275,13 +275,13 @@ export default function AppointmentsPage() {
       )}
 
       {/* Filters & Tabs */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border p-4 rounded-2xl shadow-sm">
-        <div className="flex gap-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border p-3.5 sm:p-4 rounded-2xl shadow-sm">
+        <div className="flex gap-2 w-full md:w-auto">
           <button
             onClick={() => setActiveTab("upcoming")}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
+            className={`flex-1 md:flex-initial px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition text-center ${
               activeTab === "upcoming"
-                ? "bg-primary text-white"
+                ? "bg-primary text-white shadow-sm"
                 : "bg-muted/50 hover:bg-muted text-muted-foreground"
             }`}
           >
@@ -289,33 +289,33 @@ export default function AppointmentsPage() {
           </button>
           <button
             onClick={() => setActiveTab("past")}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
+            className={`flex-1 md:flex-initial px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition text-center ${
               activeTab === "past"
-                ? "bg-primary text-white"
+                ? "bg-primary text-white shadow-sm"
                 : "bg-muted/50 hover:bg-muted text-muted-foreground"
             }`}
           >
-            Past & Cancelled
+            Past &amp; Cancelled
           </button>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
           {activeTab === "past" && (
             <input
               type="date"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="h-10 px-3 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="h-10 px-3 rounded-xl border border-border bg-card text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 w-full sm:w-auto"
             />
           )}
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search here..."
+              placeholder="Search by patient name or phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-9 pr-4 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full h-10 pl-9 pr-4 rounded-xl border border-border bg-card text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
         </div>
