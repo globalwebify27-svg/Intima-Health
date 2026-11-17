@@ -1,5 +1,5 @@
 import { ConsultationRepository } from "./repository";
-import { IConsultation } from "./schema";
+import { ConsultationModel, IConsultation } from "./schema";
 import { DoctorModel } from "@/modules/doctors/schema";
 import { TherapySessionModel } from "@/modules/pharmacy/schema";
 import { AppointmentModel } from "@/modules/appointments/schema";
@@ -40,6 +40,19 @@ export class ConsultationService {
     });
 
     if (!updated) return updated;
+
+    // Ensure clinicId is saved on the consultation if missing
+    if (!updated.clinicId) {
+      const doctorDoc = updated.doctorId as any;
+      const resolvedClinicId =
+        doctorDoc?.clinicId?._id || doctorDoc?.clinicId ||
+        (updated.appointmentId as any)?.clinicId?._id ||
+        (updated.appointmentId as any)?.clinicId;
+      if (resolvedClinicId) {
+        await ConsultationModel.findByIdAndUpdate(id, { $set: { clinicId: resolvedClinicId } }).exec().catch(() => {});
+        (updated as any).clinicId = resolvedClinicId;
+      }
+    }
 
     // --- Sync therapy session records whenever prescribedTherapies is provided ---
     if (data.prescribedTherapies) {

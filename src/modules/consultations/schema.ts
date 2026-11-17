@@ -14,6 +14,8 @@ export interface IConsultation {
   createdBy?: string;
   updatedBy?: string;
   deletedAt?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const ConsultationSchema = new Schema<IConsultation>({
