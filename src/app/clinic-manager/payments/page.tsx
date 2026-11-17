@@ -482,8 +482,8 @@ export default function PaymentsPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 md:w-64">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
+          <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
@@ -494,25 +494,27 @@ export default function PaymentsPage() {
             />
           </div>
 
-          <input
-            type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            className="h-10 px-3 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="flex-1 sm:flex-initial h-10 px-3 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
 
-          {activeTab !== "pharmacy" && (
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="h-10 px-3 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Paid">Paid</option>
-              <option value="Unpaid">Pending</option>
-              {activeTab === "consultations" && <option value="Cancelled">Cancelled</option>}
-            </select>
-          )}
+            {activeTab !== "pharmacy" && (
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="flex-1 sm:flex-initial h-10 px-3 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="All">All Statuses</option>
+                <option value="Paid">Paid</option>
+                <option value="Unpaid">Pending</option>
+                {activeTab === "consultations" && <option value="Cancelled">Cancelled</option>}
+              </select>
+            )}
+          </div>
         </div>
       </div>
 
@@ -877,8 +879,8 @@ export default function PaymentsPage() {
 
       {/* --- PAYMENT OPTIONS MODAL (PAYMENT GATEWAY / CASH / POS / WHATSAPP) --- */}
       {paymentModalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in-50 duration-200">
-          <div className="bg-card border border-border rounded-3xl w-full max-w-lg p-6 shadow-2xl relative space-y-5 my-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto animate-in fade-in-50 duration-200">
+          <div className="bg-card border border-border rounded-2xl sm:rounded-3xl w-full max-w-lg p-4 sm:p-6 shadow-2xl relative space-y-4 sm:space-y-5 my-auto max-h-[92vh] overflow-y-auto">
             {/* Close Button */}
             <button 
               onClick={() => setPaymentModalItem(null)}

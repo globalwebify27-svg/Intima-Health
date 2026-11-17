@@ -509,56 +509,56 @@ export default function ClinicManagerDashboardPage() {
       </div>
 
       {/* Stats Cards Section */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3.5 sm:gap-6 grid-cols-2 lg:grid-cols-4">
         <div 
           onClick={() => router.push("/clinic-manager/appointments")}
-          className="bg-card border border-border p-6 rounded-3xl shadow-sm flex items-center gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
+          className="bg-card border border-border p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
         >
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition">
-            <Calendar className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition">
+            <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Scheduled Today</p>
-            <h3 className="text-2xl font-black mt-0.5">{scheduledToday.length}</h3>
+            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Scheduled Today</p>
+            <h3 className="text-xl sm:text-2xl font-black mt-0.5">{scheduledToday.length}</h3>
           </div>
         </div>
 
         <div 
           onClick={() => router.push("/clinic-manager/patients")}
-          className="bg-card border border-border p-6 rounded-3xl shadow-sm flex items-center gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
+          className="bg-card border border-border p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
         >
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition">
-            <Users className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition">
+            <Users className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Patients</p>
-            <h3 className="text-2xl font-black mt-0.5">{patients.length}</h3>
+            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Patients</p>
+            <h3 className="text-xl sm:text-2xl font-black mt-0.5">{patients.length}</h3>
           </div>
         </div>
 
         <div 
           onClick={() => router.push("/clinic-manager/prescriptions")}
-          className="bg-card border border-border p-6 rounded-3xl shadow-sm flex items-center gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
+          className="bg-card border border-border p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
         >
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-500/20 transition">
-            <Pill className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-500/20 transition">
+            <Pill className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pharmacy Orders</p>
-            <h3 className="text-2xl font-black mt-0.5">{prescriptionLogs.length}</h3>
+            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Pharmacy Orders</p>
+            <h3 className="text-xl sm:text-2xl font-black mt-0.5">{prescriptionLogs.length}</h3>
           </div>
         </div>
 
         <div 
           onClick={() => router.push("/clinic-manager/payments")}
-          className="bg-card border border-border p-6 rounded-3xl shadow-sm flex items-center gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
+          className="bg-card border border-border p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
         >
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition">
-            <CreditCard className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition">
+            <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Advised Therapies</p>
-            <h3 className="text-2xl font-black mt-0.5">{advisedCount}</h3>
+            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Advised Therapies</p>
+            <h3 className="text-xl sm:text-2xl font-black mt-0.5">{advisedCount}</h3>
           </div>
         </div>
       </div>

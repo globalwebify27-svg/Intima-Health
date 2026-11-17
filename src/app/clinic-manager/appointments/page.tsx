@@ -338,7 +338,7 @@ export default function AppointmentsPage() {
                 {apts.map((apt) => (
                   <div
                     key={apt._id}
-                    className="bg-card border border-border rounded-3xl p-6 shadow-sm flex flex-col justify-between gap-4"
+                    className="bg-card border border-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm flex flex-col justify-between gap-4"
                   >
                     <div className="space-y-3">
                       <div className="flex justify-between items-start gap-2">

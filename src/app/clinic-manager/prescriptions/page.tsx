@@ -446,7 +446,7 @@ export default function PrescriptionsPage() {
         </div>
 
         {/* Medication Visibility Toggle */}
-        <div className="flex items-center justify-between px-2 text-xs text-muted-foreground">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-1 text-xs text-muted-foreground">
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -457,7 +457,7 @@ export default function PrescriptionsPage() {
             <span>Show only consultations with prescribed medications</span>
           </label>
 
-          <span>Showing {filtered.length} total records (sorted latest first)</span>
+          <span className="text-[11px] font-medium">Showing {filtered.length} total records (sorted latest first)</span>
         </div>
       </div>
 
@@ -676,8 +676,8 @@ export default function PrescriptionsPage() {
 
       {/* --- MODAL: DISPENSE PRESCRIPTION & CREATE PHARMACY ORDER --- */}
       {showDispenseModal && dispenseConsultation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-card border border-border rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-card border border-border rounded-2xl sm:rounded-3xl w-full max-w-2xl p-4 sm:p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto space-y-4">
             <button 
               onClick={() => {
                 setShowDispenseModal(false);
@@ -723,7 +723,7 @@ export default function PrescriptionsPage() {
               {checkoutStep === "items" ? (
                 <>
                   {dispenseItems.length > 0 && (
-                    <div className="border border-border rounded-2xl overflow-hidden bg-muted/10">
+                    <div className="border border-border rounded-2xl overflow-x-auto bg-muted/10">
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="border-b border-border bg-muted/20 font-bold text-muted-foreground">

@@ -984,86 +984,142 @@ export default function ClinicManagerPatientsPage() {
                         No appointments found for this patient.
                       </div>
                     ) : (
-                      <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
-                        <table className="w-full text-left border-collapse text-xs">
-                          <thead>
-                            <tr className="border-b border-border bg-muted/30 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                              <th className="p-4">Date & Time</th>
-                              <th className="p-4">Doctor / Specialist</th>
-                              <th className="p-4">Consultation Type</th>
-                              <th className="p-4">Visit Status</th>
-                              <th className="p-4">Payment</th>
-                              <th className="p-4 text-right">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border">
-                            {patientAppointments.map((apt) => (
-                              <tr key={apt._id} className="hover:bg-muted/20">
-                                <td className="p-4">
-                                  <div className="font-bold text-foreground text-sm">{apt.date}</div>
-                                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                    <Clock className="w-3 h-3 text-primary" /> {apt.time}
-                                  </div>
-                                </td>
-                                <td className="p-4">
-                                  <div className="font-semibold text-foreground">
-                                    {apt.doctorId?.name || "Dr. Assigned"}
-                                  </div>
-                                  <div className="text-[11px] text-muted-foreground">
-                                    {apt.doctorId?.specialization || "Specialist"}
-                                  </div>
-                                </td>
-                                <td className="p-4">
-                                  <Badge variant="outline" className="text-[11px] font-medium px-2 py-0.5">
-                                    {apt.type === "Walk-in" ? "Walk-in Consultation" : "Online Video"}
-                                  </Badge>
-                                </td>
-                                <td className="p-4">
-                                  <Badge
-                                    variant="secondary"
-                                    className={`text-[11px] font-semibold px-2 py-0.5 ${
-                                      apt.status === "Completed"
-                                        ? "bg-emerald-500/10 text-emerald-600"
-                                        : "bg-primary/10 text-primary"
-                                    }`}
-                                  >
-                                    {apt.status}
-                                  </Badge>
-                                </td>
-                                <td className="p-4">
-                                  <div className="font-bold text-foreground">
-                                    ₹{(apt.feeAmount || 0).toLocaleString("en-IN")}
-                                  </div>
-                                  <div className="text-[11px]">
-                                    <span
-                                      className={`font-semibold ${
-                                        apt.paymentStatus === "Paid"
-                                          ? "text-emerald-600 dark:text-emerald-400"
-                                          : "text-amber-600 dark:text-amber-400"
+                      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+                        {/* Desktop View */}
+                        <div className="hidden md:block overflow-x-auto">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="border-b border-border bg-muted/30 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                                <th className="p-4">Date &amp; Time</th>
+                                <th className="p-4">Doctor / Specialist</th>
+                                <th className="p-4">Consultation Type</th>
+                                <th className="p-4">Visit Status</th>
+                                <th className="p-4">Payment</th>
+                                <th className="p-4 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                              {patientAppointments.map((apt) => (
+                                <tr key={apt._id} className="hover:bg-muted/20">
+                                  <td className="p-4">
+                                    <div className="font-bold text-foreground text-sm">{apt.date}</div>
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                      <Clock className="w-3 h-3 text-primary" /> {apt.time}
+                                    </div>
+                                  </td>
+                                  <td className="p-4">
+                                    <div className="font-semibold text-foreground">
+                                      {apt.doctorId?.name || "Dr. Assigned"}
+                                    </div>
+                                    <div className="text-[11px] text-muted-foreground">
+                                      {apt.doctorId?.specialization || "Specialist"}
+                                    </div>
+                                  </td>
+                                  <td className="p-4">
+                                    <Badge variant="outline" className="text-[11px] font-medium px-2 py-0.5">
+                                      {apt.type === "Walk-in" ? "Walk-in Consultation" : "Online Video"}
+                                    </Badge>
+                                  </td>
+                                  <td className="p-4">
+                                    <Badge
+                                      variant="secondary"
+                                      className={`text-[11px] font-semibold px-2 py-0.5 ${
+                                        apt.status === "Completed"
+                                          ? "bg-emerald-500/10 text-emerald-600"
+                                          : "bg-primary/10 text-primary"
                                       }`}
                                     >
-                                      {apt.paymentStatus === "Paid" ? "Paid" : "Pending"}
+                                      {apt.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="p-4">
+                                    <div className="font-bold text-foreground">
+                                      ₹{(apt.feeAmount || 0).toLocaleString("en-IN")}
+                                    </div>
+                                    <div className="text-[11px]">
+                                      <span
+                                        className={`font-semibold ${
+                                          apt.paymentStatus === "Paid"
+                                            ? "text-emerald-600 dark:text-emerald-400"
+                                            : "text-amber-600 dark:text-amber-400"
+                                        }`}
+                                      >
+                                        {apt.paymentStatus === "Paid" ? "Paid" : "Pending"}
+                                      </span>
+                                      {apt.paymentMethod && (
+                                        <span className="text-muted-foreground ml-1">({apt.paymentMethod})</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="p-4 text-right">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => window.open(`/api/appointments/${apt._id}/invoice`, "_blank")}
+                                      className="text-primary hover:underline text-xs font-bold gap-1"
+                                    >
+                                      <Download className="w-3.5 h-3.5" />
+                                      Invoice
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile View */}
+                        <div className="block md:hidden divide-y divide-border">
+                          {patientAppointments.map((apt) => (
+                            <div key={apt._id} className="p-4 space-y-3">
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <div className="font-bold text-sm text-foreground">{apt.doctorId?.name || "Specialist"}</div>
+                                  <div className="text-xs text-muted-foreground">{apt.doctorId?.specialization || "Doctor"}</div>
+                                </div>
+                                <Badge
+                                  variant="secondary"
+                                  className={`text-[10px] font-bold px-2 py-0.5 ${
+                                    apt.status === "Completed"
+                                      ? "bg-emerald-500/10 text-emerald-600"
+                                      : "bg-primary/10 text-primary"
+                                  }`}
+                                >
+                                  {apt.status}
+                                </Badge>
+                              </div>
+
+                              <div className="bg-muted/20 p-2.5 rounded-xl border border-border/50 text-xs space-y-1">
+                                <div className="flex items-center justify-between text-muted-foreground">
+                                  <span>Schedule:</span>
+                                  <span className="font-semibold text-foreground">{apt.date} at {apt.time}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-muted-foreground">
+                                  <span>Type:</span>
+                                  <span className="font-medium text-foreground">{apt.type === "Walk-in" ? "Walk-in Consultation" : "Online Video"}</span>
+                                </div>
+                                <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                                  <span className="font-semibold text-muted-foreground">Payment:</span>
+                                  <div className="text-right">
+                                    <span className="font-bold text-foreground">₹{(apt.feeAmount || 0).toLocaleString("en-IN")} </span>
+                                    <span className={`text-[11px] font-bold ${apt.paymentStatus === "Paid" ? "text-emerald-600" : "text-amber-600"}`}>
+                                      ({apt.paymentStatus === "Paid" ? "Paid" : "Pending"})
                                     </span>
-                                    {apt.paymentMethod && (
-                                      <span className="text-muted-foreground ml-1">({apt.paymentMethod})</span>
-                                    )}
                                   </div>
-                                </td>
-                                <td className="p-4 text-right">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => window.open(`/api/appointments/${apt._id}/invoice`, "_blank")}
-                                    className="text-primary hover:underline text-xs font-bold gap-1"
-                                  >
-                                    <Download className="w-3.5 h-3.5" />
-                                    Invoice
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                                </div>
+                              </div>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(`/api/appointments/${apt._id}/invoice`, "_blank")}
+                                className="w-full text-primary font-bold text-xs h-9 rounded-xl border-primary/30 hover:bg-primary/10 gap-1.5"
+                              >
+                                <Download className="w-3.5 h-3.5" /> Download Invoice
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1094,46 +1150,136 @@ export default function ClinicManagerPatientsPage() {
                       </div>
                     </div>
 
-                    {/* Itemized Transactions Table */}
-                    <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="border-b border-border bg-muted/30 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                            <th className="p-4">Reference / Date</th>
-                            <th className="p-4">Description</th>
-                            <th className="p-4">Method</th>
-                            <th className="p-4">Amount</th>
-                            <th className="p-4">Status</th>
-                            <th className="p-4 text-right">Receipt</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {patientAppointments.map((apt) => (
-                            <tr key={apt._id} className="hover:bg-muted/20">
-                              <td className="p-4">
-                                <div className="font-bold text-foreground">
-                                  APT-{apt._id.slice(-6).toUpperCase()}
+                    {/* Itemized Transactions */}
+                    <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+                      {/* Desktop View */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="border-b border-border bg-muted/30 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                              <th className="p-4">Reference / Date</th>
+                              <th className="p-4">Description</th>
+                              <th className="p-4">Method</th>
+                              <th className="p-4">Amount</th>
+                              <th className="p-4">Status</th>
+                              <th className="p-4 text-right">Receipt</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {patientAppointments.map((apt) => (
+                              <tr key={apt._id} className="hover:bg-muted/20">
+                                <td className="p-4">
+                                  <div className="font-bold text-foreground">
+                                    APT-{apt._id.slice(-6).toUpperCase()}
+                                  </div>
+                                  <div className="text-muted-foreground text-[11px]">{apt.date}</div>
+                                </td>
+                                <td className="p-4">
+                                  <div className="font-semibold text-foreground">
+                                    Consultation Fee {apt.doctorId?.name ? `(${apt.doctorId.name})` : ""}
+                                  </div>
+                                  <div className="text-[11px] text-muted-foreground">
+                                    {apt.serviceName || apt.type}
+                                  </div>
+                                </td>
+                                <td className="p-4 text-muted-foreground font-medium">
+                                  {apt.paymentMethod || "Counter Cash"}
+                                </td>
+                                <td className="p-4 font-bold text-foreground">
+                                  ₹{(apt.feeAmount || 0).toLocaleString("en-IN")}
+                                </td>
+                                <td className="p-4">
+                                  <Badge
+                                    variant="secondary"
+                                    className={`text-[11px] font-semibold px-2 py-0.5 ${
+                                      apt.paymentStatus === "Paid"
+                                        ? "bg-emerald-500/10 text-emerald-600"
+                                        : "bg-amber-500/10 text-amber-600"
+                                    }`}
+                                  >
+                                    {apt.paymentStatus === "Paid" ? "Paid" : "Pending"}
+                                  </Badge>
+                                </td>
+                                <td className="p-4 text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => window.open(`/api/appointments/${apt._id}/invoice`, "_blank")}
+                                    className="text-primary hover:underline text-xs font-bold gap-1"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                    Invoice
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+
+                            {patientOrders.map((ord) => (
+                              <tr key={ord._id} className="hover:bg-muted/20">
+                                <td className="p-4">
+                                  <div className="font-bold text-foreground">
+                                    {ord.orderNumber || `ORD-${ord._id.slice(-6).toUpperCase()}`}
+                                  </div>
+                                  <div className="text-muted-foreground text-[11px]">
+                                    {new Date(ord.createdAt).toLocaleDateString("en-GB")}
+                                  </div>
+                                </td>
+                                <td className="p-4">
+                                  <div className="font-semibold text-foreground">Pharmacy Medications</div>
+                                  <div className="text-[11px] text-muted-foreground">
+                                    {ord.items?.length || 1} items dispensed
+                                  </div>
+                                </td>
+                                <td className="p-4 text-muted-foreground font-medium">{ord.paymentMethod}</td>
+                                <td className="p-4 font-bold text-foreground">
+                                  ₹{(ord.totalAmount || 0).toLocaleString("en-IN")}
+                                </td>
+                                <td className="p-4">
+                                  <Badge
+                                    variant="secondary"
+                                    className={`text-[11px] font-semibold px-2 py-0.5 ${
+                                      ord.paymentStatus === "Paid"
+                                        ? "bg-emerald-500/10 text-emerald-600"
+                                        : "bg-amber-500/10 text-amber-600"
+                                    }`}
+                                  >
+                                    {ord.paymentStatus}
+                                  </Badge>
+                                </td>
+                                <td className="p-4 text-right">
+                                  <span className="text-xs text-muted-foreground">-</span>
+                                </td>
+                              </tr>
+                            ))}
+
+                            {patientAppointments.length === 0 && patientOrders.length === 0 && (
+                              <tr>
+                                <td colSpan={6} className="text-center py-8 text-muted-foreground">
+                                  No billing transactions found for this patient.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile View */}
+                      <div className="block md:hidden divide-y divide-border">
+                        {patientAppointments.map((apt) => (
+                          <div key={apt._id} className="p-4 space-y-2.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <span className="font-mono text-xs font-bold text-foreground">APT-{apt._id.slice(-6).toUpperCase()}</span>
+                                <div className="text-xs font-semibold text-foreground mt-0.5">
+                                  Consultation ({apt.doctorId?.name || "Doctor"})
                                 </div>
-                                <div className="text-muted-foreground text-[11px]">{apt.date}</div>
-                              </td>
-                              <td className="p-4">
-                                <div className="font-semibold text-foreground">
-                                  Consultation Fee {apt.doctorId?.name ? `(${apt.doctorId.name})` : ""}
-                                </div>
-                                <div className="text-[11px] text-muted-foreground">
-                                  {apt.serviceName || apt.type}
-                                </div>
-                              </td>
-                              <td className="p-4 text-muted-foreground font-medium">
-                                {apt.paymentMethod || "Counter Cash"}
-                              </td>
-                              <td className="p-4 font-bold text-foreground">
-                                ₹{(apt.feeAmount || 0).toLocaleString("en-IN")}
-                              </td>
-                              <td className="p-4">
+                                <div className="text-[11px] text-muted-foreground">{apt.date}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-bold text-sm text-foreground">₹{(apt.feeAmount || 0).toLocaleString("en-IN")}</div>
                                 <Badge
                                   variant="secondary"
-                                  className={`text-[11px] font-semibold px-2 py-0.5 ${
+                                  className={`text-[10px] font-bold px-2 py-0.5 mt-1 ${
                                     apt.paymentStatus === "Paid"
                                       ? "bg-emerald-500/10 text-emerald-600"
                                       : "bg-amber-500/10 text-amber-600"
@@ -1141,45 +1287,32 @@ export default function ClinicManagerPatientsPage() {
                                 >
                                   {apt.paymentStatus === "Paid" ? "Paid" : "Pending"}
                                 </Badge>
-                              </td>
-                              <td className="p-4 text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => window.open(`/api/appointments/${apt._id}/invoice`, "_blank")}
-                                  className="text-primary hover:underline text-xs font-bold gap-1"
-                                >
-                                  <Download className="w-3.5 h-3.5" />
-                                  Invoice
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(`/api/appointments/${apt._id}/invoice`, "_blank")}
+                              className="w-full text-primary font-bold text-xs h-8 rounded-xl border-primary/30 hover:bg-primary/10 gap-1.5"
+                            >
+                              <Download className="w-3.5 h-3.5" /> Download Invoice
+                            </Button>
+                          </div>
+                        ))}
 
-                          {patientOrders.map((ord) => (
-                            <tr key={ord._id} className="hover:bg-muted/20">
-                              <td className="p-4">
-                                <div className="font-bold text-foreground">
-                                  {ord.orderNumber || `ORD-${ord._id.slice(-6).toUpperCase()}`}
-                                </div>
-                                <div className="text-muted-foreground text-[11px]">
-                                  {new Date(ord.createdAt).toLocaleDateString("en-GB")}
-                                </div>
-                              </td>
-                              <td className="p-4">
-                                <div className="font-semibold text-foreground">Pharmacy Medications</div>
-                                <div className="text-[11px] text-muted-foreground">
-                                  {ord.items?.length || 1} items dispensed
-                                </div>
-                              </td>
-                              <td className="p-4 text-muted-foreground font-medium">{ord.paymentMethod}</td>
-                              <td className="p-4 font-bold text-foreground">
-                                ₹{(ord.totalAmount || 0).toLocaleString("en-IN")}
-                              </td>
-                              <td className="p-4">
+                        {patientOrders.map((ord) => (
+                          <div key={ord._id} className="p-4 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <span className="font-mono text-xs font-bold text-foreground">{ord.orderNumber || `ORD-${ord._id.slice(-6).toUpperCase()}`}</span>
+                                <div className="text-xs font-semibold text-foreground mt-0.5">Pharmacy Medications ({ord.items?.length || 1} items)</div>
+                                <div className="text-[11px] text-muted-foreground">{new Date(ord.createdAt).toLocaleDateString("en-GB")}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-bold text-sm text-foreground">₹{(ord.totalAmount || 0).toLocaleString("en-IN")}</div>
                                 <Badge
                                   variant="secondary"
-                                  className={`text-[11px] font-semibold px-2 py-0.5 ${
+                                  className={`text-[10px] font-bold px-2 py-0.5 mt-1 ${
                                     ord.paymentStatus === "Paid"
                                       ? "bg-emerald-500/10 text-emerald-600"
                                       : "bg-amber-500/10 text-amber-600"
@@ -1187,22 +1320,17 @@ export default function ClinicManagerPatientsPage() {
                                 >
                                   {ord.paymentStatus}
                                 </Badge>
-                              </td>
-                              <td className="p-4 text-right">
-                                <span className="text-xs text-muted-foreground">-</span>
-                              </td>
-                            </tr>
-                          ))}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
 
-                          {patientAppointments.length === 0 && patientOrders.length === 0 && (
-                            <tr>
-                              <td colSpan={6} className="text-center py-8 text-muted-foreground">
-                                No billing transactions found for this patient.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
+                        {patientAppointments.length === 0 && patientOrders.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground text-xs">
+                            No billing transactions found for this patient.
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
