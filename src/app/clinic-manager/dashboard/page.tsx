@@ -1082,7 +1082,7 @@ export default function ClinicManagerDashboardPage() {
       {/* --- MODAL 3: INSTANT APPOINTMENT --- */}
       {showInstantModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-card border border-border rounded-2xl sm:rounded-3xl w-full max-w-2xl p-4 sm:p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto space-y-4">
+          <div className="bg-card border border-border rounded-2xl sm:rounded-3xl w-full max-w-2xl sm:max-w-3xl p-4 sm:p-6 shadow-2xl relative max-h-[94vh] overflow-y-auto space-y-4">
             <button 
               onClick={() => setShowInstantModal(false)}
               className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
@@ -1107,7 +1107,7 @@ export default function ClinicManagerDashboardPage() {
                 </div>
               )}
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3.5 sm:grid-cols-2 items-start">
                 {/* Patient Block */}
                 <div className="space-y-3 p-4 bg-muted/20 border border-border rounded-2xl">
                   <h4 className="text-xs font-extrabold uppercase tracking-wider text-primary">Patient Info</h4>
@@ -1130,24 +1130,28 @@ export default function ClinicManagerDashboardPage() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your email address"
+                        placeholder="Enter patient email address"
                         className="w-full h-9 px-2.5 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
                       />
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Phone *</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">WhatsApp Mobile *</label>
                         {isPhoneVerified ? (
                           <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> WhatsApp Verified
+                            <CheckCircle2 className="w-3 h-3" /> Verified
+                          </span>
+                        ) : otpSent ? (
+                          <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                            OTP Sent
                           </span>
                         ) : (
-                          <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                          <span className="text-[10px] font-medium text-muted-foreground">
                             OTP Required
                           </span>
                         )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="relative flex items-center">
                         <input
                           type="tel"
                           required
@@ -1159,43 +1163,57 @@ export default function ClinicManagerDashboardPage() {
                             setOtpSent(false);
                             setOtpError("");
                           }}
-                          placeholder="10-digit WhatsApp number"
-                          className="flex-1 h-9 px-2.5 rounded-lg border border-border bg-transparent text-sm focus:outline-none disabled:bg-muted/30 disabled:text-muted-foreground"
+                          placeholder="10-digit mobile number"
+                          className={`w-full h-9 pl-2.5 pr-24 rounded-lg border text-sm focus:outline-none transition-all ${
+                            isPhoneVerified
+                              ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-medium"
+                              : "border-border bg-transparent"
+                          }`}
                         />
-                        {isPhoneVerified ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setIsPhoneVerified(false);
-                              setOtpSent(false);
-                              setOtpCode("");
-                            }}
-                            className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0"
-                          >
-                            Change
-                          </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={phone.replace(/\D/g, "").slice(-10).length < 10 || sendingOtp || otpCountdown > 0}
-                            onClick={handleSendOtp}
-                            className="h-9 px-3 text-xs font-semibold rounded-lg shrink-0"
-                          >
-                            {sendingOtp ? "Sending..." : otpCountdown > 0 ? `${otpCountdown}s` : otpSent ? "Resend" : "Send OTP"}
-                          </Button>
-                        )}
+                        <div className="absolute right-1 flex items-center">
+                          {isPhoneVerified ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setIsPhoneVerified(false);
+                                setOtpSent(false);
+                                setOtpCode("");
+                              }}
+                              className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                            >
+                              Change
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={phone.replace(/\D/g, "").slice(-10).length < 10 || sendingOtp || otpCountdown > 0}
+                              onClick={handleSendOtp}
+                              className="h-7 px-2.5 text-[11px] font-bold rounded-md"
+                            >
+                              {sendingOtp ? "Sending..." : otpCountdown > 0 ? `${otpCountdown}s` : otpSent ? "Resend" : "Send OTP"}
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
-                      {/* OTP Input Box */}
+                      {/* OTP Input Card */}
                       {!isPhoneVerified && otpSent && (
-                        <div className="p-2.5 bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/20 space-y-2 mt-1.5">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-semibold text-foreground text-[11px]">Enter 6-digit WhatsApp OTP:</span>
-                            {otpCountdown > 0 && (
-                              <span className="text-muted-foreground text-[10px] font-mono">Resend in {otpCountdown}s</span>
+                        <div className="p-3 bg-muted/40 border border-primary/20 rounded-xl space-y-2 mt-2">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-semibold text-foreground">Enter 6-Digit WhatsApp OTP</span>
+                            {otpCountdown > 0 ? (
+                              <span className="text-muted-foreground font-mono text-[10px]">Resend in {otpCountdown}s</span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={handleSendOtp}
+                                className="text-primary font-bold hover:underline text-[10px]"
+                              >
+                                Resend code
+                              </button>
                             )}
                           </div>
                           <div className="flex gap-2">
@@ -1207,8 +1225,8 @@ export default function ClinicManagerDashboardPage() {
                                 setOtpCode(e.target.value.replace(/\D/g, ""));
                                 setOtpError("");
                               }}
-                              placeholder="6-digit OTP"
-                              className="flex-1 h-8 px-2.5 rounded-lg border border-border bg-background text-sm font-mono tracking-widest text-center focus:outline-none"
+                              placeholder="6-digit code"
+                              className="flex-1 h-8 px-2.5 rounded-lg border border-border bg-background text-xs font-mono text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-primary"
                             />
                             <Button
                               type="button"
@@ -1220,32 +1238,11 @@ export default function ClinicManagerDashboardPage() {
                               {verifyingOtp ? "Verifying..." : "Verify OTP"}
                             </Button>
                           </div>
-                          {otpError && <p className="text-[11px] text-rose-500 font-medium">{otpError}</p>}
+                          {otpError && (
+                            <p className="text-[11px] text-rose-500 font-medium">{otpError}</p>
+                          )}
                         </div>
                       )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Gender</label>
-                        <select
-                          value={gender}
-                          onChange={(e) => setGender(e.target.value)}
-                          className="w-full h-9 px-2 rounded-lg border border-border bg-background text-xs"
-                        >
-                          <option value="Male">Male</option>
-                          <option value="Female">Female</option>
-                          <option value="Other">Other</option>
-                        </select>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">DOB</label>
-                        <input
-                          type="date"
-                          value={dob}
-                          onChange={(e) => setDob(e.target.value)}
-                          className="w-full h-9 px-2 rounded-lg border border-border bg-background text-xs"
-                        />
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -1310,14 +1307,36 @@ export default function ClinicManagerDashboardPage() {
                 </div>
               </div>
 
-              <div className="grid gap-2 grid-cols-2">
+              {/* Personal & Medical Info 4-Column Grid */}
+              <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-4 p-3.5 bg-muted/15 border border-border/70 rounded-2xl">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Gender</label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full h-9 px-2 rounded-lg border border-border bg-background text-xs"
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">DOB</label>
+                  <input
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    className="w-full h-9 px-2 rounded-lg border border-border bg-background text-xs"
+                  />
+                </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Allergies</label>
                   <input
                     type="text"
                     value={allergies}
                     onChange={(e) => setAllergies(e.target.value)}
-                    placeholder="Penicillin, Peanuts"
+                    placeholder="e.g. Penicillin"
                     className="w-full h-9 px-2.5 rounded-lg border border-border bg-transparent text-xs"
                   />
                 </div>
@@ -1327,13 +1346,14 @@ export default function ClinicManagerDashboardPage() {
                     type="text"
                     value={medicalHistory}
                     onChange={(e) => setMedicalHistory(e.target.value)}
-                    placeholder="Sugar, Thyroid, BP, etc."
+                    placeholder="e.g. Sugar, BP"
                     className="w-full h-9 px-2.5 rounded-lg border border-border bg-transparent text-xs"
                   />
                 </div>
               </div>
 
-              <div className="grid gap-2 grid-cols-2">
+              {/* Payment Settings */}
+              <div className="grid gap-2.5 grid-cols-2">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Payment Method</label>
                   <select
@@ -1369,7 +1389,11 @@ export default function ClinicManagerDashboardPage() {
               <Button 
                 type="submit" 
                 disabled={submitting || !isPhoneVerified} 
-                className="w-full h-11 text-white font-bold rounded-xl mt-2 disabled:opacity-50"
+                className={`w-full h-11 font-bold rounded-xl mt-2 transition-all shadow-md ${
+                  isPhoneVerified 
+                    ? "bg-primary hover:bg-primary/90 text-white" 
+                    : "bg-muted text-muted-foreground cursor-not-allowed opacity-80"
+                }`}
               >
                 {submitting 
                   ? "Processing Walk-in Booking..." 
