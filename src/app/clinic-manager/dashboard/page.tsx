@@ -19,7 +19,11 @@ import {
   X,
   Pill,
   Download,
-  MessageCircle
+  MessageCircle,
+  Mail,
+  Trash2,
+  Send,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -199,6 +203,61 @@ export default function ClinicManagerDashboardPage() {
       setOtpError(err.message || "Failed to verify OTP.");
     } finally {
       setVerifyingOtp(false);
+    }
+  };
+
+  // Therapy reminder & dismissal state
+  const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
+  const [dismissingReminderId, setDismissingReminderId] = useState<string | null>(null);
+  const [reminderSentMap, setReminderSentMap] = useState<Record<string, boolean>>({});
+  const [reminderToast, setReminderToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    if (reminderToast) {
+      const timer = setTimeout(() => setReminderToast(null), 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [reminderToast]);
+
+  const handleSendTherapyReminder = async (ts: TherapySessionData) => {
+    try {
+      setSendingReminderId(ts._id);
+      const res = await fetch(`/api/therapy-sessions/${ts._id}/remind`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReminderSentMap((prev) => ({ ...prev, [ts._id]: true }));
+        setReminderToast({ type: "success", text: data.message || `Reminder dispatched to ${ts.patientId?.name || "patient"}!` });
+      } else {
+        setReminderToast({ type: "error", text: data.message || "Failed to dispatch reminder." });
+      }
+    } catch (err: any) {
+      setReminderToast({ type: "error", text: err.message || "Network error while sending reminder." });
+    } finally {
+      setSendingReminderId(null);
+    }
+  };
+
+  const handleDismissTherapy = async (tsId: string) => {
+    if (!confirm("Are you sure you want to dismiss/remove this pending therapy reminder?")) return;
+    try {
+      setDismissingReminderId(tsId);
+      const res = await fetch(`/api/therapy-sessions/${tsId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRecommendedTherapies((prev) => prev.filter((t) => t._id !== tsId));
+        setAdvisedCount((prev) => Math.max(0, prev - 1));
+        setReminderToast({ type: "success", text: "Pending reminder dismissed successfully." });
+      } else {
+        setReminderToast({ type: "error", text: data.message || "Failed to dismiss reminder." });
+      }
+    } catch (err: any) {
+      setReminderToast({ type: "error", text: err.message || "Network error while dismissing." });
+    } finally {
+      setDismissingReminderId(null);
     }
   };
 
@@ -871,36 +930,109 @@ export default function ClinicManagerDashboardPage() {
               </Badge>
             </div>
 
+            {reminderToast && (
+              <div
+                className={`p-3 rounded-xl text-xs font-semibold flex items-center justify-between ${
+                  reminderToast.type === "success"
+                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                    : "bg-red-50 text-red-800 border border-red-200"
+                }`}
+              >
+                <span>{reminderToast.text}</span>
+                <button
+                  onClick={() => setReminderToast(null)}
+                  className="ml-2 hover:opacity-75 font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
             {recommendedTherapies.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground text-sm">
                 No patients currently have pending advised therapies.
               </div>
             ) : (
               <div className="divide-y divide-border text-sm">
-                {recommendedTherapies.map((ts) => (
-                  <div key={ts._id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4">
-                    <div>
-                      <div className="font-bold text-foreground">{ts.patientId?.name || "Patient"}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                        <Phone className="w-3 h-3" /> {ts.patientId?.phone || "No phone"}
+                {recommendedTherapies.map((ts) => {
+                  const patientPhone = ts.patientId?.phone || "";
+                  const patientEmail = ts.patientId?.email && !ts.patientId.email.includes("@noemail-intima.com") ? ts.patientId.email : "";
+                  const isSending = sendingReminderId === ts._id;
+                  const isDismissing = dismissingReminderId === ts._id;
+                  const isSent = !!reminderSentMap[ts._id];
+
+                  return (
+                    <div key={ts._id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-foreground truncate">{ts.patientId?.name || "Patient"}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-2">
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-muted-foreground" />
+                            {patientPhone ? (
+                              <span className="font-mono">{patientPhone}</span>
+                            ) : (
+                              <span className="italic text-muted-foreground/70">No phone</span>
+                            )}
+                          </span>
+                          {patientEmail && (
+                            <span className="flex items-center gap-1 text-muted-foreground truncate max-w-[180px]">
+                              <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                              <span className="truncate">{patientEmail}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-center px-2">
+                        <div className="font-medium text-foreground">{ts.name || "Advised Therapy"}</div>
+                        <div className="text-[11px] text-muted-foreground font-mono">Estimated ₹{ts.price || 0}</div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          disabled={isSending || isDismissing}
+                          onClick={() => handleSendTherapyReminder(ts)}
+                          className={`text-xs border transition-colors ${
+                            isSent
+                              ? "border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                              : "border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:text-amber-800"
+                          }`}
+                        >
+                          {isSending ? (
+                            <span className="flex items-center gap-1">
+                              <RefreshCw className="w-3 h-3 animate-spin" /> Sending...
+                            </span>
+                          ) : isSent ? (
+                            <span className="flex items-center gap-1 font-semibold">
+                              ✓ Sent
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1">
+                              <Send className="w-3 h-3" /> Send Reminder
+                            </span>
+                          )}
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="Dismiss / remove invalid reminder"
+                          disabled={isSending || isDismissing}
+                          onClick={() => handleDismissTherapy(ts._id)}
+                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-2 h-8 w-8 rounded-lg"
+                        >
+                          {isDismissing ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                        </Button>
                       </div>
                     </div>
-                    <div className="text-center">
-                      <div className="font-medium">{ts.name}</div>
-                      <div className="text-[10px] text-muted-foreground">Estimated ₹{ts.price}</div>
-                    </div>
-                    <div>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => alert(`Reminder SMS triggered for ${ts.patientId?.name || "Patient"} to book ${ts.name}`)}
-                        className="text-xs border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:text-amber-800"
-                      >
-                        Send Reminder
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

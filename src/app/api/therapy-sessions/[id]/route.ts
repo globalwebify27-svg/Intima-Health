@@ -63,3 +63,38 @@ export async function GET(req: Request, { params }: RouteParams) {
     );
   }
 }
+
+export async function DELETE(req: Request, { params }: RouteParams) {
+  try {
+    await connectDB();
+    const { id } = await params;
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    const payload = token ? verifyJwt(token) : null;
+
+    if (!payload || !["CLINIC_MANAGER", "SUPER_ADMIN", "ADMIN"].includes(payload.role)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Clinic Manager access required." },
+        { status: 403 }
+      );
+    }
+
+    const session = await TherapySessionModel.findByIdAndDelete(id);
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: "Therapy session not found." },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Therapy session reminder dismissed successfully.",
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, message: error.message || "Failed to delete session." },
+      { status: 500 }
+    );
+  }
+}
