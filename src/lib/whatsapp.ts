@@ -62,6 +62,7 @@ export async function sendTemplateMessage({
   campaignName,
   templateParams,
   media,
+  buttons,
 }: {
   recipientId: string;
   recipientType?: "PATIENT" | "DOCTOR" | "ADMIN";
@@ -69,6 +70,7 @@ export async function sendTemplateMessage({
   campaignName: string;
   templateParams: string[];
   media?: { url: string; filename: string };
+  buttons?: any[];
 }) {
   try {
     const digits = phone.replace(/\D/g, "");
@@ -94,6 +96,10 @@ export async function sendTemplateMessage({
 
         if (media) {
           payload.media = media; // Must contain {url, filename}
+        }
+
+        if (buttons && Array.isArray(buttons) && buttons.length > 0) {
+          payload.buttons = buttons;
         }
 
         const response = await fetch(apiUrl, {
@@ -134,12 +140,14 @@ export async function sendTemplateMessage({
 
 // 1. Walk-in Appointment Booking Initiated
 export async function sendAppointmentBookingInitiated({
-  patientId, phone, patientName, doctorName, date, time, mode, clinicName, managerPhone
+  patientId, phone, patientName, doctorName, date, time, mode, clinicName, managerPhone, buttons
 }: any) {
+  const cleanDoctorName = (doctorName || "").replace(/^Dr\.?\s+/i, "");
   return sendTemplateMessage({
     recipientId: patientId, phone,
     campaignName: "appointment_booking_initiated1",
-    templateParams: [patientName, doctorName, date, time, mode, clinicName, managerPhone]
+    templateParams: [patientName, cleanDoctorName, date, time, mode, clinicName, managerPhone],
+    buttons
   });
 }
 
@@ -301,12 +309,13 @@ export async function sendAppointmentBookingMessage(appointmentId: string, isPai
       // 3. Construct Public URL
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://intima-health.vercel.app";
       const invoiceUrl = `${appUrl}/api/media/${media._id}`;
+      const cleanDocName = (doctor?.name || "Specialist").replace(/^Dr\.?\s+/i, "");
 
       await sendAppointmentConfirmedPaymentSuccess({
         patientId: patient._id.toString(),
         phone: patient.phone,
         patientName: patient.name || "Patient",
-        doctorName: doctor?.name || "Specialist",
+        doctorName: cleanDocName,
         date: appointment.date,
         time: appointment.time,
         mode: appointment.type,
@@ -315,16 +324,30 @@ export async function sendAppointmentBookingMessage(appointmentId: string, isPai
         invoiceUrl
       });
     } else {
+      const cleanDocName = (doctor?.name || "Specialist").replace(/^Dr\.?\s+/i, "");
       await sendAppointmentBookingInitiated({
         patientId: patient._id.toString(),
         phone: patient.phone,
         patientName: patient.name || "Patient",
-        doctorName: doctor?.name || "Specialist",
+        doctorName: cleanDocName,
         date: appointment.date,
         time: appointment.time,
         mode: appointment.type,
         clinicName,
-        managerPhone: "+91 91753 10398" // Or fetch from clinic model
+        managerPhone: "+91 91753 10398", // Or fetch from clinic model
+        buttons: [
+          {
+            type: "button",
+            sub_type: "url",
+            index: "0",
+            parameters: [
+              {
+                type: "text",
+                text: "patient/appointments"
+              }
+            ]
+          }
+        ]
       });
     }
   } catch (err) {

@@ -479,12 +479,12 @@ export default function ClinicManagerDashboardPage() {
         throw new Error(resData.message || "Failed to book appointment.");
       }
 
-      setSuccessMsg("Appointment booked successfully!");
+      setSuccessMsg("Appointment booked successfully! WhatsApp notification with booking details sent to patient.");
       setTimeout(() => {
         setShowBookModal(false);
         resetForms();
         fetchData();
-      }, 1500);
+      }, 4000);
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred.");
     } finally {
@@ -529,12 +529,13 @@ export default function ClinicManagerDashboardPage() {
         throw new Error(resData.message || "Failed to process walk-in booking.");
       }
 
-      setSuccessMsg("Walk-in patient registered & scheduled successfully!");
+      const patientPhone = resData.data?.patient?.phone || phone;
+      setSuccessMsg(`Walk-in appointment scheduled successfully! WhatsApp confirmation & payment link dispatched to +91 ${patientPhone}.`);
       setTimeout(() => {
         setShowInstantModal(false);
         resetForms();
         fetchData();
-      }, 1500);
+      }, 4500);
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred.");
     } finally {
@@ -961,8 +962,29 @@ export default function ClinicManagerDashboardPage() {
 
             <form onSubmit={handleBookAppointment} className="space-y-4">
               {successMsg && (
-                <div className="p-3.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 text-xs font-medium rounded-xl border border-emerald-200/50 flex items-center gap-2">
-                  <CheckCircle2 className="w-4.5 h-4.5 shrink-0" /> {successMsg}
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 text-xs rounded-2xl border border-emerald-200 dark:border-emerald-800 shadow-sm space-y-2 animate-in fade-in">
+                  <div className="flex items-center gap-2 font-bold text-sm text-emerald-700 dark:text-emerald-300">
+                    <CheckCircle2 className="w-5 h-5 shrink-0" />
+                    <span>Booking Created & Notification Dispatched!</span>
+                  </div>
+                  <p className="leading-relaxed pl-7 text-[12px]">
+                    {successMsg}
+                  </p>
+                  <div className="pl-7 pt-1 flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        setShowBookModal(false);
+                        resetForms();
+                        fetchData();
+                      }}
+                      className="h-7 px-3 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-none"
+                    >
+                      Done / Close
+                    </Button>
+                    <span className="text-[11px] text-muted-foreground">(Closing automatically...)</span>
+                  </div>
                 </div>
               )}
               {errorMsg && (
@@ -1097,8 +1119,29 @@ export default function ClinicManagerDashboardPage() {
 
             <form onSubmit={handleInstantAppointment} className="space-y-4">
               {successMsg && (
-                <div className="p-3.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 text-xs font-medium rounded-xl border border-emerald-200/50 flex items-center gap-2">
-                  <CheckCircle2 className="w-4.5 h-4.5 shrink-0" /> {successMsg}
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 text-xs rounded-2xl border border-emerald-200 dark:border-emerald-800 shadow-sm space-y-2 animate-in fade-in">
+                  <div className="flex items-center gap-2 font-bold text-sm text-emerald-700 dark:text-emerald-300">
+                    <CheckCircle2 className="w-5 h-5 shrink-0" />
+                    <span>Booking Created & Notification Dispatched!</span>
+                  </div>
+                  <p className="leading-relaxed pl-7 text-[12px]">
+                    {successMsg}
+                  </p>
+                  <div className="pl-7 pt-1 flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        setShowInstantModal(false);
+                        resetForms();
+                        fetchData();
+                      }}
+                      className="h-7 px-3 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-none"
+                    >
+                      Done / Close
+                    </Button>
+                    <span className="text-[11px] text-muted-foreground">(Closing automatically...)</span>
+                  </div>
                 </div>
               )}
               {errorMsg && (
