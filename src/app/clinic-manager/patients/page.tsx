@@ -25,11 +25,13 @@ import {
   Printer,
   Receipt,
   User,
-  HeartPulse
+  HeartPulse,
+  Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { printPrescription } from "@/lib/print-prescription";
+import { parsePrescribedTherapies } from "@/lib/clinical-formatters";
 
 interface PatientData {
   _id: string;
@@ -851,26 +853,60 @@ export default function ClinicManagerPatientsPage() {
                             </div>
                           </div>
 
-                          {/* Notes and Clinical observations */}
-                          <div className="space-y-2 text-xs">
-                            <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">
-                              Clinical Notes & Advice:
-                            </span>
-                            <p className="text-foreground/90 bg-card p-3 rounded-xl border border-border/60 leading-relaxed whitespace-pre-wrap">
-                              {consult.notes || "Consultation conducted. No written clinical notes attached."}
-                            </p>
-                          </div>
+                          {/* Prescribed Therapies & Recommendations (Doctor notes hidden for Clinic Manager privacy) */}
+                          {(() => {
+                            const parsed = parsePrescribedTherapies(consult.prescribedTherapies);
+                            if (parsed.items.length === 0 && !parsed.plainText) {
+                              return (
+                                <div className="text-xs text-muted-foreground italic bg-card/60 p-3 rounded-xl border border-border/50">
+                                  No prescribed therapies recommended for this consultation.
+                                </div>
+                              );
+                            }
 
-                          {consult.prescribedTherapies && (
-                            <div className="space-y-1 text-xs">
-                              <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">
-                                Prescribed Therapies / Recommendations:
-                              </span>
-                              <p className="text-foreground/90 bg-card p-2.5 rounded-xl border border-border/60">
-                                {consult.prescribedTherapies}
-                              </p>
-                            </div>
-                          )}
+                            return (
+                              <div className="space-y-2 text-xs">
+                                <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                                  <Activity className="w-3.5 h-3.5 text-primary" />
+                                  Prescribed Therapies & Recommendations:
+                                </span>
+                                {parsed.items.length > 0 ? (
+                                  <div className="grid gap-2.5 sm:grid-cols-2">
+                                    {parsed.items.map((th, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="flex items-center justify-between p-3.5 rounded-xl bg-card border border-border/70 hover:border-primary/30 transition-all shadow-xs"
+                                      >
+                                        <div className="space-y-1">
+                                          <div className="font-bold text-xs text-foreground flex items-center gap-2">
+                                            <span>{th.name}</span>
+                                            {th.recommendedMode && (
+                                              <Badge variant="outline" className="text-[10px] px-2 py-0 font-semibold bg-primary/5 text-primary border-primary/20">
+                                                {th.recommendedMode}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          <div className="text-[11px] text-muted-foreground">
+                                            Therapy Session
+                                          </div>
+                                        </div>
+                                        {typeof th.price === "number" && th.price > 0 && (
+                                          <div className="text-right">
+                                            <span className="text-[10px] text-muted-foreground block font-medium">Session Fee</span>
+                                            <span className="text-sm font-black text-primary">₹{th.price.toLocaleString("en-IN")}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-foreground/90 bg-card p-3 rounded-xl border border-border/60">
+                                    {parsed.plainText}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       ))
                     )}
