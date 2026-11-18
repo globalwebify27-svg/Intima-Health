@@ -126,6 +126,82 @@ export default function ClinicManagerDashboardPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Phone OTP Verification states for Instant Booking
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [otpCountdown, setOtpCountdown] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (otpCountdown > 0) {
+      timer = setTimeout(() => setOtpCountdown(prev => prev - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [otpCountdown]);
+
+  const handleSendOtp = async () => {
+    const digits = phone.replace(/\D/g, "");
+    const last10 = digits.slice(-10);
+    if (last10.length < 10) {
+      setOtpError("Please enter a valid 10-digit WhatsApp number.");
+      return;
+    }
+
+    setSendingOtp(true);
+    setOtpError("");
+    try {
+      const res = await fetch("/api/clinic-manager/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: last10 }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.message || "Failed to send OTP.");
+      }
+      setOtpSent(true);
+      setOtpCountdown(60);
+    } catch (err: any) {
+      setOtpError(err.message || "Error sending OTP.");
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const digits = phone.replace(/\D/g, "");
+    const last10 = digits.slice(-10);
+    if (!otpCode || otpCode.trim().length !== 6) {
+      setOtpError("Please enter the complete 6-digit OTP.");
+      return;
+    }
+
+    setVerifyingOtp(true);
+    setOtpError("");
+    try {
+      const res = await fetch("/api/clinic-manager/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: last10, otp: otpCode.trim() }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.message || "Invalid OTP code.");
+      }
+      setIsPhoneVerified(true);
+      setOtpSent(false);
+      setOtpError("");
+    } catch (err: any) {
+      setOtpError(err.message || "Failed to verify OTP.");
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
   // Reschedule state
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [rescheduleApt, setRescheduleApt] = useState<AppointmentData | null>(null);
@@ -152,6 +228,11 @@ export default function ClinicManagerDashboardPage() {
     setSlots([]);
     setSuccessMsg("");
     setErrorMsg("");
+    setIsPhoneVerified(false);
+    setOtpSent(false);
+    setOtpCode("");
+    setOtpError("");
+    setOtpCountdown(0);
   };
 
   const fetchData = async () => {
@@ -413,6 +494,10 @@ export default function ClinicManagerDashboardPage() {
 
   const handleInstantAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isPhoneVerified) {
+      setErrorMsg("Please verify the patient's WhatsApp number with OTP first before booking.");
+      return;
+    }
     setSubmitting(true);
     setSuccessMsg("");
     setErrorMsg("");
@@ -958,7 +1043,13 @@ export default function ClinicManagerDashboardPage() {
                   <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payment Method</label>
                   <select
                     value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    onChange={(e) => {
+                      const newMethod = e.target.value;
+                      setPaymentMethod(newMethod);
+                      if (newMethod === "Online") {
+                        setPaymentStatus("Pending");
+                      }
+                    }}
                     className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="Cash">Cash (At Clinic)</option>
@@ -1044,15 +1135,94 @@ export default function ClinicManagerDashboardPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Phone *</label>
-                      <input
-                        type="tel"
-                        required
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="Enter WhatsApp number"
-                        className="w-full h-9 px-2.5 rounded-lg border border-border bg-transparent text-sm focus:outline-none"
-                      />
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Phone *</label>
+                        {isPhoneVerified ? (
+                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> WhatsApp Verified
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                            OTP Required
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="tel"
+                          required
+                          disabled={isPhoneVerified}
+                          value={phone}
+                          onChange={(e) => {
+                            setPhone(e.target.value);
+                            setIsPhoneVerified(false);
+                            setOtpSent(false);
+                            setOtpError("");
+                          }}
+                          placeholder="10-digit WhatsApp number"
+                          className="flex-1 h-9 px-2.5 rounded-lg border border-border bg-transparent text-sm focus:outline-none disabled:bg-muted/30 disabled:text-muted-foreground"
+                        />
+                        {isPhoneVerified ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setIsPhoneVerified(false);
+                              setOtpSent(false);
+                              setOtpCode("");
+                            }}
+                            className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0"
+                          >
+                            Change
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={phone.replace(/\D/g, "").slice(-10).length < 10 || sendingOtp || otpCountdown > 0}
+                            onClick={handleSendOtp}
+                            className="h-9 px-3 text-xs font-semibold rounded-lg shrink-0"
+                          >
+                            {sendingOtp ? "Sending..." : otpCountdown > 0 ? `${otpCountdown}s` : otpSent ? "Resend" : "Send OTP"}
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* OTP Input Box */}
+                      {!isPhoneVerified && otpSent && (
+                        <div className="p-2.5 bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/20 space-y-2 mt-1.5">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-semibold text-foreground text-[11px]">Enter 6-digit WhatsApp OTP:</span>
+                            {otpCountdown > 0 && (
+                              <span className="text-muted-foreground text-[10px] font-mono">Resend in {otpCountdown}s</span>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              maxLength={6}
+                              value={otpCode}
+                              onChange={(e) => {
+                                setOtpCode(e.target.value.replace(/\D/g, ""));
+                                setOtpError("");
+                              }}
+                              placeholder="6-digit OTP"
+                              className="flex-1 h-8 px-2.5 rounded-lg border border-border bg-background text-sm font-mono tracking-widest text-center focus:outline-none"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={otpCode.length !== 6 || verifyingOtp}
+                              onClick={handleVerifyOtp}
+                              className="h-8 px-3 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
+                            >
+                              {verifyingOtp ? "Verifying..." : "Verify OTP"}
+                            </Button>
+                          </div>
+                          {otpError && <p className="text-[11px] text-rose-500 font-medium">{otpError}</p>}
+                        </div>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
@@ -1168,11 +1338,19 @@ export default function ClinicManagerDashboardPage() {
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Payment Method</label>
                   <select
                     value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    onChange={(e) => {
+                      const newMethod = e.target.value;
+                      setPaymentMethod(newMethod);
+                      if (newMethod === "Online") {
+                        setPaymentStatus("Pending");
+                      }
+                    }}
                     className="w-full h-9 px-2 rounded-lg border border-border bg-background text-xs"
                   >
                     <option value="Cash">Cash (At Clinic)</option>
-                    <option value="Online">Online</option>
+                    <option value="Online">Online / HDFC SmartGateway</option>
+                    <option value="UPI">UPI / QR Code</option>
+                    <option value="Card">POS Card</option>
                   </select>
                 </div>
                 <div className="space-y-1">
@@ -1182,14 +1360,22 @@ export default function ClinicManagerDashboardPage() {
                     onChange={(e) => setPaymentStatus(e.target.value)}
                     className="w-full h-9 px-2 rounded-lg border border-border bg-background text-xs"
                   >
-                    <option value="Paid">Paid</option>
                     <option value="Pending">Pending</option>
+                    <option value="Paid">Paid</option>
                   </select>
                 </div>
               </div>
 
-              <Button type="submit" disabled={submitting} className="w-full h-11 text-white font-bold rounded-xl mt-2">
-                {submitting ? "Processing Walk-in Booking..." : "Register & Book Instant Appointment"}
+              <Button 
+                type="submit" 
+                disabled={submitting || !isPhoneVerified} 
+                className="w-full h-11 text-white font-bold rounded-xl mt-2 disabled:opacity-50"
+              >
+                {submitting 
+                  ? "Processing Walk-in Booking..." 
+                  : !isPhoneVerified 
+                  ? "Verify WhatsApp Number with OTP to Book" 
+                  : "Register & Book Instant Appointment"}
               </Button>
             </form>
           </div>
