@@ -80,7 +80,7 @@ export default function PrescriptionsPage() {
   const [showDispenseModal, setShowDispenseModal] = useState(false);
   const [dispenseConsultation, setDispenseConsultation] = useState<ConsultationData | null>(null);
   const [dispenseItems, setDispenseItems] = useState<Array<{ productId: string; quantity: number; price: number; name: string; stock: number }>>([]);
-  const [checkoutStep, setCheckoutStep] = useState<"items" | "payment">("items");
+  const [checkoutStep, setCheckoutStep] = useState<"items" | "payment" | "completed">("items");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [transactionRef, setTransactionRef] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -267,7 +267,7 @@ export default function PrescriptionsPage() {
     }
 
     setDispenseItems(autoItems);
-    setCheckoutStep("items");
+    setCheckoutStep(c.prescriptionStatus === "Fulfilled" ? "completed" : "items");
     setPaymentMethod("Cash");
     setShowDispenseModal(true);
   };
@@ -692,174 +692,270 @@ export default function PrescriptionsPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2 border-b border-border pb-3">
-              <Pill className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-bold">Dispense Medicines &amp; Settle Order</h3>
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <Pill className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-bold">
+                  {checkoutStep === "completed" ? "Prescription Order Details" : "Dispense Medicines & Settle Order"}
+                </h3>
+              </div>
+              {checkoutStep === "completed" && (
+                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold px-2.5 py-0.5 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Delivered
+                </Badge>
+              )}
             </div>
 
-            <div className="bg-muted/30 border border-border/40 p-4 rounded-xl space-y-2 text-xs">
-              <div className="font-bold text-foreground">Doctor's Prescribed Advisory:</div>
-              <div className="text-muted-foreground italic">
-                {renderPrescriptionSummary(dispenseConsultation.prescriptionSummary, true)}
-              </div>
-              <div className="text-[10px] text-muted-foreground border-t border-border/30 pt-2 mt-2">
-                Patient: <strong className="text-foreground">{dispenseConsultation.patientId?.name}</strong> | Doctor: <strong className="text-foreground">{dispenseConsultation.doctorId?.name}</strong>
-              </div>
-            </div>
-
-            <form onSubmit={handleDispenseSubmit} className="space-y-4">
-              {successMsg && (
-                <div className="p-3.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 text-xs font-medium rounded-xl border border-emerald-200/50 flex items-center gap-2">
-                  <CheckCircle2 className="w-4.5 h-4.5 shrink-0" /> {successMsg}
-                </div>
-              )}
-              {errorMsg && (
-                <div className="p-3.5 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 text-xs font-medium rounded-xl border border-rose-200/50 flex items-center gap-2">
-                  <AlertCircle className="w-4.5 h-4.5 shrink-0" /> {errorMsg}
-                </div>
-              )}
-
-              {/* Items Selected list */}
-              {checkoutStep === "items" ? (
-                <>
-                  {dispenseItems.length > 0 && (
-                    <div className="border border-border rounded-2xl overflow-x-auto bg-muted/10">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="border-b border-border bg-muted/20 font-bold text-muted-foreground">
-                            <th className="p-3">Medicine</th>
-                            <th className="p-3">Price</th>
-                            <th className="p-3">Qty</th>
-                            <th className="p-3">Total</th>
-                            <th className="p-3 text-right">Remove</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border text-foreground">
-                          {dispenseItems.map((item) => (
-                            <tr key={item.productId} className="hover:bg-muted/10 transition">
-                              <td className="p-3 font-bold">{item.name}</td>
-                              <td className="p-3">₹{item.price}</td>
-                              <td className="p-3">
-                                <input
-                                  type="number"
-                                  min={1}
-                                  max={item.stock}
-                                  value={item.quantity}
-                                  onChange={(e) => updateDispenseItemQty(item.productId, parseInt(e.target.value))}
-                                  className="w-16 h-8 px-2 rounded border border-border bg-background text-center focus:outline-none"
-                                />
-                              </td>
-                              <td className="p-3 font-bold">₹{item.price * item.quantity}</td>
-                              <td className="p-3 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => removeDispenseItem(item.productId)}
-                                  className="text-rose-500 hover:text-rose-700"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+            {checkoutStep === "completed" ? (
+              <div className="space-y-4">
+                {/* Completed Banner */}
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200 rounded-2xl border border-emerald-200 dark:border-emerald-800 flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-sm text-emerald-700 dark:text-emerald-300">
+                      Order Fulfilled & Delivered
                     </div>
-                  )}
+                    <p className="text-xs text-emerald-700/90 dark:text-emerald-300/90 mt-0.5">
+                      This prescription order has been fulfilled, verified, and delivered to the patient at the counter.
+                    </p>
+                  </div>
+                </div>
 
-                  {/* Total Calculation */}
-                  <div className="flex justify-between items-center bg-primary/5 p-4 rounded-xl border border-primary/20">
-                    <span className="text-sm font-bold text-primary">Dispensed Order Bill Total:</span>
-                    <span className="text-lg font-black text-primary">
+                {/* Doctor's Prescribed Advisory */}
+                <div className="bg-muted/30 border border-border/40 p-4 rounded-xl space-y-2 text-xs">
+                  <div className="font-bold text-foreground">Doctor's Prescribed Advisory:</div>
+                  <div className="text-muted-foreground italic">
+                    {renderPrescriptionSummary(dispenseConsultation.prescriptionSummary, true)}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground border-t border-border/30 pt-2 mt-2">
+                    Patient: <strong className="text-foreground">{dispenseConsultation.patientId?.name}</strong> | Doctor: <strong className="text-foreground">{dispenseConsultation.doctorId?.name}</strong>
+                  </div>
+                </div>
+
+                {/* Dispensed Items List (Read-only) */}
+                {dispenseItems.length > 0 && (
+                  <div className="border border-border rounded-2xl overflow-x-auto bg-muted/10">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/20 font-bold text-muted-foreground">
+                          <th className="p-3">Dispensed Medicine</th>
+                          <th className="p-3">Price</th>
+                          <th className="p-3 text-center">Qty</th>
+                          <th className="p-3 text-right">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border text-foreground">
+                        {dispenseItems.map((item) => (
+                          <tr key={item.productId} className="hover:bg-muted/10 transition">
+                            <td className="p-3 font-bold">{item.name}</td>
+                            <td className="p-3 text-muted-foreground">₹{item.price}</td>
+                            <td className="p-3 text-center font-semibold">{item.quantity}</td>
+                            <td className="p-3 text-right font-bold text-foreground">₹{item.price * item.quantity}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Order Summary & Status */}
+                <div className="flex justify-between items-center bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">
+                  <div>
+                    <span className="text-sm font-bold text-foreground block">Dispensed Status</span>
+                    <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Order Fulfilled &amp; Settled
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">Order Total</span>
+                    <span className="text-xl font-black text-emerald-600">
                       ₹{dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
                     </span>
                   </div>
+                </div>
 
+                <div className="pt-2">
                   <Button 
                     type="button" 
                     onClick={() => {
-                      if (dispenseItems.length === 0) {
-                        setErrorMsg("Please add at least one medicine to dispense.");
-                        return;
-                      }
-                      setCheckoutStep("payment");
+                      setShowDispenseModal(false);
+                      setDispenseConsultation(null);
+                      setDispenseItems([]);
+                      setCheckoutStep("items");
                     }} 
-                    className="w-full h-11 text-white font-bold rounded-xl mt-2"
+                    className="w-full h-11 text-white font-bold rounded-xl"
                   >
-                    Proceed to Payment
+                    Close Order Details
                   </Button>
-                </>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center bg-primary/5 p-4 rounded-xl border border-primary/20 mb-4">
-                    <span className="text-sm font-bold text-primary">Total Amount to Collect:</span>
-                    <span className="text-xl font-black text-primary">
-                      ₹{dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
-                    </span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="bg-muted/30 border border-border/40 p-4 rounded-xl space-y-2 text-xs">
+                  <div className="font-bold text-foreground">Doctor's Prescribed Advisory:</div>
+                  <div className="text-muted-foreground italic">
+                    {renderPrescriptionSummary(dispenseConsultation.prescriptionSummary, true)}
                   </div>
-                  
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Select Payment Method</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {["Cash", "Online"].map((method) => (
-                        <button
-                          type="button"
-                          key={method}
-                          onClick={() => setPaymentMethod(method)}
-                          className={`p-3 border rounded-xl cursor-pointer flex items-center justify-center gap-2 font-medium text-sm transition-all ${
-                            paymentMethod === method 
-                              ? "border-primary bg-primary/10 text-primary" 
-                              : "border-border hover:border-primary/50 text-muted-foreground"
-                          }`}
-                        >
-                          {method === "Cash" ? <Banknote className="w-4 h-4 shrink-0" /> : <CreditCard className="w-4 h-4 shrink-0" />}
-                          <span>{method}</span>
-                        </button>
-                      ))}
-                    </div>
-                    {paymentMethod === "Cash" && (
-                      <div className="flex items-start gap-2.5 text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl">
-                        <Banknote className="w-4 h-4 shrink-0 text-primary mt-0.5" />
-                        <span>Collect cash at the counter. Order will be marked as Paid &amp; Delivered immediately.</span>
-                      </div>
-                    )}
-                    {paymentMethod === "Online" && (
-                      <div className="space-y-2.5">
-                        <div className="flex items-start gap-2.5 text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl">
-                          <CreditCard className="w-4 h-4 shrink-0 text-primary mt-0.5" />
-                          <span>Collect payment via clinic UPI / QR / Card machine. Order will be marked as Paid &amp; Delivered immediately.</span>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
-                            UPI / Card Reference ID (Optional)
-                          </label>
-                          <input
-                            type="text"
-                            value={transactionRef}
-                            onChange={(e) => setTransactionRef(e.target.value)}
-                            placeholder="e.g. UTR / UPI Ref / Card Auth Code"
-                            className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-3 pt-2">
-                    <Button 
-                      type="button" 
-                      variant="outline"
-                      onClick={() => setCheckoutStep("items")} 
-                      className="w-1/3 h-11 rounded-xl"
-                    >
-                      Back
-                    </Button>
-                    <Button type="submit" disabled={submitting} className="w-2/3 h-11 text-white font-bold rounded-xl">
-                      {submitting ? "Settling Counter Billing..." : "Confirm & Complete"}
-                    </Button>
+                  <div className="text-[10px] text-muted-foreground border-t border-border/30 pt-2 mt-2">
+                    Patient: <strong className="text-foreground">{dispenseConsultation.patientId?.name}</strong> | Doctor: <strong className="text-foreground">{dispenseConsultation.doctorId?.name}</strong>
                   </div>
                 </div>
-              )}
-            </form>
+
+                <form onSubmit={handleDispenseSubmit} className="space-y-4">
+                  {successMsg && (
+                    <div className="p-3.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 text-xs font-medium rounded-xl border border-emerald-200/50 flex items-center gap-2">
+                      <CheckCircle2 className="w-4.5 h-4.5 shrink-0" /> {successMsg}
+                    </div>
+                  )}
+                  {errorMsg && (
+                    <div className="p-3.5 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 text-xs font-medium rounded-xl border border-rose-200/50 flex items-center gap-2">
+                      <AlertCircle className="w-4.5 h-4.5 shrink-0" /> {errorMsg}
+                    </div>
+                  )}
+
+                  {/* Items Selected list */}
+                  {checkoutStep === "items" ? (
+                    <>
+                      {dispenseItems.length > 0 && (
+                        <div className="border border-border rounded-2xl overflow-x-auto bg-muted/10">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="border-b border-border bg-muted/20 font-bold text-muted-foreground">
+                                <th className="p-3">Medicine</th>
+                                <th className="p-3">Price</th>
+                                <th className="p-3">Qty</th>
+                                <th className="p-3">Total</th>
+                                <th className="p-3 text-right">Remove</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border text-foreground">
+                              {dispenseItems.map((item) => (
+                                <tr key={item.productId} className="hover:bg-muted/10 transition">
+                                  <td className="p-3 font-bold">{item.name}</td>
+                                  <td className="p-3">₹{item.price}</td>
+                                  <td className="p-3">
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      max={item.stock}
+                                      value={item.quantity}
+                                      onChange={(e) => updateDispenseItemQty(item.productId, parseInt(e.target.value))}
+                                      className="w-16 h-8 px-2 rounded border border-border bg-background text-center focus:outline-none"
+                                    />
+                                  </td>
+                                  <td className="p-3 font-bold">₹{item.price * item.quantity}</td>
+                                  <td className="p-3 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => removeDispenseItem(item.productId)}
+                                      className="text-rose-500 hover:text-rose-700"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* Total Calculation */}
+                      <div className="flex justify-between items-center bg-primary/5 p-4 rounded-xl border border-primary/20">
+                        <span className="text-sm font-bold text-primary">Dispensed Order Bill Total:</span>
+                        <span className="text-lg font-black text-primary">
+                          ₹{dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+                        </span>
+                      </div>
+
+                      <Button 
+                        type="button" 
+                        onClick={() => {
+                          if (dispenseItems.length === 0) {
+                            setErrorMsg("Please add at least one medicine to dispense.");
+                            return;
+                          }
+                          setCheckoutStep("payment");
+                        }} 
+                        className="w-full h-11 text-white font-bold rounded-xl mt-2"
+                      >
+                        Proceed to Payment
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center bg-primary/5 p-4 rounded-xl border border-primary/20 mb-4">
+                        <span className="text-sm font-bold text-primary">Total Amount to Collect:</span>
+                        <span className="text-xl font-black text-primary">
+                          ₹{dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Select Payment Method</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {["Cash", "Online"].map((method) => (
+                            <button
+                              type="button"
+                              key={method}
+                              onClick={() => setPaymentMethod(method)}
+                              className={`p-3 border rounded-xl cursor-pointer flex items-center justify-center gap-2 font-medium text-sm transition-all ${
+                                paymentMethod === method 
+                                  ? "border-primary bg-primary/10 text-primary" 
+                                  : "border-border hover:border-primary/50 text-muted-foreground"
+                              }`}
+                            >
+                              {method === "Cash" ? <Banknote className="w-4 h-4 shrink-0" /> : <CreditCard className="w-4 h-4 shrink-0" />}
+                              <span>{method}</span>
+                            </button>
+                          ))}
+                        </div>
+                        {paymentMethod === "Cash" && (
+                          <div className="flex items-start gap-2.5 text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl">
+                            <Banknote className="w-4 h-4 shrink-0 text-primary mt-0.5" />
+                            <span>Collect cash at the counter. Order will be marked as Paid &amp; Delivered immediately.</span>
+                          </div>
+                        )}
+                        {paymentMethod === "Online" && (
+                          <div className="space-y-2.5">
+                            <div className="flex items-start gap-2.5 text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl">
+                              <CreditCard className="w-4 h-4 shrink-0 text-primary mt-0.5" />
+                              <span>Collect payment via clinic UPI / QR / Card machine. Order will be marked as Paid &amp; Delivered immediately.</span>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                                UPI / Card Reference ID (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                value={transactionRef}
+                                onChange={(e) => setTransactionRef(e.target.value)}
+                                placeholder="e.g. UTR / UPI Ref / Card Auth Code"
+                                className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <Button 
+                          type="button" 
+                          variant="outline"
+                          onClick={() => setCheckoutStep("items")} 
+                          className="w-1/3 h-11 rounded-xl"
+                        >
+                          Back
+                        </Button>
+                        <Button type="submit" disabled={submitting} className="w-2/3 h-11 text-white font-bold rounded-xl">
+                          {submitting ? "Settling Counter Billing..." : "Confirm & Complete"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}
