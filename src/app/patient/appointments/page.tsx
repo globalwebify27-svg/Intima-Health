@@ -7,8 +7,63 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatTime12Hour } from "@/lib/utils";
 import { useBookingModal } from "@/store/useBookingModal";
-import { Video, MapPin, ExternalLink, Download } from "lucide-react";
+import { Video, MapPin, ExternalLink, Download, CreditCard, RefreshCw } from "lucide-react";
 import { initiateHdfcCheckout } from "@/lib/payments/client";
+
+function PayAppointmentButton({
+  appointmentId,
+  size = "sm",
+  variant = "amber",
+  className = "",
+}: {
+  appointmentId: string;
+  size?: "sm" | "default";
+  variant?: "amber" | "primary";
+  className?: string;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handlePay = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      setLoading(true);
+      const { paymentUrl } = await initiateHdfcCheckout({
+        entityType: "appointment",
+        entityId: appointmentId,
+      });
+      window.location.href = paymentUrl;
+    } catch (err: any) {
+      console.error("Payment initiation error:", err);
+      alert(err?.message || "Failed to start payment session. Please try again.");
+      setLoading(false);
+    }
+  };
+
+  const colorStyles = variant === "amber"
+    ? "bg-amber-600 hover:bg-amber-700 text-white shadow-sm shadow-amber-500/20"
+    : "bg-primary hover:bg-primary/90 text-white shadow-sm";
+
+  return (
+    <Button
+      size={size}
+      disabled={loading}
+      onClick={handlePay}
+      className={`rounded-lg font-bold transition-all text-xs flex items-center gap-1.5 ${colorStyles} ${className}`}
+    >
+      {loading ? (
+        <>
+          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+          <span>Redirecting...</span>
+        </>
+      ) : (
+        <>
+          <CreditCard className="w-3.5 h-3.5" />
+          <span>Pay Now</span>
+        </>
+      )}
+    </Button>
+  );
+}
 
 interface Appointment {
   _id: string;
@@ -71,17 +126,33 @@ const columns: ColumnDef<Appointment>[] = [
       const pStatus = row.original.paymentStatus || "Pending";
       const doctor = row.original.doctorId as any;
       const feeAmount = row.original.feeAmount || doctor?.fees || doctor?.consultationFee || 1000;
+      const status = row.original.status;
 
       const handleDownloadReceipt = (e: React.MouseEvent) => {
         e.stopPropagation();
         window.open(`/api/appointments/${row.original._id}/invoice`, "_blank");
       };
 
+      const handlePayPending = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (status === "Cancelled" || status === "Completed") return;
+        try {
+          const { paymentUrl } = await initiateHdfcCheckout({
+            entityType: "appointment",
+            entityId: row.original._id,
+          });
+          window.location.href = paymentUrl;
+        } catch (err: any) {
+          console.error("Payment initiation error:", err);
+          alert(err?.message || "Failed to start payment session. Please try again.");
+        }
+      };
+
       if (pStatus === "Paid") {
         return (
           <Badge 
             variant="secondary" 
-            className="cursor-pointer hover:bg-secondary/80 flex w-fit items-center gap-1.5 transition-colors" 
+            className="cursor-pointer hover:bg-secondary/80 flex w-fit items-center gap-1.5 transition-colors font-medium" 
             onClick={handleDownloadReceipt} 
             title="Download Receipt"
           >
@@ -90,8 +161,13 @@ const columns: ColumnDef<Appointment>[] = [
         );
       }
       return (
-        <Badge variant="destructive">
-          Pending (₹{Number(feeAmount).toLocaleString("en-IN")})
+        <Badge 
+          variant="destructive"
+          className="cursor-pointer hover:bg-destructive/85 flex w-fit items-center gap-1.5 transition-colors font-semibold"
+          onClick={handlePayPending}
+          title="Click to Pay Now"
+        >
+          Pending (₹{Number(feeAmount).toLocaleString("en-IN")}) <CreditCard className="w-3 h-3 opacity-80" />
         </Badge>
       );
     }
@@ -105,6 +181,7 @@ const columns: ColumnDef<Appointment>[] = [
       const appointmentId = row.original._id;
       
       const isOnline = type === "Video" || (row.original.serviceName && row.original.serviceName.toLowerCase().includes("online"));
+      const isUnpaid = paymentStatus !== "Paid" && status !== "Completed" && status !== "Cancelled";
 
       let actionNode = null;
 
@@ -117,57 +194,39 @@ const columns: ColumnDef<Appointment>[] = [
         if (isTimeOver && status !== "Engaged") {
           actionNode = <span className="text-muted-foreground text-[10px] font-semibold italic opacity-50">Expired</span>;
         } else if (isTooEarly && status !== "Engaged") {
-            actionNode = (
-              <div className="flex flex-col items-center gap-1">
-                <div className="cursor-not-allowed inline-block">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="rounded-lg opacity-50 pointer-events-none"
-                    tabIndex={-1}
-                  >
-                    Join Call <ExternalLink className="w-3 h-3 ml-2" />
-                  </Button>
-                </div>
-                <span className="text-[9px] text-muted-foreground/80 font-medium whitespace-nowrap">Active 15 mins before</span>
+          actionNode = (
+            <div className="flex flex-col items-center gap-1">
+              <div className="cursor-not-allowed inline-block">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="rounded-lg opacity-50 pointer-events-none"
+                  tabIndex={-1}
+                >
+                  Join Call <ExternalLink className="w-3 h-3 ml-2" />
+                </Button>
               </div>
-            );
-          } else {
-            actionNode = (
-              <Button 
-                size="sm" 
-                className="rounded-lg"
-                onClick={() => window.location.href = `/patient/consultations?appointmentId=${appointmentId}`}
-              >
-                Join Call <ExternalLink className="w-3 h-3 ml-2" />
-              </Button>
-            );
-          }
-        } else if (paymentStatus !== "Paid" && status !== "Completed" && status !== "Cancelled") {
+              <span className="text-[9px] text-muted-foreground/80 font-medium whitespace-nowrap">Active 15 mins before</span>
+            </div>
+          );
+        } else {
           actionNode = (
             <Button 
               size="sm" 
-              className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white"
-              onClick={async () => {
-                try {
-                  const { paymentUrl } = await initiateHdfcCheckout({
-                    entityType: "appointment",
-                    entityId: appointmentId,
-                  });
-                  window.location.href = paymentUrl;
-                } catch (e: any) {
-                  console.error(e);
-                  alert(e?.message || "Failed to start payment session.");
-                }
-              }}
+              className="rounded-lg"
+              onClick={() => window.location.href = `/patient/consultations?appointmentId=${appointmentId}`}
             >
-              Pay Now
+              Join Call <ExternalLink className="w-3 h-3 ml-2" />
             </Button>
           );
         }
+      }
 
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {isUnpaid && (
+            <PayAppointmentButton appointmentId={appointmentId} variant="amber" />
+          )}
           {actionNode}
         </div>
       );
