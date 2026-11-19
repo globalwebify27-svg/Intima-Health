@@ -1398,11 +1398,11 @@ export default function ClinicManagerPatientsPage() {
           <span>Total Records: {patients.length}</span>
         </div>
 
-        <div className="flex items-center gap-4 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-4 w-full md:w-auto">
           <select
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
-            className="h-10 px-3 rounded-xl border border-border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="h-10 px-3 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 w-full sm:w-auto"
           >
             <option value="All">All Time</option>
             <option value="Today">Visited Today</option>

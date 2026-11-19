@@ -442,8 +442,8 @@ export default function PaymentsPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4 min-w-0 w-full">
+        <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-1 scrollbar-none shrink-0">
           <button
             onClick={() => setActiveTab("consultations")}
             className={`px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${

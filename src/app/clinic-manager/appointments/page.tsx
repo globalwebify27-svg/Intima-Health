@@ -251,12 +251,12 @@ export default function AppointmentsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 min-w-0 w-full overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 min-w-0 w-full">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Appointments Management</h1>
-          <p className="text-muted-foreground mt-1 text-sm font-medium">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Appointments Management</h1>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm font-medium">
             Manage upcoming bookings and cancellation workflows for patients.
           </p>
         </div>
@@ -538,7 +538,7 @@ export default function AppointmentsPage() {
                       No slots available on this date.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
                       {availableSlots.map((slot) => (
                         <button
                           key={slot.start}

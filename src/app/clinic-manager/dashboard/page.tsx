@@ -653,15 +653,15 @@ export default function ClinicManagerDashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 w-full max-w-full min-w-0 overflow-hidden">
       {/* Header */}
-      <div className="bg-card border border-border shadow-sm rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-5 sm:gap-6">
-        <div className="flex gap-3.5 sm:gap-4 items-center">
-          <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl sm:rounded-full border border-border bg-primary/10 flex items-center justify-center text-primary shrink-0">
-            <Building2 className="w-7 h-7 sm:w-8 sm:h-8" />
+      <div className="bg-card border border-border shadow-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 min-w-0 w-full">
+        <div className="flex gap-3 sm:gap-4 items-center min-w-0">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-full border border-border bg-primary/10 flex items-center justify-center text-primary shrink-0">
+            <Building2 className="w-6 h-6 sm:w-8 sm:h-8" />
           </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{clinicName || "Pune Intimacy Clinic"}</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight truncate">{clinicName || "Pune Intimacy Clinic"}</h1>
             <p className="text-muted-foreground mt-0.5 sm:mt-1 text-xs sm:text-sm font-medium">
               Control Panel &amp; Onsite Actions
             </p>
@@ -669,17 +669,17 @@ export default function ClinicManagerDashboardPage() {
         </div>
 
         {/* Header Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto shrink-0">
           <Button
             onClick={() => { resetForms(); setShowInstantModal(true); }}
-            className="text-white font-bold h-11 px-5 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 w-full sm:w-auto shadow-sm"
+            className="text-white font-bold h-11 px-4 sm:px-5 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 w-full sm:w-auto shadow-sm text-xs sm:text-sm"
           >
             <Zap className="w-4 h-4 shrink-0" /> Instant Appointment
           </Button>
           <Button
             variant="outline"
             onClick={() => { resetForms(); setShowBookModal(true); }}
-            className="font-bold h-11 px-5 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 w-full sm:w-auto"
+            className="font-bold h-11 px-4 sm:px-5 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 w-full sm:w-auto text-xs sm:text-sm"
           >
             <Plus className="w-4 h-4 shrink-0" /> Book Existing
           </Button>
@@ -687,64 +687,64 @@ export default function ClinicManagerDashboardPage() {
       </div>
 
       {/* Stats Cards Section */}
-      <div className="grid gap-3.5 sm:gap-6 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-4 min-w-0 w-full">
         <div 
           onClick={() => router.push("/clinic-manager/appointments")}
-          className="bg-card border border-border p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
+          className="bg-card border border-border p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group min-w-0 overflow-hidden"
         >
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition">
-            <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition">
+            <Calendar className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Scheduled Today</p>
-            <h3 className="text-xl sm:text-2xl font-black mt-0.5">{scheduledToday.length}</h3>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider truncate">Scheduled Today</p>
+            <h3 className="text-xl sm:text-2xl font-black mt-0.5 truncate">{scheduledToday.length}</h3>
           </div>
         </div>
 
         <div 
           onClick={() => router.push("/clinic-manager/patients")}
-          className="bg-card border border-border p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
+          className="bg-card border border-border p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group min-w-0 overflow-hidden"
         >
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition">
-            <Users className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition">
+            <Users className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Patients</p>
-            <h3 className="text-xl sm:text-2xl font-black mt-0.5">{patients.length}</h3>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider truncate">Total Patients</p>
+            <h3 className="text-xl sm:text-2xl font-black mt-0.5 truncate">{patients.length}</h3>
           </div>
         </div>
 
         <div 
           onClick={() => router.push("/clinic-manager/prescriptions")}
-          className="bg-card border border-border p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
+          className="bg-card border border-border p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group min-w-0 overflow-hidden"
         >
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-500/20 transition">
-            <Pill className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-500/20 transition">
+            <Pill className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Pharmacy Orders</p>
-            <h3 className="text-xl sm:text-2xl font-black mt-0.5">{prescriptionLogs.length}</h3>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider truncate">Pharmacy Orders</p>
+            <h3 className="text-xl sm:text-2xl font-black mt-0.5 truncate">{prescriptionLogs.length}</h3>
           </div>
         </div>
 
         <div 
           onClick={() => router.push("/clinic-manager/payments")}
-          className="bg-card border border-border p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group"
+          className="bg-card border border-border p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 cursor-pointer hover:scale-[1.01] transition duration-200 hover:border-primary/40 group min-w-0 overflow-hidden"
         >
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition">
-            <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition">
+            <CreditCard className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Advised Therapies</p>
-            <h3 className="text-xl sm:text-2xl font-black mt-0.5">{advisedCount}</h3>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider truncate">Advised Therapies</p>
+            <h3 className="text-xl sm:text-2xl font-black mt-0.5 truncate">{advisedCount}</h3>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-6 lg:gap-8 lg:grid-cols-3 min-w-0 w-full">
         {/* Left Column (Patients Directory Quick List) */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="lg:col-span-2 space-y-6 min-w-0 w-full">
+          <div className="bg-card border border-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4 min-w-0 w-full overflow-hidden">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-foreground">Today's Upcoming Appointments</h2>
               <Button variant="ghost" size="sm" onClick={() => router.push("/clinic-manager/appointments")} className="text-xs text-primary font-bold hover:underline px-0">
@@ -926,7 +926,7 @@ export default function ClinicManagerDashboardPage() {
             )}
           </div>
 
-          <div className="bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="bg-card border border-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4 min-w-0 w-full overflow-hidden">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-foreground">Clinic Specialists</h2>
               <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
@@ -939,15 +939,15 @@ export default function ClinicManagerDashboardPage() {
                 No doctors assigned to this clinic yet.
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 min-w-0 w-full">
                 {doctors.map((d) => (
-                  <div key={d._id} className="flex items-center gap-3 p-3.5 rounded-2xl border border-border bg-muted/10 hover:border-primary/20 transition-colors">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold">
+                  <div key={d._id} className="flex items-center gap-3 p-3 sm:p-3.5 rounded-2xl border border-border bg-muted/10 hover:border-primary/20 transition-colors min-w-0 overflow-hidden">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shrink-0">
                       {d.name.split(" ").filter(n => n.toLowerCase() !== "dr.").map(n => n[0]).join("")}
                     </div>
-                    <div>
-                      <h4 className="font-bold text-sm text-foreground">{d.name}</h4>
-                      <p className="text-xs text-muted-foreground">{d.specialization}</p>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-bold text-sm text-foreground truncate">{d.name}</h4>
+                      <p className="text-xs text-muted-foreground truncate">{d.specialization}</p>
                     </div>
                   </div>
                 ))}
@@ -955,10 +955,10 @@ export default function ClinicManagerDashboardPage() {
             )}
           </div>
 
-          <div className="bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="bg-card border border-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4 min-w-0 w-full overflow-hidden">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-foreground">Advised Therapies Pending Booking</h2>
-              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground truncate pr-2">Advised Therapies Pending Booking</h2>
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 shrink-0">
                 {recommendedTherapies.length} Pending
               </Badge>
             </div>
@@ -986,7 +986,7 @@ export default function ClinicManagerDashboardPage() {
                 No patients currently have pending advised therapies.
               </div>
             ) : (
-              <div className="divide-y divide-border text-sm">
+              <div className="divide-y divide-border text-sm min-w-0 w-full">
                 {recommendedTherapies.map((ts) => {
                   const patientPhone = ts.patientId?.phone || "";
                   const patientEmail = ts.patientId?.email && !ts.patientId.email.includes("@noemail-intima.com") ? ts.patientId.email : "";
@@ -995,12 +995,12 @@ export default function ClinicManagerDashboardPage() {
                   const isSent = !!reminderSentMap[ts._id];
 
                   return (
-                    <div key={ts._id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4">
+                    <div key={ts._id} className="py-3.5 sm:py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 min-w-0 w-full">
                       <div className="min-w-0 flex-1">
-                        <div className="font-bold text-foreground truncate">{ts.patientId?.name || "Patient"}</div>
-                        <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-2">
+                        <div className="font-bold text-foreground truncate text-sm sm:text-base">{ts.patientId?.name || "Patient"}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span className="flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-muted-foreground" />
+                            <Phone className="w-3 h-3 text-muted-foreground shrink-0" />
                             {patientPhone ? (
                               <span className="font-mono">{patientPhone}</span>
                             ) : (
@@ -1008,60 +1008,62 @@ export default function ClinicManagerDashboardPage() {
                             )}
                           </span>
                           {patientEmail && (
-                            <span className="flex items-center gap-1 text-muted-foreground truncate max-w-[180px]">
-                              <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                            <span className="flex items-center gap-1 text-muted-foreground truncate max-w-[160px] sm:max-w-[200px]">
+                              <Mail className="w-3 h-3 text-muted-foreground shrink-0" />
                               <span className="truncate">{patientEmail}</span>
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <div className="text-center px-2">
-                        <div className="font-medium text-foreground">{ts.name || "Advised Therapy"}</div>
-                        <div className="text-[11px] text-muted-foreground font-mono">Estimated ₹{ts.price || 0}</div>
-                      </div>
+                      <div className="flex items-center justify-between sm:justify-center gap-2 sm:px-2 pt-1 sm:pt-0">
+                        <div className="text-left sm:text-center">
+                          <div className="font-medium text-foreground text-xs sm:text-sm">{ts.name || "Advised Therapy"}</div>
+                          <div className="text-[11px] text-muted-foreground font-mono">Estimated ₹{ts.price || 0}</div>
+                        </div>
 
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          disabled={isSending || isDismissing}
-                          onClick={() => handleSendTherapyReminder(ts)}
-                          className={`text-xs border transition-colors ${
-                            isSent
-                              ? "border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
-                              : "border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:text-amber-800"
-                          }`}
-                        >
-                          {isSending ? (
-                            <span className="flex items-center gap-1">
-                              <RefreshCw className="w-3 h-3 animate-spin" /> Sending...
-                            </span>
-                          ) : isSent ? (
-                            <span className="flex items-center gap-1 font-semibold">
-                              ✓ Sent
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1">
-                              <Send className="w-3 h-3" /> Send Reminder
-                            </span>
-                          )}
-                        </Button>
+                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            disabled={isSending || isDismissing}
+                            onClick={() => handleSendTherapyReminder(ts)}
+                            className={`text-xs h-8 px-2.5 sm:px-3 border transition-colors ${
+                              isSent
+                                ? "border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                                : "border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:text-amber-800"
+                            }`}
+                          >
+                            {isSending ? (
+                              <span className="flex items-center gap-1">
+                                <RefreshCw className="w-3 h-3 animate-spin" /> Sending...
+                              </span>
+                            ) : isSent ? (
+                              <span className="flex items-center gap-1 font-semibold">
+                                ✓ Sent
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <Send className="w-3 h-3" /> Send Reminder
+                              </span>
+                            )}
+                          </Button>
 
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          title="Dismiss / remove invalid reminder"
-                          disabled={isSending || isDismissing}
-                          onClick={() => handleDismissTherapy(ts._id)}
-                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-2 h-8 w-8 rounded-lg"
-                        >
-                          {isDismissing ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-3.5 h-3.5" />
-                          )}
-                        </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            title="Dismiss / remove invalid reminder"
+                            disabled={isSending || isDismissing}
+                            onClick={() => handleDismissTherapy(ts._id)}
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-1.5 h-8 w-8 rounded-lg shrink-0"
+                          >
+                            {isDismissing ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1072,7 +1074,7 @@ export default function ClinicManagerDashboardPage() {
         </div>
 
         {/* Right Column (Recent Patients list) */}
-        <div className="p-6 bg-card border border-border rounded-3xl shadow-sm space-y-4 max-h-[500px] flex flex-col">
+        <div className="p-4 sm:p-6 bg-card border border-border rounded-2xl sm:rounded-3xl shadow-sm space-y-4 max-h-[500px] flex flex-col min-w-0 w-full overflow-hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />
@@ -1099,8 +1101,8 @@ export default function ClinicManagerDashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg border border-border/40">
-                    <span className="truncate max-w-[180px]">{p.email || "No email"}</span>
+                  <div className="flex justify-between items-center text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg border border-border/40 min-w-0">
+                    <span className="truncate w-full">{p.email || "No email"}</span>
                   </div>
                 </div>
               ))}
@@ -1660,7 +1662,7 @@ export default function ClinicManagerDashboardPage() {
                       No slots available on this date.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
                       {availableSlots.map((slot) => (
                         <button
                           key={slot.start}

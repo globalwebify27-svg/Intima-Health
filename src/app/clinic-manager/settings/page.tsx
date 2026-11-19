@@ -119,11 +119,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 min-w-0 w-full overflow-hidden">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
-        <p className="text-muted-foreground mt-1 text-sm font-medium">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">System Settings</h1>
+        <p className="text-muted-foreground mt-1 text-xs sm:text-sm font-medium">
           Manage your clinic manager profile credentials and review clinic assignments.
         </p>
       </div>
@@ -140,35 +140,35 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-4">
+      <div className="grid gap-6 lg:gap-8 lg:grid-cols-4 min-w-0 w-full">
         {/* Navigation Tabs (Sidebar layout for settings) */}
-        <div className="bg-card border border-border p-4 rounded-3xl shadow-sm self-start flex flex-col gap-1.5">
+        <div className="bg-card border border-border p-2 sm:p-4 rounded-2xl sm:rounded-3xl shadow-sm self-start flex flex-row lg:flex-col gap-1.5 overflow-x-auto max-w-full scrollbar-none">
           <button
             onClick={() => { setActiveTab("profile"); setSuccessMsg(""); setErrorMsg(""); }}
-            className={`w-full px-4 py-3 rounded-xl text-left text-sm font-bold transition flex items-center gap-3 ${
+            className={`flex-1 lg:w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-left text-xs sm:text-sm font-bold transition flex items-center justify-center lg:justify-start gap-2 sm:gap-3 whitespace-nowrap ${
               activeTab === "profile"
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            <User className="w-4 h-4" />
+            <User className="w-4 h-4 shrink-0" />
             Profile Credentials
           </button>
           <button
             onClick={() => { setActiveTab("clinic"); setSuccessMsg(""); setErrorMsg(""); }}
-            className={`w-full px-4 py-3 rounded-xl text-left text-sm font-bold transition flex items-center gap-3 ${
+            className={`flex-1 lg:w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-left text-xs sm:text-sm font-bold transition flex items-center justify-center lg:justify-start gap-2 sm:gap-3 whitespace-nowrap ${
               activeTab === "clinic"
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            <Building2 className="w-4 h-4" />
+            <Building2 className="w-4 h-4 shrink-0" />
             Clinic Parameters
           </button>
         </div>
 
         {/* Form Panel */}
-        <div className="lg:col-span-3 bg-card border border-border p-6 rounded-3xl shadow-sm space-y-6">
+        <div className="lg:col-span-3 bg-card border border-border p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-sm space-y-6 min-w-0 w-full overflow-hidden">
           {activeTab === "profile" && (
             <form onSubmit={handleUpdateProfile} className="space-y-6">
               <div className="flex items-center gap-2 border-b border-border pb-3">

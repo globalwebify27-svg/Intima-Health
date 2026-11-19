@@ -768,15 +768,15 @@ export default function PrescriptionsPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-3 gap-2 pr-6">
               <div className="flex items-center gap-2">
-                <Pill className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-bold">
+                <Pill className="w-5 h-5 text-primary shrink-0" />
+                <h3 className="text-base sm:text-lg font-bold">
                   {checkoutStep === "completed" ? "Prescription Order Details" : "Dispense Medicines & Settle Order"}
                 </h3>
               </div>
               {checkoutStep === "completed" && (
-                <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold px-2.5 py-0.5 flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Delivered
                   </Badge>

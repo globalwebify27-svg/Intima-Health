@@ -192,27 +192,27 @@ export default function ManageClinicServicesPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 min-w-0 w-full overflow-hidden">
       {/* Header section */}
-      <div className="bg-card border border-border shadow-sm rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex gap-4 items-center">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
-            <Activity className="w-7 h-7" />
+      <div className="bg-card border border-border shadow-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 min-w-0 w-full">
+        <div className="flex gap-3 sm:gap-4 items-center min-w-0">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+            <Activity className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Therapies & Services</h1>
-            <p className="text-muted-foreground mt-1 text-sm font-medium">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight truncate">Therapies & Services</h1>
+            <p className="text-muted-foreground mt-0.5 sm:mt-1 text-xs sm:text-sm font-medium">
               Create and manage specialized clinical therapies and session prices.
             </p>
           </div>
         </div>
-        <Button onClick={handleOpenAddModal} className="rounded-2xl h-11 px-5 text-white font-bold gap-2 self-stretch md:self-auto shadow-lg shadow-primary/10">
-          <Plus className="w-5 h-5" /> Add Therapy Service
+        <Button onClick={handleOpenAddModal} className="rounded-xl sm:rounded-2xl h-11 px-5 text-white font-bold gap-2 w-full sm:w-auto self-stretch md:self-auto shadow-lg shadow-primary/10 text-xs sm:text-sm">
+          <Plus className="w-5 h-5 shrink-0" /> Add Therapy Service
         </Button>
       </div>
 
       {/* Services List Table */}
-      <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
+      <div className="bg-card border border-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm min-w-0 w-full overflow-hidden">
         {services.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground space-y-4">
             <Activity className="w-12 h-12 stroke-[1.2] mx-auto text-muted-foreground/50" />
@@ -223,7 +223,7 @@ export default function ManageClinicServicesPage() {
             <Button onClick={handleOpenAddModal} size="sm" variant="outline" className="rounded-xl">Add First Service</Button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-w-0 w-full">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-border bg-muted/20 text-xs font-bold uppercase tracking-wider text-muted-foreground">

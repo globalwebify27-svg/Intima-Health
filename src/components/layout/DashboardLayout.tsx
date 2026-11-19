@@ -61,10 +61,10 @@ export function DashboardLayout({ children, links, roleName, basePath }: Dashboa
   }, []);
 
   return (
-    <div className="min-h-screen bg-muted/20 w-full max-w-full overflow-x-clip">
+    <div className="min-h-screen bg-muted/20 w-full max-w-full overflow-x-hidden">
       <Sidebar links={links} roleName={roleName} basePath={basePath} clinicName={clinicName} clinicLocation={clinicLocation} />
       
-      <div className="flex flex-col lg:pl-72 w-full max-w-full min-w-0 overflow-x-clip">
+      <div className="flex flex-col lg:pl-72 w-full max-w-full min-w-0 overflow-x-hidden">
         {/* Top Header */}
         <header className="hidden lg:flex h-16 items-center justify-between px-8 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-30">
           <div className="flex items-center gap-2 text-sm min-w-0">
@@ -91,7 +91,7 @@ export function DashboardLayout({ children, links, roleName, basePath }: Dashboa
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 p-3 sm:p-6 lg:p-8 pt-20 sm:pt-20 lg:pt-8 min-h-screen w-full max-w-full min-w-0 overflow-x-clip">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 pt-20 sm:pt-20 lg:pt-8 min-h-screen w-full max-w-full min-w-0 overflow-x-hidden">
           <div className="mx-auto max-w-7xl w-full min-w-0">
             {children}
           </div>
