@@ -92,6 +92,15 @@ export async function POST(req: Request) {
           const isPaid = (paymentStatus || "Paid") === "Paid";
           const fee = Number(aptDoc.feeAmount || 0);
 
+          const isCounterPay = ["Cash", "UPI", "Card"].includes(paymentMethod);
+          const gwProvider = paymentMethod === "UPI"
+            ? "UPI / QR Code"
+            : paymentMethod === "Card"
+            ? "POS Card"
+            : isCounterPay
+            ? "Cash / Counter"
+            : "HDFC SmartGateway";
+
           await PaymentModel.create({
             appointmentId: aptDoc._id,
             patientId: patient._id,
@@ -100,7 +109,7 @@ export async function POST(req: Request) {
             customerEmail: patient.email,
             context: `Walk-in Appointment (${aptDoc.type || "Consultation"}${aptDoc.serviceName ? ` • ${aptDoc.serviceName}` : ""})`,
             paymentMethod: paymentMethod || "Cash",
-            gatewayProvider: (paymentMethod === "Cash" || isPaid) ? "Cash / Counter" : "HDFC SmartGateway",
+            gatewayProvider: (isCounterPay || isPaid) ? gwProvider : "HDFC SmartGateway",
             gatewayOrderId: txnId,
             gatewayTransactionId: txnId,
             amount: fee,

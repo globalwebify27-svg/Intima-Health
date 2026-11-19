@@ -12,7 +12,7 @@ export const BookAppointmentSchema = z.object({
   type: z.enum(["Video", "Walk-in"]).default("Video"),
   serviceName: z.string().optional(),
   notes: z.string().optional(),
-  paymentMethod: z.enum(["Online", "Cash"]).optional(),
+  paymentMethod: z.enum(["Online", "Cash", "UPI", "Card"]).optional(),
   paymentStatus: z.enum(["Pending", "Paid"]).optional(),
   transactionId: z.string().optional(),
 });

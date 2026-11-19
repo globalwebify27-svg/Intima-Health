@@ -37,7 +37,11 @@ export async function handleBookAppointment(req: Request) {
       data: apt,
     }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message || "Failed to book appointment." }, { status: 400 });
+    let msg = error.message || "Failed to book appointment.";
+    if (error.name === "ZodError" && error.errors && Array.isArray(error.errors)) {
+      msg = error.errors.map((e: any) => e.message).join(", ");
+    }
+    return NextResponse.json({ success: false, message: msg }, { status: 400 });
   }
 }
 

@@ -292,22 +292,31 @@ export class AppointmentService {
       const finalTxnId = aptDoc.transactionId || `APT-${aptId.slice(-8).toUpperCase()}`;
       const patientDoc = await PatientModel.findById(prepared.patientId).select("name phone email").lean().exec();
 
-      await PaymentModel.create({
-        appointmentId: aptDoc._id,
-        patientId: prepared.patientId,
-        customerName: patientDoc?.name || "Patient",
-        customerPhone: patientDoc?.phone,
-        customerEmail: patientDoc?.email,
-        context: `Appointment (${prepared.type || "Consultation"} • ${prepared.serviceName || "Consultation"})`,
-        paymentMethod: aptDoc.paymentMethod || "Online",
-        gatewayProvider: (aptDoc.paymentMethod === "Cash" || isPaid) ? "Cash / Counter" : "HDFC SmartGateway",
-        gatewayOrderId: finalTxnId,
-        gatewayTransactionId: finalTxnId,
-        amount: Number(prepared.feeAmount || 1000),
-        currency: "INR",
-        status: isPaid ? "Success" : "Pending",
-        createdBy: createdBy || "system",
-      });
+        const isCounterPay = ["Cash", "UPI", "Card"].includes(aptDoc.paymentMethod);
+        const gwProvider = aptDoc.paymentMethod === "UPI"
+          ? "UPI / QR Code"
+          : aptDoc.paymentMethod === "Card"
+          ? "POS Card"
+          : isCounterPay
+          ? "Cash / Counter"
+          : "HDFC SmartGateway";
+
+        await PaymentModel.create({
+          appointmentId: aptDoc._id,
+          patientId: prepared.patientId,
+          customerName: patientDoc?.name || "Patient",
+          customerPhone: patientDoc?.phone,
+          customerEmail: patientDoc?.email,
+          context: `Appointment (${prepared.type || "Consultation"} • ${prepared.serviceName || "Consultation"})`,
+          paymentMethod: aptDoc.paymentMethod || "Online",
+          gatewayProvider: (isCounterPay || isPaid) ? gwProvider : "HDFC SmartGateway",
+          gatewayOrderId: finalTxnId,
+          gatewayTransactionId: finalTxnId,
+          amount: Number(prepared.feeAmount || 1000),
+          currency: "INR",
+          status: isPaid ? "Success" : "Pending",
+          createdBy: createdBy || "system",
+        });
     } catch (paySyncErr: any) {
       console.error("[AppointmentService] Failed to auto-create payment record:", paySyncErr.message);
     }

@@ -9,7 +9,7 @@ export interface IAppointment {
   type: "Video" | "Walk-in";
   status: "Scheduled" | "Checked In" | "Engaged" | "Checked Out" | "Completed" | "Cancelled" | "Rescheduled";
   paymentStatus?: "Pending" | "Paid";
-  paymentMethod?: "Online" | "Cash";
+  paymentMethod?: "Online" | "Cash" | "UPI" | "Card";
   transactionId?: string;
   collectedBy?: string;
   feeAmount?: number;
@@ -29,7 +29,7 @@ const AppointmentSchema = new Schema<IAppointment>({
   type: { type: String, enum: ["Video", "Walk-in"], required: true },
   status: { type: String, enum: ["Scheduled", "Checked In", "Engaged", "Checked Out", "Completed", "Cancelled", "Rescheduled"], default: "Scheduled" },
   paymentStatus: { type: String, enum: ["Pending", "Paid"], default: "Pending" },
-  paymentMethod: { type: String, enum: ["Online", "Cash"], default: "Online" },
+  paymentMethod: { type: String, enum: ["Online", "Cash", "UPI", "Card"], default: "Online" },
   transactionId: { type: String },
   collectedBy: { type: String },
   feeAmount: { type: Number },

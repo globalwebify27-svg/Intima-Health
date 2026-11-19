@@ -433,7 +433,18 @@ export default function ClinicManagerDashboardPage() {
       setRescheduleApt(null);
       await fetchData(); // Refresh dashboard data
     } catch (err: any) {
-      setErrorMsg(err.message || "An error occurred.");
+      let rawMsg = err.message || "An error occurred.";
+      try {
+        if (rawMsg.trim().startsWith("[") || rawMsg.trim().startsWith("{")) {
+          const parsed = JSON.parse(rawMsg);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            rawMsg = parsed.map((p: any) => p.message || p.code).join(", ");
+          } else if (parsed.message) {
+            rawMsg = parsed.message;
+          }
+        }
+      } catch {}
+      setErrorMsg(rawMsg);
     } finally {
       setActionLoading(null);
     }
@@ -545,7 +556,18 @@ export default function ClinicManagerDashboardPage() {
         fetchData();
       }, 4000);
     } catch (err: any) {
-      setErrorMsg(err.message || "An error occurred.");
+      let rawMsg = err.message || "An error occurred.";
+      try {
+        if (rawMsg.trim().startsWith("[") || rawMsg.trim().startsWith("{")) {
+          const parsed = JSON.parse(rawMsg);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            rawMsg = parsed.map((p: any) => p.message || p.code).join(", ");
+          } else if (parsed.message) {
+            rawMsg = parsed.message;
+          }
+        }
+      } catch {}
+      setErrorMsg(rawMsg);
     } finally {
       setSubmitting(false);
     }
@@ -596,7 +618,18 @@ export default function ClinicManagerDashboardPage() {
         fetchData();
       }, 4500);
     } catch (err: any) {
-      setErrorMsg(err.message || "An error occurred.");
+      let rawMsg = err.message || "An error occurred.";
+      try {
+        if (rawMsg.trim().startsWith("[") || rawMsg.trim().startsWith("{")) {
+          const parsed = JSON.parse(rawMsg);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            rawMsg = parsed.map((p: any) => p.message || p.code).join(", ");
+          } else if (parsed.message) {
+            rawMsg = parsed.message;
+          }
+        }
+      } catch {}
+      setErrorMsg(rawMsg);
     } finally {
       setSubmitting(false);
     }
@@ -775,7 +808,7 @@ export default function ClinicManagerDashboardPage() {
                           </td>
                           <td className="p-3 text-center">
                             <div className="flex flex-col items-center justify-center gap-2">
-                              {apt.paymentMethod === "Cash" && apt.paymentStatus !== "Paid" && (
+                              {["Cash", "UPI", "Card"].includes(apt.paymentMethod || "") && apt.paymentStatus !== "Paid" && (
                                 <Button onClick={() => handleCollectCash(apt._id)} size="sm" className="h-7 text-[10px] px-3 bg-amber-600 hover:bg-amber-700 text-white shadow-sm shadow-amber-500/10">
                                   Payment Confirm
                                 </Button>
@@ -857,9 +890,9 @@ export default function ClinicManagerDashboardPage() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          {apt.paymentMethod === "Cash" && apt.paymentStatus !== "Paid" && (
+                          {["Cash", "UPI", "Card"].includes(apt.paymentMethod || "") && apt.paymentStatus !== "Paid" && (
                             <Button onClick={() => handleCollectCash(apt._id)} size="sm" className="h-7 text-[10px] px-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold">
-                              Collect Cash
+                              Collect Payment
                             </Button>
                           )}
                           {apt.paymentStatus === "Paid" && (
