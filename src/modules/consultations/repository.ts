@@ -168,6 +168,37 @@ export class ConsultationRepository {
       .lean()
       .exec();
 
+    // Attach order information (such as dispense payment method) for fulfilled/dispensed consultations
+    if (consultations && consultations.length > 0) {
+      try {
+        const consultIds = consultations.map((c: any) => c._id);
+        const { OrderModel } = await import("@/modules/pharmacy/schema");
+        const orders = await OrderModel.find({
+          consultationId: { $in: consultIds },
+          status: { $nin: ["Cancelled", "CANCELLED"] },
+          deletedAt: null
+        }).select("consultationId paymentMethod paymentStatus totalAmount orderNumber createdAt").lean().exec();
+
+        const orderMap = new Map<string, any>();
+        orders.forEach((o: any) => {
+          if (o.consultationId) {
+            orderMap.set(String(o.consultationId), o);
+          }
+        });
+
+        consultations.forEach((c: any) => {
+          const ord = orderMap.get(String(c._id));
+          if (ord) {
+            c.dispensePaymentMethod = ord.paymentMethod || c.dispensePaymentMethod || "Cash";
+            c.dispenseOrderNumber = ord.orderNumber;
+            c.dispenseTotalAmount = ord.totalAmount;
+          }
+        });
+      } catch (ordErr) {
+        console.error("Error populating orders for consultations:", ordErr);
+      }
+    }
+
     return consultations as unknown as IConsultation[];
   }
 }

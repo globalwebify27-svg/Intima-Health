@@ -45,6 +45,9 @@ interface ConsultationData {
   prescriptionSummary?: string;
   prescribedTherapies?: string;
   prescriptionStatus?: string;
+  dispensePaymentMethod?: string;
+  dispenseOrderNumber?: string;
+  dispenseTotalAmount?: number;
   status: string;
   patientId?: PatientData;
   doctorId?: {
@@ -82,6 +85,12 @@ export default function PrescriptionsPage() {
   const [dispenseItems, setDispenseItems] = useState<Array<{ productId: string; quantity: number; price: number; name: string; stock: number }>>([]);
   const [checkoutStep, setCheckoutStep] = useState<"items" | "payment" | "completed">("items");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [completedPaymentMethod, setCompletedPaymentMethod] = useState<string>("Cash");
+  const [completedOrderDetails, setCompletedOrderDetails] = useState<{
+    orderNumber?: string;
+    totalAmount?: number;
+    transactionId?: string;
+  } | null>(null);
   const [transactionRef, setTransactionRef] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -183,11 +192,14 @@ export default function PrescriptionsPage() {
         throw new Error(resData.message || "Failed to dispense medicines.");
       }
 
-      // Update prescriptionStatus to Fulfilled
+      // Update prescriptionStatus to Fulfilled and record payment method
       await fetch(`/api/consultations/${dispenseConsultation._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prescriptionStatus: "Fulfilled" }),
+        body: JSON.stringify({ 
+          prescriptionStatus: "Fulfilled",
+          dispensePaymentMethod: paymentMethod === "Online" ? "Online" : "Cash"
+        }),
       });
 
       setSuccessMsg("Medicines dispensed and billing order registered!");
@@ -267,8 +279,46 @@ export default function PrescriptionsPage() {
     }
 
     setDispenseItems(autoItems);
-    setCheckoutStep(c.prescriptionStatus === "Fulfilled" ? "completed" : "items");
+    const isCompleted = c.prescriptionStatus === "Fulfilled";
+    setCheckoutStep(isCompleted ? "completed" : "items");
     setPaymentMethod("Cash");
+    setCompletedPaymentMethod(c.dispensePaymentMethod || "Cash");
+    setCompletedOrderDetails(
+      c.dispenseOrderNumber || c.dispenseTotalAmount
+        ? { orderNumber: c.dispenseOrderNumber, totalAmount: c.dispenseTotalAmount }
+        : null
+    );
+
+    if (isCompleted) {
+      // Async fetch matching order from API to ensure fresh items, total and payment mode
+      fetch(`/api/pharmacy/orders?consultationId=${c._id}`)
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            const ord = json.data[0];
+            if (ord.paymentMethod) {
+              setCompletedPaymentMethod(ord.paymentMethod);
+            }
+            setCompletedOrderDetails({
+              orderNumber: ord.orderNumber,
+              totalAmount: ord.totalAmount,
+              transactionId: ord.transactionId
+            });
+            if (ord.items && Array.isArray(ord.items) && ord.items.length > 0) {
+              const mappedItems = ord.items.map((it: any) => ({
+                productId: it.productId?._id || it.productId || Math.random().toString(),
+                name: it.productId?.name || it.name || "Prescribed Medicine",
+                price: it.priceAtPurchase || it.price || 0,
+                quantity: it.quantity || 1,
+                stock: it.productId?.stock || 100,
+              }));
+              setDispenseItems(mappedItems);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
     setShowDispenseModal(true);
   };
 
@@ -544,9 +594,22 @@ export default function PrescriptionsPage() {
                       </td>
                       <td className="p-4 text-right">
                         {c.prescriptionStatus === "Fulfilled" ? (
-                          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20 px-3 py-1.5 rounded-lg font-semibold flex items-center justify-center gap-1 w-max ml-auto">
-                            <CheckCircle2 className="w-4 h-4" /> Delivered
-                          </Badge>
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20 px-3 py-1.5 rounded-lg font-semibold flex items-center justify-center gap-1 w-max ml-auto">
+                              <CheckCircle2 className="w-4 h-4" /> Delivered
+                            </Badge>
+                            <span className="text-[11px] font-semibold flex items-center gap-1 pr-1">
+                              {c.dispensePaymentMethod === "Online" ? (
+                                <span className="text-blue-600 dark:text-blue-400 flex items-center gap-1 font-bold">
+                                  <CreditCard className="w-3 h-3" /> Online Paid
+                                </span>
+                              ) : (
+                                <span className="text-amber-700 dark:text-amber-400 flex items-center gap-1 font-bold">
+                                  <Banknote className="w-3 h-3" /> Cash Paid
+                                </span>
+                              )}
+                            </span>
+                          </div>
                         ) : (
                           <Button
                             size="sm"
@@ -599,9 +662,22 @@ export default function PrescriptionsPage() {
                         </p>
                       </div>
                       {isDispensed ? (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 flex items-center gap-1 shrink-0">
-                          <CheckCircle2 className="w-3 h-3" /> Delivered
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 flex items-center gap-1 shrink-0">
+                            <CheckCircle2 className="w-3 h-3" /> Delivered
+                          </span>
+                          <span className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                            {c.dispensePaymentMethod === "Online" ? (
+                              <span className="text-blue-600 dark:text-blue-400 flex items-center gap-0.5 font-bold">
+                                <CreditCard className="w-2.5 h-2.5" /> Online
+                              </span>
+                            ) : (
+                              <span className="text-amber-700 dark:text-amber-400 flex items-center gap-0.5 font-bold">
+                                <Banknote className="w-2.5 h-2.5" /> Cash
+                              </span>
+                            )}
+                          </span>
+                        </div>
                       ) : (
                         <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/30 shrink-0">
                           Pending Dispense
@@ -700,9 +776,20 @@ export default function PrescriptionsPage() {
                 </h3>
               </div>
               {checkoutStep === "completed" && (
-                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold px-2.5 py-0.5 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Delivered
-                </Badge>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold px-2.5 py-0.5 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Delivered
+                  </Badge>
+                  {completedPaymentMethod === "Online" ? (
+                    <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20 font-bold px-2.5 py-0.5 flex items-center gap-1">
+                      <CreditCard className="w-3.5 h-3.5" /> Online Paid
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20 font-bold px-2.5 py-0.5 flex items-center gap-1">
+                      <Banknote className="w-3.5 h-3.5" /> Cash Paid
+                    </Badge>
+                  )}
+                </div>
               )}
             </div>
 
@@ -727,8 +814,15 @@ export default function PrescriptionsPage() {
                   <div className="text-muted-foreground italic">
                     {renderPrescriptionSummary(dispenseConsultation.prescriptionSummary, true)}
                   </div>
-                  <div className="text-[10px] text-muted-foreground border-t border-border/30 pt-2 mt-2">
-                    Patient: <strong className="text-foreground">{dispenseConsultation.patientId?.name}</strong> | Doctor: <strong className="text-foreground">{dispenseConsultation.doctorId?.name}</strong>
+                  <div className="text-[10px] text-muted-foreground border-t border-border/30 pt-2 mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      Patient: <strong className="text-foreground">{dispenseConsultation.patientId?.name}</strong> | Doctor: <strong className="text-foreground">{dispenseConsultation.doctorId?.name}</strong>
+                    </div>
+                    {completedOrderDetails?.orderNumber && (
+                      <div className="font-mono text-muted-foreground">
+                        Order #{completedOrderDetails.orderNumber}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -758,19 +852,37 @@ export default function PrescriptionsPage() {
                   </div>
                 )}
 
-                {/* Order Summary & Status */}
-                <div className="flex justify-between items-center bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">
-                  <div>
-                    <span className="text-sm font-bold text-foreground block">Dispensed Status</span>
-                    <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Order Fulfilled &amp; Settled
-                    </span>
+                {/* Order Summary & Status with Payment Mode Info */}
+                <div className="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-xs uppercase tracking-wider font-bold text-muted-foreground block">Dispensed Status</span>
+                      <span className="text-sm text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5 mt-0.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Order Fulfilled &amp; Settled
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs uppercase tracking-wider font-bold text-muted-foreground block">Order Total</span>
+                      <span className="text-xl font-black text-emerald-700 dark:text-emerald-400">
+                        ₹{completedOrderDetails?.totalAmount ?? dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">Order Total</span>
-                    <span className="text-xl font-black text-emerald-600">
-                      ₹{dispenseItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+
+                  <div className="pt-2.5 border-t border-emerald-500/20 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span className="text-muted-foreground font-semibold flex items-center gap-1.5">
+                      Payment Mode:
                     </span>
+                    {completedPaymentMethod === "Online" ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-500/15 text-blue-700 dark:text-blue-300 font-bold border border-blue-500/25">
+                        <CreditCard className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Online (UPI / Card)
+                        {completedOrderDetails?.transactionId ? ` • Ref: ${completedOrderDetails.transactionId}` : ""}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-300 font-bold border border-amber-500/25">
+                        <Banknote className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Cash (Counter Payment)
+                      </span>
+                    )}
                   </div>
                 </div>
 

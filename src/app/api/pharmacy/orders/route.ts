@@ -20,6 +20,7 @@ export async function GET(request: Request) {
     const requestedClinicId = searchParams.get("clinicId");
     const patientId = searchParams.get("patientId");
     const status = searchParams.get("status");
+    const consultationId = searchParams.get("consultationId");
 
     // Check user authentication & role
     const cookieStore = await cookies();
@@ -48,6 +49,7 @@ export async function GET(request: Request) {
 
     if (patientId) query.patientId = patientId;
     if (status && status !== "All") query.status = status;
+    if (consultationId) query.consultationId = consultationId;
 
     const orders = await OrderModel.find(query)
       .populate("patientId")

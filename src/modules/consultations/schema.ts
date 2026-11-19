@@ -11,6 +11,8 @@ export interface IConsultation {
   prescribedTherapies?: string;
   status: "Pending" | "Active" | "Completed";
   prescriptionStatus?: "Pending" | "Fulfilled";
+  dispensePaymentMethod?: "Cash" | "Online" | "COD";
+  dispenseOrderNumber?: string;
   createdBy?: string;
   updatedBy?: string;
   deletedAt?: Date | null;
@@ -29,6 +31,8 @@ const ConsultationSchema = new Schema<IConsultation>({
   prescribedTherapies: { type: String },
   status: { type: String, enum: ["Pending", "Active", "Completed"], default: "Pending" },
   prescriptionStatus: { type: String, enum: ["Pending", "Fulfilled"], default: "Pending" },
+  dispensePaymentMethod: { type: String },
+  dispenseOrderNumber: { type: String },
   createdBy: { type: String },
   updatedBy: { type: String },
   deletedAt: { type: Date, default: null },
